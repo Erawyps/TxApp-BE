@@ -1,14 +1,11 @@
 import PropTypes from "prop-types";
-
-// Local Imports
 import { Table, Tag, THead, TBody, Th, Tr, Td } from "components/ui";
-
-// ----------------------------------------------------------------------
+import { BanknotesIcon, DocumentTextIcon } from "@heroicons/react/24/outline";
 
 const cols = ["Trajet", "Heure", "Montant", "Paiement", "Statut"];
 
 export function SubRowComponent({ row, cardWidth }) {
-  const trip = row.original;
+  const course = row.original;
   
   return (
     <div
@@ -39,23 +36,23 @@ export function SubRowComponent({ row, cardWidth }) {
           <TBody>
             <Tr className="border-y border-transparent border-b-gray-200 dark:border-b-dark-500">
               <Td className="px-0 font-medium ltr:rounded-l-lg rtl:rounded-r-lg">
-                {trip.pickup_location} → {trip.dropoff_location}
+                {course.lieu_embarquement} → {course.lieu_debarquement}
               </Td>
               <Td>
-                {new Date(trip.start_time).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                {new Date(course.heure_embarquement).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
               </Td>
-              <Td>{trip.earnings.toFixed(2)} €</Td>
+              <Td>{course.prix_final.toFixed(2)} €</Td>
               <Td>
-                <Tag color={trip.payment.method === 'cash' ? 'success' : 'primary'}>
-                  {trip.payment.method}
+                <Tag color={course.mode_paiement === 'Cash' ? 'success' : 'primary'}>
+                  {course.mode_paiement}
                 </Tag>
               </Td>
               <Td className="px-0 ltr:rounded-r-lg rtl:rounded-l-lg">
                 <Tag color={
-                  trip.status === 'completed' ? 'success' : 
-                  trip.status === 'cancelled' ? 'danger' : 'warning'
+                  course.statut === 'Terminée' ? 'success' : 
+                  course.statut === 'Annulée' ? 'danger' : 'warning'
                 }>
-                  {trip.status}
+                  {course.statut}
                 </Tag>
               </Td>
             </Tr>
@@ -68,38 +65,54 @@ export function SubRowComponent({ row, cardWidth }) {
           <Table className="w-full [&_.table-td]:px-0 [&_.table-td]:py-1">
             <TBody>
               <Tr>
-                <Td>Montant course :</Td>
-                <Td>
-                  <span className="font-medium text-gray-800 dark:text-dark-100">
-                    {trip.earnings.toFixed(2)} €
-                  </span>
-                </Td>
+                <Td>Prix de base :</Td>
+                <Td>{course.prix_base.toFixed(2)} €</Td>
               </Tr>
-              <Tr>
-                <Td>Commission :</Td>
-                <Td>
-                  <span className="font-medium text-gray-800 dark:text-dark-100">
-                    {(trip.earnings * 0.2).toFixed(2)} €
-                  </span>
-                </Td>
-              </Tr>
+              {course.supplement > 0 && (
+                <Tr>
+                  <Td>Supplément :</Td>
+                  <Td>+{course.supplement.toFixed(2)} €</Td>
+                </Tr>
+              )}
+              {course.remise > 0 && (
+                <Tr>
+                  <Td>Remise :</Td>
+                  <Td>-{course.remise.toFixed(2)} €</Td>
+                </Tr>
+              )}
               <Tr className="text-lg text-primary-600 dark:text-primary-400">
-                <Td>Salaire chauffeur :</Td>
+                <Td>Total :</Td>
                 <Td>
                   <span className="font-medium">
-                    {(trip.earnings * 0.8).toFixed(2)} €
+                    {course.prix_final.toFixed(2)} €
                   </span>
                 </Td>
               </Tr>
             </TBody>
           </Table>
           <div className="mt-2 flex justify-end gap-1.5">
-            <Tag component="button" className="min-w-[4rem]">
-              Détails
-            </Tag>
-            <Tag component="button" color="primary" className="min-w-[4rem]">
-              Facture
-            </Tag>
+            {course.mode_paiement === 'Facture' && (
+              <Tag 
+                component="button" 
+                color="primary" 
+                className="min-w-[4rem] flex items-center gap-1"
+                onClick={() => console.log("Générer facture", course)}
+              >
+                <DocumentTextIcon className="h-4 w-4" />
+                Facture
+              </Tag>
+            )}
+            {course.mode_paiement === 'Cash' && (
+              <Tag 
+                component="button" 
+                color="success" 
+                className="min-w-[4rem] flex items-center gap-1"
+                onClick={() => console.log("Marquer payé", course)}
+              >
+                <BanknotesIcon className="h-4 w-4" />
+                Payé
+              </Tag>
+            )}
           </div>
         </div>
       </div>

@@ -1,12 +1,8 @@
 import PropTypes from "prop-types";
 import dayjs from "dayjs";
-
-// Local Imports
 import { Avatar, Badge } from "components/ui";
 import { useLocaleContext } from "app/contexts/locale/context";
-import { tripStatusOptions } from "./data";
-
-// ----------------------------------------------------------------------
+import { tripStatusOptions, paymentMethods } from "./data";
 
 export function ChauffeurCell({ getValue }) {
   return (
@@ -37,9 +33,7 @@ export function HeureCell({ getValue }) {
   const { locale } = useLocaleContext();
   const timestamp = getValue();
   const time = dayjs(timestamp).locale(locale).format("HH:mm");
-  return (
-    <p className="font-medium">{time}</p>
-  );
+  return <p className="font-medium">{time}</p>;
 }
 
 export function DistanceCell({ getValue }) {
@@ -59,9 +53,10 @@ export function PrixCell({ getValue }) {
 }
 
 export function PaiementCell({ getValue }) {
+  const method = paymentMethods.find(m => m.value === getValue());
   return (
-    <Badge color="info">
-      {getValue()}
+    <Badge color={method?.color || "gray"}>
+      {method?.label || getValue()}
     </Badge>
   );
 }
@@ -78,7 +73,6 @@ export function StatutCourseCell({ getValue }) {
   );
 }
 
-// PropTypes validation
 ChauffeurCell.propTypes = { getValue: PropTypes.func };
 VehiculeCell.propTypes = { getValue: PropTypes.func };
 LieuCell.propTypes = { getValue: PropTypes.func };

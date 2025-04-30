@@ -1,17 +1,45 @@
 import { Card } from "components/ui";
 import { kpis } from "./data";
-
-// Icons
-import { FaTaxi, FaEuroSign, FaRoad, FaUserTie, FaCarSide } from "react-icons/fa6";
+import { FaTaxi, FaEuroSign, FaRoad, FaUserTie, FaCarSide, FaChartLine } from "react-icons/fa6";
 
 export default function KpiCards() {
   const cards = [
-    { title: "Courses Effectuées", value: kpis.totalCourses, icon: <FaTaxi size={24} /> },
-    { title: "Revenus (€)", value: kpis.totalRevenue.toFixed(2), icon: <FaEuroSign size={24} /> },
-    { title: "Commission (€)", value: kpis.totalCommission.toFixed(2), icon: <FaEuroSign size={24} /> },
-    { title: "Chauffeurs Actifs", value: kpis.chauffeursActifs, icon: <FaUserTie size={24} /> },
-    { title: "Distance Totale (km)", value: kpis.totalDistance.toFixed(1), icon: <FaRoad size={24} /> },
-    { title: "Véhicules Utilisés", value: kpis.vehiculesUtilises, icon: <FaCarSide size={24} /> },
+    { 
+      title: "Courses Effectuées", 
+      value: kpis.totalCourses, 
+      icon: <FaTaxi size={24} />,
+      description: "Nombre total de courses"
+    },
+    { 
+      title: "Revenus Totaux", 
+      value: `${kpis.totalRevenue.toFixed(2)} €`, 
+      icon: <FaEuroSign size={24} />,
+      description: "Chiffre d'affaires total"
+    },
+    { 
+      title: "Revenu Moyen", 
+      value: `${kpis.averageEarningsPerTrip.toFixed(2)} €`, 
+      icon: <FaChartLine size={24} />,
+      description: "Par course"
+    },
+    { 
+      title: "Chauffeurs Actifs", 
+      value: kpis.chauffeursActifs, 
+      icon: <FaUserTie size={24} />,
+      description: "Nombre de chauffeurs ayant effectué des courses"
+    },
+    { 
+      title: "Distance Totale", 
+      value: `${kpis.totalDistance.toFixed(1)} km`, 
+      icon: <FaRoad size={24} />,
+      description: "Kilomètres parcourus"
+    },
+    { 
+      title: "Distance Moyenne", 
+      value: `${kpis.averageDistancePerTrip.toFixed(1)} km`, 
+      icon: <FaCarSide size={24} />,
+      description: "Par course"
+    },
   ];
 
   return (
@@ -25,6 +53,7 @@ export default function KpiCards() {
             <div>
               <p className="text-xs text-gray-500 dark:text-dark-300">{card.title}</p>
               <p className="text-lg font-bold text-gray-800 dark:text-dark-100">{card.value}</p>
+              <p className="text-xs text-gray-400 dark:text-dark-400">{card.description}</p>
             </div>
           </div>
         </Card>

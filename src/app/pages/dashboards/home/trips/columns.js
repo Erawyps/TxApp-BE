@@ -1,7 +1,4 @@
-// Import Dependencies
 import { createColumnHelper } from "@tanstack/react-table";
-
-// Local Imports
 import {
   ChauffeurCell,
   VehiculeCell,
@@ -11,12 +8,10 @@ import {
   PrixCell,
   PaiementCell,
   StatutCourseCell,
-} from "./rows"; // Les nouveaux composants ci-dessous
+} from "./rows";
 import { SelectCell, SelectHeader } from "components/shared/table/SelectCheckbox";
 import { RowActions } from "./RowActions";
-import { tripStatusOptions } from "./data";
-
-// ----------------------------------------------------------------------
+import { tripStatusOptions, paymentMethods } from "./data";
 
 const columnHelper = createColumnHelper();
 
@@ -27,33 +22,33 @@ export const columns = [
     header: SelectHeader,
     cell: SelectCell,
   }),
-  columnHelper.accessor((row) => row.driver.name, {
+  columnHelper.accessor((row) => row.chauffeur.nom, {
     id: "chauffeur",
     label: "Chauffeur",
     header: "Chauffeur",
     cell: ChauffeurCell,
   }),
-  columnHelper.accessor((row) => row.vehicle?.plate ?? "N/A", {
+  columnHelper.accessor((row) => row.vehicule.plaque_immatriculation, {
     id: "vehicule",
     label: "Véhicule",
     header: "Véhicule",
     cell: VehiculeCell,
   }),
-  columnHelper.accessor((row) => `${row.pickup_location} → ${row.dropoff_location}`, {
+  columnHelper.accessor((row) => `${row.lieu_embarquement} → ${row.lieu_debarquement}`, {
     id: "trajet",
     label: "Trajet",
     header: "Départ → Arrivée",
     cell: LieuCell,
   }),
-  columnHelper.accessor((row) => row.start_time, {
-    id: "start_time",
+  columnHelper.accessor((row) => row.heure_embarquement, {
+    id: "heure_depart",
     label: "Heure de Départ",
     header: "Départ",
     cell: HeureCell,
     filter: "dateRange",
     filterFn: "inNumberRange",
   }),
-  columnHelper.accessor((row) => row.distance, {
+  columnHelper.accessor((row) => row.distance_km, {
     id: "distance",
     label: "Distance (km)",
     header: "Distance",
@@ -61,21 +56,24 @@ export const columns = [
     filter: "numberRange",
     filterFn: "inNumberRange",
   }),
-  columnHelper.accessor((row) => row.earnings, {
-    id: "earnings",
+  columnHelper.accessor((row) => row.prix_final, {
+    id: "prix",
     label: "Prix (€)",
     header: "Prix",
     cell: PrixCell,
     filter: "numberRange",
     filterFn: "inNumberRange",
   }),
-  columnHelper.accessor((row) => row.payment.method, {
+  columnHelper.accessor((row) => row.mode_paiement, {
     id: "paiement",
     label: "Paiement",
     header: "Paiement",
     cell: PaiementCell,
+    filter: "select",
+    filterFn: "arrIncludesSome",
+    options: paymentMethods,
   }),
-  columnHelper.accessor((row) => row.trip_status, {
+  columnHelper.accessor((row) => row.statut, {
     id: "statut",
     label: "Statut",
     header: "Statut de la Course",

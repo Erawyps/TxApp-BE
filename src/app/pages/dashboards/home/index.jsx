@@ -1,27 +1,37 @@
-// Import Dependencies
+import { Suspense, lazy } from 'react';
 import clsx from "clsx";
-
-// Local Imports
 import { Page } from "components/shared/Page";
-import KPISection from "./kpi";                // Les indicateurs clés de performance
-import TripsTable from "./trips";              // Le tableau principal des courses
+import ErrorBoundary from "components/shared/ErrorBoundary";
+import LoadingSpinner from "components/ui/LoadingSpinner";
+
+// Chargement différé des composants lourds
+const KPISection = lazy(() => import("./kpi"));
+const TripsTable = lazy(() => import("./trips"));
 
 export default function HomeDashboard() {
   return (
-  <Page title="Dashboard - Vue d'ensemble" className="h-full">
-    <div className="transition-content mt-5 px-(--margin-x) pb-8 lg:mt-6">
-      <div className="space-y-8">
-      {/* Section KPIs */}
-      <KPISection />
+    <Page title="Dashboard - Vue d'ensemble" className="h-full">
+      <div className="transition-content mt-5 px-(--margin-x) pb-8 lg:mt-6">
+        <div className="space-y-8">
+          {/* Section KPIs avec Error Boundary et Suspense */}
+          <ErrorBoundary fallback={<div>Erreur de chargement des KPI</div>}>
+            <Suspense fallback={<LoadingSpinner className="h-64" />}>
+              <KPISection />
+            </Suspense>
+          </ErrorBoundary>
 
-      {/* Section Table des Courses */}
-      <div className="col-span-12">
-        <div className={clsx("flex flex-col")}>
-          <TripsTable />
+          {/* Section Table des Courses */}
+          <div className="col-span-12">
+            <div className={clsx("flex flex-col")}>
+              <ErrorBoundary fallback={<div>Erreur de chargement du tableau</div>}>
+                <Suspense fallback={<LoadingSpinner className="h-96" />}>
+                  <TripsTable />
+                </Suspense>
+              </ErrorBoundary>
+            </div>
+          </div>
         </div>
       </div>
-    </div>
-  </div>
-  </Page>
+    </Page>
   );
 }
