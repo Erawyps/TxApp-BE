@@ -3,15 +3,349 @@ import { yupResolver } from "@hookform/resolvers/yup";
 import { Controller, useForm, useFieldArray } from "react-hook-form";
 import { DocumentPlusIcon, TrashIcon } from "@heroicons/react/24/outline";
 import { toast } from "sonner";
+import { pdf, Document, Page, View, Text, StyleSheet } from '@react-pdf/renderer';
+import { saveAs } from 'file-saver';
 
 // Local Imports
 import { schema } from "./schema";
-import { Page } from "components/shared/Page";
+import { Page as PageComponent } from "components/shared/Page";
 import { Button, Card, Input, Select } from "components/ui";
 import { DatePicker } from "components/shared/form/Datepicker";
 import { Listbox } from "components/shared/form/Listbox";
 import { Combobox } from "components/shared/form/Combobox";
 import { TimePicker } from "./components/TimePicker";
+
+// Styles pour le PDF
+const styles = StyleSheet.create({
+  page: {
+    padding: 20,
+    fontSize: 10,
+    fontFamily: 'Helvetica'
+  },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 10,
+    fontSize: 8
+  },
+  title: {
+    textAlign: 'center',
+    marginVertical: 10,
+    fontWeight: 'bold'
+  },
+  subtitle: {
+    textAlign: 'center',
+    marginBottom: 15
+  },
+  sectionTitle: {
+    fontWeight: 'bold',
+    marginBottom: 5
+  },
+  table: {
+    display: 'table',
+    width: 'auto',
+    borderStyle: 'solid',
+    borderWidth: 1,
+    borderRightWidth: 0,
+    borderBottomWidth: 0,
+    marginBottom: 15
+  },
+  tableRow: {
+    flexDirection: 'row'
+  },
+  tableColHeader: {
+    width: '100%',
+    borderStyle: 'solid',
+    borderWidth: 1,
+    borderLeftWidth: 0,
+    borderTopWidth: 0,
+    backgroundColor: '#f0f0f0'
+  },
+  tableCol: {
+    width: '100%',
+    borderStyle: 'solid',
+    borderWidth: 1,
+    borderLeftWidth: 0,
+    borderTopWidth: 0
+  },
+  tableCellHeader: {
+    padding: 5,
+    fontSize: 10,
+    fontWeight: 'bold'
+  },
+  tableCell: {
+    padding: 5,
+    fontSize: 10
+  },
+  signature: {
+    marginTop: 20,
+    borderTop: 1,
+    borderColor: '#000',
+    paddingTop: 10
+  },
+  calculation: {
+    marginTop: 5,
+    fontStyle: 'italic'
+  }
+});
+
+// Composant PDF
+const FeuilleRoutePDF = ({ data }) => (
+  <Document>
+    <Page size="A4" style={styles.page}>
+      {/* En-tête officiel */}
+      <View style={styles.header}>
+        <Text>MONITEUR BELGE — 19.08.2013 – Ed. 2 — BELGISCH STAATSBLAD</Text>
+      </View>
+      
+      <Text>Annexe 2</Text>
+      <Text>Annexe 1/1 de l&apos;arrêté du Gouvernement wallon du 3 juin 2009</Text>
+      
+      {/* Titre */}
+      <View style={styles.title}>
+        <Text>FEUILLE DE ROUTE</Text>
+      </View>
+      <View style={styles.subtitle}>
+        <Text>(dénité de l&apos;exploitant)</Text>
+      </View>
+      
+      {/* Section Véhicule */}
+      <View style={{ flexDirection: 'row', marginBottom: 10 }}>
+        <Text>Date : {data.date}</Text>
+        <Text style={{ marginLeft: 20 }}>Nom du chauffeur : {data.chauffeur}</Text>
+      </View>
+      
+      <View style={{ marginBottom: 10 }}>
+        <Text style={styles.sectionTitle}>Véhicule</Text>
+        <View style={{ flexDirection: 'row' }}>
+          <Text>n° plaque d&apos;immatriculation : {data.plaque}</Text>
+          <Text style={{ marginLeft: 20 }}>n° identification : {data.numero_identification}</Text>
+        </View>
+      </View>
+      
+      {/* Tableau Service */}
+      <View style={{ marginBottom: 15 }}>
+        <Text style={styles.sectionTitle}>Service</Text>
+        <View style={styles.table}>
+          <View style={styles.tableRow}>
+            <View style={[styles.tableColHeader, { width: '25%' }]}>
+              <Text style={styles.tableCellHeader}>Heures des prestations</Text>
+            </View>
+            <View style={[styles.tableColHeader, { width: '25%' }]}>
+              <Text style={styles.tableCellHeader}>Index km</Text>
+            </View>
+            <View style={[styles.tableColHeader, { width: '25%' }]}>
+              <Text style={styles.tableCellHeader}>Tableau de bord</Text>
+            </View>
+            <View style={[styles.tableColHeader, { width: '25%' }]}>
+              <Text style={styles.tableCellHeader}>Taximètre</Text>
+            </View>
+          </View>
+          
+          <View style={styles.tableRow}>
+            <View style={[styles.tableCol, { width: '25%' }]}>
+              <Text style={styles.tableCell}>Début {data.heure_debut}</Text>
+            </View>
+            <View style={[styles.tableCol, { width: '25%' }]}>
+              <Text style={styles.tableCell}>Fin {data.heure_fin}</Text>
+            </View>
+            <View style={[styles.tableCol, { width: '25%' }]}>
+              <Text style={styles.tableCell}>Début {data.km_debut}</Text>
+            </View>
+            <View style={[styles.tableCol, { width: '25%' }]}>
+              <Text style={styles.tableCell}>Total</Text>
+            </View>
+          </View>
+          
+          <View style={styles.tableRow}>
+            <View style={[styles.tableCol, { width: '25%' }]}>
+              <Text style={styles.tableCell}>Interruptions</Text>
+            </View>
+            <View style={[styles.tableCol, { width: '25%' }]}>
+              <Text style={styles.tableCell}></Text>
+            </View>
+            <View style={[styles.tableCol, { width: '25%' }]}>
+              <Text style={styles.tableCell}>Fin {data.km_fin}</Text>
+            </View>
+            <View style={[styles.tableCol, { width: '25%' }]}>
+              <Text style={styles.tableCell}></Text>
+            </View>
+          </View>
+          
+          <View style={styles.tableRow}>
+            <View style={[styles.tableCol, { width: '25%' }]}>
+              <Text style={styles.tableCell}>Total</Text>
+            </View>
+            <View style={[styles.tableCol, { width: '25%' }]}>
+              <Text style={styles.tableCell}></Text>
+            </View>
+            <View style={[styles.tableCol, { width: '25%' }]}>
+              <Text style={styles.tableCell}></Text>
+            </View>
+            <View style={[styles.tableCol, { width: '25%' }]}>
+              <Text style={styles.tableCell}></Text>
+            </View>
+          </View>
+        </View>
+      </View>
+      
+      {/* Tableau Prise en charge */}
+      <View style={{ marginBottom: 15 }}>
+        <Text style={styles.sectionTitle}>Prise en charge</Text>
+        <View style={styles.table}>
+          <View style={styles.tableRow}>
+            <View style={[styles.tableColHeader, { width: '20%' }]}>
+              <Text style={styles.tableCellHeader}>Prise en charge</Text>
+            </View>
+            <View style={[styles.tableColHeader, { width: '20%' }]}>
+              <Text style={styles.tableCellHeader}>Index Km (Km totaux)</Text>
+            </View>
+            <View style={[styles.tableColHeader, { width: '20%' }]}>
+              <Text style={styles.tableCellHeader}>Km en charge</Text>
+            </View>
+            <View style={[styles.tableColHeader, { width: '20%' }]}>
+              <Text style={styles.tableCellHeader}>Chutes (€)</Text>
+            </View>
+            <View style={[styles.tableColHeader, { width: '20%' }]}>
+              <Text style={styles.tableCellHeader}>Recettes</Text>
+            </View>
+          </View>
+          
+          <View style={styles.tableRow}>
+            <View style={[styles.tableCol, { width: '20%' }]}>
+              <Text style={styles.tableCell}>Début</Text>
+            </View>
+            <View style={[styles.tableCol, { width: '20%' }]}>
+              <Text style={styles.tableCell}>{data.prise_en_charge_debut}</Text>
+            </View>
+            <View style={[styles.tableCol, { width: '20%' }]}>
+              <Text style={styles.tableCell}>{data.km_debut}</Text>
+            </View>
+            <View style={[styles.tableCol, { width: '20%' }]}>
+              <Text style={styles.tableCell}>{data.chutes_debut}</Text>
+            </View>
+            <View style={[styles.tableCol, { width: '20%' }]}>
+              <Text style={styles.tableCell}></Text>
+            </View>
+          </View>
+          
+          <View style={styles.tableRow}>
+            <View style={[styles.tableCol, { width: '20%' }]}>
+              <Text style={styles.tableCell}>Fin</Text>
+            </View>
+            <View style={[styles.tableCol, { width: '20%' }]}>
+              <Text style={styles.tableCell}>{data.prise_en_charge_fin}</Text>
+            </View>
+            <View style={[styles.tableCol, { width: '20%' }]}>
+              <Text style={styles.tableCell}>{data.km_fin}</Text>
+            </View>
+            <View style={[styles.tableCol, { width: '20%' }]}>
+              <Text style={styles.tableCell}>{data.chutes_fin}</Text>
+            </View>
+            <View style={[styles.tableCol, { width: '20%' }]}>
+              <Text style={styles.tableCell}></Text>
+            </View>
+          </View>
+          
+          <View style={styles.tableRow}>
+            <View style={[styles.tableCol, { width: '20%' }]}>
+              <Text style={styles.tableCell}>Total</Text>
+            </View>
+            <View style={[styles.tableCol, { width: '20%' }]}>
+              <Text style={styles.tableCell}></Text>
+            </View>
+            <View style={[styles.tableCol, { width: '20%' }]}>
+              <Text style={styles.tableCell}></Text>
+            </View>
+            <View style={[styles.tableCol, { width: '20%' }]}>
+              <Text style={styles.tableCell}></Text>
+            </View>
+            <View style={[styles.tableCol, { width: '20%' }]}>
+              <Text style={styles.tableCell}>{data.total}€</Text>
+            </View>
+          </View>
+        </View>
+      </View>
+      
+      {/* Tableau Courses */}
+      <View style={{ marginBottom: 15 }}>
+        <Text style={styles.sectionTitle}>Courses</Text>
+        <View style={styles.table}>
+          <View style={styles.tableRow}>
+            <View style={[styles.tableColHeader, { width: '10%' }]}>
+              <Text style={styles.tableCellHeader}>N° ordre</Text>
+            </View>
+            <View style={[styles.tableColHeader, { width: '15%' }]}>
+              <Text style={styles.tableCellHeader}>Index départ</Text>
+            </View>
+            <View style={[styles.tableColHeader, { width: '25%' }]}>
+              <Text style={styles.tableCellHeader}>Embarquement</Text>
+            </View>
+            <View style={[styles.tableColHeader, { width: '25%' }]}>
+              <Text style={styles.tableCellHeader}>Débarquement</Text>
+            </View>
+            <View style={[styles.tableColHeader, { width: '15%' }]}>
+              <Text style={styles.tableCellHeader}>Prix taximètre</Text>
+            </View>
+            <View style={[styles.tableColHeader, { width: '10%' }]}>
+              <Text style={styles.tableCellHeader}>Sommes perçues*</Text>
+            </View>
+          </View>
+          
+          {data.courses.map((course, index) => (
+            <View key={index} style={styles.tableRow}>
+              <View style={[styles.tableCol, { width: '10%' }]}>
+                <Text style={styles.tableCell}>{index + 1}</Text>
+              </View>
+              <View style={[styles.tableCol, { width: '15%' }]}>
+                <Text style={styles.tableCell}>{course.index_depart}</Text>
+              </View>
+              <View style={[styles.tableCol, { width: '25%' }]}>
+                <Text style={styles.tableCell}>
+                  {course.lieu_embarquement} {course.heure_embarquement}
+                </Text>
+              </View>
+              <View style={[styles.tableCol, { width: '25%' }]}>
+                <Text style={styles.tableCell}>
+                  {course.lieu_debarquement} {course.heure_debarquement}
+                </Text>
+              </View>
+              <View style={[styles.tableCol, { width: '15%' }]}>
+                <Text style={styles.tableCell}>{course.prix_taximetre}€</Text>
+              </View>
+              <View style={[styles.tableCol, { width: '10%' }]}>
+                <Text style={styles.tableCell}>
+                  {course.prix_taximetre} {course.mode_paiement === 'facture' ? `(${course.client})` : '(cash)'}
+                </Text>
+              </View>
+            </View>
+          ))}
+        </View>
+      </View>
+      
+      {/* Signature et calculs */}
+      <View style={styles.signature}>
+        <Text>Signature du chauffeur : {data.total} - {data.factures}</Text>
+        <Text>- {data.factures} - {data.cash} = {data.salaire_cash}€</Text>
+      </View>
+      
+      <View style={{ marginTop: 10 }}>
+        <Text style={styles.sectionTitle}>COMPTE SALAIRE CASH</Text>
+        <Text style={styles.calculation}>- {data.total}–180 = {data.salaire_part1} {">"} 30%</Text>
+        <Text style={styles.calculation}>{data.salaire_part2}€ + 180 {'>'} 40% = {data.salaire_part3}€</Text>
+        <Text style={styles.calculation}>= {data.salaire_total}€</Text>
+        <Text style={styles.calculation}>= {data.salaire_cash}€</Text>
+      </View>
+      
+      {data.notes && (
+        <View style={{ marginTop: 10 }}>
+          <Text style={styles.sectionTitle}>Notes:</Text>
+          <Text>{data.notes}</Text>
+        </View>
+      )}
+    </Page>
+  </Document>
+);
 
 // ----------------------------------------------------------------------
 
@@ -56,7 +390,8 @@ const NewFeuilleRouteForm = () => {
     formState: { errors },
     control,
     reset,
-    watch
+    watch,
+    getValues
   } = useForm({
     resolver: yupResolver(schema),
     defaultValues: initialState,
@@ -76,6 +411,56 @@ const NewFeuilleRouteForm = () => {
     console.log(data);
     toast.success("Feuille de route enregistrée avec succès");
     reset();
+  };
+
+  const handlePreview = async () => {
+    const formData = getValues();
+    
+    // Calcul des totaux
+    const totalCourses = formData.courses.reduce((sum, course) => sum + parseFloat(course.prix_taximetre || 0), 0);
+    const totalFactures = formData.courses
+      .filter(c => c.mode_paiement === 'facture')
+      .reduce((sum, course) => sum + parseFloat(course.prix_taximetre || 0), 0);
+    const totalCash = formData.courses
+      .filter(c => c.mode_paiement === 'cash')
+      .reduce((sum, course) => sum + parseFloat(course.prix_taximetre || 0), 0);
+    
+    // Préparer les données pour le PDF
+    const pdfData = {
+      date: formData.date,
+      chauffeur: chauffeurs.find(c => c.id === formData.chauffeur_id)?.name || '',
+      plaque: vehicules.find(v => v.id === formData.vehicule_id)?.label.split(' - ')[0] || '',
+      numero_identification: vehicules.find(v => v.id === formData.vehicule_id)?.label.split(' - ')[1] || '',
+      heure_debut: formData.heure_debut,
+      heure_fin: formData.heure_fin,
+      km_debut: formData.km_debut,
+      km_fin: formData.km_fin,
+      prise_en_charge_debut: formData.prise_en_charge_debut,
+      prise_en_charge_fin: formData.prise_en_charge_fin,
+      chutes_debut: formData.chutes_debut,
+      chutes_fin: formData.chutes_fin,
+      courses: formData.courses.map(course => ({
+        ...course,
+        client: clients.find(cl => cl.id === course.client_id)?.name || ''
+      })),
+      total: totalCourses.toFixed(2),
+      factures: totalFactures.toFixed(2),
+      cash: totalCash.toFixed(2),
+      salaire_part1: (totalCourses - 180).toFixed(2),
+      salaire_part2: ((totalCourses - 180) * 0.3).toFixed(2),
+      salaire_part3: (180 * 0.4).toFixed(2),
+      salaire_total: ((totalCourses - 180) * 0.3 + 180 * 0.4).toFixed(2),
+      salaire_cash: (totalCash - ((totalCourses - 180) * 0.3 + 180 * 0.4)).toFixed(2),
+      notes: formData.notes
+    };
+    
+    try {
+      const blob = await pdf(<FeuilleRoutePDF data={pdfData} />).toBlob();
+      saveAs(blob, `feuille_route_${formData.date || new Date().toISOString().split('T')[0]}.pdf`);
+    } catch (error) {
+      console.error("Erreur lors de la génération du PDF:", error);
+      toast.error("Une erreur est survenue lors de la génération du PDF");
+    }
   };
 
   // Données simulées - à remplacer par des appels API
@@ -98,7 +483,7 @@ const NewFeuilleRouteForm = () => {
   ];
 
   return (
-    <Page title="Nouvelle Feuille de Route">
+    <PageComponent title="Nouvelle Feuille de Route">
       <div className="transition-content px-(--margin-x) pb-6">
         <div className="flex flex-col items-center justify-between space-y-4 py-5 sm:flex-row sm:space-y-0 lg:py-6">
           <div className="flex items-center gap-1">
@@ -110,6 +495,13 @@ const NewFeuilleRouteForm = () => {
           <div className="flex gap-2">
             <Button className="min-w-[7rem]" variant="outlined" onClick={() => reset()}>
               Annuler
+            </Button>
+            <Button
+              className="min-w-[7rem]"
+              variant="outlined"
+              onClick={handlePreview}
+            >
+              Prévisualiser PDF
             </Button>
             <Button
               className="min-w-[7rem]"
@@ -522,7 +914,7 @@ const NewFeuilleRouteForm = () => {
           </div>
         </form>
       </div>
-    </Page>
+    </PageComponent>
   );
 };
 
