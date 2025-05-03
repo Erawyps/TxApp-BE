@@ -18,7 +18,7 @@ export const dashboards = {
             id: 'dashboards.home',
             path: path(ROOT_DASHBOARDS, '/home'),
             type: NAV_TYPE_ITEM,
-            title: 'Home',
+            title: 'Gestion des Taxis - Vue d\'ensemble',
             transKey: 'nav.dashboards.home',
             Icon: HomeIcon,
         },
