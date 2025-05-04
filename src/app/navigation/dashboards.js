@@ -10,7 +10,7 @@ export const dashboards = {
     id: 'dashboards',
     type: NAV_TYPE_ROOT,
     path: '/dashboards',
-    title: 'Dashboards',
+    title: 'Dashboards - Vue d\'ensemble',
     transKey: 'nav.dashboards.dashboards',
     Icon: DashboardsIcon,
     childs: [

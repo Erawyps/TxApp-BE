@@ -10,7 +10,7 @@ export const forms = {
     id: 'forms',
     type: NAV_TYPE_ROOT,
     path: 'forms',
-    title: 'Forms',
+    title: 'Formulaires - Créer une nouvelle feuille de route',
     transKey: 'nav.forms.forms',
     Icon: FormsIcon,
     childs: [
