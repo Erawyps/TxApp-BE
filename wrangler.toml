@@ -1,22 +1,18 @@
 name = "cabma"
 compatibility_date = "2025-05-06"
 compatibility_flags = ["nodejs_compat"]
-main = "./worker.js"
+main = "./worker.js"  # Point d'entrée du Worker
 
 [site]
-bucket = "./dist"
+bucket = "./dist"  # Dossier contenant vos assets statiques
 
 [[hyperdrive]]
 binding = "HYPERDRIVE_DB"
 id = "498dfa4c41ab4072a2a556c53b9ae9d7"
 
+# Configuration KV pour les assets (optionnel mais recommandé)
 [vars]
 __STATIC_CONTENT_MANIFEST = "asset-manifest.json"
-
-# Si vous utilisez KV (recommandé)
-[[kv_namespaces]]
-binding = "__STATIC_CONTENT"
-id = "c4c883b75f554ed5b0bca01e8b2340cf"
 
 # wrangler.toml (wrangler v3.88.0^)
 [observability.logs]
