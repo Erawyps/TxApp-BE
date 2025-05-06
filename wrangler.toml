@@ -1,5 +1,10 @@
 name = "cabma"
 compatibility_date = "2025-05-06"
 main = "./worker.js"  # Fichier worker qui servira votre HTML
+
 [site]
 bucket = "./dist"
+
+[[hyperdrive]]
+name = "HYPERDRIVE"
+id = "498dfa4c41ab4072a2a556c53b9ae9d7"  # Trouvable dans l'URL Cloudflare
