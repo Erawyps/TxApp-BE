@@ -1,0 +1,7 @@
+name = "cabma"
+compatibility_date = "2025-05-06"
+main = "./dist/index.html"
+
+[site]
+bucket = "./dist"
+entry-point = "./dist"
