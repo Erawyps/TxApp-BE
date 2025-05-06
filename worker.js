@@ -1,9 +1,13 @@
-import { getAssetFromKV } from '@cloudflare/kv-asset-handler';
+import { getAssetFromKV, serveSinglePageApp } from '@cloudflare/kv-asset-handler';
 import postgres from 'postgres';
 
 async function handleAssetRequest(event) {
   try {
-    return await getAssetFromKV(event);
+    return await getAssetFromKV(event, {
+      ASSET_NAMESPACE: event.env.__STATIC_CONTENT,
+      ASSET_MANIFEST: {},  // Laissez vide si vous n'utilisez pas de manifest
+      mapRequestToAsset: serveSinglePageApp
+    });
   } catch (e) {
     return new Response(`App loading failed: ${e.message}`, { status: 500 });
   }
