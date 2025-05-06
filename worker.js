@@ -10,31 +10,38 @@ async function handleAssetRequest(event) {
 }
 
 async function handleApiRequest(request, env) {
+  // Configuration optimisée pour Cloudflare
   const sql = postgres(env.HYPERDRIVE.connectionString, {
     ssl: 'require',
-    max: 1
+    max: 1,
+    idle_timeout: 20,
+    connect_timeout: 30
   });
 
   try {
     const [result] = await sql`SELECT NOW() as db_time`;
-    return new Response(JSON.stringify(result), {
-      headers: { 'Content-Type': 'application/json' }
-    });
+    return Response.json(result);
   } catch (err) {
-    return new Response(`DB Error: ${err.message}`, { status: 500 });
+    return Response.json(
+      { error: err.message },
+      { status: 500 }
+    );
   } finally {
     await sql.end();
   }
 }
 
-addEventListener('fetch', (event, env) => {
-  const url = new URL(event.request.url);
-  
-  // Route API
-  if (url.pathname.startsWith('/api/')) {
-    return event.respondWith(handleApiRequest(event.request, env));
+export default {
+  async fetch(request, env, ctx) {
+    const url = new URL(request.url);
+    
+    if (url.pathname.startsWith('/api/')) {
+      return handleApiRequest(request, env);
+    }
+    
+    return handleAssetRequest({
+      request,
+      waitUntil: ctx.waitUntil.bind(ctx)
+    });
   }
-  
-  // Tous les autres chemins -> Assets statiques
-  return event.respondWith(handleAssetRequest(event));
-});
+}
