@@ -1,14 +1,14 @@
 name = "cabma"
 compatibility_date = "2025-05-06"
-main = "./worker.js"
-node_compat = true
+main = "./worker.js"  # Point d'entrée principal du Worker
+compatibility_flags = ["nodejs_compat"]
 
 [site]
-bucket = "./dist"
+bucket = "./dist"  # Dossier contenant vos assets statiques
 
 [[hyperdrive]]
-binding = "HYPERDRIVE"
-id = "498dfa4c41ab4072a2a556c53b9ae9d7"
+binding = "HYPERDRIVE"  # Nom du binding pour votre configuration HyperDrive
+id = "498dfa4c41ab4072a2a556c53b9ae9d7"  # ID de votre configuration HyperDrive
 
 # Activation des variables statiques (nécessaire pour __STATIC_CONTENT)
 [build.upload]
