@@ -4,7 +4,6 @@ import postgres from 'postgres';
 async function handleAssetRequest(event) {
   try {
     return await getAssetFromKV(event, {
-      ASSET_NAMESPACE: event.env.__STATIC_CONTENT,
       ASSET_MANIFEST: {},  // Laissez vide si vous n'utilisez pas de manifest
       mapRequestToAsset: serveSinglePageApp
     });
