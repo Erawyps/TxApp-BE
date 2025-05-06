@@ -1,6 +1,7 @@
 name = "cabma"
 compatibility_date = "2025-05-06"
 main = "./worker.js"
+compatibility_flags = ["nodejs_compat"]
 
 [site]
 bucket = "./dist"
