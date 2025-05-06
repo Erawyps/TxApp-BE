@@ -4,7 +4,7 @@ import { Client } from 'pg';
 /**
  * Gère les requêtes API vers PostgreSQL via Hyperdrive
  */
-async function handleApiRequest(request, env) {
+async function handleApiRequest(env) {
   try {
     const client = new Client({
       host: env.HYPERDRIVE_DB.connection.host,
@@ -36,43 +36,49 @@ async function handleApiRequest(request, env) {
   }
 }
 
-/**
- * Gère les assets statiques via KV
- */
 async function handleStaticAssets(request, env, ctx) {
-  try {
-    return await getAssetFromKV(
-      {
-        request,
-        waitUntil: ctx.waitUntil,
-      },
-      {
-        ASSET_NAMESPACE: env.ASSETS, // Binding KV existant
-        cacheControl: {
-          bypassCache: false, // Activez le cache en prod
-          edgeTTL: 86400, // Cache 24h
-          browserTTL: 86400
+    try {
+      return await getAssetFromKV(
+        {
+          request,
+          waitUntil: ctx.waitUntil,
         },
-        mapRequestToAsset: serveSinglePageApp // Essential pour les SPA
+        {
+          ASSET_NAMESPACE: env.ASSETS,
+          cacheControl: {
+            bypassCache: false,
+            edgeTTL: 86400,
+            browserTTL: 86400
+          },
+          mapRequestToAsset: serveSinglePageApp
+        }
+      );
+    } catch {
+      // CORRECTION ICI : Servir index.html pour toutes les routes inconnues
+      try {
+        const index = await env.ASSETS.get('index.html', { type: 'text' });
+        return new Response(index, {
+          headers: { 'Content-Type': 'text/html' }
+        });
+      } catch {
+        return new Response('Page Not Found', { 
+          status: 404,
+          headers: { 'Content-Type': 'text/plain' }
+        });
       }
-    );
-  } catch {
-    // Fallback pour les SPA (Renvoie index.html pour les routes inconnues)
-    return new Response("Not Found", { status: 404 });
-  }
-}
-
-export default {
-  async fetch(request, env, ctx) {
-    const url = new URL(request.url);
-    const pathname = url.pathname;
-
-    // Routes API
-    if (pathname.startsWith('/api/')) {
-      return handleApiRequest(request, env);
     }
-
-    // Assets statiques (utilise le KV existant)
-    return handleStaticAssets(request, env, ctx);
   }
-};
+  
+  export default {
+    async fetch(request, env, ctx) {
+      const url = new URL(request.url);
+      
+      // Routes API
+      if (url.pathname.startsWith('/api')) {
+        return handleApiRequest(request, env);
+      }
+  
+      // Assets statiques avec fallback SPA
+      return handleStaticAssets(request, env, ctx);
+    }
+  };
