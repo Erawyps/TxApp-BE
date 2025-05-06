@@ -1,16 +1,14 @@
 name = "cabma"
 compatibility_date = "2025-05-06"
-main = "./worker.js"
+main = "./worker.js"  # Point d'entrée principal du Worker
 compatibility_flags = ["nodejs_compat"]
 
 [site]
-bucket = "./dist"
-entry-point = "./dist"  # Important pour servir les assets
+bucket = "./dist"  # Dossier contenant vos assets statiques
 
 [[hyperdrive]]
-binding = "HYPERDRIVE"  # Le nom que vous utiliserez dans env.HYPERDRIVE
-id = "498dfa4c41ab4072a2a556c53b9ae9d7"
+binding = "HYPERDRIVE"  # Nom du binding pour votre configuration HyperDrive
+id = "498dfa4c41ab4072a2a556c53b9ae9d7"  # ID de votre configuration HyperDrive
 
-# wrangler.toml (wrangler v3.88.0^)
 [observability.logs]
-enabled = true
+enabled = true  # Activation des logs

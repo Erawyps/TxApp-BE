@@ -4,20 +4,22 @@ export default {
   async fetch(request, env) {
     const url = new URL(request.url);
     
-    // Serveur les fichiers statiques directement
-    if (url.pathname !== '/api/query') {
-      return new Response(env.ASSETS, {
-        headers: { 'Content-Type': 'text/html' }
-      });
+    // Servir les fichiers statiques depuis le bucket
+    if (url.pathname === '/' || url.pathname.match(/\.(js|css|png|jpg|json)$/)) {
+      return await env.ASSETS.fetch(request);
     }
 
-    // Gestion des requêtes SQL
-    const sql = postgres(env.HYPERDRIVE.connectionString);
-    try {
-      const result = await sql`SELECT NOW() as time`;
-      return Response.json(result);
-    } finally {
-      await sql.end();
+    // Gestion des requêtes API
+    if (url.pathname === '/api') {
+      const sql = postgres(env.HYPERDRIVE.connectionString, { ssl: 'require' });
+      try {
+        const result = await sql`SELECT NOW() as current_time`;
+        return Response.json(result);
+      } finally {
+        await sql.end();
+      }
     }
+
+    return new Response('Not Found', { status: 404 });
   }
 }
