@@ -1,5 +1,6 @@
 name = "cabma"
 compatibility_date = "2025-05-06"
+compatibility_flags = ["nodejs_compat"]  # <-- Cette ligne est cruciale
 main = "./worker.js"  # Fichier worker qui servira votre HTML
 
 [[hyperdrive]]
