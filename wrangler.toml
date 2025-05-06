@@ -13,3 +13,8 @@ enabled = true
 
 [site]
 bucket = "./dist"
+
+# Créez un namespace KV pour les assets
+[[kv_namespaces]]
+binding = "ASSETS"
+id = "7298a60ff0a941b9b15334841d0dde35"  # À remplacer ou laisser vide pour création auto
