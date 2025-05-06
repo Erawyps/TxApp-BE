@@ -1,14 +1,13 @@
-import { getAssetFromKV } from '@cloudflare/kv-asset-handler'
+import { getAssetFromKV, serveSinglePageApp } from '@cloudflare/kv-asset-handler'
 import postgres from 'postgres'
 
 export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url)
     
-    // Route API pour les requêtes PostgreSQL
+    // Route API
     if (url.pathname.startsWith('/api')) {
       try {
-        // Configuration de la connexion Hyperdrive
         const sql = postgres({
           host: env.HYPERDRIVE_DB.connection.host,
           port: env.HYPERDRIVE_DB.connection.port,
@@ -16,40 +15,43 @@ export default {
           username: env.HYPERDRIVE_DB.connection.user,
           password: env.HYPERDRIVE_DB.connection.password,
           ssl: 'require',
-          max: 1 // Important pour éviter les fuites de connexion dans Workers
+          max: 1
         })
 
-        // Exemple de requête
-        const result = await sql`SELECT NOW() AS current_time`
-        
-        // Fermer la connexion immédiatement
+        const result = await sql`SELECT NOW()`
         await sql.end()
         
         return new Response(JSON.stringify(result), {
-          headers: { 
-            'Content-Type': 'application/json',
-            'Access-Control-Allow-Origin': '*' // Pour les requêtes CORS
-          }
+          headers: { 'Content-Type': 'application/json' }
         })
       } catch (error) {
-        return new Response(JSON.stringify({ 
-          error: error.message,
-          details: error.stack 
-        }), { 
+        return new Response(JSON.stringify({ error: error.message }), { 
           status: 500,
           headers: { 'Content-Type': 'application/json' }
         })
       }
     }
 
-    // Servir les fichiers statiques (votre application React)
+    // Gestion des assets statiques avec fallback SPA
     try {
       return await getAssetFromKV({
         request,
         waitUntil: ctx.waitUntil
+      }, {
+        ASSET_NAMESPACE: env.__STATIC_CONTENT,
+        ASSET_MANIFEST: JSON.parse(env.__STATIC_CONTENT_MANIFEST),
+        mapRequestToAsset: serveSinglePageApp // Ceci est crucial pour les routes React
       })
     } catch {
-      return new Response(`Not Found`, { status: 404 })
+      // Fallback pour les routes client-side
+      const notFoundResponse = await getAssetFromKV({
+        request: new Request(new URL('/index.html', request.url)),
+        waitUntil: ctx.waitUntil
+      })
+      return new Response(notFoundResponse.body, { 
+        ...notFoundResponse,
+        status: 200 
+      })
     }
   }
 }

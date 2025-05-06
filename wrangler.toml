@@ -1,6 +1,6 @@
 name = "cabma"
 compatibility_date = "2025-05-06"
-compatibility_flags = ["nodejs_compat"]  # <-- Ceci est crucial
+compatibility_flags = ["nodejs_compat"]
 main = "./worker.js"
 
 [[hyperdrive]]
@@ -9,6 +9,12 @@ id = "498dfa4c41ab4072a2a556c53b9ae9d7"
 
 [site]
 bucket = "./dist"
+entry-point = "./dist"  # Important pour la gestion des assets
+
+# Configuration supplémentaire pour les assets
+[env.production]
+__STATIC_CONTENT = "c4c883b75f554ed5b0bca01e8b2340cf"
+__STATIC_CONTENT_MANIFEST = "asset-manifest.json"
 
 # wrangler.toml (wrangler v3.88.0^)
 [observability.logs]
