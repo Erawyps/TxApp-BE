@@ -1,4 +1,4 @@
-import { getAssetFromKV } from '@cloudflare/kv-asset-handler'
+import { getAssetFromKV, serveSinglePageApp } from '@cloudflare/kv-asset-handler'
 import { Client } from 'pg'
 
 async function queryDatabase(connection) {
@@ -19,27 +19,40 @@ async function queryDatabase(connection) {
 
 export default {
   async fetch(request, env, ctx) {
-    try {
-      const url = new URL(request.url)
-      
-      if (url.pathname.startsWith('/api')) {
+    const url = new URL(request.url)
+    
+    // Route API
+    if (url.pathname.startsWith('/api')) {
+      try {
         const data = await queryDatabase(env.HYPERDRIVE_DB.connection)
         return new Response(JSON.stringify(data), {
           headers: { 'Content-Type': 'application/json' }
         })
+      } catch (err) {
+        return new Response(JSON.stringify({ 
+          error: err.message,
+          stack: err.stack
+        }), { 
+          status: 500,
+          headers: { 'Content-Type': 'application/json' }
+        })
       }
-
+    }
+    
+    // Assets statiques avec fallback SPA
+    try {
       return await getAssetFromKV(
         {
           request,
           waitUntil: ctx.waitUntil
         },
         {
-          ASSET_NAMESPACE: env.ASSETS  // Utilisez le nouveau nom de binding
+          ASSET_NAMESPACE: env.ASSETS,
+          mapRequestToAsset: serveSinglePageApp
         }
       )
-    } catch (err) {
-      return new Response(err.message, { status: 500 })
+    } catch {
+      return new Response('Not Found', { status: 404 })
     }
   }
 }

@@ -1,20 +1,18 @@
 name = "cabma"
 compatibility_date = "2025-05-06"
-compatibility_flags = ["nodejs_compat"]  # <-- Cette ligne est cruciale
-main = "./worker.js"  # Fichier worker qui servira votre HTML
+compatibility_flags = ["nodejs_compat"]
+main = "./worker.js"
 
 [[hyperdrive]]
 binding = "HYPERDRIVE_DB"
-id = "498dfa4c41ab4072a2a556c53b9ae9d7"  # Remplacez par votre véritable ID Hyperdrive
-
-# wrangler.toml (wrangler v3.88.0^)
-[observability.logs]
-enabled = true
+id = "498dfa4c41ab4072a2a556c53b9ae9d7"
 
 [site]
 bucket = "./dist"
 
-# Créez un namespace KV pour les assets
 [[kv_namespaces]]
 binding = "ASSETS"
-id = "7298a60ff0a941b9b15334841d0dde35"  # À remplacer ou laisser vide pour création auto
+id = "7298a60ff0a941b9b15334841d0dde35"
+
+[observability.logs]
+enabled = true
