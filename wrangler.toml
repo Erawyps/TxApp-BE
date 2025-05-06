@@ -1,14 +1,19 @@
 name = "cabma"
 compatibility_date = "2025-05-06"
 compatibility_flags = ["nodejs_compat"]
-main = "./worker.js"  # Point d'entrée du Worker
+main = "./worker.js"
 
 [site]
-bucket = "./dist"  # Dossier contenant vos assets statiques
+bucket = "./dist"
 
 [[hyperdrive]]
 binding = "HYPERDRIVE_DB"
 id = "498dfa4c41ab4072a2a556c53b9ae9d7"
+
+# Correction cruciale - doit matcher le nom dans le dashboard
+[[kv_namespaces]]
+binding = "ASSETS"  # Nom utilisé dans le code
+id = "c4c883b75f554ed5b0bca01e8b2340cf"  # L'ID visible dans votre capture (après "_cabma-workers_sites_assets")
 
 # Configuration KV pour les assets (optionnel mais recommandé)
 [vars]
