@@ -5,6 +5,7 @@ compatibility_flags = ["nodejs_compat"]
 
 [site]
 bucket = "./dist"
+entry-point = "./dist"  # Important pour servir les assets
 
 [[hyperdrive]]
 binding = "HYPERDRIVE"  # Le nom que vous utiliserez dans env.HYPERDRIVE
