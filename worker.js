@@ -2,55 +2,39 @@ import postgres from 'postgres';
 
 export default {
   async fetch(request, env) {
-    // 1. Extraire l'ID depuis l'URL
-    const url = new URL(request.url);
-    const id = url.searchParams.get('id'); // Pour une URL comme ?id=123
-    
-    if (!id) {
-      return Response.json(
-        { error: "ID parameter is required" },
-        { status: 400 }
-      );
-    }
-
-    // 2. Configurer la connexion PostgreSQL
+    // 1. Configuration de la connexion
     const sql = postgres(env.HYPERDRIVE.connectionString, {
       ssl: 'require',
-      connect_timeout: 30 // Timeout en secondes
+      connect_timeout: 10,
+      max: 1  // Limite à 1 connexion pour éviter les fuites
     });
 
     try {
-      // 3. Exécuter la requête
-      const [user] = await sql`
-        SELECT * FROM users WHERE id = ${id}
+      // 2. Exécution d'une requête fixe (sans paramètre)
+      const users = await sql`
+        SELECT * FROM users LIMIT 10
       `;
       
-      if (!user) {
-        return Response.json(
-          { error: "User not found" },
-          { status: 404 }
-        );
-      }
-      
-      return Response.json(user);
+      // 3. Formatage de la réponse
+      return Response.json({
+        success: true,
+        data: users,
+        count: users.length
+      });
       
     } catch (err) {
-      // 4. Gestion d'erreur améliorée
-      console.error("Database error:", err);
+      // 4. Gestion d'erreur basique
       return Response.json(
         { 
-          error: "Database operation failed",
-          details: env.NODE_ENV === 'development' ? err.message : null
+          success: false,
+          error: "Database query failed",
+          message: err.message 
         },
         { status: 500 }
       );
     } finally {
-      // 5. Fermer proprement la connexion
-      try {
-        await sql.end({ timeout: 5 });
-      } catch (e) {
-        console.error("Error closing connection:", e);
-      }
+      // 5. Nettoyage
+      await sql.end().catch(() => {});
     }
   }
 }
