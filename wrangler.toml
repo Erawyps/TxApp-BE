@@ -13,6 +13,7 @@ enabled = true
 
 [site]
 bucket = "./dist"
+entry-point = "./dist"
 
 # Créez un namespace KV pour les assets
 [[kv_namespaces]]
