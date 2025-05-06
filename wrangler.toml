@@ -4,4 +4,3 @@ main = "./dist/index.html"
 
 [site]
 bucket = "./dist"
-entry-point = "./dist"
