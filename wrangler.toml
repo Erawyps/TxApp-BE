@@ -1,6 +1,5 @@
 name = "cabma"
 compatibility_date = "2025-05-06"
-main = "./dist/index.html"
-
+main = "./worker.js"  # Fichier worker qui servira votre HTML
 [site]
 bucket = "./dist"
