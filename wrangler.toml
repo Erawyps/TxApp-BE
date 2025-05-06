@@ -7,5 +7,9 @@ main = "./worker.js"  # Fichier worker qui servira votre HTML
 binding = "HYPERDRIVE_DB"
 id = "498dfa4c41ab4072a2a556c53b9ae9d7"  # Remplacez par votre véritable ID Hyperdrive
 
+# wrangler.toml (wrangler v3.88.0^)
+[observability.logs]
+enabled = true
+
 [site]
 bucket = "./dist"
