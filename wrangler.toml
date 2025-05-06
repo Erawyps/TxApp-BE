@@ -1,6 +1,7 @@
 name = "cabma"
 compatibility_date = "2025-05-06"
 main = "./worker.js"  # Fichier worker qui servira votre HTML
+node_compat = true  # <-- Cette ligne est cruciale
 
 [[hyperdrive]]
 binding = "HYPERDRIVE_DB"

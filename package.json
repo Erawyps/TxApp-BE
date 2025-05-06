@@ -45,6 +45,7 @@
     "i18next-browser-languagedetector": "^8.0.4",
     "jwt-decode": "^4.0.0",
     "lint-staged": "^15.5.0",
+    "pg": "^8.15.6",
     "quill": "^2.0.3",
     "quill-magic-url": "^4.2.0",
     "react": "^19.0.0",
