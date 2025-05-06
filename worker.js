@@ -1,58 +1,55 @@
-import { getAssetFromKV, serveSinglePageApp } from '@cloudflare/kv-asset-handler'
-import { Client } from 'pg'
-
-async function queryDatabase(connection) {
-  const client = new Client({
-    host: connection.host,
-    port: connection.port,
-    database: connection.database,
-    user: connection.user,
-    password: connection.password,
-    ssl: true
-  })
-  
-  await client.connect()
-  const res = await client.query('SELECT NOW()')
-  await client.end()
-  return res.rows
-}
+import { getAssetFromKV } from '@cloudflare/kv-asset-handler'
+import postgres from 'postgres'
 
 export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url)
     
-    // Route API
+    // Route API pour les requêtes PostgreSQL
     if (url.pathname.startsWith('/api')) {
       try {
-        const data = await queryDatabase(env.HYPERDRIVE_DB.connection)
-        return new Response(JSON.stringify(data), {
-          headers: { 'Content-Type': 'application/json' }
+        // Configuration de la connexion Hyperdrive
+        const sql = postgres({
+          host: env.HYPERDRIVE_DB.connection.host,
+          port: env.HYPERDRIVE_DB.connection.port,
+          database: env.HYPERDRIVE_DB.connection.database,
+          username: env.HYPERDRIVE_DB.connection.user,
+          password: env.HYPERDRIVE_DB.connection.password,
+          ssl: 'require',
+          max: 1 // Important pour éviter les fuites de connexion dans Workers
         })
-      } catch (err) {
+
+        // Exemple de requête
+        const result = await sql`SELECT NOW() AS current_time`
+        
+        // Fermer la connexion immédiatement
+        await sql.end()
+        
+        return new Response(JSON.stringify(result), {
+          headers: { 
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*' // Pour les requêtes CORS
+          }
+        })
+      } catch (error) {
         return new Response(JSON.stringify({ 
-          error: err.message,
-          stack: err.stack
+          error: error.message,
+          details: error.stack 
         }), { 
           status: 500,
           headers: { 'Content-Type': 'application/json' }
         })
       }
     }
-    
-    // Assets statiques avec fallback SPA
+
+    // Servir les fichiers statiques (votre application React)
     try {
-      return await getAssetFromKV(
-        {
-          request,
-          waitUntil: ctx.waitUntil
-        },
-        {
-          ASSET_NAMESPACE: env.ASSETS,
-          mapRequestToAsset: serveSinglePageApp
-        }
-      )
+      return await getAssetFromKV({
+        request,
+        waitUntil: ctx.waitUntil
+      })
     } catch {
-      return new Response('Not Found', { status: 404 })
+      return new Response(`Not Found`, { status: 404 })
     }
   }
 }

@@ -1,6 +1,6 @@
 name = "cabma"
 compatibility_date = "2025-05-06"
-compatibility_flags = ["nodejs_compat"]
+compatibility_flags = ["nodejs_compat"]  # <-- Ceci est crucial
 main = "./worker.js"
 
 [[hyperdrive]]
@@ -9,10 +9,3 @@ id = "498dfa4c41ab4072a2a556c53b9ae9d7"
 
 [site]
 bucket = "./dist"
-
-[[kv_namespaces]]
-binding = "ASSETS"
-id = "7298a60ff0a941b9b15334841d0dde35"
-
-[observability.logs]
-enabled = true
