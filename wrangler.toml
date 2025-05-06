@@ -9,3 +9,7 @@ id = "498dfa4c41ab4072a2a556c53b9ae9d7"
 
 [site]
 bucket = "./dist"
+
+# wrangler.toml (wrangler v3.88.0^)
+[observability.logs]
+enabled = true
