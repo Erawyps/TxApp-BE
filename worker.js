@@ -1,4 +1,4 @@
-import { Client } from '@cloudflare/pg';
+import { Client } from 'pg';
 
 export default {
   async fetch(request, env) {
