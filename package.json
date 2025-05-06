@@ -1,7 +1,7 @@
 {
   "name": "tailux-react-js",
   "private": true,
-  "version": "1.0.0",
+  "version": "1.2.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -16,7 +16,6 @@
     "@babel/eslint-parser": "^7.27.0",
     "@babel/plugin-syntax-jsx": "^7.25.9",
     "@cloudflare/kv-asset-handler": "^0.4.0",
-    "@cloudflare/workers-types": "^4.20250506.0",
     "@formkit/auto-animate": "^0.8.2",
     "@headlessui/react": "^2.2.0",
     "@heroicons/react": "^2.2.0",
@@ -45,7 +44,6 @@
     "i18next-browser-languagedetector": "^8.0.4",
     "jwt-decode": "^4.0.0",
     "lint-staged": "^15.5.0",
-    "pg": "^8.11.3",
     "quill": "^2.0.3",
     "quill-magic-url": "^4.2.0",
     "react": "^19.0.0",
@@ -70,16 +68,12 @@
     "recharts": "^2.15.3",
     "simplebar-react": "^3.3.0",
     "sonner": "^2.0.1",
-    "stream-browserify": "^3.0.0",
     "swiper": "^11.2.6",
     "tiny-invariant": "^1.3.3",
     "yup": "^1.6.1"
   },
   "devDependencies": {
-    "@babel/core": "^7.27.1",
-    "@cloudflare/vite-plugin": "^1.1.0",
-    "@rollup/rollup-darwin-x64": "^4.40.2",
-    "@tailwindcss/postcss": "^4.0.16",
+    "@tailwindcss/postcss": "^4.0.15",
     "@types/react": "^19.0.12",
     "@types/react-dom": "^19.0.4",
     "@vitejs/plugin-react": "^4.3.4",
@@ -91,20 +85,16 @@
     "prettier": "^3.5.3",
     "prettier-plugin-tailwindcss": "^0.6.11",
     "prop-types": "^15.8.1",
-    "tailwindcss": "^4.0.16",
+    "tailwindcss": "^4.0.15",
     "vite": "^6.3.3",
     "vite-jsconfig-paths": "^2.0.1",
     "vite-plugin-eslint": "^1.8.1",
     "vite-plugin-svgr": "^4.3.0"
-  },
-  "resolutions": {
-    "stream": "npm:stream-browserify"
   },
   "lint-staged": {
     "**/*.{js,jsx}": [
       "npx prettier --write",
       "npx eslint --fix"
     ]
-  },
-  "packageManager": "yarn@4.9.1"
+  }
 }
