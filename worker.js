@@ -4,12 +4,16 @@ import postgres from 'postgres';
 async function handleAssetRequest(event) {
   try {
     return await getAssetFromKV(event, {
-      ASSET_NAMESPACE: event.env.__STATIC_CONTENT,
-      ASSET_MANIFEST: {},  // Laissez vide si vous n'utilisez pas de manifest
+      ASSET_NAMESPACE: event.env.MY_STATIC_CONTENT,  // Changé ici
+      ASSET_MANIFEST: {},
       mapRequestToAsset: serveSinglePageApp
     });
   } catch (e) {
-    return new Response(`App loading failed: ${e.message}`, { status: 500 });
+    console.error(e);
+    return new Response(`App loading failed: ${e.message}`, { 
+      status: 500,
+      headers: { 'Content-Type': 'text/plain' }
+    });
   }
 }
 

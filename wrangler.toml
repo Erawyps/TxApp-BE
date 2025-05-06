@@ -6,9 +6,10 @@ compatibility_flags = ["nodejs_compat"]
 [site]
 bucket = "./dist"
 
+# Utilisez un nom de binding différent si nécessaire
 [[kv_namespaces]]
-binding = "__STATIC_CONTENT"  # Binding spécial requis par kv-asset-handler
-id = "c4c883b75f554ed5b0bca01e8b2340cf"  # Remplacez par l'ID réel
+binding = "MY_STATIC_CONTENT"  # Changé depuis __STATIC_CONTENT
+id = "c4c883b75f554ed5b0bca01e8b2340cf"
 
 [[hyperdrive]]
 binding = "HYPERDRIVE"
