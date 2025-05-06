@@ -10,5 +10,9 @@ bucket = "./dist"  # Dossier contenant vos assets statiques
 binding = "HYPERDRIVE"  # Nom du binding pour votre configuration HyperDrive
 id = "498dfa4c41ab4072a2a556c53b9ae9d7"  # ID de votre configuration HyperDrive
 
+# Activation des variables statiques (nécessaire pour __STATIC_CONTENT)
+[build.upload]
+format = "service-worker"
+
 [observability.logs]
 enabled = true  # Activation des logs
