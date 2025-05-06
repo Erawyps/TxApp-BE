@@ -15,6 +15,7 @@
     "@atlaskit/pragmatic-drag-and-drop-hitbox": "^1.0.3",
     "@babel/eslint-parser": "^7.27.0",
     "@babel/plugin-syntax-jsx": "^7.25.9",
+    "@cloudflare/workers-types": "^4.20250506.0",
     "@formkit/auto-animate": "^0.8.2",
     "@headlessui/react": "^2.2.0",
     "@heroicons/react": "^2.2.0",
@@ -72,6 +73,7 @@
     "yup": "^1.6.1"
   },
   "devDependencies": {
+    "@cloudflare/vite-plugin": "^1.1.0",
     "@tailwindcss/postcss": "^4.0.16",
     "@types/react": "^19.0.12",
     "@types/react-dom": "^19.0.4",
