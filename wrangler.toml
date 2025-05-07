@@ -1,11 +1,5 @@
 name = "cabma"
-main = "./worker.js"
 compatibility_date = "2025-05-06"
-
-kv_namespaces = [
-  { binding = "STATIC_CONTENT", id = "25584b40f8ac4bb9936df938c3bba986" }
-]
-
-[[hyperdrive]]
-binding = "HYPERDRIVE"
-id = "498dfa4c41ab4072a2a556c53b9ae9d7"
+main = "./worker.js"  # Fichier worker qui servira votre HTML
+[site]
+bucket = "./dist"
