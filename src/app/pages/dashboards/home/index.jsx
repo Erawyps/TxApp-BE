@@ -8,9 +8,9 @@ import LoadingSpinner from "components/ui/LoadingSpinner";
 const KPISection = lazy(() => import("./kpi"));
 const TripsTable = lazy(() => import("./trips"));
 
-export default function HomeDashboard() {
+export default function Dashboard() {
   return (
-    <Page title="Dashboard - Vue d'ensemble" className="h-full">
+    <Page title="Dashboard - Vue d'ensemble">
       <div className="transition-content mt-5 px-(--margin-x) pb-8 lg:mt-6">
         <div className="space-y-8">
           {/* Section KPIs avec Error Boundary et Suspense */}

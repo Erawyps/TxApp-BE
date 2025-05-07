@@ -43,6 +43,12 @@ const protectedRoutes = {
               element: <Navigate to="/forms" />,
             },
             {
+              path: "ekyc-form",
+              lazy: async () => ({
+                Component: (await import("app/pages/forms/KYCForm")).default,
+              }),
+            },
+            {
               path: "new-post-form",
               lazy: async () => ({
                 Component: (await import("app/pages/forms/new-post-form")).default,

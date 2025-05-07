@@ -1,4 +1,5 @@
 import FormsIcon from 'assets/dualicons/forms.svg?react'
+import IdIcon from 'assets/nav-icons/id.svg?react'
 import DocumentAddIcon from 'assets/nav-icons/document-add.svg?react'
 import { NAV_TYPE_ROOT, NAV_TYPE_ITEM } from 'constants/app.constant'
 
@@ -14,6 +15,14 @@ export const forms = {
     transKey: 'nav.forms.forms',
     Icon: FormsIcon,
     childs: [
+        {
+            id: 'forms.ekyc-form',
+            type: NAV_TYPE_ITEM,
+            path: path(ROOT_FORMS, '/ekyc-form'),
+            title: 'eFormulaire - Feuille de route',
+            transKey: 'nav.forms.ekyc-form',
+            Icon: IdIcon
+        },
         {
             id: 'forms.new-post-form',
             type: NAV_TYPE_ITEM,
