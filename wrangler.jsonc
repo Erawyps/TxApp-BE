@@ -2,6 +2,7 @@
     "name": "cabmapp",
     "compatibility_date": "2025-05-07",
     "compatibility_flags": ["nodejs_compat"],
+    "main": "./worker.js",  // <-- Ajout crucial
     "observability": {
       "enabled": true
     },
@@ -17,4 +18,3 @@
       }
     ]
   }
-  
