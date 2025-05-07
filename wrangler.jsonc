@@ -1,0 +1,13 @@
+{
+    "name": "cabma-app",
+    "compatibility_date": "2025-05-07",
+    "compatibility_flags": ["nodejs_compat"],
+    "observability": {
+    "enabled": true
+    },
+    "assets": {
+      "binding": "ASSETS",
+      "not_found_handling": "single-page-application"
+    }
+  }
+  
