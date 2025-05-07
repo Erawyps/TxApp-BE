@@ -15,6 +15,7 @@
       {
         "binding": "HYPERDRIVE",
         "id": "498dfa4c41ab4072a2a556c53b9ae9d7"
+        //,"localConnectionString": "postgresql://myuser:mypassword@localhost:5432/mydatabase"
       }
     ]
   }
