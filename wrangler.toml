@@ -1,19 +1,11 @@
 name = "cabma"
-compatibility_date = "2025-05-06"
 main = "./worker.js"
-compatibility_flags = ["nodejs_compat"]
+compatibility_date = "2025-05-06"
 
-[site]
-bucket = "./dist"
-
-# Utilisez un nom de binding différent si nécessaire
-[[kv_namespaces]]
-binding = "MY_STATIC_CONTENT"  # Changé depuis __STATIC_CONTENT
-id = "c4c883b75f554ed5b0bca01e8b2340cf"
+kv_namespaces = [
+  { binding = "STATIC_CONTENT", id = "25584b40f8ac4bb9936df938c3bba986" }
+]
 
 [[hyperdrive]]
 binding = "HYPERDRIVE"
 id = "498dfa4c41ab4072a2a556c53b9ae9d7"
-
-[build.upload]
-format = "modules"
