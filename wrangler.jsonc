@@ -3,10 +3,10 @@
     "compatibility_date": "2025-05-07",
     "compatibility_flags": ["nodejs_compat"],
     "observability": {
-    "enabled": true
+      "enabled": true
     },
     "assets": {
-      "binding": "ASSETS",
+      "directory": "./dist",
       "not_found_handling": "single-page-application"
     }
   }
