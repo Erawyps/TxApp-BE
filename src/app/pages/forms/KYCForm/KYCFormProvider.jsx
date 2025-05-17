@@ -1,62 +1,64 @@
-import PropTypes from "prop-types";
-import { useReducer } from "react";
-import { KYCFormContextProvider } from "./KYCFormContext";
+import PropTypes from 'prop-types';
+import { useReducer } from 'react';
+import { KYCFormContextProvider } from './KYCFormContext';
 
 const initialState = {
-  formData: {
-    vehicleInfo: {
-      vehicle: {
-        plaqueImmatriculation: "",
-        numeroIdentification: "",
-      },
-      service: {
-        date: new Date(),
-        heureDebut: "",
-        heureFin: "",
-        interruptions: "",
-      },
-      taximetre: {
-        priseEnChargeDebut: "",
-        priseEnChargeFin: "",
-        indexKmDebut: "",
-        indexKmFin: "",
-      },
-      charges: [],
-      notes: "",
-    },
-    coursesList: {
-      courses: [],
-    },
-    finalValidation: {
-      signature: "",
-      dateSignature: "",
-      salaireCash: 0,
-    },
+  etape1: {
+    chauffeurId: '',
+    periodeService: { date: new Date(), heureDebut: '', heureFin: '' },
+    remunerationType: '40percent',
+    notes: ''
+  },
+  etape2: {
+    plaqueImmatriculation: '',
+    numeroIdentification: '',
+    taximetre: {
+      kmChargeDebut: '',
+      kmChargeFin: '',
+      chutesDebut: '',
+      chutesFin: ''
+    }
+  },
+  etape3: {
+    courses: [],
+    notes: ''
+  },
+  etape4: {
+    charges: []
   },
   stepStatus: {
-    vehicleInfo: { isDone: false },
-    coursesList: { isDone: false },
-    finalValidation: { isDone: false },
-  },
+    etape1: { isDone: false },
+    etape2: { isDone: false },
+    etape3: { isDone: false },
+    etape4: { isDone: false }
+  }
 };
 
 const reducer = (state, action) => {
   switch (action.type) {
-    case "SET_FORM_DATA":
+    case 'SET_ETAPE1_DATA':
       return {
         ...state,
-        formData: {
-          ...state.formData,
-          ...action.payload,
-        },
+        etape1: { ...state.etape1, ...action.payload },
+        stepStatus: { ...state.stepStatus, etape1: { isDone: true } }
       };
-    case "SET_STEP_STATUS":
+    case 'SET_ETAPE2_DATA':
       return {
         ...state,
-        stepStatus: {
-          ...state.stepStatus,
-          ...action.payload,
-        },
+        etape2: { ...state.etape2, ...action.payload },
+        stepStatus: { ...state.stepStatus, etape2: { isDone: true } }
+      };
+    case 'SET_ETAPE3_DATA':
+      return {
+        ...state,
+        etape3: { ...state.etape3, ...action.payload },
+        stepStatus: { ...state.stepStatus, etape3: { isDone: true } }
+      };
+    case 'SET_ETAPE4_DATA':
+      return {
+        ...state,
+        etape4: { ...state.etape4, ...action.payload },
+        stepStatus: { ...state.stepStatus, etape4: { isDone: true } }
       };
     default:
       return state;
@@ -66,11 +68,14 @@ const reducer = (state, action) => {
 export function KYCFormProvider({ children }) {
   const [state, dispatch] = useReducer(reducer, initialState);
   const value = { state, dispatch };
+  
   return (
-    <KYCFormContextProvider value={value}>{children}</KYCFormContextProvider>
+    <KYCFormContextProvider value={value}>
+      {children}
+    </KYCFormContextProvider>
   );
 }
 
 KYCFormProvider.propTypes = {
-  children: PropTypes.node,
+  children: PropTypes.node
 };

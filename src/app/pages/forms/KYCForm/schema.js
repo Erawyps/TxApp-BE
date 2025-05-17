@@ -1,57 +1,39 @@
 import * as Yup from 'yup';
 
-export const vehicleInfoSchema = Yup.object().shape({
-  vehicle: Yup.object().shape({
-    plaqueImmatriculation: Yup.string()
-      .required('La plaque est requise')
-      .matches(/^[A-Z]{2}-[0-9]{3}-[A-Z]{2}$/, 'Format invalide (ex: AB-123-CD)'),
-    numeroIdentification: Yup.string()
-      .required('Le numéro est requis')
-      .min(3, 'Minimum 3 caractères')
-  }),
-  service: Yup.object().shape({
-    date: Yup.date()
-      .required('La date est requise')
-      .max(new Date(), 'La date ne peut pas être future'),
+export const chauffeurSchema = Yup.object().shape({
+  chauffeurId: Yup.string().required('Chauffeur requis'),
+  periodeService: Yup.object().shape({
+    date: Yup.date().required('Date requise'),
     heureDebut: Yup.string()
-      .required('L\'heure de début est requise')
+      .required('Heure début requise')
       .matches(/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/, 'Format HH:MM'),
     heureFin: Yup.string()
-      .nullable()
-      .matches(/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/, 'Format HH:MM'),
-    interruptions: Yup.string()
-      .nullable()
-      .matches(/^[0-9]+$/, 'Nombre entier seulement')
+      .matches(/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/, 'Format HH:MM')
   }),
-  taximetre: Yup.object().shape({
-    priseEnChargeDebut: Yup.number()
-      .required('La prise en charge est requise')
-      .positive('Doit être positif'),
-    priseEnChargeFin: Yup.number()
-      .nullable()
-      .positive('Doit être positif'),
-    indexKmDebut: Yup.number()
-      .required('L\'index début est requis')
-      .integer('Nombre entier seulement')
-      .positive('Doit être positif'),
-    indexKmFin: Yup.number()
-      .nullable()
-      .integer('Nombre entier seulement')
-      .positive('Doit être positif')
-      .moreThan(Yup.ref('indexKmDebut'), 'Doit être > index début')
-  }),
-  charges: Yup.array()
-    .of(
-      Yup.object().shape({
-        type: Yup.string().required('Type requis'),
-        description: Yup.string().required('Description requise'),
-        montant: Yup.number()
-          .required('Montant requis')
-          .positive('Doit être positif')
-      })
-    )
-    .nullable(),
+  remunerationType: Yup.string()
+    .required('Type de rémunération requis')
+    .oneOf(['fixe', '40percent', '30percent', 'mixte', 'heure10', 'heure12']),
   notes: Yup.string().nullable()
+});
+
+export const vehicleSchema = Yup.object().shape({
+  plaqueImmatriculation: Yup.string()
+    .required('Plaque requise')
+    .matches(/^[A-Z]{2}-[0-9]{3}-[A-Z]{2}$/, 'Format invalide'),
+  numeroIdentification: Yup.string().required('Numéro requis'),
+  taximetre: Yup.object().shape({
+    kmChargeDebut: Yup.number()
+      .required('KM charge début requis')
+      .positive('Doit être positif'),
+    kmChargeFin: Yup.number()
+      .positive('Doit être positif')
+      .moreThan(Yup.ref('kmChargeDebut'), 'Doit être supérieur au début'),
+    chutesDebut: Yup.number()
+      .required('Chutes début requises')
+      .positive('Doit être positif'),
+    chutesFin: Yup.number()
+      .positive('Doit être positif')
+  })
 });
 
 export const coursesSchema = Yup.object().shape({
@@ -80,12 +62,30 @@ export const coursesSchema = Yup.object().shape({
       sommePercue: Yup.number()
         .required('Somme requise')
         .positive(),
-        modePaiement: Yup.string()
+      modePaiement: Yup.string()
         .required('Mode paiement requis')
         .oneOf(
           ["cash", "bancontact", "facture", "virement", "avance", "sncb", "william_lenox"],
           "Mode de paiement invalide"
         ),
+      remunerationExceptionnelle: Yup.string()
+        .oneOf(['fixe', '40percent', '30percent', 'mixte', 'heure10', 'heure12'])
+    })
+  ),
+  notes: Yup.string().nullable()
+});
+
+export const chargesSchema = Yup.object().shape({
+  charges: Yup.array().of(
+    Yup.object().shape({
+      type: Yup.string().required('Type requis'),
+      description: Yup.string().required('Description requise'),
+      montant: Yup.number()
+        .required('Montant requis')
+        .positive('Doit être positif'),
+      modePaiement: Yup.string()
+        .required('Mode paiement requis')
+        .oneOf(["cash", "bancontact", "virement"])
     })
   )
 });
@@ -96,8 +96,5 @@ export const validationSchema = Yup.object().shape({
     .min(3, 'Minimum 3 caractères'),
   dateSignature: Yup.date()
     .required('Date requise')
-    .max(new Date(), 'Date future invalide'),
-  salaireCash: Yup.number()
-    .required('Montant requis')
-    .min(0, 'Montant négatif invalide')
+    .max(new Date(), 'Date future invalide')
 });
