@@ -38,6 +38,8 @@ export function TaxiRouteSheet() {
 
   const ActiveForm = STEP_COMPONENTS[currentStep];
 
+  console.log('Rendering TaxiRouteSheet', { currentStep, ActiveForm }); // Pour le débogage
+
   return (
     <Page title="Feuille de Route Taxi">
       <div className="transition-content grid w-full grid-rows-[auto_1fr] px-(--margin-x) pb-8">

@@ -1,26 +1,28 @@
 import { Button, Card } from "components/ui";
 import { useKYCFormContext } from "../KYCFormContext";
 import { calculerSalaire } from "../utils/calculations";
-import { REMUNERATION_TYPES } from "../constants/remunerationTypes"; // Make sure this path is correct
+import { REMUNERATION_TYPES } from "../constants/remunerationTypes";
+
+// Removed duplicate StatItem function definition
 
 export function Recapitulatif({ setCurrentStep, setShowValidationModal }) {
   const kycFormCtx = useKYCFormContext();
   const { etape1, etape2, etape3, etape4 } = kycFormCtx.state;
 
   // Calcul des statistiques
-  const totalCourses = etape3.courses.length;
-  const totalKm = etape3.courses.reduce((sum, course) => 
-    sum + (course.indexArrivee - course.indexDepart), 0);
-  const totalCA = etape3.courses.reduce((sum, course) => 
-    sum + parseFloat(course.sommePercue), 0);
+  const totalCourses = etape3.courses?.length || 0;
+  const totalKm = etape3.courses?.reduce((sum, course) => 
+    sum + (course.indexArrivee - course.indexDepart), 0) || 0;
+  const totalCA = etape3.courses?.reduce((sum, course) => 
+    sum + parseFloat(course.sommePercue || 0), 0) || 0;
   const ratio = totalKm > 0 ? (totalCA / totalKm).toFixed(2) : 0;
 
   // Calcul des charges
-  const totalCharges = etape4.charges.reduce((sum, charge) => 
-    sum + parseFloat(charge.montant), 0);
+  const totalCharges = etape4.charges?.reduce((sum, charge) => 
+    sum + parseFloat(charge.montant || 0), 0) || 0;
 
   // Calcul du salaire
-  const heuresService = etape1.periodeService.heureDebut && etape1.periodeService.heureFin ?
+  const heuresService = etape1.periodeService?.heureDebut && etape1.periodeService?.heureFin ?
     (new Date(`1970-01-01T${etape1.periodeService.heureFin}`) - 
      new Date(`1970-01-01T${etape1.periodeService.heureDebut}`)) / (1000 * 60 * 60) : 0;
 

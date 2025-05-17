@@ -9,7 +9,13 @@ import { REMUNERATION_TYPES } from "../constants/remunerationTypes";
 
 export function CoursesList({ setCurrentStep }) {
   const kycFormCtx = useKYCFormContext();
-  const { handleSubmit, control, watch, setValue, formState: { errors } } = useForm({
+  const { 
+    handleSubmit, 
+    control, 
+    watch, 
+    setValue, 
+    formState: { errors } 
+  } = useForm({
     resolver: yupResolver(coursesSchema),
     defaultValues: kycFormCtx.state.etape3
   });

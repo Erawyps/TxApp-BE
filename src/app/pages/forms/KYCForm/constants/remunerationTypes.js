@@ -1,4 +1,4 @@
- export const REMUNERATION_TYPES = [
+export const REMUNERATION_TYPES = [
   { value: 'fixe', label: 'Contrat fixe' },
   { value: '40percent', label: '40% sur tout' },
   { value: '30percent', label: '30% sur tout' },
