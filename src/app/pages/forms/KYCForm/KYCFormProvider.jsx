@@ -3,13 +3,13 @@ import { useReducer } from 'react';
 import { KYCFormContextProvider } from './KYCFormContext';
 
 const initialState = {
-  etape1: { // Chauffeur
+  etape1: {
     chauffeurId: '',
     periodeService: { date: new Date(), heureDebut: '', heureFin: '' },
     remunerationType: '40percent',
     notes: ''
   },
-  etape2: { // Véhicule
+  etape2: {
     plaqueImmatriculation: '',
     numeroIdentification: '',
     taximetre: {
@@ -19,14 +19,14 @@ const initialState = {
       chutesFin: ''
     }
   },
-  etape3: { // Courses
+  etape3: {
     courses: [],
     notes: ''
   },
-  etape4: { // Charges
+  etape4: {
     charges: []
   },
-  etape5: { // Récapitulatif
+  etape5: {
     signature: '',
     dateSignature: ''
   },

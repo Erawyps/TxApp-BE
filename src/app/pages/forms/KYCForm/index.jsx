@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import clsx from "clsx";
 import { Page } from "components/shared/Page";
 import { Card } from "components/ui";
@@ -38,7 +38,10 @@ export function TaxiRouteSheet() {
 
   const ActiveForm = STEP_COMPONENTS[currentStep];
 
-  console.log('Rendering TaxiRouteSheet', { currentStep, ActiveForm }); // Pour le débogage
+  useEffect(() => {
+    console.log('Current step:', currentStep);
+    console.log('Active form:', ActiveForm);
+  }, [currentStep, ActiveForm]);
 
   return (
     <Page title="Feuille de Route Taxi">
@@ -96,7 +99,7 @@ export function TaxiRouteSheet() {
             <ValidationModal 
               onClose={() => setShowValidationModal(false)}
               onConfirm={() => {
-                setCurrentStep(5); // Aller à l'étape de validation
+                setCurrentStep(5);
                 setShowValidationModal(false);
               }}
             />

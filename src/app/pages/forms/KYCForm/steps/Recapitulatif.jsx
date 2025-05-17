@@ -3,7 +3,14 @@ import { useKYCFormContext } from "../KYCFormContext";
 import { calculerSalaire } from "../utils/calculations";
 import { REMUNERATION_TYPES } from "../constants/remunerationTypes";
 
-// Removed duplicate StatItem function definition
+function StatItem({ label, value }) {
+  return (
+    <div>
+      <p className="text-sm text-gray-500">{label}</p>
+      <p className="font-medium">{value}</p>
+    </div>
+  );
+}
 
 export function Recapitulatif({ setCurrentStep, setShowValidationModal }) {
   const kycFormCtx = useKYCFormContext();
@@ -85,15 +92,6 @@ export function Recapitulatif({ setCurrentStep, setShowValidationModal }) {
           Valider
         </Button>
       </div>
-    </div>
-  );
-}
-
-function StatItem({ label, value }) {
-  return (
-    <div>
-      <p className="text-sm text-gray-500">{label}</p>
-      <p className="font-medium">{value}</p>
     </div>
   );
 }
