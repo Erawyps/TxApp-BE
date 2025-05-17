@@ -1,7 +1,7 @@
 import { Button, Card } from "components/ui";
 import { useKYCFormContext } from "../KYCFormContext";
 import { calculerSalaire } from "../utils/calculations";
-import { REMUNERATION_TYPES } from "../constants"; // Make sure this path is correct
+import { REMUNERATION_TYPES } from "../constants/remunerationTypes"; // Make sure this path is correct
 
 export function Recapitulatif({ setCurrentStep, setShowValidationModal }) {
   const kycFormCtx = useKYCFormContext();
