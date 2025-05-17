@@ -3,13 +3,13 @@ import { useReducer } from 'react';
 import { KYCFormContextProvider } from './KYCFormContext';
 
 const initialState = {
-  etape1: {
+  etape1: { // Chauffeur
     chauffeurId: '',
     periodeService: { date: new Date(), heureDebut: '', heureFin: '' },
     remunerationType: '40percent',
     notes: ''
   },
-  etape2: {
+  etape2: { // Véhicule
     plaqueImmatriculation: '',
     numeroIdentification: '',
     taximetre: {
@@ -19,18 +19,23 @@ const initialState = {
       chutesFin: ''
     }
   },
-  etape3: {
+  etape3: { // Courses
     courses: [],
     notes: ''
   },
-  etape4: {
+  etape4: { // Charges
     charges: []
+  },
+  etape5: { // Récapitulatif
+    signature: '',
+    dateSignature: ''
   },
   stepStatus: {
     etape1: { isDone: false },
     etape2: { isDone: false },
     etape3: { isDone: false },
-    etape4: { isDone: false }
+    etape4: { isDone: false },
+    etape5: { isDone: false }
   }
 };
 
@@ -59,6 +64,20 @@ const reducer = (state, action) => {
         ...state,
         etape4: { ...state.etape4, ...action.payload },
         stepStatus: { ...state.stepStatus, etape4: { isDone: true } }
+      };
+    case 'SET_ETAPE5_DATA':
+      return {
+        ...state,
+        etape5: { ...state.etape5, ...action.payload },
+        stepStatus: { ...state.stepStatus, etape5: { isDone: true } }
+      };
+    case 'COMPLETE_FORM':
+      return {
+        ...state,
+        stepStatus: Object.keys(state.stepStatus).reduce((acc, key) => {
+          acc[key] = { isDone: true };
+          return acc;
+        }, {})
       };
     default:
       return state;

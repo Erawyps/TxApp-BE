@@ -10,6 +10,7 @@ import { VehicleInfo } from "./steps/VehicleInfo";
 import { CoursesList } from "./steps/CoursesList";
 import { ChargesList } from "./steps/ChargesList";
 import { Recapitulatif } from "./steps/Recapitulatif";
+import { FinalValidation } from "./steps/FinalValidation";
 import { ValidationModal } from "./components/ValidationModal";
 
 const steps = [
@@ -17,21 +18,25 @@ const steps = [
   { key: "vehicle", label: "Informations véhicule" },
   { key: "courses", label: "Liste des courses" },
   { key: "charges", label: "Charges" },
-  { key: "recap", label: "Récapitulatif" }
+  { key: "recap", label: "Récapitulatif" },
+  { key: "validation", label: "Validation" }
 ];
+
+const STEP_COMPONENTS = {
+  0: ChauffeurInfo,
+  1: VehicleInfo,
+  2: CoursesList,
+  3: ChargesList,
+  4: Recapitulatif,
+  5: FinalValidation
+};
 
 export function TaxiRouteSheet() {
   const [currentStep, setCurrentStep] = useState(0);
   const [completed, setCompleted] = useState(false);
   const [showValidationModal, setShowValidationModal] = useState(false);
 
-  const ActiveForm = {
-    0: ChauffeurInfo,
-    1: VehicleInfo,
-    2: CoursesList,
-    3: ChargesList,
-    4: Recapitulatif
-  }[currentStep];
+  const ActiveForm = STEP_COMPONENTS[currentStep];
 
   return (
     <Page title="Feuille de Route Taxi">
@@ -86,7 +91,13 @@ export function TaxiRouteSheet() {
           </div>
 
           {showValidationModal && (
-            <ValidationModal onClose={() => setShowValidationModal(false)} />
+            <ValidationModal 
+              onClose={() => setShowValidationModal(false)}
+              onConfirm={() => {
+                setCurrentStep(5); // Aller à l'étape de validation
+                setShowValidationModal(false);
+              }}
+            />
           )}
         </KYCFormProvider>
       </div>
