@@ -1,100 +1,78 @@
-import * as Yup from 'yup';
+import * as Yup from "yup";
 
 export const chauffeurSchema = Yup.object().shape({
-  chauffeurId: Yup.string().required('Chauffeur requis'),
-  periodeService: Yup.object().shape({
-    date: Yup.date().required('Date requise'),
-    heureDebut: Yup.string()
-      .required('Heure début requise')
-      .matches(/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/, 'Format HH:MM'),
-    heureFin: Yup.string()
-      .matches(/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/, 'Format HH:MM')
-  }),
-  remunerationType: Yup.string()
-    .required('Type de rémunération requis')
-    .oneOf(['fixe', '40percent', '30percent', 'mixte', 'heure10', 'heure12']),
-  notes: Yup.string().nullable()
-});
-
-export const vehicleSchema = Yup.object().shape({
-  plaqueImmatriculation: Yup.string()
-    .required('Plaque requise')
-    .matches(/^[A-Z]{2}-[0-9]{3}-[A-Z]{2}$/, 'Format invalide'),
-  numeroIdentification: Yup.string().required('Numéro requis'),
-  taximetre: Yup.object().shape({
-    kmChargeDebut: Yup.number()
-      .required('KM charge début requis')
-      .positive('Doit être positif'),
-    kmChargeFin: Yup.number()
-      .positive('Doit être positif')
-      .moreThan(Yup.ref('kmChargeDebut'), 'Doit être supérieur au début'),
-    chutesDebut: Yup.number()
-      .required('Chutes début requises')
-      .positive('Doit être positif'),
-    chutesFin: Yup.number()
-      .positive('Doit être positif')
+  nom: Yup.string().required("Nom requis"),
+  prenom: Yup.string().required("Prénom requis"),
+  regleSalaire: Yup.string()
+    .required("Règle de salaire requise")
+    .oneOf(["fixe", "40percent", "30percent", "mixte", "heure10", "heure12"]),
+  // Rendre tauxSalaire conditionnel mais pas obligatoire si non applicable
+  tauxSalaire: Yup.number().when('regleSalaire', {
+    is: (val) => ["fixe", "heure10", "heure12"].includes(val),
+    then: (schema) => schema.required("Taux requis"),
+    otherwise: (schema) => schema.notRequired()
   })
 });
 
-export const coursesSchema = Yup.object().shape({
-  courses: Yup.array().of(
-    Yup.object().shape({
-      indexDepart: Yup.number()
-        .required('Index départ requis')
-        .integer()
-        .positive(),
-      lieuEmbarquement: Yup.string().required('Lieu requis'),
-      heureEmbarquement: Yup.string()
-        .required('Heure requise')
-        .matches(/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/, 'Format HH:MM'),
-      indexArrivee: Yup.number()
-        .required('Index arrivée requis')
-        .integer()
-        .positive()
-        .min(Yup.ref('indexDepart'), 'Doit être >= départ'),
-      lieuDebarquement: Yup.string().required('Lieu requis'),
-      heureDebarquement: Yup.string()
-        .required('Heure requise')
-        .matches(/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/, 'Format HH:MM'),
-      prixTaximetre: Yup.number()
-        .required('Prix requis')
-        .positive(),
-      sommePercue: Yup.number()
-        .required('Somme requise')
-        .positive(),
-      modePaiement: Yup.string()
-        .required('Mode paiement requis')
-        .oneOf(
-          ["cash", "bancontact", "facture", "virement", "avance", "sncb", "william_lenox"],
-          "Mode de paiement invalide"
-        ),
-      remunerationExceptionnelle: Yup.string()
-        .oneOf(['fixe', '40percent', '30percent', 'mixte', 'heure10', 'heure12'])
-    })
+export const vehiculeSchema = Yup.object().shape({
+  plaqueImmatriculation: Yup.string()
+    .required("Plaque requise")
+    .matches(
+      /^[1-9]-[A-Z]{3}-[0-9]{3}$|^[A-Z]{3}-[0-9]{3}$|^TX-[0-9]{3}-[A-Z]{3}$|^T-[0-9]{3}-[A-Z]{3}$/,
+      "Format de plaque invalide. Exemples valides : 1-ABC-123, ABC-123, TX-123-ABC"
+    )
+    .uppercase("Doit être en majuscules"),
+  kmDebut: Yup.number()
+    .positive("Doit être positif")
+    .required("Kilométrage de début requis"),
+  kmFin: Yup.number()
+    .positive("Doit être positif")
+    .min(
+      Yup.ref("kmDebut"),
+      "Doit être supérieur ou égal au kilométrage de début"
+    )
+    .required("Kilométrage de fin requis"),
+});
+
+export const courseSchema = Yup.object().shape({
+  indexDepart: Yup.number()
+    .positive("Doit être positif")
+    .required("Index de départ requis"),
+  indexArrivee: Yup.number()
+    .positive("Doit être positif")
+    .min(
+      Yup.ref("indexDepart"),
+      "Doit être supérieur ou égal à l'index de départ"
+    )
+    .required("Index d'arrivée requis"),
+  lieuEmbarquement: Yup.string().required("Lieu d'embarquement requis"),
+  lieuDebarquement: Yup.string().required("Lieu de débarquement requis"),
+  heureEmbarquement: Yup.string().required("Heure d'embarquement requise"),
+  heureDebarquement: Yup.string().required("Heure de débarquement requise"),
+  prixTaximetre: Yup.number()
+    .positive("Doit être positif")
+    .required("Prix taximètre requis"),
+  sommePercue: Yup.number()
+    .positive("Doit être positif")
+    .required("Somme perçue requise"),
+  modePaiement: Yup.string()
+    .required("Mode de paiement requis")
+    .oneOf(["cash", "bancontact", "facture", "virement"], "Mode invalide"),
+  regleExceptionnelle: Yup.string().oneOf(
+    ["fixe", "40percent", "30percent", "mixte", "heure10", "heure12", null],
+    "Règle invalide"
   ),
-  notes: Yup.string().nullable()
 });
 
-export const chargesSchema = Yup.object().shape({
-  charges: Yup.array().of(
-    Yup.object().shape({
-      type: Yup.string().required('Type requis'),
-      description: Yup.string().required('Description requise'),
-      montant: Yup.number()
-        .required('Montant requis')
-        .positive('Doit être positif'),
-      modePaiement: Yup.string()
-        .required('Mode paiement requis')
-        .oneOf(["cash", "bancontact", "virement"])
-    })
-  )
-});
-
-export const validationSchema = Yup.object().shape({
-  signature: Yup.string()
-    .required('Signature requise')
-    .min(3, 'Minimum 3 caractères'),
-  dateSignature: Yup.date()
-    .required('Date requise')
-    .max(new Date(), 'Date future invalide')
+export const chargeSchema = Yup.object().shape({
+  type: Yup.string()
+    .required("Type de charge requis")
+    .oneOf(["carburant", "peage", "entretien", "divers"], "Type invalide"),
+  description: Yup.string().required("Description requise"),
+  montant: Yup.number()
+    .positive("Doit être positif")
+    .required("Montant requis"),
+  modePaiement: Yup.string()
+    .required("Mode de paiement requis")
+    .oneOf(["cash", "bancontact", "virement"], "Mode invalide"),
 });

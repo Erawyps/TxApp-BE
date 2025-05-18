@@ -3,57 +3,55 @@ import clsx from "clsx";
 import { HiCheck } from "react-icons/hi";
 import { useBreakpointsContext } from "app/contexts/breakpoint/context";
 import { createScopedKeydownHandler } from "utils/dom/createScopedKeydownHandler";
-import { useKYCFormContext } from "./KYCFormContext";
+import { useFeuilleRouteContext } from "./FeuilleRouteContext";
 
-const STEP_ICONS = {
-  chauffeur: "👤",
-  vehicle: "🚗",
-  courses: "📋",
-  charges: "💰",
-  recap: "📊",
-  validation: "✅"
-};
+function getLeftSiblingStep(step, stepStatus) {
+  let keys = Object.keys(stepStatus);
+  let index = keys.indexOf(step);
+  return index < 1 ? undefined : keys[index - 1];
+}
 
 export function Stepper({ steps, currentStep, setCurrentStep }) {
   const { smAndUp } = useBreakpointsContext();
-  const kycFormCtx = useKYCFormContext();
+  const feuilleRouteCtx = useFeuilleRouteContext();
+  const stepStatus = feuilleRouteCtx.state.stepStatus;
 
   return (
     <ol
       className={clsx(
         "steps line-space text-center text-xs sm:text-start sm:text-sm",
-        smAndUp && "is-vertical"
+        smAndUp && "is-vertical",
       )}
-      aria-label="Progression de la feuille de route"
     >
-      {steps.map((step, index) => {
-        const isDone = kycFormCtx.state.stepStatus[`etape${index + 1}`]?.isDone;
-        const isClickable = isDone || (index > 0 && 
-          kycFormCtx.state.stepStatus[`etape${index}`]?.isDone);
-        const isActive = currentStep === index;
-
+      {steps.map((step, i) => {
+        const isClickable =
+          stepStatus[step.key].isDone ||
+          stepStatus[getLeftSiblingStep(step.key, stepStatus)]?.isDone;
         return (
           <li
             className={clsx(
               "step",
-              index < currentStep
+              currentStep > i
                 ? "before:bg-primary-500"
                 : "before:bg-gray-200 dark:before:bg-dark-500",
-              smAndUp && "items-center pb-8"
+              smAndUp && "items-center pb-8",
             )}
             key={step.key}
           >
             <button
               className={clsx(
                 "step-header rounded-full outline-hidden dark:text-white",
-                isClickable && "cursor-pointer hover:ring-2 hover:ring-primary-300",
-                isActive && "ring-2 ring-primary-500",
-                isDone
+                isClickable && "cursor-pointer",
+                currentStep === i && "ring-2 ring-primary-500",
+                stepStatus[step.key].isDone
                   ? "bg-primary-600 text-white ring-offset-[3px] ring-offset-gray-100 dark:bg-primary-500 dark:ring-offset-dark-900"
                   : "bg-gray-200 text-gray-950 dark:bg-dark-500",
-                "flex items-center justify-center transition-all duration-200"
               )}
-              onClick={() => isClickable && !isActive && setCurrentStep(index)}
+              {...{
+                onClick: isClickable
+                  ? () => currentStep !== i && setCurrentStep(i)
+                  : undefined,
+              }}
               onKeyDown={createScopedKeydownHandler({
                 siblingSelector: ".step-header",
                 parentSelector: ".steps",
@@ -62,23 +60,17 @@ export function Stepper({ steps, currentStep, setCurrentStep }) {
                 activateOnFocus: true,
               })}
               disabled={!isClickable}
-              aria-current={isActive ? "step" : undefined}
-              aria-label={`Étape ${index + 1}: ${step.label}`}
             >
-              {isDone ? (
-                <HiCheck className="size-4.5" aria-hidden="true" />
+              {stepStatus[step.key].isDone ? (
+                <HiCheck className="size-4.5" />
               ) : (
-                <span className="text-sm" aria-hidden="true">
-                  {STEP_ICONS[step.key]}
-                </span>
+                i + 1
               )}
             </button>
             <h3
               className={clsx(
                 "text-gray-800 dark:text-dark-100 sm:text-start",
                 smAndUp && "ltr:ml-4 rtl:mr-4",
-                !isClickable && "opacity-60",
-                isActive && "font-medium"
               )}
             >
               {step.label}
@@ -91,12 +83,7 @@ export function Stepper({ steps, currentStep, setCurrentStep }) {
 }
 
 Stepper.propTypes = {
-  steps: PropTypes.arrayOf(
-    PropTypes.shape({
-      key: PropTypes.string.isRequired,
-      label: PropTypes.string.isRequired,
-    })
-  ).isRequired,
-  currentStep: PropTypes.number.isRequired,
-  setCurrentStep: PropTypes.func.isRequired,
+  steps: PropTypes.array,
+  currentStep: PropTypes.number,
+  setCurrentStep: PropTypes.func,
 };

@@ -1,0 +1,96 @@
+import PropTypes from "prop-types";
+import { useReducer } from "react";
+import { FeuilleRouteContextProvider } from "./FeuilleRouteContext";
+
+const initialState = {
+  formData: {
+    chauffeur: {
+      id: null,
+      nom: "",
+      prenom: "",
+      regleSalaire: "",
+      tauxSalaire: null,
+      note: "",
+    },
+    vehicule: {
+      plaqueImmatriculation: "",
+      numeroIdentification: "",
+      priseEnChargeDebut: null,
+      priseEnChargeFin: null,
+      kmDebut: null,
+      kmFin: null,
+    },
+    courses: [],
+    charges: [],
+  },
+  stepStatus: {
+    identiteChauffeur: { isDone: false },
+    infoVehicule: { isDone: false },
+    listeCourses: { isDone: false },
+    charges: { isDone: false },
+    recapitulatif: { isDone: false },
+  },
+};
+
+const reducer = (state, action) => {
+  switch (action.type) {
+    case "SET_FORM_DATA":
+      return {
+        ...state,
+        formData: {
+          ...state.formData,
+          ...action.payload,
+        },
+      };
+    case "SET_STEP_STATUS":
+      return {
+        ...state,
+        stepStatus: {
+          ...state.stepStatus,
+          ...action.payload,
+        },
+      };
+    case "ADD_COURSE":
+      return {
+        ...state,
+        formData: {
+          ...state.formData,
+          courses: [...state.formData.courses, action.payload],
+        },
+      };
+    case "UPDATE_COURSE":
+      return {
+        ...state,
+        formData: {
+          ...state.formData,
+          courses: state.formData.courses.map((course) =>
+            course.id === action.payload.id ? action.payload : course
+          ),
+        },
+      };
+    case "ADD_CHARGE":
+      return {
+        ...state,
+        formData: {
+          ...state.formData,
+          charges: [...state.formData.charges, action.payload],
+        },
+      };
+    default:
+      return state;
+  }
+};
+
+export function FeuilleRouteProvider({ children }) {
+  const [state, dispatch] = useReducer(reducer, initialState);
+  const value = { state, dispatch };
+  return (
+    <FeuilleRouteContextProvider value={value}>
+      {children}
+    </FeuilleRouteContextProvider>
+  );
+}
+
+FeuilleRouteProvider.propTypes = {
+  children: PropTypes.node,
+};

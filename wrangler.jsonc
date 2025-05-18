@@ -15,7 +15,7 @@
       {
         "binding": "HYPERDRIVE",
         "id": "3c9f97b0e0114cc68fa7232bb2d447ab"
-        ,"localConnectionString": "postgresql://postgres:PYLpOE6KaEsAMLD9.deqytqfcvvwlzabcmpdq.supabase.co:5432/postgres"
+        ,"localConnectionString": "postgresql://postgres:PYLpOE6KaEsAMLD9@deqytqfcvvwlzabcmpdq.supabase.co:5432/postgres"
       }
     ]
   }
