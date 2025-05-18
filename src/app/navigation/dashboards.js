@@ -11,7 +11,7 @@ export const dashboards = {
     type: NAV_TYPE_ROOT,
     path: '/dashboards',
     title: 'Dashboards - Vue d\'ensemble',
-    transKey: 'nav.dashboards.dashboards',
+    //transKey: 'nav.dashboards.dashboards',
     Icon: DashboardsIcon,
     childs: [
         {
@@ -19,7 +19,7 @@ export const dashboards = {
             path: path(ROOT_DASHBOARDS, '/home'),
             type: NAV_TYPE_ITEM,
             title: 'Gestion des Taxis - Vue d\'ensemble',
-            transKey: 'nav.dashboards.home',
+            //transKey: 'nav.dashboards.home',
             Icon: HomeIcon,
         },
 

@@ -12,7 +12,7 @@ export const tables = {
     type: NAV_TYPE_ROOT,
     path: '/tables',
     title: 'Listes des feuilles de route',
-    transKey: 'nav.tables.tables',
+    //transKey: 'nav.tables.tables',
     Icon: DualTableIcon,
     childs: [
         {
@@ -20,7 +20,7 @@ export const tables = {
             path: path(ROOT_APPS, '/orders-datatable-2'),
             type: NAV_TYPE_ITEM,
             title: 'Feuilles de route - Liste des feuilles de route',
-            transKey: 'nav.tables.orders-datatable-2',
+            //transKey: 'nav.tables.orders-datatable-2',
             Icon: TableIcon
         },
     ]
