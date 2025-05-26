@@ -89,16 +89,14 @@ export const courseSchema = Yup.object().shape({
 });
 
 export const chargeSchema = Yup.object().shape({
-  type: Yup.string()
-    .required("Type de charge requis")
-    .oneOf(["carburant", "peage", "entretien", "divers"], "Type invalide"),
+  type: Yup.string().default("divers"),
   description: Yup.string(),
-  montant: Yup.number()
-    .typeError("Doit être un nombre")
-    .positive("Doit être positif")
-    .required("Montant requis")
-    .transform((value) => value ? value.toString().replace(',', '.') : value),
-  modePaiement: Yup.string()
-    .required("Mode de paiement requis")
-    .oneOf(["cash", "bancontact", "virement"], "Mode invalide")
+  montant: Yup.mixed()
+    .test('is-number', 'Montant invalide', (value) => {
+      if (!value) return false;
+      const num = parseFloat(value.toString().replace(',', '.'));
+      return !isNaN(num) && num > 0;
+    })
+    .required("Montant requis"),
+  modePaiement: Yup.string().default("cash")
 });

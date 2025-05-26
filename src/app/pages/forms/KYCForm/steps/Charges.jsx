@@ -32,21 +32,24 @@ export function Charges({ setCurrentStep }) {
     setValue,
   } = useForm({
     resolver: yupResolver(chargeSchema),
+    defaultValues: {
+      type: "divers",
+      modePaiement: "cash"
+    }
   });
 
-  const formatNumberInput = (value) => {
-    return value ? value.toString().replace('.', ',') : value;
-  };
-
-  const parseNumberInput = (value) => {
-    return value ? parseFloat(value.toString().replace(',', '.')) : value;
+  const parseNumber = (value) => {
+    if (typeof value === 'number') return value;
+    if (!value) return 0;
+    const num = parseFloat(value.toString().replace(',', '.'));
+    return isNaN(num) ? 0 : num;
   };
 
   const onSubmit = (data) => {
     const newCharge = { 
       ...data,
       id: Date.now(),
-      montant: parseNumberInput(data.montant)
+      montant: parseNumber(data.montant)
     };
     setCharges([...charges, newCharge]);
     feuilleRouteCtx.dispatch({ type: "ADD_CHARGE", payload: newCharge });
@@ -67,59 +70,46 @@ export function Charges({ setCurrentStep }) {
         <div className="mt-6 space-y-4">
           <div className="grid gap-4 sm:grid-cols-2">
             <Controller
+              name="type"
+              control={control}
               render={({ field }) => (
                 <Listbox
                   data={typesCharge}
-                  value={
-                    typesCharge.find((t) => t.value === field.value) || null
-                  }
+                  value={typesCharge.find(t => t.value === field.value) || typesCharge[3]}
                   onChange={(val) => field.onChange(val.value)}
-                  name={field.name}
                   label="Type de charge"
-                  placeholder="Sélectionnez un type"
                   displayField="label"
-                  error={errors?.type?.message}
                 />
               )}
-              control={control}
-              name="type"
             />
 
             <Input
-              {...register("montant", {
-                setValueAs: v => v ? parseFloat(v.toString().replace(',', '.')) : v
-              })}
+              {...register("montant")}
               label="Montant"
               error={errors?.montant?.message}
               placeholder="Ex: 15,00"
-              type="text"
               inputMode="decimal"
               onChange={(e) => {
-                setValue("montant", formatNumberInput(e.target.value));
+                // Permet les nombres avec virgule ou point
+                const value = e.target.value.replace(/[^0-9,.]/g, '');
+                setValue("montant", value, { shouldValidate: true });
               }}
             />
           </div>
 
-          <div>
-            <Controller
-              render={({ field }) => (
-                <Listbox
-                  data={modesPaiement}
-                  value={
-                    modesPaiement.find((m) => m.value === field.value) || null
-                  }
-                  onChange={(val) => field.onChange(val.value)}
-                  name={field.name}
-                  label="Mode de paiement"
-                  placeholder="Sélectionnez un mode"
-                  displayField="label"
-                  error={errors?.modePaiement?.message}
-                />
-              )}
-              control={control}
-              name="modePaiement"
-            />
-          </div>
+          <Controller
+            name="modePaiement"
+            control={control}
+            render={({ field }) => (
+              <Listbox
+                data={modesPaiement}
+                value={modesPaiement.find(m => m.value === field.value) || modesPaiement[0]}
+                onChange={(val) => field.onChange(val.value)}
+                label="Mode de paiement"
+                displayField="label"
+              />
+            )}
+          />
 
           <Textarea
             {...register("description")}
@@ -156,7 +146,7 @@ export function Charges({ setCurrentStep }) {
                       {typesCharge.find((t) => t.value === charge.type)?.label}
                     </td>
                     <td className="px-4 py-2">
-                      {charge.montant?.toFixed(2).replace('.', ',')} €
+                      {parseNumber(charge.montant).toFixed(2).replace('.', ',')} €
                     </td>
                     <td className="px-4 py-2">
                       {modesPaiement.find((m) => m.value === charge.modePaiement)?.label}
