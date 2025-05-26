@@ -81,8 +81,8 @@ export const courseSchema = Yup.object().shape({
     .transform((value, originalValue) => {
       // Convertit les virgules en points et supprime les espaces
       return originalValue ? parseFloat(originalValue.toString().replace(',', '.').replace(/\s/g, '')) : originalValue;
-    })
-    .required("Prix taximètre requis"),
+    }),
+    
   sommePercue: Yup.number()
     .typeError("Doit être un nombre")
     .positive("Doit être positif")
@@ -90,7 +90,7 @@ export const courseSchema = Yup.object().shape({
       // Convertit les virgules en points et supprime les espaces
       return originalValue ? parseFloat(originalValue.toString().replace(',', '.').replace(/\s/g, '')) : originalValue;
     })
-    .required("Somme perçue requise")
+    
     .oneOf(["cash", "bancontact", "facture", "virement"], "Mode invalide")
 });
 
