@@ -1,9 +1,8 @@
 import { useState } from "react";
-import PropTypes from "prop-types";
 import { Button, Textarea } from "components/ui";
 import { Modal } from "components/shared/modal/Modal";
+import { useFeuilleRouteContext } from "../FeuilleRouteContext";
 
-// Define or import reglesSalaire
 const reglesSalaire = [
   { value: "fixe", label: "Fixe" },
   { value: "40percent", label: "40% des recettes" },
@@ -12,7 +11,6 @@ const reglesSalaire = [
   { value: "heure10", label: "Heures (10€/h)" },
   { value: "heure12", label: "Heures (12€/h)" },
 ];
-import { useFeuilleRouteContext } from "../FeuilleRouteContext";
 
 export function Recapitulatif({ setCurrentStep, setValidated }) {
   const feuilleRouteCtx = useFeuilleRouteContext();
@@ -22,17 +20,35 @@ export function Recapitulatif({ setCurrentStep, setValidated }) {
 
   // Calcul des totaux
   const totalCourses = courses.length;
-  const totalKm = vehicule.kmFin - vehicule.kmDebut;
+  
+  // Calcul des km parcourus basé sur les courses
+  const kmParcourus = courses.length > 0 
+    ? courses[courses.length - 1].indexArrivee - courses[0].indexDepart 
+    : 0;
+  
   const totalRecettes = courses.reduce((sum, course) => sum + course.sommePercue, 0);
+  
+  // Calcul du ratio €/km basé sur les courses
+  const totalKmCourses = courses.reduce((sum, course) => {
+    return sum + (course.indexArrivee - course.indexDepart);
+  }, 0);
+  
+  const ratioEuroKm = totalKmCourses > 0 
+    ? (totalRecettes / totalKmCourses).toFixed(2)
+    : 0;
+
   const totalCash = courses
     .filter((c) => c.modePaiement === "cash")
     .reduce((sum, course) => sum + course.sommePercue, 0);
+  
   const totalBancontactVirement = courses
     .filter((c) => ["bancontact", "virement"].includes(c.modePaiement))
     .reduce((sum, course) => sum + course.sommePercue, 0);
+  
   const totalChargesCash = charges
     .filter((c) => c.modePaiement === "cash")
     .reduce((sum, charge) => sum + charge.montant, 0);
+  
   const totalChargesBancontact = charges
     .filter((c) => c.modePaiement === "bancontact")
     .reduce((sum, charge) => sum + charge.montant, 0);
@@ -41,26 +57,76 @@ export function Recapitulatif({ setCurrentStep, setValidated }) {
   const calculerSalaire = () => {
     switch (chauffeur.regleSalaire) {
       case "fixe":
-        return { montant: chauffeur.tauxSalaire, type: "Fixe" };
+        return { 
+          montant: chauffeur.tauxSalaire, 
+          type: "Fixe",
+          details: `${chauffeur.tauxSalaire?.toFixed(2)} €`
+        };
       case "40percent":
-        return { montant: totalRecettes * 0.4, type: "40% des recettes" };
+        return { 
+          montant: totalRecettes * 0.4, 
+          type: "40% des recettes",
+          details: `40% de ${totalRecettes.toFixed(2)} € = ${(totalRecettes * 0.4).toFixed(2)} €`
+        };
       case "30percent":
-        return { montant: totalRecettes * 0.3, type: "30% des recettes" };
+        return { 
+          montant: totalRecettes * 0.3, 
+          type: "30% des recettes",
+          details: `30% de ${totalRecettes.toFixed(2)} € = ${(totalRecettes * 0.3).toFixed(2)} €`
+        };
       case "mixte": {
         const seuil = 180;
         const montant = totalRecettes <= seuil 
           ? totalRecettes * 0.4 
           : (seuil * 0.4) + ((totalRecettes - seuil) * 0.3);
-        return { montant, type: "Mixte (40%/30%)" };
+        return { 
+          montant,
+          type: "Mixte (40%/30%)",
+          details: totalRecettes <= seuil
+            ? `40% de ${totalRecettes.toFixed(2)} € = ${montant.toFixed(2)} €`
+            : `40% de 180 € + 30% de ${(totalRecettes - seuil).toFixed(2)} € = ${montant.toFixed(2)} €`
+        };
       }
-      case "heure10":
-        // Supposons 8 heures de travail par défaut
-        return { montant: 8 * 10, type: "Heures (10€/h)" };
-      case "heure12":
-        // Supposons 8 heures de travail par défaut
-        return { montant: 8 * 12, type: "Heures (12€/h)" };
+      case "heure10": {
+        // Calcul basé sur les heures de prestation
+        const heures = calculerHeuresPrestation();
+        return { 
+          montant: heures * 10,
+          type: "Heures (10€/h)",
+          details: `${heures} h × 10 € = ${(heures * 10).toFixed(2)} €`
+        };
+      }
+      case "heure12": {
+        const heures12 = calculerHeuresPrestation();
+        return { 
+          montant: heures12 * 12,
+          type: "Heures (12€/h)",
+          details: `${heures12} h × 12 € = ${(heures12 * 12).toFixed(2)} €`
+        };
+      }
       default:
-        return { montant: 0, type: "Inconnu" };
+        return { montant: 0, type: "Inconnu", details: "" };
+    }
+  };
+
+  const calculerHeuresPrestation = () => {
+    if (!chauffeur.heureDebut || !chauffeur.heureFin) return 0;
+    
+    try {
+      const [debutH, debutM] = chauffeur.heureDebut.split(':').map(Number);
+      const [finH, finM] = chauffeur.heureFin.split(':').map(Number);
+      
+      let totalMinutes = (finH * 60 + finM) - (debutH * 60 + debutM);
+      
+      // Soustraire les interruptions
+      if (chauffeur.interruptions) {
+        const [interH, interM] = chauffeur.interruptions.split(':').map(Number);
+        totalMinutes -= (interH * 60 + interM);
+      }
+      
+      return totalMinutes > 0 ? (totalMinutes / 60).toFixed(2) : 0;
+    } catch {
+      return 0;
     }
   };
 
@@ -80,50 +146,68 @@ export function Recapitulatif({ setCurrentStep, setValidated }) {
   return (
     <div>
       <div className="mt-6 space-y-6">
+        {/* Bloc Chauffeur + Véhicule */}
         <div className="rounded-lg border p-4 dark:border-dark-500">
-          <h6 className="mb-3 text-lg font-medium">Identité du Chauffeur</h6>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
             <div>
-              <p className="text-sm font-medium">Nom:</p>
-              <p>{chauffeur.prenom} {chauffeur.nom}</p>
-            </div>
-            <div>
-              <p className="text-sm font-medium">Règle de rémunération:</p>
-              <p>
-                {reglesSalaire.find((r) => r.value === chauffeur.regleSalaire)?.label}
-              </p>
-            </div>
-            {chauffeur.note && (
-              <div className="col-span-2">
-                <p className="text-sm font-medium">Note:</p>
-                <p>{chauffeur.note}</p>
+              <h6 className="mb-3 text-lg font-medium">Chauffeur</h6>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <p className="text-sm font-medium">Nom:</p>
+                  <p>{chauffeur.prenom} {chauffeur.nom}</p>
+                </div>
+                <div>
+                  <p className="text-sm font-medium">Date:</p>
+                  <p>{chauffeur.date}</p>
+                </div>
+                <div>
+                  <p className="text-sm font-medium">Heures:</p>
+                  <p>{chauffeur.heureDebut} - {chauffeur.heureFin}</p>
+                </div>
+                {chauffeur.interruptions && (
+                  <div>
+                    <p className="text-sm font-medium">Interruptions:</p>
+                    <p>{chauffeur.interruptions}</p>
+                  </div>
+                )}
+                <div>
+                  <p className="text-sm font-medium">Règle salaire:</p>
+                  <p>
+                    {reglesSalaire.find((r) => r.value === chauffeur.regleSalaire)?.label}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-sm font-medium">Détails salaire:</p>
+                  <p>{salaire.details}</p>
+                </div>
               </div>
-            )}
+            </div>
+
+            <div>
+              <h6 className="mb-3 text-lg font-medium">Véhicule</h6>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <p className="text-sm font-medium">Plaque:</p>
+                  <p>{vehicule.plaqueImmatriculation}</p>
+                </div>
+                <div>
+                  <p className="text-sm font-medium">N° Identification:</p>
+                  <p>{vehicule.numeroIdentification}</p>
+                </div>
+                <div>
+                  <p className="text-sm font-medium">Km début:</p>
+                  <p>{vehicule.kmDebut}</p>
+                </div>
+                <div>
+                  <p className="text-sm font-medium">Km fin:</p>
+                  <p>{vehicule.kmFin}</p>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 
-        <div className="rounded-lg border p-4 dark:border-dark-500">
-          <h6 className="mb-3 text-lg font-medium">Informations Véhicule</h6>
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <p className="text-sm font-medium">Plaque:</p>
-              <p>{vehicule.plaqueImmatriculation}</p>
-            </div>
-            <div>
-              <p className="text-sm font-medium">N° Identification:</p>
-              <p>{vehicule.numeroIdentification}</p>
-            </div>
-            <div>
-              <p className="text-sm font-medium">Km début:</p>
-              <p>{vehicule.kmDebut}</p>
-            </div>
-            <div>
-              <p className="text-sm font-medium">Km fin:</p>
-              <p>{vehicule.kmFin}</p>
-            </div>
-          </div>
-        </div>
-
+        {/* Bloc Performances */}
         <div className="rounded-lg border p-4 dark:border-dark-500">
           <h6 className="mb-3 text-lg font-medium">Performances</h6>
           <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
@@ -133,15 +217,16 @@ export function Recapitulatif({ setCurrentStep, setValidated }) {
             </div>
             <div>
               <p className="text-sm font-medium">Km parcourus:</p>
-              <p>{totalKm}</p>
+              <p>{kmParcourus}</p>
             </div>
             <div>
               <p className="text-sm font-medium">Ratio €/km:</p>
-              <p>{(totalRecettes / totalKm).toFixed(2)}</p>
+              <p>{ratioEuroKm}</p>
             </div>
           </div>
         </div>
 
+        {/* Bloc Recettes */}
         <div className="rounded-lg border p-4 dark:border-dark-500">
           <h6 className="mb-3 text-lg font-medium">Recettes</h6>
           <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
@@ -160,6 +245,7 @@ export function Recapitulatif({ setCurrentStep, setValidated }) {
           </div>
         </div>
 
+        {/* Bloc Charges */}
         <div className="rounded-lg border p-4 dark:border-dark-500">
           <h6 className="mb-3 text-lg font-medium">Charges</h6>
           <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
@@ -173,11 +259,12 @@ export function Recapitulatif({ setCurrentStep, setValidated }) {
             </div>
             <div>
               <p className="text-sm font-medium">Salaire:</p>
-              <p>{salaire.montant.toFixed(2)} € ({salaire.type})</p>
+              <p>{salaire.montant.toFixed(2)} €</p>
             </div>
           </div>
         </div>
 
+        {/* Bloc Bénéfice */}
         <div className="rounded-lg border p-4 dark:border-dark-500">
           <h6 className="mb-3 text-lg font-medium">Bénéfice</h6>
           <div className="grid grid-cols-2 gap-4">
@@ -239,8 +326,3 @@ export function Recapitulatif({ setCurrentStep, setValidated }) {
     </div>
   );
 }
-
-Recapitulatif.propTypes = {
-  setCurrentStep: PropTypes.func,
-  setValidated: PropTypes.func,
-};

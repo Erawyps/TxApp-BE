@@ -8,6 +8,10 @@ const initialState = {
       id: null,
       nom: "",
       prenom: "",
+      date: new Date().toISOString().split('T')[0],
+      heureDebut: "",
+      heureFin: "",
+      interruptions: "",
       regleSalaire: "",
       tauxSalaire: null,
       note: "",
@@ -19,6 +23,13 @@ const initialState = {
       priseEnChargeFin: null,
       kmDebut: null,
       kmFin: null,
+      kmTotalDebut: null,
+      kmTotalFin: null,
+      kmEnChargeDebut: null,
+      kmEnChargeFin: null,
+      chutesDebut: null,
+      chutesFin: null,
+      recettes: null,
     },
     courses: [],
     charges: [],
@@ -68,6 +79,16 @@ const reducer = (state, action) => {
           ),
         },
       };
+    case "REMOVE_COURSE":
+      return {
+        ...state,
+        formData: {
+          ...state.formData,
+          courses: state.formData.courses.filter(
+            (course) => course.id !== action.payload
+          ),
+        },
+      };
     case "ADD_CHARGE":
       return {
         ...state,
@@ -76,6 +97,18 @@ const reducer = (state, action) => {
           charges: [...state.formData.charges, action.payload],
         },
       };
+    case "REMOVE_CHARGE":
+      return {
+        ...state,
+        formData: {
+          ...state.formData,
+          charges: state.formData.charges.filter(
+            (charge) => charge.id !== action.payload
+          ),
+        },
+      };
+    case "RESET":
+      return initialState;
     default:
       return state;
   }

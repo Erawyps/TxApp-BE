@@ -1,7 +1,6 @@
 import { yupResolver } from "@hookform/resolvers/yup";
 import { useState } from "react";
 import { useForm, Controller } from "react-hook-form";
-import PropTypes from "prop-types";
 import { Button, Input, Textarea } from "components/ui";
 import { Listbox } from "components/shared/form/Listbox";
 import { useFeuilleRouteContext } from "../FeuilleRouteContext";
@@ -30,12 +29,25 @@ export function Charges({ setCurrentStep }) {
     formState: { errors },
     control,
     reset,
+    setValue,
   } = useForm({
     resolver: yupResolver(chargeSchema),
   });
 
+  const formatNumberInput = (value) => {
+    return value ? value.toString().replace('.', ',') : value;
+  };
+
+  const parseNumberInput = (value) => {
+    return value ? parseFloat(value.toString().replace(',', '.')) : value;
+  };
+
   const onSubmit = (data) => {
-    const newCharge = { ...data, id: Date.now() };
+    const newCharge = { 
+      ...data,
+      id: Date.now(),
+      montant: parseNumberInput(data.montant)
+    };
     setCharges([...charges, newCharge]);
     feuilleRouteCtx.dispatch({ type: "ADD_CHARGE", payload: newCharge });
     reset();
@@ -74,12 +86,17 @@ export function Charges({ setCurrentStep }) {
             />
 
             <Input
-              {...register("montant", { valueAsNumber: true })}
+              {...register("montant", {
+                setValueAs: v => v ? parseFloat(v.toString().replace(',', '.')) : v
+              })}
               label="Montant"
               error={errors?.montant?.message}
-              placeholder="Ex: 15.00"
-              type="number"
-              step="0.01"
+              placeholder="Ex: 15,00"
+              type="text"
+              inputMode="decimal"
+              onChange={(e) => {
+                setValue("montant", formatNumberInput(e.target.value));
+              }}
             />
           </div>
 
@@ -107,8 +124,7 @@ export function Charges({ setCurrentStep }) {
           <Textarea
             {...register("description")}
             label="Description"
-            error={errors?.description?.message}
-            placeholder="Décrivez la charge"
+            placeholder="Décrivez la charge (facultatif)"
           />
 
           <Button type="submit" color="primary" className="w-full">
@@ -121,38 +137,35 @@ export function Charges({ setCurrentStep }) {
       {charges.length > 0 && (
         <div className="mt-8">
           <h6 className="mb-4 text-lg font-medium">Charges enregistrées</h6>
-          <div className="space-y-4">
-            {charges.map((charge) => (
-              <div
-                key={charge.id}
-                className="rounded-lg border p-4 dark:border-dark-500"
-              >
-                <div className="grid grid-cols-2 gap-2">
-                  <div>
-                    <p className="text-sm font-medium">Type:</p>
-                    <p>
-                      {typesCharge.find((t) => t.value === charge.type)?.label ||
-                        "Inconnu"}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium">Montant:</p>
-                    <p>{charge.montant} €</p>
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium">Paiement:</p>
-                    <p>
-                      {modesPaiement.find((m) => m.value === charge.modePaiement)
-                        ?.label || "Inconnu"}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium">Description:</p>
-                    <p className="truncate">{charge.description}</p>
-                  </div>
-                </div>
-              </div>
-            ))}
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200 dark:divide-dark-500">
+              <thead className="bg-gray-50 dark:bg-dark-700">
+                <tr>
+                  <th className="px-4 py-2 text-left">N°</th>
+                  <th className="px-4 py-2 text-left">Type</th>
+                  <th className="px-4 py-2 text-left">Montant</th>
+                  <th className="px-4 py-2 text-left">Mode paiement</th>
+                  <th className="px-4 py-2 text-left">Description</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-200 dark:divide-dark-500">
+                {charges.map((charge, index) => (
+                  <tr key={charge.id}>
+                    <td className="px-4 py-2">{index + 1}</td>
+                    <td className="px-4 py-2">
+                      {typesCharge.find((t) => t.value === charge.type)?.label}
+                    </td>
+                    <td className="px-4 py-2">
+                      {charge.montant?.toFixed(2).replace('.', ',')} €
+                    </td>
+                    <td className="px-4 py-2">
+                      {modesPaiement.find((m) => m.value === charge.modePaiement)?.label}
+                    </td>
+                    <td className="px-4 py-2">{charge.description || '-'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </div>
       )}
@@ -175,7 +188,3 @@ export function Charges({ setCurrentStep }) {
     </div>
   );
 }
-
-Charges.propTypes = {
-  setCurrentStep: PropTypes.func,
-};

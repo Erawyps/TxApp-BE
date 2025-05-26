@@ -1,7 +1,6 @@
 import { yupResolver } from "@hookform/resolvers/yup";
 import { useState } from "react";
 import { useForm, Controller } from "react-hook-form";
-import PropTypes from "prop-types";
 import { Button, Input } from "components/ui";
 import { Listbox } from "components/shared/form/Listbox";
 import { useFeuilleRouteContext } from "../FeuilleRouteContext";
@@ -14,16 +13,6 @@ const modesPaiement = [
   { label: "Virement", value: "virement" },
 ];
 
-const reglesSalaire = [
-  { label: "Par défaut", value: null },
-  { label: "Contrat fixe", value: "fixe" },
-  { label: "40% sur tout", value: "40percent" },
-  { label: "30% sur tout", value: "30percent" },
-  { label: "40% jusqu'à 180€ puis 30%", value: "mixte" },
-  { label: "Heure 10€", value: "heure10" },
-  { label: "Heure 12€", value: "heure12" },
-];
-
 export function ListeCourses({ setCurrentStep }) {
   const feuilleRouteCtx = useFeuilleRouteContext();
   const [courses, setCourses] = useState(feuilleRouteCtx.state.formData.courses);
@@ -34,12 +23,26 @@ export function ListeCourses({ setCurrentStep }) {
     formState: { errors },
     control,
     reset,
+    setValue,
   } = useForm({
     resolver: yupResolver(courseSchema),
   });
 
+  const formatNumberInput = (value) => {
+    return value ? value.toString().replace('.', ',') : value;
+  };
+
+  const parseNumberInput = (value) => {
+    return value ? parseFloat(value.toString().replace(',', '.')) : value;
+  };
+
   const onSubmit = (data) => {
-    const newCourse = { ...data, id: Date.now() };
+    const newCourse = { 
+      ...data,
+      id: Date.now(),
+      prixTaximetre: parseNumberInput(data.prixTaximetre),
+      sommePercue: parseNumberInput(data.sommePercue)
+    };
     setCourses([...courses, newCourse]);
     feuilleRouteCtx.dispatch({ type: "ADD_COURSE", payload: newCourse });
     reset();
@@ -108,62 +111,51 @@ export function ListeCourses({ setCurrentStep }) {
 
           <div className="grid gap-4 sm:grid-cols-2">
             <Input
-              {...register("prixTaximetre", { valueAsNumber: true })}
+              {...register("prixTaximetre", {
+                setValueAs: v => v ? parseFloat(v.toString().replace(',', '.')) : v
+              })}
               label="Prix taximètre"
               error={errors?.prixTaximetre?.message}
-              placeholder="Ex: 27.00"
-              type="number"
-              step="0.01"
+              placeholder="Ex: 27,00"
+              type="text"
+              inputMode="decimal"
+              onChange={(e) => {
+                setValue("prixTaximetre", formatNumberInput(e.target.value));
+              }}
             />
             <Input
-              {...register("sommePercue", { valueAsNumber: true })}
+              {...register("sommePercue", {
+                setValueAs: v => v ? parseFloat(v.toString().replace(',', '.')) : v
+              })}
               label="Somme perçue"
               error={errors?.sommePercue?.message}
-              placeholder="Ex: 25.00"
-              type="number"
-              step="0.01"
+              placeholder="Ex: 25,00"
+              type="text"
+              inputMode="decimal"
+              onChange={(e) => {
+                setValue("sommePercue", formatNumberInput(e.target.value));
+              }}
             />
           </div>
 
-          <div className="grid gap-4 sm:grid-cols-2">
-            <Controller
-              render={({ field }) => (
-                <Listbox
-                  data={modesPaiement}
-                  value={
-                    modesPaiement.find((m) => m.value === field.value) || null
-                  }
-                  onChange={(val) => field.onChange(val.value)}
-                  name={field.name}
-                  label="Mode de paiement"
-                  placeholder="Sélectionnez un mode"
-                  displayField="label"
-                  error={errors?.modePaiement?.message}
-                />
-              )}
-              control={control}
-              name="modePaiement"
-            />
-
-            <Controller
-              render={({ field }) => (
-                <Listbox
-                  data={reglesSalaire}
-                  value={
-                    reglesSalaire.find((r) => r.value === field.value) || null
-                  }
-                  onChange={(val) => field.onChange(val.value)}
-                  name={field.name}
-                  label="Règle exceptionnelle"
-                  placeholder="Par défaut"
-                  displayField="label"
-                  error={errors?.regleExceptionnelle?.message}
-                />
-              )}
-              control={control}
-              name="regleExceptionnelle"
-            />
-          </div>
+          <Controller
+            render={({ field }) => (
+              <Listbox
+                data={modesPaiement}
+                value={
+                  modesPaiement.find((m) => m.value === field.value) || null
+                }
+                onChange={(val) => field.onChange(val.value)}
+                name={field.name}
+                label="Mode de paiement"
+                placeholder="Sélectionnez un mode"
+                displayField="label"
+                error={errors?.modePaiement?.message}
+              />
+            )}
+            control={control}
+            name="modePaiement"
+          />
 
           <Button type="submit" color="primary" className="w-full">
             Ajouter cette course
@@ -175,35 +167,41 @@ export function ListeCourses({ setCurrentStep }) {
       {courses.length > 0 && (
         <div className="mt-8">
           <h6 className="mb-4 text-lg font-medium">Courses enregistrées</h6>
-          <div className="space-y-4">
-            {courses.map((course) => (
-              <div
-                key={course.id}
-                className="rounded-lg border p-4 dark:border-dark-500"
-              >
-                <div className="grid grid-cols-2 gap-2">
-                  <div>
-                    <p className="text-sm font-medium">De:</p>
-                    <p>{course.lieuEmbarquement}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium">À:</p>
-                    <p>{course.lieuDebarquement}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium">Montant:</p>
-                    <p>{course.sommePercue} €</p>
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium">Paiement:</p>
-                    <p>
-                      {modesPaiement.find((m) => m.value === course.modePaiement)
-                        ?.label || "Inconnu"}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            ))}
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200 dark:divide-dark-500">
+              <thead className="bg-gray-50 dark:bg-dark-700">
+                <tr>
+                  <th className="px-4 py-2 text-left">N°</th>
+                  <th className="px-4 py-2 text-left">Index départ</th>
+                  <th className="px-4 py-2 text-left">Lieu embarquement</th>
+                  <th className="px-4 py-2 text-left">Heure embarquement</th>
+                  <th className="px-4 py-2 text-left">Index arrivée</th>
+                  <th className="px-4 py-2 text-left">Lieu débarquement</th>
+                  <th className="px-4 py-2 text-left">Heure débarquement</th>
+                  <th className="px-4 py-2 text-left">Prix taximètre</th>
+                  <th className="px-4 py-2 text-left">Somme perçue</th>
+                  <th className="px-4 py-2 text-left">Mode paiement</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-200 dark:divide-dark-500">
+                {courses.map((course, index) => (
+                  <tr key={course.id}>
+                    <td className="px-4 py-2">{index + 1}</td>
+                    <td className="px-4 py-2">{course.indexDepart}</td>
+                    <td className="px-4 py-2">{course.lieuEmbarquement || '-'}</td>
+                    <td className="px-4 py-2">{course.heureEmbarquement || '-'}</td>
+                    <td className="px-4 py-2">{course.indexArrivee}</td>
+                    <td className="px-4 py-2">{course.lieuDebarquement || '-'}</td>
+                    <td className="px-4 py-2">{course.heureDebarquement || '-'}</td>
+                    <td className="px-4 py-2">{course.prixTaximetre?.toFixed(2).replace('.', ',') || '-'} €</td>
+                    <td className="px-4 py-2">{course.sommePercue?.toFixed(2).replace('.', ',')} €</td>
+                    <td className="px-4 py-2">
+                      {modesPaiement.find((m) => m.value === course.modePaiement)?.label}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </div>
       )}
@@ -227,7 +225,3 @@ export function ListeCourses({ setCurrentStep }) {
     </div>
   );
 }
-
-ListeCourses.propTypes = {
-  setCurrentStep: PropTypes.func,
-};
