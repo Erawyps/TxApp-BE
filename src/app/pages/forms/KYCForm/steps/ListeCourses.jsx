@@ -23,15 +23,9 @@ export function ListeCourses({ setCurrentStep }) {
     formState: { errors },
     control,
     reset,
-    setValue,
   } = useForm({
     resolver: yupResolver(courseSchema),
   });
-
-  const formatNumberInput = (value) => {
-    if (!value) return value;
-    return value.toString().replace('.', ',');
-  };
 
   const parseNumberInput = (value) => {
     if (!value) return value;
@@ -118,51 +112,31 @@ export function ListeCourses({ setCurrentStep }) {
             label="Prix taximètre"
             error={errors?.prixTaximetre?.message}
             placeholder="Ex: 27,00"
-            type="text"  // Utiliser type="text" pour mieux gérer le format
             inputMode="decimal"
-            onChange={(e) => {
-              // Formatage pour l'affichage
-              const formattedValue = formatNumberInput(e.target.value);
-              setValue("prixTaximetre", formattedValue, {
-                shouldValidate: true
-              });
-            }}
           />
           <Input
             {...register("sommePercue")}
             label="Somme perçue"
             error={errors?.sommePercue?.message}
             placeholder="Ex: 25,00"
-            type="text"  // Utiliser type="text" pour mieux gérer le format
             inputMode="decimal"
-            onChange={(e) => {
-              // Formatage pour l'affichage
-              const formattedValue = formatNumberInput(e.target.value);
-              setValue("sommePercue", formattedValue, {
-                shouldValidate: true
-              });
-            }}
           />
         </div>
 
-          <Controller
-            render={({ field }) => (
-              <Listbox
-                data={modesPaiement}
-                value={
-                  modesPaiement.find((m) => m.value === field.value) || null
-                }
-                onChange={(val) => field.onChange(val.value)}
-                name={field.name}
-                label="Mode de paiement"
-                placeholder="Sélectionnez un mode"
-                displayField="label"
-                error={errors?.modePaiement?.message}
-              />
-            )}
-            control={control}
-            name="modePaiement"
-          />
+        <Controller
+          name="modePaiement"
+          control={control}
+          defaultValue="cash"
+          render={({ field }) => (
+            <Listbox
+              data={modesPaiement}
+              value={modesPaiement.find(m => m.value === field.value) || modesPaiement[0]}
+              onChange={(val) => field.onChange(val.value)}
+              label="Mode de paiement"
+              displayField="label"
+            />
+          )}
+        />
 
           <Button type="submit" color="primary" className="w-full">
             Ajouter cette course
