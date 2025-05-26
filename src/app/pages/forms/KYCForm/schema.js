@@ -76,16 +76,21 @@ export const courseSchema = Yup.object().shape({
   heureEmbarquement: Yup.string(),
   heureDebarquement: Yup.string(),
   prixTaximetre: Yup.number()
-    
+    .typeError("Doit être un nombre")
     .positive("Doit être positif")
-    .transform((value) => value ? value.toString().replace(',', '.') : value),
+    .transform((value, originalValue) => {
+      // Convertit les virgules en points et supprime les espaces
+      return originalValue ? parseFloat(originalValue.toString().replace(',', '.').replace(/\s/g, '')) : originalValue;
+    })
+    .required("Prix taximètre requis"),
   sommePercue: Yup.number()
-    
+    .typeError("Doit être un nombre")
     .positive("Doit être positif")
+    .transform((value, originalValue) => {
+      // Convertit les virgules en points et supprime les espaces
+      return originalValue ? parseFloat(originalValue.toString().replace(',', '.').replace(/\s/g, '')) : originalValue;
+    })
     .required("Somme perçue requise")
-    .transform((value) => value ? value.toString().replace(',', '.') : value),
-  modePaiement: Yup.string()
-    .required("Mode de paiement requis")
     .oneOf(["cash", "bancontact", "facture", "virement"], "Mode invalide")
 });
 

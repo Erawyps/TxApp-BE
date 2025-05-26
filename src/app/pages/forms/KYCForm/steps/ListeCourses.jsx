@@ -6,6 +6,7 @@ import { Listbox } from "components/shared/form/Listbox";
 import { useFeuilleRouteContext } from "../FeuilleRouteContext";
 import { courseSchema } from "../schema";
 
+
 const modesPaiement = [
   { label: "Cash", value: "cash" },
   { label: "Bancontact", value: "bancontact" },
@@ -29,11 +30,15 @@ export function ListeCourses({ setCurrentStep }) {
   });
 
   const formatNumberInput = (value) => {
-    return value ? value.toString().replace('.', ',') : value;
+    if (!value) return value;
+    // Formatage pour l'affichage (virgule comme séparateur décimal)
+    return value.toString().replace('.', ',');
   };
 
   const parseNumberInput = (value) => {
-    return value ? parseFloat(value.toString().replace(',', '.')) : value;
+    if (!value) return value;
+    // Conversion pour le stockage (point comme séparateur décimal)
+    return parseFloat(value.toString().replace(',', '.').replace(/\s/g, ''));
   };
 
   const onSubmit = (data) => {
@@ -46,14 +51,6 @@ export function ListeCourses({ setCurrentStep }) {
     setCourses([...courses, newCourse]);
     feuilleRouteCtx.dispatch({ type: "ADD_COURSE", payload: newCourse });
     reset();
-  };
-
-  const onNext = () => {
-    feuilleRouteCtx.dispatch({
-      type: "SET_STEP_STATUS",
-      payload: { listeCourses: { isDone: true } },
-    });
-    setCurrentStep(3);
   };
 
   return (
@@ -110,33 +107,37 @@ export function ListeCourses({ setCurrentStep }) {
           </div>
 
           <div className="grid gap-4 sm:grid-cols-2">
-            <Input
-              {...register("prixTaximetre", {
-                setValueAs: v => v ? parseFloat(v.toString().replace(',', '.')) : v
-              })}
-              label="Prix taximètre"
-              error={errors?.prixTaximetre?.message}
-              placeholder="Ex: 27,00"
-              type="text"
-              inputMode="decimal"
-              onChange={(e) => {
-                setValue("prixTaximetre", formatNumberInput(e.target.value));
-              }}
-            />
-            <Input
-              {...register("sommePercue", {
-                setValueAs: v => v ? parseFloat(v.toString().replace(',', '.')) : v
-              })}
-              label="Somme perçue"
-              error={errors?.sommePercue?.message}
-              placeholder="Ex: 25,00"
-              type="text"
-              inputMode="decimal"
-              onChange={(e) => {
-                setValue("sommePercue", formatNumberInput(e.target.value));
-              }}
-            />
-          </div>
+          <Input
+            {...register("prixTaximetre")}
+            label="Prix taximètre"
+            error={errors?.prixTaximetre?.message}
+            placeholder="Ex: 27,00"
+            type="text"  // Utiliser type="text" pour mieux gérer le format
+            inputMode="decimal"
+            onChange={(e) => {
+              // Formatage pour l'affichage
+              const formattedValue = formatNumberInput(e.target.value);
+              setValue("prixTaximetre", formattedValue, {
+                shouldValidate: true
+              });
+            }}
+          />
+          <Input
+            {...register("sommePercue")}
+            label="Somme perçue"
+            error={errors?.sommePercue?.message}
+            placeholder="Ex: 25,00"
+            type="text"  // Utiliser type="text" pour mieux gérer le format
+            inputMode="decimal"
+            onChange={(e) => {
+              // Formatage pour l'affichage
+              const formattedValue = formatNumberInput(e.target.value);
+              setValue("sommePercue", formattedValue, {
+                shouldValidate: true
+              });
+            }}
+          />
+        </div>
 
           <Controller
             render={({ field }) => (
