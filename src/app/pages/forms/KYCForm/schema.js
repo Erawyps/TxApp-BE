@@ -23,7 +23,7 @@ export const chauffeurSchema = Yup.object().shape({
 
 export const vehiculeSchema = Yup.object().shape({
   plaqueImmatriculation: Yup.string()
-    .required("Plaque requise")
+  
     .matches(
       // Regex for Belgian license plates
       /^([A-Z]{1,2}-[A-Z]{3}-\d{3}|[A-Z]{1,2}-\d{3}-[A-Z]{3}|[A-Z]{1,2}-\d{2}-[A-Z]{2})$/,
