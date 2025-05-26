@@ -6,7 +6,6 @@ import { Listbox } from "components/shared/form/Listbox";
 import { useFeuilleRouteContext } from "../FeuilleRouteContext";
 import { courseSchema } from "../schema";
 
-
 const modesPaiement = [
   { label: "Cash", value: "cash" },
   { label: "Bancontact", value: "bancontact" },
@@ -31,13 +30,11 @@ export function ListeCourses({ setCurrentStep }) {
 
   const formatNumberInput = (value) => {
     if (!value) return value;
-    // Formatage pour l'affichage (virgule comme séparateur décimal)
     return value.toString().replace('.', ',');
   };
 
   const parseNumberInput = (value) => {
     if (!value) return value;
-    // Conversion pour le stockage (point comme séparateur décimal)
     return parseFloat(value.toString().replace(',', '.').replace(/\s/g, ''));
   };
 
@@ -52,6 +49,15 @@ export function ListeCourses({ setCurrentStep }) {
     feuilleRouteCtx.dispatch({ type: "ADD_COURSE", payload: newCourse });
     reset();
   };
+
+  const onNext = () => {
+    feuilleRouteCtx.dispatch({
+      type: "SET_STEP_STATUS",
+      payload: { listeCourses: { isDone: true } },
+    });
+    setCurrentStep(3);
+  };
+
 
   return (
     <div>
