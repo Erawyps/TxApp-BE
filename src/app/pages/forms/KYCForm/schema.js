@@ -76,11 +76,11 @@ export const courseSchema = Yup.object().shape({
   heureEmbarquement: Yup.string(),
   heureDebarquement: Yup.string(),
   prixTaximetre: Yup.number()
-    .typeError("Doit être un nombre")
+    
     .positive("Doit être positif")
     .transform((value) => value ? value.toString().replace(',', '.') : value),
   sommePercue: Yup.number()
-    .typeError("Doit être un nombre")
+    
     .positive("Doit être positif")
     .required("Somme perçue requise")
     .transform((value) => value ? value.toString().replace(',', '.') : value),
