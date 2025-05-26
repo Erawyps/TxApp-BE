@@ -25,7 +25,8 @@ export const vehiculeSchema = Yup.object().shape({
   plaqueImmatriculation: Yup.string()
     .required("Plaque requise")
     .matches(
-      /^T-[A-Z]{3}-\d{3}$/,
+      // Regex for Belgian license plates
+      /^([A-Z]{1,2}-[A-Z]{3}-\d{3}|[A-Z]{1,2}-\d{3}-[A-Z]{3}|[A-Z]{1,2}-\d{2}-[A-Z]{2})$/,
       "Format de plaque invalide. Exemple valide: T-XAA-751"
     )
     .uppercase("Doit être en majuscules"),
