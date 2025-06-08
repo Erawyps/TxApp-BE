@@ -1,5 +1,5 @@
 {
-    "name": "cabmapp",
+    "name": "txapp",
     "compatibility_date": "2025-05-07",
     "compatibility_flags": ["nodejs_compat"],
     "main": "./worker.js",  // <-- Ajout crucial
