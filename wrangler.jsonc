@@ -13,9 +13,9 @@
     },
     "hyperdrive": [
       {
-        "binding": "HYPERDRIVE", // Binding name for the Hyperdrive
-        "id": "524a9438f01e47e88558cb5a181d0b14"
-        ,"localConnectionString": "postgresql://postgres:rKcnNJbacyLF3TQd@db.jfrhzwtkfotsrjkacrns.supabase.co:5432/postgres"
+        "binding": "HYPERDRIVE",
+        "id": "524a9438f01e47e88558cb5a181d0b14",
+        "localConnectionString": "postgresql://postgres:rKcnNJbacyLF3TQd@db.jfrhzwtkfotsrjkacrns.supabase.co:5432/postgres"
       }
     ]
   }
