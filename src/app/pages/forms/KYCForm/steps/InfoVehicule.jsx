@@ -12,6 +12,7 @@ export function InfoVehicule({ setCurrentStep }) {
     handleSubmit,
     formState: { errors },
     setValue,
+    trigger,
   } = useForm({
     resolver: yupResolver(vehiculeSchema),
     defaultValues: feuilleRouteCtx.state.formData.vehicule,
@@ -20,14 +21,24 @@ export function InfoVehicule({ setCurrentStep }) {
   const formatPlaque = (value) => {
     if (!value) return value;
     
-    // Enlève tous les caractères non alphanumériques
+    // Formatage automatique de la plaque
     let v = value.replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
-    
-    // Format T-XXX-999
     if (v.length > 0) v = `T-${v.slice(0, 3)}`;
     if (v.length > 5) v = `${v.slice(0, 5)}-${v.slice(5, 8)}`;
     
     return v;
+  };
+
+  const handlePlaqueChange = (e) => {
+    const formatted = formatPlaque(e.target.value);
+    setValue("plaqueImmatriculation", formatted, { shouldValidate: true });
+  };
+
+  const handleKmFinChange = (e) => {
+    const value = e.target.value;
+    setValue("kmFin", value, { shouldValidate: true });
+    // Déclencher la validation des champs dépendants
+    trigger(["priseEnChargeFin", "kmTotalFin", "kmEnChargeFin", "chutesFin"]);
   };
 
   const onSubmit = (data) => {
@@ -51,10 +62,7 @@ export function InfoVehicule({ setCurrentStep }) {
             label="Plaque d'immatriculation"
             error={errors?.plaqueImmatriculation?.message}
             placeholder="Ex: T-XAA-751"
-            onChange={(e) => {
-              const formatted = formatPlaque(e.target.value);
-              setValue("plaqueImmatriculation", formatted);
-            }}
+            onChange={handlePlaqueChange}
           />
           <Input
             {...register("numeroIdentification")}
@@ -66,18 +74,26 @@ export function InfoVehicule({ setCurrentStep }) {
 
         <div className="grid gap-4 sm:grid-cols-2">
           <Input
-            {...register("kmDebut", { valueAsNumber: true })}
+            {...register("kmDebut", { 
+              valueAsNumber: true,
+              onChange: () => trigger("kmFin")
+            })}
             label="Index km début"
             error={errors?.kmDebut?.message}
             placeholder="Ex: 188132"
             type="number"
+            min="0"
           />
           <Input
-            {...register("kmFin", { valueAsNumber: true })}
+            {...register("kmFin", { 
+              valueAsNumber: true,
+              onChange: handleKmFinChange
+            })}
             label="Index km fin"
             error={errors?.kmFin?.message}
             placeholder="Ex: 188500"
             type="number"
+            min="0"
           />
         </div>
 
@@ -88,13 +104,18 @@ export function InfoVehicule({ setCurrentStep }) {
             error={errors?.priseEnChargeDebut?.message}
             placeholder="Ex: 2984"
             type="number"
+            min="0"
           />
           <Input
-            {...register("priseEnChargeFin", { valueAsNumber: true })}
+            {...register("priseEnChargeFin", { 
+              valueAsNumber: true,
+              onChange: () => trigger("priseEnChargeDebut")
+            })}
             label="Prise en charge fin"
             error={errors?.priseEnChargeFin?.message}
             placeholder="Ex: 3100"
             type="number"
+            min="0"
           />
         </div>
 
@@ -105,13 +126,18 @@ export function InfoVehicule({ setCurrentStep }) {
             error={errors?.kmTotalDebut?.message}
             placeholder="Ex: 100587"
             type="number"
+            min="0"
           />
           <Input
-            {...register("kmTotalFin", { valueAsNumber: true })}
+            {...register("kmTotalFin", { 
+              valueAsNumber: true,
+              onChange: () => trigger("kmTotalDebut")
+            })}
             label="Index km totaux fin"
             error={errors?.kmTotalFin?.message}
             placeholder="Ex: 100700"
             type="number"
+            min="0"
           />
         </div>
 
@@ -122,13 +148,18 @@ export function InfoVehicule({ setCurrentStep }) {
             error={errors?.kmEnChargeDebut?.message}
             placeholder="Ex: 38593"
             type="number"
+            min="0"
           />
           <Input
-            {...register("kmEnChargeFin", { valueAsNumber: true })}
+            {...register("kmEnChargeFin", { 
+              valueAsNumber: true,
+              onChange: () => trigger("kmEnChargeDebut")
+            })}
             label="Km en charge fin"
             error={errors?.kmEnChargeFin?.message}
             placeholder="Ex: 38700"
             type="number"
+            min="0"
           />
         </div>
 
@@ -140,14 +171,19 @@ export function InfoVehicule({ setCurrentStep }) {
             placeholder="Ex: 6061.10"
             type="number"
             step="0.01"
+            min="0"
           />
           <Input
-            {...register("chutesFin", { valueAsNumber: true })}
+            {...register("chutesFin", { 
+              valueAsNumber: true,
+              onChange: () => trigger("chutesDebut")
+            })}
             label="Chutes fin (€)"
             error={errors?.chutesFin?.message}
             placeholder="Ex: 6100.00"
             type="number"
             step="0.01"
+            min="0"
           />
         </div>
 
@@ -158,6 +194,7 @@ export function InfoVehicule({ setCurrentStep }) {
           placeholder="Ex: 250.00"
           type="number"
           step="0.01"
+          min="0"
         />
       </div>
 
@@ -165,10 +202,15 @@ export function InfoVehicule({ setCurrentStep }) {
         <Button
           className="min-w-[7rem]"
           onClick={() => setCurrentStep(0)}
+          type="button"
         >
           Retour
         </Button>
-        <Button type="submit" className="min-w-[7rem]" color="primary">
+        <Button 
+          type="submit" 
+          className="min-w-[7rem]" 
+          color="primary"
+        >
           Suivant
         </Button>
       </div>
