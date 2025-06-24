@@ -20,92 +20,75 @@ export function Recapitulatif({ setCurrentStep, setValidated }) {
   const [error, setError] = useState(null);
   const navigate = useNavigate();
 
-  const { chauffeur, vehicule, courses, charges } = feuilleRouteCtx.state.formData;
+  const { chauffeur, vehicule, courses = [], charges = [] } = feuilleRouteCtx.state.formData;
 
-  // Calcul des totaux avec vérification des valeurs nulles
-  const totalRecettes = courses?.reduce((sum, course) => sum + (course?.sommePercue || 0), 0) || 0;
-  
-  const totalChargesCash = charges
-    ?.filter((c) => c?.modePaiement === "cash")
-    ?.reduce((sum, charge) => sum + (charge?.montant || 0), 0) || 0;
-  
-  const totalChargesBancontact = charges
-    ?.filter((c) => c?.modePaiement === "bancontact")
-    ?.reduce((sum, charge) => sum + (charge?.montant || 0), 0) || 0;
+  // Calcul des totaux
+  const totalRecettes = courses.reduce((sum, course) => sum + (course?.sommePercue || 0), 0);
+  const totalKmCourses = courses.reduce((sum, course) => sum + ((course?.indexArrivee || 0) - (course?.indexDepart || 0)), 0);
+  const totalCharges = charges.reduce((sum, charge) => sum + (charge?.montant || 0), 0);
 
   const calculerSalaire = () => {
-    try {
-      if (!chauffeur?.regleSalaire) {
-        return { montant: 0, type: "Non défini", details: "" };
-      }
+    if (!chauffeur?.regleSalaire) {
+      return { montant: 0, type: "Non défini", details: "" };
+    }
 
-      switch (chauffeur.regleSalaire) {
-        case "fixe":
-          return { 
-            montant: chauffeur.tauxSalaire || 0, 
-            type: "Fixe",
-            details: `${(chauffeur.tauxSalaire || 0).toFixed(2)} €`
-          };
-          
-        case "40percent":
-          return { 
-            montant: totalRecettes * 0.4, 
-            type: "40% des recettes",
-            details: `40% de ${totalRecettes.toFixed(2)} € = ${(totalRecettes * 0.4).toFixed(2)} €`
-          };
-          
-        case "30percent":
-          return { 
-            montant: totalRecettes * 0.3, 
-            type: "30% des recettes",
-            details: `30% de ${totalRecettes.toFixed(2)} € = ${(totalRecettes * 0.3).toFixed(2)} €`
-          };
-          
-        case "mixte": {
-          const seuil = 180;
-          const montant = totalRecettes <= seuil 
-            ? totalRecettes * 0.4 
-            : (seuil * 0.4) + ((totalRecettes - seuil) * 0.3);
-          return { 
-            montant,
-            type: "Mixte (40%/30%)",
-            details: totalRecettes <= seuil
-              ? `40% de ${totalRecettes.toFixed(2)} € = ${montant.toFixed(2)} €`
-              : `40% de 180 € + 30% de ${(totalRecettes - seuil).toFixed(2)} € = ${montant.toFixed(2)} €`
-          };
-        }
-        
-        case "heure10": {
-          const heures = calculerHeuresPrestation();
-          return { 
-            montant: heures * 10,
-            type: "Heures (10€/h)",
-            details: `${heures} h × 10 € = ${(heures * 10).toFixed(2)} €`
-          };
-        }
-        
-        case "heure12": {
-          const heures = calculerHeuresPrestation();
-          return { 
-            montant: heures * 12,
-            type: "Heures (12€/h)",
-            details: `${heures} h × 12 € = ${(heures * 12).toFixed(2)} €`
-          };
-        }
-        
-        default:
-          return { montant: 0, type: "Inconnu", details: "" };
+    switch (chauffeur.regleSalaire) {
+      case "fixe":
+        return { 
+          montant: chauffeur.tauxSalaire || 0, 
+          type: "Fixe",
+          details: `${(chauffeur.tauxSalaire || 0).toFixed(2)} €`
+        };
+      case "40percent":
+        return { 
+          montant: totalRecettes * 0.4, 
+          type: "40% des recettes",
+          details: `40% de ${totalRecettes.toFixed(2)} € = ${(totalRecettes * 0.4).toFixed(2)} €`
+        };
+      case "30percent":
+        return { 
+          montant: totalRecettes * 0.3, 
+          type: "30% des recettes",
+          details: `30% de ${totalRecettes.toFixed(2)} € = ${(totalRecettes * 0.3).toFixed(2)} €`
+        };
+      case "mixte": {
+        const seuil = 180;
+        const montant = totalRecettes <= seuil 
+          ? totalRecettes * 0.4 
+          : (seuil * 0.4) + ((totalRecettes - seuil) * 0.3);
+        return { 
+          montant,
+          type: "Mixte (40%/30%)",
+          details: totalRecettes <= seuil
+            ? `40% de ${totalRecettes.toFixed(2)} € = ${montant.toFixed(2)} €`
+            : `40% de 180 € + 30% de ${(totalRecettes - seuil).toFixed(2)} € = ${montant.toFixed(2)} €`
+        };
       }
-    } catch (err) {
-      console.error("Erreur calcul salaire:", err);
-      return { montant: 0, type: "Erreur", details: "Calcul impossible" };
+      case "heure10": {
+        const heures = calculerHeuresPrestation();
+        return { 
+          montant: heures * 10,
+          type: "Heures (10€/h)",
+          details: `${heures} h × 10 € = ${(heures * 10).toFixed(2)} €`
+        };
+      }
+      case "heure12": {
+        const heures = calculerHeuresPrestation();
+        return { 
+          montant: heures * 12,
+          type: "Heures (12€/h)",
+          details: `${heures} h × 12 € = ${(heures * 12).toFixed(2)} €`
+        };
+      }
+      default:
+        return { montant: 0, type: "Inconnu", details: "" };
     }
   };
 
   const calculerHeuresPrestation = () => {
+    if (!chauffeur?.heureDebut || !chauffeur?.heureFin) return 0;
+    
     try {
-      if (!chauffeur?.heureDebut || !chauffeur?.heureFin) return 0;
-      
       const [debutH, debutM] = chauffeur.heureDebut.split(':').map(Number);
       const [finH, finM] = chauffeur.heureFin.split(':').map(Number);
       
@@ -123,7 +106,7 @@ export function Recapitulatif({ setCurrentStep, setValidated }) {
   };
 
   const salaire = calculerSalaire();
-  const benefice = totalRecettes - salaire.montant - totalChargesCash - totalChargesBancontact;
+  const benefice = totalRecettes - salaire.montant - totalCharges;
 
   const onValidate = () => {
     setShowModal(true);
@@ -135,32 +118,12 @@ export function Recapitulatif({ setCurrentStep, setValidated }) {
     
     try {
       // Simulation d'envoi à l'API
-      const feuilleComplete = {
-        ...feuilleRouteCtx.state.formData,
-        totals: {
-          recettes: totalRecettes,
-          charges: totalChargesCash + totalChargesBancontact,
-          salaire: salaire.montant,
-          benefice
-        }
-      };
-
-      console.log("Données à envoyer:", feuilleComplete);
-      
-      // Ici vous intégrerez l'appel API réel
-      // await api.saveFeuilleRoute(feuilleComplete);
-      
-      // Simuler un délai d'envoi
       await new Promise(resolve => setTimeout(resolve, 1000));
       
       setShowModal(false);
       setValidated(true);
-      
-      // Redirection après succès
       navigate("/feuilles-route");
-      
     } catch (err) {
-      console.error("Erreur validation:", err);
       setError("Une erreur est survenue lors de l'enregistrement");
     } finally {
       setIsSubmitting(false);
@@ -168,7 +131,7 @@ export function Recapitulatif({ setCurrentStep, setValidated }) {
   };
 
   return (
-    <div>
+    <div className="max-w-3xl">
       <div className="mt-6 space-y-6">
         {/* Bloc Chauffeur + Véhicule */}
         <div className="rounded-lg border p-4 dark:border-dark-500">
@@ -177,31 +140,31 @@ export function Recapitulatif({ setCurrentStep, setValidated }) {
               <h6 className="mb-3 text-lg font-medium">Chauffeur</h6>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <p className="text-sm font-medium">Nom:</p>
+                  <p className="text-sm font-medium text-gray-800 dark:text-dark-100">Nom:</p>
                   <p>{chauffeur?.prenom || '-'} {chauffeur?.nom || '-'}</p>
                 </div>
                 <div>
-                  <p className="text-sm font-medium">Date:</p>
+                  <p className="text-sm font-medium text-gray-800 dark:text-dark-100">Date:</p>
                   <p>{chauffeur?.date || '-'}</p>
                 </div>
                 <div>
-                  <p className="text-sm font-medium">Heures:</p>
+                  <p className="text-sm font-medium text-gray-800 dark:text-dark-100">Heures:</p>
                   <p>{chauffeur?.heureDebut || '-'} - {chauffeur?.heureFin || '-'}</p>
                 </div>
                 {chauffeur?.interruptions && (
                   <div>
-                    <p className="text-sm font-medium">Interruptions:</p>
+                    <p className="text-sm font-medium text-gray-800 dark:text-dark-100">Interruptions:</p>
                     <p>{chauffeur.interruptions}</p>
                   </div>
                 )}
                 <div>
-                  <p className="text-sm font-medium">Règle salaire:</p>
+                  <p className="text-sm font-medium text-gray-800 dark:text-dark-100">Règle salaire:</p>
                   <p>
                     {reglesSalaire.find((r) => r.value === chauffeur?.regleSalaire)?.label || '-'}
                   </p>
                 </div>
                 <div>
-                  <p className="text-sm font-medium">Détails salaire:</p>
+                  <p className="text-sm font-medium text-gray-800 dark:text-dark-100">Détails salaire:</p>
                   <p>{salaire.details || '-'}</p>
                 </div>
               </div>
@@ -211,19 +174,19 @@ export function Recapitulatif({ setCurrentStep, setValidated }) {
               <h6 className="mb-3 text-lg font-medium">Véhicule</h6>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <p className="text-sm font-medium">Plaque:</p>
+                  <p className="text-sm font-medium text-gray-800 dark:text-dark-100">Plaque:</p>
                   <p>{vehicule?.plaqueImmatriculation || '-'}</p>
                 </div>
                 <div>
-                  <p className="text-sm font-medium">N° Identification:</p>
+                  <p className="text-sm font-medium text-gray-800 dark:text-dark-100">N° Identification:</p>
                   <p>{vehicule?.numeroIdentification || '-'}</p>
                 </div>
                 <div>
-                  <p className="text-sm font-medium">Km début:</p>
+                  <p className="text-sm font-medium text-gray-800 dark:text-dark-100">Km début:</p>
                   <p>{vehicule?.kmDebut || '-'}</p>
                 </div>
                 <div>
-                  <p className="text-sm font-medium">Km fin:</p>
+                  <p className="text-sm font-medium text-gray-800 dark:text-dark-100">Km fin:</p>
                   <p>{vehicule?.kmFin || '-'}</p>
                 </div>
               </div>
@@ -236,26 +199,16 @@ export function Recapitulatif({ setCurrentStep, setValidated }) {
           <h6 className="mb-3 text-lg font-medium">Performances</h6>
           <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
             <div>
-              <p className="text-sm font-medium">Nombre de courses:</p>
-              <p>{courses?.length || 0}</p>
+              <p className="text-sm font-medium text-gray-800 dark:text-dark-100">Nombre de courses:</p>
+              <p>{courses.length}</p>
             </div>
             <div>
-              <p className="text-sm font-medium">Km parcourus:</p>
-              <p>
-                {courses?.length > 0 
-                  ? (courses[courses.length - 1]?.indexArrivee || 0) - (courses[0]?.indexDepart || 0)
-                  : 0}
-              </p>
+              <p className="text-sm font-medium text-gray-800 dark:text-dark-100">Km parcourus:</p>
+              <p>{totalKmCourses}</p>
             </div>
             <div>
-              <p className="text-sm font-medium">Ratio €/km:</p>
-              <p>
-                {(() => {
-                  const totalKm = courses?.reduce((sum, course) => 
-                    sum + ((course?.indexArrivee || 0) - (course?.indexDepart || 0)), 0) || 0;
-                  return totalKm > 0 ? (totalRecettes / totalKm).toFixed(2) : 0;
-                })()}
-              </p>
+              <p className="text-sm font-medium text-gray-800 dark:text-dark-100">Ratio €/km:</p>
+              <p>{totalKmCourses > 0 ? (totalRecettes / totalKmCourses).toFixed(2) : 0}</p>
             </div>
           </div>
         </div>
@@ -265,26 +218,8 @@ export function Recapitulatif({ setCurrentStep, setValidated }) {
           <h6 className="mb-3 text-lg font-medium">Recettes</h6>
           <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
             <div>
-              <p className="text-sm font-medium">Total recettes:</p>
+              <p className="text-sm font-medium text-gray-800 dark:text-dark-100">Total recettes:</p>
               <p>{totalRecettes.toFixed(2)} €</p>
-            </div>
-            <div>
-              <p className="text-sm font-medium">Cash:</p>
-              <p>
-                {courses
-                  ?.filter((c) => c?.modePaiement === "cash")
-                  ?.reduce((sum, course) => sum + (course?.sommePercue || 0), 0)
-                  ?.toFixed(2) || '0.00'} €
-              </p>
-            </div>
-            <div>
-              <p className="text-sm font-medium">Bancontact/Virement:</p>
-              <p>
-                {courses
-                  ?.filter((c) => ["bancontact", "virement"].includes(c?.modePaiement))
-                  ?.reduce((sum, course) => sum + (course?.sommePercue || 0), 0)
-                  ?.toFixed(2) || '0.00'} €
-              </p>
             </div>
           </div>
         </div>
@@ -294,15 +229,11 @@ export function Recapitulatif({ setCurrentStep, setValidated }) {
           <h6 className="mb-3 text-lg font-medium">Charges</h6>
           <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
             <div>
-              <p className="text-sm font-medium">Charges cash:</p>
-              <p>{totalChargesCash.toFixed(2)} €</p>
+              <p className="text-sm font-medium text-gray-800 dark:text-dark-100">Total charges:</p>
+              <p>{totalCharges.toFixed(2)} €</p>
             </div>
             <div>
-              <p className="text-sm font-medium">Charges Bancontact:</p>
-              <p>{totalChargesBancontact.toFixed(2)} €</p>
-            </div>
-            <div>
-              <p className="text-sm font-medium">Salaire:</p>
+              <p className="text-sm font-medium text-gray-800 dark:text-dark-100">Salaire:</p>
               <p>{salaire.montant.toFixed(2)} €</p>
             </div>
           </div>
@@ -313,20 +244,13 @@ export function Recapitulatif({ setCurrentStep, setValidated }) {
           <h6 className="mb-3 text-lg font-medium">Bénéfice</h6>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <p className="text-sm font-medium">Total bénéfice:</p>
+              <p className="text-sm font-medium text-gray-800 dark:text-dark-100">Total bénéfice:</p>
               <p className="text-lg font-bold text-green-600">
                 {benefice.toFixed(2)} €
               </p>
             </div>
           </div>
         </div>
-
-        {/* Affichage des erreurs */}
-        {error && (
-          <div className="p-4 bg-red-100 border border-red-400 text-red-700 rounded">
-            {error}
-          </div>
-        )}
       </div>
 
       <div className="mt-8 flex justify-end space-x-3">
