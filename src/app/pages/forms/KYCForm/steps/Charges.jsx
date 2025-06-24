@@ -76,23 +76,44 @@ export function Charges({ setCurrentStep }) {
     }
   };
 
-  const onNext = () => {
-    try {
-      // Valider qu'il y a au moins une charge avant de continuer
-      if (charges.length === 0) {
-        alert("Veuillez ajouter au moins une charge avant de continuer");
-        return;
-      }
-
-      feuilleRouteCtx.dispatch({
-        type: "SET_STEP_STATUS",
-        payload: { charges: { isDone: true } },
-      });
-      setCurrentStep(4);
-    } catch (error) {
-      console.error("Erreur lors de la navigation:", error);
+  const onNext = async () => {
+  try {
+    setIsSubmitting(true);
+    
+    // Valider qu'il y a au moins une charge
+    if (charges.length === 0) {
+      throw new Error("Au moins une charge est requise");
     }
-  };
+
+    // Valider toutes les charges
+    const chargesValid = charges.every(charge => {
+      try {
+        chargeSchema.validateSync(charge);
+        return true;
+      } catch {
+        return false;
+      }
+    });
+
+    if (!chargesValid) {
+      throw new Error("Certaines charges ne sont pas valides");
+    }
+
+    // Mettre à jour le statut de l'étape
+    feuilleRouteCtx.dispatch({
+      type: "SET_STEP_STATUS",
+      payload: { charges: { isDone: true } },
+    });
+
+    // Naviguer vers le récapitulatif
+    setCurrentStep(4);
+  } catch (error) {
+    console.error("Erreur lors de la navigation:", error);
+    alert(`Erreur: ${error.message}`);
+  } finally {
+    setIsSubmitting(false);
+  }
+};
 
   const handleRemoveCharge = (chargeId) => {
     try {
