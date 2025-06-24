@@ -91,18 +91,18 @@ export const courseSchema = Yup.object().shape({
     .oneOf(["cash", "bancontact", "facture", "virement"])
 });
 
+// Dans schema.js
 export const chargeSchema = Yup.object().shape({
-  type: Yup.string()
-    .required("Type de charge requis")
-    .oneOf(["carburant", "peage", "entretien", "divers"]),
-  description: Yup.string().nullable(),
-  montant: Yup.number()
-    .transform(parseNumber)
-    .required("Montant requis")
-    .positive("Doit être positif"),
-  modePaiement: Yup.string()
-    .required("Mode paiement requis")
-    .oneOf(["cash", "bancontact", "virement"])
+  type: Yup.string().default("divers"),
+  description: Yup.string(),
+  montant: Yup.mixed()
+    .test('is-number', 'Montant invalide', (value) => {
+      if (!value) return false;
+      const num = parseFloat(value.toString().replace(',', '.'));
+      return !isNaN(num) && num > 0;
+    })
+    .required("Montant requis"),
+  modePaiement: Yup.string().default("cash")
 });
 
 // Données mock pour les listes déroulantes
