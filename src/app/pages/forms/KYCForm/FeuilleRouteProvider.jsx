@@ -107,6 +107,24 @@ const reducer = (state, action) => {
           ),
         },
       };
+    case "CALCULATE_TOTALS":
+      const coursesTotal = state.formData.courses.reduce((sum, course) => sum + (course.sommePercue || 0), 0);
+      const chargesTotal = state.formData.charges.reduce((sum, charge) => sum + (charge.montant || 0), 0);
+      
+      return {
+        ...state,
+        formData: {
+          ...state.formData,
+          vehicule: {
+            ...state.formData.vehicule,
+            recettes: coursesTotal,
+          },
+          totals: {
+            courses: coursesTotal,
+            charges: chargesTotal,
+          }
+        }
+      };
     case "RESET":
       return initialState;
     default:
@@ -117,6 +135,7 @@ const reducer = (state, action) => {
 export function FeuilleRouteProvider({ children }) {
   const [state, dispatch] = useReducer(reducer, initialState);
   const value = { state, dispatch };
+  
   return (
     <FeuilleRouteContextProvider value={value}>
       {children}
