@@ -123,7 +123,7 @@ export function Recapitulatif({ setCurrentStep, setValidated }) {
       setShowModal(false);
       setValidated(true);
       navigate("/feuilles-route");
-    } catch (err) {
+    } catch {
       setError("Une erreur est survenue lors de l'enregistrement");
     } finally {
       setIsSubmitting(false);
