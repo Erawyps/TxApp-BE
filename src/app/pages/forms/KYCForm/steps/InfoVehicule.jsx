@@ -4,6 +4,23 @@ import { Button, Input } from "components/ui";
 import { useFeuilleRouteContext } from "../FeuilleRouteContext";
 import { vehiculeSchema } from "../schema";
 
+// Ajoutez cette fonction pour formater la plaque d'immatriculation
+const formatPlaque = (value) => {
+  if (!value) return value;
+  
+  // Supprime tous les caractères non alphanumériques
+  const cleaned = value.replace(/[^a-zA-Z0-9]/g, '');
+  
+  // Format standard pour plaques belges: 1-AAA-999 ou AAA-999
+  if (cleaned.length <= 3) {
+    return cleaned;
+  }
+  if (cleaned.length <= 6) {
+    return `${cleaned.slice(0, 3)}-${cleaned.slice(3)}`;
+  }
+  return `${cleaned.slice(0, 1)}-${cleaned.slice(1, 4)}-${cleaned.slice(4, 7)}`;
+};
+
 export function InfoVehicule({ setCurrentStep }) {
   const feuilleRouteCtx = useFeuilleRouteContext();
 
@@ -26,8 +43,7 @@ export function InfoVehicule({ setCurrentStep }) {
   const handleKmFinChange = (e) => {
     const value = e.target.value;
     setValue("kmFin", value, { shouldValidate: true });
-    // Déclencher la validation des champs dépendants
-    trigger(["priseEnChargeFin", "kmTotalFin", "kmEnChargeFin", "chutesFin"]);
+    trigger(["kmDebut"]);
   };
 
   const onSubmit = (data) => {
@@ -85,106 +101,6 @@ export function InfoVehicule({ setCurrentStep }) {
             min="0"
           />
         </div>
-
-        <div className="grid gap-4 sm:grid-cols-2">
-          <Input
-            {...register("priseEnChargeDebut", { valueAsNumber: true })}
-            label="Prise en charge début"
-            error={errors?.priseEnChargeDebut?.message}
-            placeholder="Ex: 2984"
-            type="number"
-            min="0"
-          />
-          <Input
-            {...register("priseEnChargeFin", { 
-              valueAsNumber: true,
-              onChange: () => trigger("priseEnChargeDebut")
-            })}
-            label="Prise en charge fin"
-            error={errors?.priseEnChargeFin?.message}
-            placeholder="Ex: 3100"
-            type="number"
-            min="0"
-          />
-        </div>
-
-        <div className="grid gap-4 sm:grid-cols-2">
-          <Input
-            {...register("kmTotalDebut", { valueAsNumber: true })}
-            label="Index km totaux début"
-            error={errors?.kmTotalDebut?.message}
-            placeholder="Ex: 100587"
-            type="number"
-            min="0"
-          />
-          <Input
-            {...register("kmTotalFin", { 
-              valueAsNumber: true,
-              onChange: () => trigger("kmTotalDebut")
-            })}
-            label="Index km totaux fin"
-            error={errors?.kmTotalFin?.message}
-            placeholder="Ex: 100700"
-            type="number"
-            min="0"
-          />
-        </div>
-
-        <div className="grid gap-4 sm:grid-cols-2">
-          <Input
-            {...register("kmEnChargeDebut", { valueAsNumber: true })}
-            label="Km en charge début"
-            error={errors?.kmEnChargeDebut?.message}
-            placeholder="Ex: 38593"
-            type="number"
-            min="0"
-          />
-          <Input
-            {...register("kmEnChargeFin", { 
-              valueAsNumber: true,
-              onChange: () => trigger("kmEnChargeDebut")
-            })}
-            label="Km en charge fin"
-            error={errors?.kmEnChargeFin?.message}
-            placeholder="Ex: 38700"
-            type="number"
-            min="0"
-          />
-        </div>
-
-        <div className="grid gap-4 sm:grid-cols-2">
-          <Input
-            {...register("chutesDebut", { valueAsNumber: true })}
-            label="Chutes début (€)"
-            error={errors?.chutesDebut?.message}
-            placeholder="Ex: 6061.10"
-            type="number"
-            step="0.01"
-            min="0"
-          />
-          <Input
-            {...register("chutesFin", { 
-              valueAsNumber: true,
-              onChange: () => trigger("chutesDebut")
-            })}
-            label="Chutes fin (€)"
-            error={errors?.chutesFin?.message}
-            placeholder="Ex: 6100.00"
-            type="number"
-            step="0.01"
-            min="0"
-          />
-        </div>
-
-        <Input
-          {...register("recettes", { valueAsNumber: true })}
-          label="Recettes (€)"
-          error={errors?.recettes?.message}
-          placeholder="Ex: 250.00"
-          type="number"
-          step="0.01"
-          min="0"
-        />
       </div>
 
       <div className="mt-8 flex justify-end space-x-3">
