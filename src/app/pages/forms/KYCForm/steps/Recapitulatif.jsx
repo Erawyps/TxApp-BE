@@ -15,7 +15,6 @@ export function Recapitulatif({ setCurrentStep, setValidated }) {
 
   // Calcul des totaux
   const totalRecettes = courses.reduce((sum, course) => sum + (course?.sommePercue || 0), 0);
-  const totalKmCourses = courses.reduce((sum, course) => sum + ((course?.indexArrivee || 0) - (course?.indexDepart || 0)), 0);
   const totalCharges = charges.reduce((sum, charge) => sum + (charge?.montant || 0), 0);
 
   const calculerSalaire = () => {
@@ -46,7 +45,7 @@ export function Recapitulatif({ setCurrentStep, setValidated }) {
       }
       case "heure12": {
         // Même logique que heure10 mais avec 12€/h
-        return 0; // Implémentation similaire
+        return heures * 12;
       }
       default:
         return 0;
@@ -54,7 +53,6 @@ export function Recapitulatif({ setCurrentStep, setValidated }) {
   };
 
   const salaire = calculerSalaire();
-  const benefice = totalRecettes - salaire - totalCharges;
 
   const onValidate = () => {
     // Vérifier les données avant validation
@@ -90,7 +88,25 @@ export function Recapitulatif({ setCurrentStep, setValidated }) {
   return (
     <div className="max-w-3xl">
       {/* Afficher les totaux et détails */}
-      {/* ... */}
+      <div className="mt-6 space-y-6">
+        <div className="rounded-lg border p-4 dark:border-dark-500">
+          <h6 className="mb-3 text-lg font-medium">Récapitulatif</h6>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <p className="text-sm font-medium">Total Recettes:</p>
+              <p>{totalRecettes.toFixed(2)} €</p>
+            </div>
+            <div>
+              <p className="text-sm font-medium">Total Charges:</p>
+              <p>{totalCharges.toFixed(2)} €</p>
+            </div>
+            <div>
+              <p className="text-sm font-medium">Salaire Calculé:</p>
+              <p>{salaire.toFixed(2)} €</p>
+            </div>
+          </div>
+        </div>
+      </div>
 
       <div className="mt-8 flex justify-end space-x-3">
         <Button
