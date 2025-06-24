@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Button, Textarea } from "components/ui";
+import { Button } from "components/ui";
 import { Modal } from "components/shared/modal/Modal";
 import { useFeuilleRouteContext } from "../FeuilleRouteContext";
 import { useNavigate } from "react-router-dom";
@@ -23,29 +23,7 @@ export function Recapitulatif({ setCurrentStep, setValidated }) {
   const { chauffeur, vehicule, courses, charges } = feuilleRouteCtx.state.formData;
 
   // Calcul des totaux avec vérification des valeurs nulles
-  const totalCourses = courses?.length || 0;
-  
-  const kmParcourus = courses?.length > 0 
-    ? (courses[courses.length - 1]?.indexArrivee || 0) - (courses[0]?.indexDepart || 0)
-    : 0;
-  
   const totalRecettes = courses?.reduce((sum, course) => sum + (course?.sommePercue || 0), 0) || 0;
-  
-  const totalKmCourses = courses?.reduce((sum, course) => {
-    return sum + ((course?.indexArrivee || 0) - (course?.indexDepart || 0));
-  }, 0) || 0;
-  
-  const ratioEuroKm = totalKmCourses > 0 
-    ? (totalRecettes / totalKmCourses).toFixed(2)
-    : 0;
-
-  const totalCash = courses
-    ?.filter((c) => c?.modePaiement === "cash")
-    ?.reduce((sum, course) => sum + (course?.sommePercue || 0), 0) || 0;
-  
-  const totalBancontactVirement = courses
-    ?.filter((c) => ["bancontact", "virement"].includes(c?.modePaiement))
-    ?.reduce((sum, course) => sum + (course?.sommePercue || 0), 0) || 0;
   
   const totalChargesCash = charges
     ?.filter((c) => c?.modePaiement === "cash")
@@ -253,16 +231,102 @@ export function Recapitulatif({ setCurrentStep, setValidated }) {
           </div>
         </div>
 
+        {/* Bloc Performances */}
+        <div className="rounded-lg border p-4 dark:border-dark-500">
+          <h6 className="mb-3 text-lg font-medium">Performances</h6>
+          <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+            <div>
+              <p className="text-sm font-medium">Nombre de courses:</p>
+              <p>{courses?.length || 0}</p>
+            </div>
+            <div>
+              <p className="text-sm font-medium">Km parcourus:</p>
+              <p>
+                {courses?.length > 0 
+                  ? (courses[courses.length - 1]?.indexArrivee || 0) - (courses[0]?.indexDepart || 0)
+                  : 0}
+              </p>
+            </div>
+            <div>
+              <p className="text-sm font-medium">Ratio €/km:</p>
+              <p>
+                {(() => {
+                  const totalKm = courses?.reduce((sum, course) => 
+                    sum + ((course?.indexArrivee || 0) - (course?.indexDepart || 0)), 0) || 0;
+                  return totalKm > 0 ? (totalRecettes / totalKm).toFixed(2) : 0;
+                })()}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Bloc Recettes */}
+        <div className="rounded-lg border p-4 dark:border-dark-500">
+          <h6 className="mb-3 text-lg font-medium">Recettes</h6>
+          <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+            <div>
+              <p className="text-sm font-medium">Total recettes:</p>
+              <p>{totalRecettes.toFixed(2)} €</p>
+            </div>
+            <div>
+              <p className="text-sm font-medium">Cash:</p>
+              <p>
+                {courses
+                  ?.filter((c) => c?.modePaiement === "cash")
+                  ?.reduce((sum, course) => sum + (course?.sommePercue || 0), 0)
+                  ?.toFixed(2) || '0.00'} €
+              </p>
+            </div>
+            <div>
+              <p className="text-sm font-medium">Bancontact/Virement:</p>
+              <p>
+                {courses
+                  ?.filter((c) => ["bancontact", "virement"].includes(c?.modePaiement))
+                  ?.reduce((sum, course) => sum + (course?.sommePercue || 0), 0)
+                  ?.toFixed(2) || '0.00'} €
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Bloc Charges */}
+        <div className="rounded-lg border p-4 dark:border-dark-500">
+          <h6 className="mb-3 text-lg font-medium">Charges</h6>
+          <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+            <div>
+              <p className="text-sm font-medium">Charges cash:</p>
+              <p>{totalChargesCash.toFixed(2)} €</p>
+            </div>
+            <div>
+              <p className="text-sm font-medium">Charges Bancontact:</p>
+              <p>{totalChargesBancontact.toFixed(2)} €</p>
+            </div>
+            <div>
+              <p className="text-sm font-medium">Salaire:</p>
+              <p>{salaire.montant.toFixed(2)} €</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Bloc Bénéfice */}
+        <div className="rounded-lg border p-4 dark:border-dark-500">
+          <h6 className="mb-3 text-lg font-medium">Bénéfice</h6>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <p className="text-sm font-medium">Total bénéfice:</p>
+              <p className="text-lg font-bold text-green-600">
+                {benefice.toFixed(2)} €
+              </p>
+            </div>
+          </div>
+        </div>
+
         {/* Affichage des erreurs */}
         {error && (
           <div className="p-4 bg-red-100 border border-red-400 text-red-700 rounded">
             {error}
           </div>
         )}
-
-        {/* Blocs restants inchangés mais avec les mêmes sécurités */}
-        {/* ... */}
-
       </div>
 
       <div className="mt-8 flex justify-end space-x-3">
