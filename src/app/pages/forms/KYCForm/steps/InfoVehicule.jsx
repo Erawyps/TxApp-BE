@@ -18,17 +18,6 @@ export function InfoVehicule({ setCurrentStep }) {
     defaultValues: feuilleRouteCtx.state.formData.vehicule,
   });
 
-  const formatPlaque = (value) => {
-    if (!value) return value;
-    
-    // Formatage automatique de la plaque
-    let v = value.replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
-    if (v.length > 0) v = `T-${v.slice(0, 3)}`;
-    if (v.length > 5) v = `${v.slice(0, 5)}-${v.slice(5, 8)}`;
-    
-    return v;
-  };
-
   const handlePlaqueChange = (e) => {
     const formatted = formatPlaque(e.target.value);
     setValue("plaqueImmatriculation", formatted, { shouldValidate: true });
