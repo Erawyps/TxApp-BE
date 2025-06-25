@@ -13,7 +13,7 @@ export function Recapitulatif({ setCurrentStep, setValidated }) {
 
   const { chauffeur, vehicule, courses = [], charges = [] } = feuilleRouteCtx.state.formData;
 
-  // Calcul des totaux
+  // Calcul des totaux (maintenant utilisés dans le JSX)
   const totalRecettes = courses.reduce((sum, course) => sum + (course?.sommePercue || 0), 0);
   const totalKmCourses = courses.reduce((sum, course) => sum + ((course?.indexArrivee || 0) - (course?.indexDepart || 0)), 0);
   const totalCharges = charges.reduce((sum, charge) => sum + (charge?.montant || 0), 0);
@@ -21,7 +21,6 @@ export function Recapitulatif({ setCurrentStep, setValidated }) {
   const calculerSalaire = () => {
     if (!chauffeur?.regleSalaire) return 0;
 
-    // Déplacer la déclaration de heures en dehors du switch
     let heures = 0;
     
     switch (chauffeur.regleSalaire) {
@@ -100,22 +99,75 @@ export function Recapitulatif({ setCurrentStep, setValidated }) {
 
   return (
     <div className="max-w-3xl">
-      {/* Afficher les totaux et détails */}
       <div className="mt-6 space-y-6">
+        {/* Bloc Performances */}
         <div className="rounded-lg border p-4 dark:border-dark-500">
-          <h6 className="mb-3 text-lg font-medium">Récapitulatif</h6>
-          <div className="grid grid-cols-2 gap-4">
+          <h6 className="mb-3 text-lg font-medium">Performances</h6>
+          <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
             <div>
-              <p className="text-sm font-medium">Total Recettes:</p>
-              <p>{totalRecettes.toFixed(2)} €</p>
+              <p className="text-sm font-medium text-gray-800 dark:text-dark-100">
+                Nombre de courses:
+              </p>
+              <p>{courses.length}</p>
             </div>
             <div>
-              <p className="text-sm font-medium">Total Charges:</p>
+              <p className="text-sm font-medium text-gray-800 dark:text-dark-100">
+                Km parcourus:
+              </p>
+              <p>{totalKmCourses}</p>
+            </div>
+            <div>
+              <p className="text-sm font-medium text-gray-800 dark:text-dark-100">
+                Ratio €/km:
+              </p>
+              <p>{totalKmCourses > 0 ? (totalRecettes / totalKmCourses).toFixed(2) : 0}</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Bloc Recettes */}
+        <div className="rounded-lg border p-4 dark:border-dark-500">
+          <h6 className="mb-3 text-lg font-medium">Recettes</h6>
+          <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+            <div>
+              <p className="text-sm font-medium text-gray-800 dark:text-dark-100">
+                Total recettes:
+              </p>
+              <p>{totalRecettes.toFixed(2)} €</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Bloc Charges */}
+        <div className="rounded-lg border p-4 dark:border-dark-500">
+          <h6 className="mb-3 text-lg font-medium">Charges</h6>
+          <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+            <div>
+              <p className="text-sm font-medium text-gray-800 dark:text-dark-100">
+                Total charges:
+              </p>
               <p>{totalCharges.toFixed(2)} €</p>
             </div>
             <div>
-              <p className="text-sm font-medium">Salaire Calculé:</p>
+              <p className="text-sm font-medium text-gray-800 dark:text-dark-100">
+                Salaire:
+              </p>
               <p>{salaire.toFixed(2)} €</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Bloc Bénéfice */}
+        <div className="rounded-lg border p-4 dark:border-dark-500">
+          <h6 className="mb-3 text-lg font-medium">Bénéfice</h6>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <p className="text-sm font-medium text-gray-800 dark:text-dark-100">
+                Total bénéfice:
+              </p>
+              <p className="text-lg font-bold text-green-600">
+                {benefice.toFixed(2)} €
+              </p>
             </div>
           </div>
         </div>
@@ -125,6 +177,7 @@ export function Recapitulatif({ setCurrentStep, setValidated }) {
         <Button
           className="min-w-[7rem]"
           onClick={() => setCurrentStep(3)}
+          disabled={isSubmitting}
         >
           Retour
         </Button>
@@ -132,8 +185,9 @@ export function Recapitulatif({ setCurrentStep, setValidated }) {
           className="min-w-[7rem]"
           color="primary"
           onClick={onValidate}
+          disabled={isSubmitting}
         >
-          Valider
+          {isSubmitting ? "Validation..." : "Valider"}
         </Button>
       </div>
 
@@ -143,7 +197,7 @@ export function Recapitulatif({ setCurrentStep, setValidated }) {
         title="Validation de la feuille de route"
       >
         <div className="space-y-4">
-          <p>Confirmez-vous la validation de cette feuille de route ?</p>
+          <p>Êtes-vous sûr de vouloir valider cette feuille de route ?</p>
           
           {error && (
             <div className="p-2 bg-red-100 text-red-700 rounded">
@@ -153,17 +207,20 @@ export function Recapitulatif({ setCurrentStep, setValidated }) {
           
           <div className="flex justify-end space-x-3">
             <Button
+              className="min-w-[7rem]"
               onClick={() => setShowModal(false)}
               disabled={isSubmitting}
             >
               Annuler
             </Button>
             <Button
+              className="min-w-[7rem]"
               color="primary"
               onClick={confirmValidation}
               loading={isSubmitting}
+              disabled={isSubmitting}
             >
-              Confirmer
+              {isSubmitting ? "Envoi..." : "Confirmer"}
             </Button>
           </div>
         </div>
