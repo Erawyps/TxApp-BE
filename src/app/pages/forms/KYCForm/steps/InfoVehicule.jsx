@@ -8,18 +8,7 @@ const formatPlaque = (value) => {
   if (!value) return value;
   
   // Supprime les espaces et met en majuscules
-  let cleaned = value.replace(/\s/g, '').toUpperCase();
-  
-  // Ajoute automatiquement les tirets si nécessaire
-  if (cleaned.length > 3 && !cleaned.includes('-')) {
-    if (cleaned.length <= 6) {
-      cleaned = `${cleaned.slice(0, 3)}-${cleaned.slice(3)}`;
-    } else {
-      cleaned = `${cleaned.slice(0, 1)}-${cleaned.slice(1, 4)}-${cleaned.slice(4, 7)}`;
-    }
-  }
-  
-  return cleaned;
+  return value.replace(/\s/g, '').toUpperCase();
 };
 
 export function InfoVehicule({ setCurrentStep }) {
@@ -67,7 +56,7 @@ export function InfoVehicule({ setCurrentStep }) {
             {...register("plaqueImmatriculation")}
             label="Plaque d'immatriculation"
             error={errors?.plaqueImmatriculation?.message}
-            placeholder="Ex: T-XAA-751"
+            placeholder="Ex: TXAA751 ou T-XAA-751"
             onChange={handlePlaqueChange}
             onBlur={(e) => {
               const formatted = formatPlaque(e.target.value);
