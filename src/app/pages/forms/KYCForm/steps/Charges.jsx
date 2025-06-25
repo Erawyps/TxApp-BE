@@ -10,13 +10,13 @@ const typesCharge = [
   { label: "Carburant", value: "carburant" },
   { label: "Péage", value: "peage" },
   { label: "Entretien", value: "entretien" },
+  { label: "Carwash", value: "carwash" },
   { label: "Divers", value: "divers" },
 ];
 
 const modesPaiement = [
   { label: "Cash", value: "cash" },
   { label: "Bancontact", value: "bancontact" },
-  { label: "Virement", value: "virement" },
 ];
 
 export function Charges({ setCurrentStep }) {
@@ -24,7 +24,6 @@ export function Charges({ setCurrentStep }) {
   const [charges, setCharges] = useState([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Synchroniser avec le contexte au montage
   useEffect(() => {
     setCharges(feuilleRouteCtx.state.formData.charges || []);
   }, [feuilleRouteCtx.state.formData.charges]);
@@ -35,7 +34,6 @@ export function Charges({ setCurrentStep }) {
     formState: { errors },
     control,
     reset,
-    setValue,
   } = useForm({
     resolver: yupResolver(chargeSchema),
     defaultValues: {
@@ -47,7 +45,6 @@ export function Charges({ setCurrentStep }) {
   });
 
   const parseNumber = (value) => {
-    if (typeof value === 'number') return value;
     if (!value) return 0;
     const num = parseFloat(value.toString().replace(',', '.'));
     return isNaN(num) ? 0 : num;
@@ -59,10 +56,11 @@ export function Charges({ setCurrentStep }) {
       const newCharge = { 
         ...data,
         id: Date.now(),
-        montant: parseNumber(data.montant)
+        type_charge: data.type,
+        montant: parseNumber(data.montant),
+        date: new Date().toISOString().split('T')[0]
       };
       
-      // Mettre à jour le contexte
       feuilleRouteCtx.dispatch({ 
         type: "ADD_CHARGE", 
         payload: newCharge 
@@ -77,53 +75,49 @@ export function Charges({ setCurrentStep }) {
   };
 
   const onNext = async () => {
-  try {
-    setIsSubmitting(true);
-    
-    // Valider qu'il y a au moins une charge
-    if (charges.length === 0) {
-      throw new Error("Au moins une charge est requise");
-    }
-
-    // Valider toutes les charges
-    const chargesValid = charges.every(charge => {
-      try {
-        chargeSchema.validateSync(charge);
-        return true;
-      } catch {
-        return false;
+    try {
+      setIsSubmitting(true);
+      
+      if (charges.length === 0) {
+        throw new Error("Au moins une charge est requise");
       }
-    });
 
-    if (!chargesValid) {
-      throw new Error("Certaines charges ne sont pas valides");
+      const chargesValid = charges.every(charge => {
+        try {
+          chargeSchema.validateSync({
+            type: charge.type_charge,
+            montant: charge.montant,
+            modePaiement: charge.modePaiement
+          });
+          return true;
+        } catch {
+          return false;
+        }
+      });
+
+      if (!chargesValid) {
+        throw new Error("Certaines charges ne sont pas valides");
+      }
+
+      feuilleRouteCtx.dispatch({
+        type: "SET_STEP_STATUS",
+        payload: { charges: { isDone: true } },
+      });
+
+      setCurrentStep(4);
+    } catch (error) {
+      console.error("Erreur lors de la navigation:", error);
+      alert(`Erreur: ${error.message}`);
+    } finally {
+      setIsSubmitting(false);
     }
-
-    // Mettre à jour le statut de l'étape
-    feuilleRouteCtx.dispatch({
-      type: "SET_STEP_STATUS",
-      payload: { charges: { isDone: true } },
-    });
-
-    // Naviguer vers le récapitulatif
-    setCurrentStep(4);
-  } catch (error) {
-    console.error("Erreur lors de la navigation:", error);
-    alert(`Erreur: ${error.message}`);
-  } finally {
-    setIsSubmitting(false);
-  }
-};
+  };
 
   const handleRemoveCharge = (chargeId) => {
-    try {
-      feuilleRouteCtx.dispatch({
-        type: "REMOVE_CHARGE",
-        payload: chargeId
-      });
-    } catch (error) {
-      console.error("Erreur lors de la suppression:", error);
-    }
+    feuilleRouteCtx.dispatch({
+      type: "REMOVE_CHARGE",
+      payload: chargeId
+    });
   };
 
   return (
@@ -137,7 +131,7 @@ export function Charges({ setCurrentStep }) {
               render={({ field }) => (
                 <Listbox
                   data={typesCharge}
-                  value={typesCharge.find(t => t.value === field.value) || typesCharge[3]}
+                  value={typesCharge.find(t => t.value === field.value)}
                   onChange={(val) => field.onChange(val.value)}
                   label="Type de charge"
                   displayField="label"
@@ -147,14 +141,10 @@ export function Charges({ setCurrentStep }) {
 
             <Input
               {...register("montant")}
-              label="Montant"
+              label="Montant (€)"
               error={errors?.montant?.message}
               placeholder="Ex: 15,00"
               inputMode="decimal"
-              onChange={(e) => {
-                const value = e.target.value.replace(/[^0-9,.]/g, '');
-                setValue("montant", value, { shouldValidate: true });
-              }}
             />
           </div>
 
@@ -164,7 +154,7 @@ export function Charges({ setCurrentStep }) {
             render={({ field }) => (
               <Listbox
                 data={modesPaiement}
-                value={modesPaiement.find(m => m.value === field.value) || modesPaiement[0]}
+                value={modesPaiement.find(m => m.value === field.value)}
                 onChange={(val) => field.onChange(val.value)}
                 label="Mode de paiement"
                 displayField="label"
@@ -174,8 +164,8 @@ export function Charges({ setCurrentStep }) {
 
           <Textarea
             {...register("description")}
-            label="Description"
-            placeholder="Décrivez la charge (facultatif)"
+            label="Description (facultatif)"
+            placeholder="Détails de la charge"
           />
 
           <Button 
@@ -189,7 +179,6 @@ export function Charges({ setCurrentStep }) {
         </div>
       </form>
 
-      {/* Liste des charges existantes */}
       {charges.length > 0 && (
         <div className="mt-8">
           <h6 className="mb-4 text-lg font-medium">Charges enregistrées</h6>
@@ -197,26 +186,24 @@ export function Charges({ setCurrentStep }) {
             <table className="min-w-full divide-y divide-gray-200 dark:divide-dark-500">
               <thead className="bg-gray-50 dark:bg-dark-700">
                 <tr>
-                  <th className="px-4 py-2 text-left">N°</th>
                   <th className="px-4 py-2 text-left">Type</th>
                   <th className="px-4 py-2 text-left">Montant</th>
-                  <th className="px-4 py-2 text-left">Mode paiement</th>
+                  <th className="px-4 py-2 text-left">Paiement</th>
                   <th className="px-4 py-2 text-left">Description</th>
                   <th className="px-4 py-2 text-left">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200 dark:divide-dark-500">
-                {charges.map((charge, index) => (
+                {charges.map((charge) => (
                   <tr key={charge.id}>
-                    <td className="px-4 py-2">{index + 1}</td>
                     <td className="px-4 py-2">
-                      {typesCharge.find((t) => t.value === charge.type)?.label}
+                      {typesCharge.find(t => t.value === charge.type_charge)?.label}
                     </td>
                     <td className="px-4 py-2">
-                      {parseNumber(charge.montant).toFixed(2).replace('.', ',')} €
+                      {charge.montant.toFixed(2).replace('.', ',')} €
                     </td>
                     <td className="px-4 py-2">
-                      {modesPaiement.find((m) => m.value === charge.modePaiement)?.label}
+                      {modesPaiement.find(m => m.value === charge.modePaiement)?.label}
                     </td>
                     <td className="px-4 py-2">{charge.description || '-'}</td>
                     <td className="px-4 py-2">

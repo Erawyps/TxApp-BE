@@ -4,35 +4,32 @@ import { FeuilleRouteContextProvider } from "./FeuilleRouteContext";
 
 const initialState = {
   formData: {
-    chauffeur: {
-      id: null,
-      nom: "",
-      prenom: "",
-      date: new Date().toISOString().split('T')[0],
-      heureDebut: "",
-      heureFin: "",
-      interruptions: "",
-      regleSalaire: "",
-      tauxSalaire: null,
-      note: "",
-    },
-    vehicule: {
-      plaqueImmatriculation: "",
-      numeroIdentification: "",
-      priseEnChargeDebut: null,
-      priseEnChargeFin: null,
-      kmDebut: null,
-      kmFin: null,
-      kmTotalDebut: null,
-      kmTotalFin: null,
-      kmEnChargeDebut: null,
-      kmEnChargeFin: null,
-      chutesDebut: null,
-      chutesFin: null,
-      recettes: null,
-    },
+    // Informations de base
+    date: new Date().toISOString().split('T')[0],
+    chauffeur_id: null,
+    vehicule_id: null,
+    
+    // Horaires et kilométrage
+    heure_debut: "",
+    heure_fin: "",
+    interruptions: "",
+    km_debut: null,
+    km_fin: null,
+    
+    // Taximètre
+    prise_en_charge_debut: null,
+    prise_en_charge_fin: null,
+    chutes_debut: null,
+    chutes_fin: null,
+    
+    // Cours et charges
     courses: [],
     charges: [],
+    
+    // Métadonnées
+    statut: "En cours",
+    saisie_mode: "chauffeur",
+    notes: ""
   },
   stepStatus: {
     identiteChauffeur: { isDone: false },
@@ -44,32 +41,24 @@ const initialState = {
 };
 
 const reducer = (state, action) => {
-  let coursesTotal, chargesTotal;
-  
   switch (action.type) {
     case "SET_FORM_DATA":
-      return {
-        ...state,
-        formData: {
-          ...state.formData,
-          ...action.payload,
-        },
-      };
+      return { ...state, formData: { ...state.formData, ...action.payload } };
+      
     case "SET_STEP_STATUS":
-      return {
-        ...state,
-        stepStatus: {
-          ...state.stepStatus,
-          ...action.payload,
-        },
-      };
+      return { ...state, stepStatus: { ...state.stepStatus, ...action.payload } };
+      
     case "ADD_COURSE":
       return {
         ...state,
         formData: {
           ...state.formData,
-          courses: [...state.formData.courses, action.payload],
-        },
+          courses: [...state.formData.courses, {
+            ...action.payload,
+            client_id: action.payload.modePaiement === 'facture' ? action.payload.client_id : null,
+            numero_ordre: state.formData.courses.length + 1
+          }]
+        }
       };
     case "UPDATE_COURSE":
       return {
