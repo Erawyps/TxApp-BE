@@ -122,6 +122,11 @@ export function Recapitulatif({ setCurrentStep, setValidated }) {
     setShowModal(true);
   };
 
+  const handleDownloadPDF = () => {
+    // Logic to generate and download the PDF
+    console.log("Downloading PDF...");
+  };
+
   const confirmValidation = async () => {
     setIsSubmitting(true);
     setError(null);
@@ -212,6 +217,14 @@ export function Recapitulatif({ setCurrentStep, setValidated }) {
           disabled={isSubmitting}
         >
           Retour
+        </Button>
+         {/* Bouton de téléchargement PDF */}
+        <Button
+          className="min-w-[7rem]"
+          color="secondary"
+          onClick={handleDownloadPDF}
+        >
+          Télécharger PDF
         </Button>
         <Button
           className="min-w-[7rem]"
