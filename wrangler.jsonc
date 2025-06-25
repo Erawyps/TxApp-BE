@@ -10,12 +10,12 @@
       "directory": "./dist",
       "binding": "ASSETS",
       "not_found_handling": "single-page-application"
-    }/**,
+    },
     "hyperdrive": [
       {
         "binding": "HYPERDRIVE",
-        "id": "3c9f97b0e0114cc68fa7232bb2d447ab"
-        ,"localConnectionString": "postgresql://postgres:PYLpOE6KaEsAMLD9@deqytqfcvvwlzabcmpdq.supabase.co:5432/postgres"
+        "id": "524a9438f01e47e88558cb5a181d0b14",
+        "localConnectionString": "postgresql://postgres:rKcnNJbacyLF3TQd@db.jfrhzwtkfotsrjkacrns.supabase.co:5432/postgres"
       }
-    ]**/
+    ]
   }

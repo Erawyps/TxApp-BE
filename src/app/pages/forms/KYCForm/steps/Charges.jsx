@@ -1,5 +1,5 @@
 import { yupResolver } from "@hookform/resolvers/yup";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm, Controller } from "react-hook-form";
 import { Button, Input, Textarea } from "components/ui";
 import { Listbox } from "components/shared/form/Listbox";
@@ -21,7 +21,13 @@ const modesPaiement = [
 
 export function Charges({ setCurrentStep }) {
   const feuilleRouteCtx = useFeuilleRouteContext();
-  const [charges, setCharges] = useState(feuilleRouteCtx.state.formData.charges);
+  const [charges, setCharges] = useState([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Synchroniser avec le contexte au montage
+  useEffect(() => {
+    setCharges(feuilleRouteCtx.state.formData.charges || []);
+  }, [feuilleRouteCtx.state.formData.charges]);
 
   const {
     register,
@@ -34,7 +40,9 @@ export function Charges({ setCurrentStep }) {
     resolver: yupResolver(chargeSchema),
     defaultValues: {
       type: "divers",
-      modePaiement: "cash"
+      modePaiement: "cash",
+      montant: "",
+      description: ""
     }
   });
 
@@ -45,29 +53,83 @@ export function Charges({ setCurrentStep }) {
     return isNaN(num) ? 0 : num;
   };
 
-  const onSubmit = (data) => {
-    const newCharge = { 
-      ...data,
-      id: Date.now(),
-      montant: parseNumber(data.montant)
-    };
-    setCharges([...charges, newCharge]);
-    feuilleRouteCtx.dispatch({ type: "ADD_CHARGE", payload: newCharge });
-    reset();
+  const onSubmit = async (data) => {
+    try {
+      setIsSubmitting(true);
+      const newCharge = { 
+        ...data,
+        id: Date.now(),
+        montant: parseNumber(data.montant)
+      };
+      
+      // Mettre à jour le contexte
+      feuilleRouteCtx.dispatch({ 
+        type: "ADD_CHARGE", 
+        payload: newCharge 
+      });
+      
+      reset();
+    } catch (error) {
+      console.error("Erreur lors de l'ajout de la charge:", error);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
-  const onNext = () => {
+  const onNext = async () => {
+  try {
+    setIsSubmitting(true);
+    
+    // Valider qu'il y a au moins une charge
+    if (charges.length === 0) {
+      throw new Error("Au moins une charge est requise");
+    }
+
+    // Valider toutes les charges
+    const chargesValid = charges.every(charge => {
+      try {
+        chargeSchema.validateSync(charge);
+        return true;
+      } catch {
+        return false;
+      }
+    });
+
+    if (!chargesValid) {
+      throw new Error("Certaines charges ne sont pas valides");
+    }
+
+    // Mettre à jour le statut de l'étape
     feuilleRouteCtx.dispatch({
       type: "SET_STEP_STATUS",
       payload: { charges: { isDone: true } },
     });
+
+    // Naviguer vers le récapitulatif
     setCurrentStep(4);
+  } catch (error) {
+    console.error("Erreur lors de la navigation:", error);
+    alert(`Erreur: ${error.message}`);
+  } finally {
+    setIsSubmitting(false);
+  }
+};
+
+  const handleRemoveCharge = (chargeId) => {
+    try {
+      feuilleRouteCtx.dispatch({
+        type: "REMOVE_CHARGE",
+        payload: chargeId
+      });
+    } catch (error) {
+      console.error("Erreur lors de la suppression:", error);
+    }
   };
 
   return (
-    <div>
+    <div className="space-y-6">
       <form onSubmit={handleSubmit(onSubmit)} autoComplete="off">
-        <div className="mt-6 space-y-4">
+        <div className="space-y-4">
           <div className="grid gap-4 sm:grid-cols-2">
             <Controller
               name="type"
@@ -90,7 +152,6 @@ export function Charges({ setCurrentStep }) {
               placeholder="Ex: 15,00"
               inputMode="decimal"
               onChange={(e) => {
-                // Permet les nombres avec virgule ou point
                 const value = e.target.value.replace(/[^0-9,.]/g, '');
                 setValue("montant", value, { shouldValidate: true });
               }}
@@ -117,8 +178,13 @@ export function Charges({ setCurrentStep }) {
             placeholder="Décrivez la charge (facultatif)"
           />
 
-          <Button type="submit" color="primary" className="w-full">
-            Ajouter cette charge
+          <Button 
+            type="submit" 
+            color="primary" 
+            className="w-full"
+            disabled={isSubmitting}
+          >
+            {isSubmitting ? "Ajout en cours..." : "Ajouter cette charge"}
           </Button>
         </div>
       </form>
@@ -136,6 +202,7 @@ export function Charges({ setCurrentStep }) {
                   <th className="px-4 py-2 text-left">Montant</th>
                   <th className="px-4 py-2 text-left">Mode paiement</th>
                   <th className="px-4 py-2 text-left">Description</th>
+                  <th className="px-4 py-2 text-left">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200 dark:divide-dark-500">
@@ -152,6 +219,14 @@ export function Charges({ setCurrentStep }) {
                       {modesPaiement.find((m) => m.value === charge.modePaiement)?.label}
                     </td>
                     <td className="px-4 py-2">{charge.description || '-'}</td>
+                    <td className="px-4 py-2">
+                      <button
+                        onClick={() => handleRemoveCharge(charge.id)}
+                        className="text-red-500 hover:text-red-700"
+                      >
+                        Supprimer
+                      </button>
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -164,6 +239,7 @@ export function Charges({ setCurrentStep }) {
         <Button
           className="min-w-[7rem]"
           onClick={() => setCurrentStep(2)}
+          disabled={isSubmitting}
         >
           Retour
         </Button>
@@ -171,6 +247,7 @@ export function Charges({ setCurrentStep }) {
           className="min-w-[7rem]"
           color="primary"
           onClick={onNext}
+          disabled={isSubmitting || charges.length === 0}
         >
           Suivant
         </Button>

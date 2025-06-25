@@ -1,102 +1,97 @@
-import * as Yup from "yup";
+import * as Yup from 'yup';
+
+const parseNumber = (value) => {
+  if (typeof value === 'number') return value;
+  if (!value) return 0;
+  const num = parseFloat(value.toString().replace(',', '.'));
+  return isNaN(num) ? 0 : num;
+};
 
 export const chauffeurSchema = Yup.object().shape({
   nom: Yup.string().required("Nom requis"),
   prenom: Yup.string().required("Prénom requis"),
   date: Yup.date().default(() => new Date()),
-  heureDebut: Yup.string().required("Heure de début requise"),
-  heureFin: Yup.string().required("Heure de fin requise"),
-  interruptions: Yup.string(),
+  heureDebut: Yup.string()
+    .required("Heure de début requise")
+    .matches(/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/, "Format HH:MM invalide"),
+  heureFin: Yup.string()
+    .matches(/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/, "Format HH:MM invalide")
+    .nullable(),
+  interruptions: Yup.string()
+    .matches(/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/, "Format HH:MM invalide")
+    .nullable(),
   regleSalaire: Yup.string()
     .required("Règle de salaire requise")
     .oneOf(["fixe", "40percent", "30percent", "mixte", "heure10", "heure12"]),
   tauxSalaire: Yup.number()
-    .typeError("Doit être un nombre")
-    .positive("Doit être positif")
+    .transform(parseNumber)
     .when('regleSalaire', {
       is: (val) => ["fixe", "heure10", "heure12"].includes(val),
-      then: (schema) => schema.required("Taux requis"),
-      otherwise: (schema) => schema.notRequired()
+      then: (schema) => schema.required("Taux requis").positive("Doit être positif"),
+      otherwise: (schema) => schema.nullable()
     })
-    .transform((value) => value ? value.toString().replace(',', '.') : value)
 });
 
 export const vehiculeSchema = Yup.object().shape({
   plaqueImmatriculation: Yup.string()
-  
-    .uppercase("Doit être en majuscules"),
+    .required("La plaque est obligatoire")
+    .min(4, "Minimum 4 caractères")
+    .max(10, "Maximum 10 caractères"),
   numeroIdentification: Yup.string().required("Numéro d'identification requis"),
   kmDebut: Yup.number()
-    .typeError("Doit être un nombre")
+    .required("Kilométrage de début requis")
     .positive("Doit être positif")
-    .required("Kilométrage de début requis"),
-  priseEnChargeDebut: Yup.number()
-    .typeError("Doit être un nombre")
-    .positive("Doit être positif"),
-  priseEnChargeFin: Yup.number()
-    .typeError("Doit être un nombre")
-    .positive("Doit être positif"),
-  kmTotalDebut: Yup.number()
-    .typeError("Doit être un nombre")
-    .positive("Doit être positif"),
-  kmTotalFin: Yup.number()
-    .typeError("Doit être un nombre")
-    .positive("Doit être positif"),
-  kmEnChargeDebut: Yup.number()
-    .typeError("Doit être un nombre")
-    .positive("Doit être positif"),
-  kmEnChargeFin: Yup.number()
-    .typeError("Doit être un nombre")
-    .positive("Doit être positif"),
-  chutesDebut: Yup.number()
-    .typeError("Doit être un nombre")
-    .positive("Doit être positif"),
-  chutesFin: Yup.number()
-    .typeError("Doit être un nombre")
-    .positive("Doit être positif"),
-  recettes: Yup.number()
-    .typeError("Doit être un nombre")
+    .integer("Doit être un entier"),
+  kmFin: Yup.number()
     .positive("Doit être positif")
+    .integer("Doit être un entier")
+    .min(Yup.ref("kmDebut"), "Doit être >= km début")
+    .nullable()
 });
 
 export const courseSchema = Yup.object().shape({
   indexDepart: Yup.number()
-    .typeError("Doit être un nombre")
+    .required("Index départ requis")
     .positive("Doit être positif")
-    .required("Index de départ requis"),
+    .integer("Doit être un entier"),
   indexArrivee: Yup.number()
-    .typeError("Doit être un nombre")
+    .required("Index arrivée requis")
     .positive("Doit être positif")
-    .min(
-      Yup.ref("indexDepart"),
-      "Doit être supérieur ou égal à l'index de départ"
-    ),
-  lieuEmbarquement: Yup.string(),
-  lieuDebarquement: Yup.string(),
-  heureEmbarquement: Yup.string(),
-  heureDebarquement: Yup.string(),
-  prixTaximetre: Yup.mixed().test(
-    'is-number',
-    'Doit être un nombre',
-    (value) => !isNaN(parseFloat(value))
-  ),
-  sommePercue: Yup.mixed().test(
-    'is-number',
-    'Doit être un nombre',
-    (value) => !isNaN(parseFloat(value))
-  ),
+    .integer("Doit être un entier")
+    .min(Yup.ref("indexDepart"), "Doit être >= index départ"),
+  lieuEmbarquement: Yup.string().nullable(),
+  lieuDebarquement: Yup.string().nullable(),
+  heureEmbarquement: Yup.string()
+    .matches(/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/, "Format HH:MM invalide")
+    .nullable(),
+  heureDebarquement: Yup.string()
+    .matches(/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/, "Format HH:MM invalide")
+    .nullable(),
+  prixTaximetre: Yup.number()
+    .transform(parseNumber)
+    .required("Prix taximètre requis")
+    .positive("Doit être positif"),
+  sommePercue: Yup.number()
+    .transform(parseNumber)
+    .required("Somme perçue requise")
+    .positive("Doit être positif"),
   modePaiement: Yup.string()
+    .required("Mode paiement requis")
+    .oneOf(["cash", "bancontact", "facture", "virement"]),
+  clientFacture: Yup.string().when('modePaiement', {
+    is: 'facture',
+    then: Yup.string().required("Client requis pour les factures")
+  })
 });
 
 export const chargeSchema = Yup.object().shape({
-  type: Yup.string().default("divers"),
-  description: Yup.string(),
-  montant: Yup.mixed()
-    .test('is-number', 'Montant invalide', (value) => {
-      if (!value) return false;
-      const num = parseFloat(value.toString().replace(',', '.'));
-      return !isNaN(num) && num > 0;
-    })
-    .required("Montant requis"),
-  modePaiement: Yup.string().default("cash")
+  type: Yup.string().required("Type de charge requis"),
+  description: Yup.string().nullable(),
+  montant: Yup.number()
+    .transform(parseNumber)
+    .required("Montant requis")
+    .positive("Doit être positif"),
+  modePaiement: Yup.string()
+    .required("Mode paiement requis")
+    .oneOf(["cash", "bancontact"])
 });
