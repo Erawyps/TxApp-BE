@@ -12,7 +12,7 @@ export function Recapitulatif({ setCurrentStep, setValidated }) {
   const navigate = useNavigate();
 
   const { formData } = feuilleRouteCtx.state;
-  const { chauffeur_id, vehicule_id, courses = [], charges = [] } = formData;
+  const { courses = [], charges = [] } = formData;
 
   // Calcul des totaux
   const totalRecettes = courses.reduce((sum, course) => sum + (course?.sommePercue || 0), 0);
@@ -122,6 +122,11 @@ export function Recapitulatif({ setCurrentStep, setValidated }) {
     setShowModal(true);
   };
 
+  const handleDownloadPDF = () => {
+    // Logic to generate and download the PDF
+    console.log("Downloading PDF...");
+  };
+
   const confirmValidation = async () => {
     setIsSubmitting(true);
     setError(null);
@@ -212,6 +217,14 @@ export function Recapitulatif({ setCurrentStep, setValidated }) {
           disabled={isSubmitting}
         >
           Retour
+        </Button>
+         {/* Bouton de téléchargement PDF */}
+        <Button
+          className="min-w-[7rem]"
+          color="secondary"
+          onClick={handleDownloadPDF}
+        >
+          Télécharger PDF
         </Button>
         <Button
           className="min-w-[7rem]"
