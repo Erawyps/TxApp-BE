@@ -104,3 +104,35 @@ export const chargeSchema = Yup.object().shape({
     .required("Mode paiement requis")
     .oneOf(["cash", "bancontact"])
 });
+
+export const feuilleRouteSchema = Yup.object().shape({
+  date: Yup.date().required("Date requise"),
+  heure_debut: Yup.string()
+    .required("Heure de début requise")
+    .matches(/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/, "Format HH:MM invalide"),
+  heure_fin: Yup.string()
+    .matches(/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/, "Format HH:MM invalide")
+    .nullable(),
+  interruptions: Yup.string()
+    .matches(/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/, "Format HH:MM invalide")
+    .nullable(),
+  km_debut: Yup.number()
+    .required("Kilométrage de début requis")
+    .positive("Doit être positif")
+    .integer("Doit être un entier"),
+  km_fin: Yup.number()
+    .positive("Doit être positif")
+    .integer("Doit être un entier")
+    .min(Yup.ref("km_debut"), "Doit être >= km début")
+    .nullable(),
+  prise_en_charge_debut: Yup.number().positive().nullable(),
+  prise_en_charge_fin: Yup.number().positive().min(Yup.ref("prise_en_charge_debut")).nullable(),
+  chutes_debut: Yup.number().positive().nullable(),
+  chutes_fin: Yup.number().positive().nullable(),
+  statut: Yup.string()
+    .oneOf(["Planifiée", "En cours", "Terminée", "Annulée", "Validée"])
+    .default("En cours"),
+  saisie_mode: Yup.string()
+    .oneOf(["chauffeur", "superviseur"])
+    .default("chauffeur")
+});
