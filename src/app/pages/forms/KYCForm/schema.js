@@ -34,7 +34,7 @@ export const chauffeurSchema = Yup.object().shape({
 
 export const vehiculeSchema = Yup.object().shape({
   plaqueImmatriculation: Yup.string()
-    .required("La plaque est obligatoire")
+    .required("Plaque requise")
     .min(4, "Minimum 4 caractères")
     .max(10, "Maximum 10 caractères"),
   numeroIdentification: Yup.string().required("Numéro d'identification requis"),
@@ -46,7 +46,16 @@ export const vehiculeSchema = Yup.object().shape({
     .positive("Doit être positif")
     .integer("Doit être un entier")
     .min(Yup.ref("kmDebut"), "Doit être >= km début")
-    .nullable()
+    .nullable(),
+  priseEnChargeDebut: Yup.number().positive().nullable(),
+  priseEnChargeFin: Yup.number().positive().min(Yup.ref("priseEnChargeDebut")).nullable(),
+  kmTotalDebut: Yup.number().positive().nullable(),
+  kmTotalFin: Yup.number().positive().min(Yup.ref("kmTotalDebut")).nullable(),
+  kmEnChargeDebut: Yup.number().positive().nullable(),
+  kmEnChargeFin: Yup.number().positive().min(Yup.ref("kmEnChargeDebut")).nullable(),
+  chutesDebut: Yup.number().positive().nullable(),
+  chutesFin: Yup.number().positive().nullable(),
+  recettes: Yup.number().positive().nullable()
 });
 
 export const courseSchema = Yup.object().shape({
