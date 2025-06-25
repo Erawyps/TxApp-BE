@@ -11,7 +11,7 @@ const typesCharge = [
   { label: "Péage", value: "peage" },
   { label: "Entretien", value: "entretien" },
   { label: "Carwash", value: "carwash" },
-  { label: "Divers", value: "divers" },
+  { label: "Autres - Divers", value: "divers" },
 ];
 
 const modesPaiement = [
