@@ -44,7 +44,7 @@ export function InfoVehicule({ setCurrentStep }) {
             {...register("plaqueImmatriculation")}
             label="Plaque d'immatriculation"
             error={errors?.plaqueImmatriculation?.message}
-            placeholder="Saisissez la plaque"
+            placeholder="Saisissez la plaque ex: AB-123-CD"
           />
           <Input
             {...register("numeroIdentification")}
