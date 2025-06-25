@@ -33,7 +33,13 @@ export const chauffeurSchema = Yup.object().shape({
 });
 
 export const vehiculeSchema = Yup.object().shape({
-  plaqueImmatriculation: Yup.string().required("Plaque requise"),
+  plaqueImmatriculation: Yup.string()
+    .required("Plaque requise")
+    .matches(
+      /^[A-Z]{1,3}-?[A-Z]{1,3}-?[0-9]{1,4}$/,
+      "Format invalide (ex: T-XAA-751 ou TXAA751)"
+    )
+    .transform(value => value ? value.replace(/\s/g, '').toUpperCase() : value),
   numeroIdentification: Yup.string().required("Numéro d'identification requis"),
   kmDebut: Yup.number()
     .required("Kilométrage de début requis")

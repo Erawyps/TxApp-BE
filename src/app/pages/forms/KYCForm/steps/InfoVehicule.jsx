@@ -4,21 +4,22 @@ import { Button, Input } from "components/ui";
 import { useFeuilleRouteContext } from "../FeuilleRouteContext";
 import { vehiculeSchema } from "../schema";
 
-// Ajoutez cette fonction pour formater la plaque d'immatriculation
 const formatPlaque = (value) => {
   if (!value) return value;
   
-  // Supprime tous les caractères non alphanumériques
-  const cleaned = value.replace(/[^a-zA-Z0-9]/g, '');
+  // Supprime les espaces et met en majuscules
+  let cleaned = value.replace(/\s/g, '').toUpperCase();
   
-  // Format standard pour plaques belges: 1-AAA-999 ou AAA-999
-  if (cleaned.length <= 3) {
-    return cleaned;
+  // Ajoute automatiquement les tirets si nécessaire
+  if (cleaned.length > 3 && !cleaned.includes('-')) {
+    if (cleaned.length <= 6) {
+      cleaned = `${cleaned.slice(0, 3)}-${cleaned.slice(3)}`;
+    } else {
+      cleaned = `${cleaned.slice(0, 1)}-${cleaned.slice(1, 4)}-${cleaned.slice(4, 7)}`;
+    }
   }
-  if (cleaned.length <= 6) {
-    return `${cleaned.slice(0, 3)}-${cleaned.slice(3)}`;
-  }
-  return `${cleaned.slice(0, 1)}-${cleaned.slice(1, 4)}-${cleaned.slice(4, 7)}`;
+  
+  return cleaned;
 };
 
 export function InfoVehicule({ setCurrentStep }) {
@@ -68,6 +69,10 @@ export function InfoVehicule({ setCurrentStep }) {
             error={errors?.plaqueImmatriculation?.message}
             placeholder="Ex: T-XAA-751"
             onChange={handlePlaqueChange}
+            onBlur={(e) => {
+              const formatted = formatPlaque(e.target.value);
+              setValue("plaqueImmatriculation", formatted, { shouldValidate: true });
+            }}
           />
           <Input
             {...register("numeroIdentification")}
