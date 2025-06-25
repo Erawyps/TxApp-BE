@@ -34,20 +34,9 @@ export const chauffeurSchema = Yup.object().shape({
 
 export const vehiculeSchema = Yup.object().shape({
   plaqueImmatriculation: Yup.string()
-    .required("Plaque requise")
-    .test(
-      'valid-plaque',
-      'Format invalide (ex: T-XAA-751 ou TXAA751)',
-      value => {
-        if (!value) return false;
-        
-        // Normalisation : supprime les espaces et met en majuscules
-        const cleaned = value.replace(/\s/g, '').toUpperCase();
-        
-        // Vérification basique de longueur
-        return cleaned.length >= 5 && cleaned.length <= 9;
-      }
-    ),
+    .required("La plaque est obligatoire")
+    .min(4, "Minimum 4 caractères")
+    .max(10, "Maximum 10 caractères"),
   numeroIdentification: Yup.string().required("Numéro d'identification requis"),
   kmDebut: Yup.number()
     .required("Kilométrage de début requis")

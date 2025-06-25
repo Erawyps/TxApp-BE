@@ -4,12 +4,6 @@ import { Button, Input } from "components/ui";
 import { useFeuilleRouteContext } from "../FeuilleRouteContext";
 import { vehiculeSchema } from "../schema";
 
-const formatPlaque = (value) => {
-  if (!value) return value;
-  
-  // Supprime les espaces et met en majuscules
-  return value.replace(/\s/g, '').toUpperCase();
-};
 
 export function InfoVehicule({ setCurrentStep }) {
   const feuilleRouteCtx = useFeuilleRouteContext();
@@ -56,12 +50,7 @@ export function InfoVehicule({ setCurrentStep }) {
             {...register("plaqueImmatriculation")}
             label="Plaque d'immatriculation"
             error={errors?.plaqueImmatriculation?.message}
-            placeholder="Ex: TXAA751 ou T-XAA-751"
-            onChange={handlePlaqueChange}
-            onBlur={(e) => {
-              const formatted = formatPlaque(e.target.value);
-              setValue("plaqueImmatriculation", formatted, { shouldValidate: true });
-            }}
+            placeholder="Saisissez la plaque d'immatriculation (Ex: TX-123-AB)"
           />
           <Input
             {...register("numeroIdentification")}
