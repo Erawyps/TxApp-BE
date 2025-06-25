@@ -19,11 +19,6 @@ export function InfoVehicule({ setCurrentStep }) {
     defaultValues: feuilleRouteCtx.state.formData.vehicule,
   });
 
-  const handlePlaqueChange = (e) => {
-    const formatted = formatPlaque(e.target.value);
-    setValue("plaqueImmatriculation", formatted, { shouldValidate: true });
-  };
-
   const handleKmFinChange = (e) => {
     const value = e.target.value;
     setValue("kmFin", value, { shouldValidate: true });
