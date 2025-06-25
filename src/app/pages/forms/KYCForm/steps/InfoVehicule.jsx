@@ -43,7 +43,7 @@ export function InfoVehicule({ setCurrentStep }) {
         <div className="grid gap-4 sm:grid-cols-2">
           <Input
             {...register("plaqueImmatriculation")}
-            label="Plaque d'immatriculation"
+            label="Plaque d'immatriculation-x"
             error={errors?.plaqueImmatriculation?.message}
             placeholder="Saisissez la plaque d'immatriculation (Ex: TX-123-AB)"
           />
