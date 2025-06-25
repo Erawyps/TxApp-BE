@@ -41,6 +41,9 @@ const initialState = {
 };
 
 const reducer = (state, action) => {
+  // Déclarer les variables en dehors du switch
+  let coursesTotal, chargesTotal;
+  
   switch (action.type) {
     case "SET_FORM_DATA":
       return { ...state, formData: { ...state.formData, ...action.payload } };
@@ -60,6 +63,7 @@ const reducer = (state, action) => {
           }]
         }
       };
+
     case "UPDATE_COURSE":
       return {
         ...state,
@@ -70,6 +74,7 @@ const reducer = (state, action) => {
           ),
         },
       };
+
     case "REMOVE_COURSE":
       return {
         ...state,
@@ -80,6 +85,7 @@ const reducer = (state, action) => {
           ),
         },
       };
+
     case "ADD_CHARGE":
       return {
         ...state,
@@ -88,6 +94,7 @@ const reducer = (state, action) => {
           charges: [...state.formData.charges, action.payload],
         },
       };
+
     case "REMOVE_CHARGE":
       return {
         ...state,
@@ -98,6 +105,7 @@ const reducer = (state, action) => {
           ),
         },
       };
+
     case "CALCULATE_TOTALS":
       coursesTotal = state.formData.courses.reduce((sum, course) => sum + (course.sommePercue || 0), 0);
       chargesTotal = state.formData.charges.reduce((sum, charge) => sum + (charge.montant || 0), 0);
@@ -116,8 +124,10 @@ const reducer = (state, action) => {
           }
         }
       };
+
     case "RESET":
       return initialState;
+
     default:
       return state;
   }
