@@ -6,8 +6,8 @@ const initialState = {
   formData: {
     // Informations de base
     date: new Date().toISOString().split('T')[0],
-    //chauffeur_id: null,
-    //vehicule_id: null,
+    chauffeur_id: null,
+    vehicule_id: null,
     
     // Horaires et kilométrage
     heure_debut: "",
