@@ -99,8 +99,8 @@ const reducer = (state, action) => {
         },
       };
     case "CALCULATE_TOTALS":
-      coursesTotal = state.formData.courses.reduce((sum, course) => sum + (course.sommePercue || 0), 0);
-      chargesTotal = state.formData.charges.reduce((sum, charge) => sum + (charge.montant || 0), 0);
+      const coursesTotal = state.formData.courses.reduce((sum, course) => sum + (course.sommePercue || 0), 0);
+      const chargesTotal = state.formData.charges.reduce((sum, charge) => sum + (charge.montant || 0), 0);
       
       return {
         ...state,
