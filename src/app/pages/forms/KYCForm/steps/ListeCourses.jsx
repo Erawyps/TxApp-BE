@@ -33,8 +33,7 @@ export function ListeCourses({ setCurrentStep }) {
     formState: { errors },
     control,
     watch,
-    reset,
-    setValue
+    reset
   } = useForm({
     resolver: yupResolver(courseSchema),
     defaultValues: {
