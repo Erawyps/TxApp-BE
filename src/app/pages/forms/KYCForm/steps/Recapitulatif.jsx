@@ -15,11 +15,15 @@ export function Recapitulatif({ setCurrentStep, setValidated }) {
 
   // Calcul des totaux
   const totalRecettes = courses.reduce((sum, course) => sum + (course?.sommePercue || 0), 0);
+  const totalKmCourses = courses.reduce((sum, course) => sum + ((course?.indexArrivee || 0) - (course?.indexDepart || 0)), 0);
   const totalCharges = charges.reduce((sum, charge) => sum + (charge?.montant || 0), 0);
 
   const calculerSalaire = () => {
     if (!chauffeur?.regleSalaire) return 0;
 
+    // Déplacer la déclaration de heures en dehors du switch
+    let heures = 0;
+    
     switch (chauffeur.regleSalaire) {
       case "fixe":
         return chauffeur.tauxSalaire || 0;
@@ -34,9 +38,12 @@ export function Recapitulatif({ setCurrentStep, setValidated }) {
           : (seuil * 0.4) + ((totalRecettes - seuil) * 0.3);
       }
       case "heure10": {
+        if (!chauffeur.heureDebut || !chauffeur.heureFin) return 0;
+        
         const [debutH, debutM] = chauffeur.heureDebut.split(':').map(Number);
         const [finH, finM] = chauffeur.heureFin.split(':').map(Number);
-        let heures = (finH * 60 + finM - debutH * 60 - debutM) / 60;
+        heures = (finH * 60 + finM - debutH * 60 - debutM) / 60;
+        
         if (chauffeur.interruptions) {
           const [interH, interM] = chauffeur.interruptions.split(':').map(Number);
           heures -= (interH * 60 + interM) / 60;
@@ -44,7 +51,16 @@ export function Recapitulatif({ setCurrentStep, setValidated }) {
         return heures * 10;
       }
       case "heure12": {
-        // Même logique que heure10 mais avec 12€/h
+        if (!chauffeur.heureDebut || !chauffeur.heureFin) return 0;
+        
+        const [debutH, debutM] = chauffeur.heureDebut.split(':').map(Number);
+        const [finH, finM] = chauffeur.heureFin.split(':').map(Number);
+        heures = (finH * 60 + finM - debutH * 60 - debutM) / 60;
+        
+        if (chauffeur.interruptions) {
+          const [interH, interM] = chauffeur.interruptions.split(':').map(Number);
+          heures -= (interH * 60 + interM) / 60;
+        }
         return heures * 12;
       }
       default:
@@ -53,9 +69,9 @@ export function Recapitulatif({ setCurrentStep, setValidated }) {
   };
 
   const salaire = calculerSalaire();
+  const benefice = totalRecettes - salaire - totalCharges;
 
   const onValidate = () => {
-    // Vérifier les données avant validation
     if (courses.length === 0) {
       setError("Au moins une course est requise");
       return;
@@ -72,9 +88,6 @@ export function Recapitulatif({ setCurrentStep, setValidated }) {
     setError(null);
     
     try {
-      // Ici, ajouter la logique pour sauvegarder dans Supabase
-      // await saveToSupabase(feuilleRouteCtx.state.formData);
-      
       setShowModal(false);
       setValidated(true);
       navigate("/feuilles-route");
