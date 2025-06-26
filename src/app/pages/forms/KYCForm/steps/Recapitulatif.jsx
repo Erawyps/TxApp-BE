@@ -3,6 +3,14 @@ import { Button } from "components/ui";
 import { Modal } from "components/shared/modal/Modal";
 import { useFeuilleRouteContext } from "../FeuilleRouteContext";
 import { useNavigate } from "react-router-dom";
+import { jsPDF } from "jspdf";
+import "jspdf-autotable";
+
+const modesPaiement = [
+  { value: "cash", label: "Espèces" },
+  { value: "card", label: "Carte bancaire" },
+  { value: "online", label: "Paiement en ligne" },
+];
 
 export function Recapitulatif({ setCurrentStep, setValidated }) {
   const feuilleRouteCtx = useFeuilleRouteContext();
@@ -72,60 +80,133 @@ export function Recapitulatif({ setCurrentStep, setValidated }) {
   const benefice = totalRecettes - salaire - totalCharges;
 
   const preparerDonneesPourAPI = () => {
-    return {
-      date: formData.date,
-      chauffeur_id: formData.chauffeur_id,
-      vehicule_id: formData.vehicule_id,
-      heure_debut: formData.heure_debut,
-      heure_fin: formData.heure_fin,
-      interruptions: formData.interruptions,
-      km_debut: formData.km_debut,
-      km_fin: formData.km_fin,
-      prise_en_charge_debut: formData.prise_en_charge_debut,
-      prise_en_charge_fin: formData.prise_en_charge_fin,
-      chutes_debut: formData.chutes_debut,
-      chutes_fin: formData.chutes_fin,
-      statut: "Validée",
-      saisie_mode: formData.saisie_mode,
-      courses: courses.map(course => ({
-        index_depart: course.indexDepart,
-        index_arrivee: course.indexArrivee,
-        lieu_embarquement: course.lieuEmbarquement,
-        lieu_debarquement: course.lieuDebarquement,
-        heure_embarquement: course.heureEmbarquement,
-        heure_debarquement: course.heureDebarquement,
-        prix_taximetre: course.prixTaximetre,
-        somme_percue: course.sommePercue,
-        mode_paiement: course.modePaiement,
-        client_id: course.client_id,
-        numero_ordre: course.numero_ordre
-      })),
-      charges: charges.map(charge => ({
-        type_charge: charge.type_charge,
-        description: charge.description,
-        montant: charge.montant,
-        mode_paiement: charge.modePaiement,
-        date: charge.date
-      }))
-    };
+  // Convertir les heures en format ISO
+  const formatHeure = (heure) => {
+    if (!heure) return null;
+    return `2000-01-01T${heure}:00`; // Date fictive, seule l'heure nous intéresse
   };
 
-  const onValidate = () => {
-    if (courses.length === 0) {
-      setError("Au moins une course est requise");
-      return;
-    }
-    if (!formData.km_fin) {
-      setError("Le kilométrage de fin est requis");
-      return;
-    }
-    setShowModal(true);
+  return {
+    date: formData.date,
+    chauffeur_id: formData.chauffeur_id,
+    vehicule_id: formData.vehicule_id,
+    heure_debut: formatHeure(formData.heure_debut),
+    heure_fin: formatHeure(formData.heure_fin),
+    interruptions: formData.interruptions ? `PT${formData.interruptions.replace(':', 'H')}M` : null, // Format ISO8601
+    km_debut: formData.km_debut,
+    km_fin: formData.km_fin,
+    prise_en_charge_debut: formData.prise_en_charge_debut,
+    prise_en_charge_fin: formData.prise_en_charge_fin,
+    chutes_debut: formData.chutes_debut,
+    chutes_fin: formData.chutes_fin,
+    statut: "Validée",
+    saisie_mode: "admin", // ou "chauffeur" selon le cas
+    courses: courses.map((course, index) => ({
+      numero_ordre: index + 1,
+      index_depart: course.indexDepart,
+      index_arrivee: course.indexArrivee,
+      lieu_embarquement: course.lieuEmbarquement,
+      lieu_debarquement: course.lieuDebarquement,
+      heure_embarquement: `${formData.date}T${course.heureEmbarquement}:00`,
+      heure_debarquement: course.heureDebarquement ? `${formData.date}T${course.heureDebarquement}:00` : null,
+      prix_taximetre: course.prixTaximetre,
+      somme_percue: course.sommePercue,
+      mode_paiement: course.modePaiement,
+      client_id: course.client_id || null
+    })),
+    charges: charges.map(charge => ({
+      type_charge: charge.type_charge,
+      description: charge.description,
+      montant: charge.montant,
+      mode_paiement: charge.modePaiement,
+      date: formData.date // Utilise la date de la feuille de route
+    }))
   };
+};
 
-  const handleDownloadPDF = () => {
-    // Logic to generate and download the PDF
-    console.log("Downloading PDF...");
-  };
+  const validerDonnees = () => {
+  const erreurs = [];
+
+  if (!formData.date) erreurs.push("La date est requise");
+  if (!formData.chauffeur_id) erreurs.push("Le chauffeur est requis");
+  if (!formData.vehicule_id) erreurs.push("Le véhicule est requis");
+  if (!formData.heure_debut) erreurs.push("L'heure de début est requise");
+  if (!formData.km_debut && formData.km_debut !== 0) erreurs.push("Le kilométrage de début est requis");
+  
+  if (courses.length === 0) {
+    erreurs.push("Au moins une course est requise");
+  } else {
+    courses.forEach((course, index) => {
+      if (course.indexArrivee <= course.indexDepart) {
+        erreurs.push(`Course ${index + 1}: L'index d'arrivée doit être supérieur au départ`);
+      }
+      if (course.modePaiement === 'facture' && !course.client_id) {
+        erreurs.push(`Course ${index + 1}: Un client doit être sélectionné pour les factures`);
+      }
+    });
+  }
+
+  return erreurs;
+};
+
+// Modifiez onValidate pour utiliser cette validation
+const onValidate = () => {
+  const erreurs = validerDonnees();
+  if (erreurs.length > 0) {
+    setError(erreurs.join('\n'));
+    return;
+  }
+  setShowModal(true);
+};
+
+  const generatePDF = () => {
+  const doc = new jsPDF();
+  
+  // Titre
+  doc.setFontSize(18);
+  doc.text('Feuille de Route Taxi', 105, 15, { align: 'center' });
+  
+  // Informations de base
+  doc.setFontSize(12);
+  doc.text(`Date: ${formData.date}`, 14, 25);
+  doc.text(`Chauffeur: ${formData.chauffeur?.prenom} ${formData.chauffeur?.nom}`, 14, 35);
+  doc.text(`Véhicule: ${formData.vehicule?.plaqueImmatriculation}`, 14, 45);
+
+  // Tableau des courses
+  doc.autoTable({
+    startY: 55,
+    head: [['N°', 'Départ', 'Arrivée', 'Montant', 'Paiement']],
+    body: courses.map((course, index) => [
+      index + 1,
+      `${course.lieuEmbarquement} (${course.indexDepart} km)`,
+      `${course.lieuDebarquement} (${course.indexArrivee} km)`,
+      `${course.sommePercue.toFixed(2)} €`,
+      modesPaiement.find(m => m.value === course.modePaiement)?.label
+    ]),
+    styles: { fontSize: 10 },
+    headStyles: { fillColor: [22, 160, 133] }
+  });
+
+  // Totaux
+  const finalY = doc.lastAutoTable.finalY + 10;
+  doc.text(`Total Recettes: ${totalRecettes.toFixed(2)} €`, 14, finalY);
+  doc.text(`Total Charges: ${totalCharges.toFixed(2)} €`, 14, finalY + 10);
+  doc.text(`Salaire: ${salaire.toFixed(2)} €`, 14, finalY + 20);
+  doc.text(`Bénéfice: ${benefice.toFixed(2)} €`, 14, finalY + 30);
+
+  // Sauvegarde du PDF
+  doc.save(`feuille-route-${formData.date}.pdf`);
+};
+
+// Mettez à jour la fonction handleDownloadPDF
+const handleDownloadPDF = () => {
+  try {
+    generatePDF();
+  } catch (error) {
+    console.error("Erreur génération PDF:", error);
+    setError("Erreur lors de la génération du PDF");
+  }
+};
 
   const confirmValidation = async () => {
     setIsSubmitting(true);
