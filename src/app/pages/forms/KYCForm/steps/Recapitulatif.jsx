@@ -3,14 +3,8 @@ import { Button } from "components/ui";
 import { Modal } from "components/shared/modal/Modal";
 import { useFeuilleRouteContext } from "../FeuilleRouteContext";
 import { useNavigate } from "react-router-dom";
-import { jsPDF } from "jspdf";
 import "jspdf-autotable";
-
-const modesPaiement = [
-  { value: "cash", label: "Espèces" },
-  { value: "card", label: "Carte bancaire" },
-  { value: "online", label: "Paiement en ligne" },
-];
+import { generateFeuilleRoutePDF } from "../utils/generatePDF";
 
 export function Recapitulatif({ setCurrentStep, setValidated }) {
   const feuilleRouteCtx = useFeuilleRouteContext();
@@ -159,55 +153,50 @@ const onValidate = () => {
   setShowModal(true);
 };
 
-  const generatePDF = () => {
-  const doc = new jsPDF();
-  
-  // Titre
-  doc.setFontSize(18);
-  doc.text('Feuille de Route Taxi', 105, 15, { align: 'center' });
-  
-  // Informations de base
-  doc.setFontSize(12);
-  doc.text(`Date: ${formData.date}`, 14, 25);
-  doc.text(`Chauffeur: ${formData.chauffeur?.prenom} ${formData.chauffeur?.nom}`, 14, 35);
-  doc.text(`Véhicule: ${formData.vehicule?.plaqueImmatriculation}`, 14, 45);
-
-  // Tableau des courses
-  doc.autoTable({
-    startY: 55,
-    head: [['N°', 'Départ', 'Arrivée', 'Montant', 'Paiement']],
-    body: courses.map((course, index) => [
-      index + 1,
-      `${course.lieuEmbarquement} (${course.indexDepart} km)`,
-      `${course.lieuDebarquement} (${course.indexArrivee} km)`,
-      `${course.sommePercue.toFixed(2)} €`,
-      modesPaiement.find(m => m.value === course.modePaiement)?.label
-    ]),
-    styles: { fontSize: 10 },
-    headStyles: { fillColor: [22, 160, 133] }
-  });
-
-  // Totaux
-  const finalY = doc.lastAutoTable.finalY + 10;
-  doc.text(`Total Recettes: ${totalRecettes.toFixed(2)} €`, 14, finalY);
-  doc.text(`Total Charges: ${totalCharges.toFixed(2)} €`, 14, finalY + 10);
-  doc.text(`Salaire: ${salaire.toFixed(2)} €`, 14, finalY + 20);
-  doc.text(`Bénéfice: ${benefice.toFixed(2)} €`, 14, finalY + 30);
-
-  // Sauvegarde du PDF
-  doc.save(`feuille-route-${formData.date}.pdf`);
-};
-
-// Mettez à jour la fonction handleDownloadPDF
 const handleDownloadPDF = () => {
   try {
-    generatePDF();
+    // Fonction pour calculer le total des heures
+    const calculerTotalHeures = () => {
+      if (!formData.chauffeur.heureDebut || !formData.chauffeur.heureFin) return "--:--";
+      
+      try {
+        const [debutH, debutM] = formData.chauffeur.heureDebut.split(':').map(Number);
+        const [finH, finM] = formData.chauffeur.heureFin.split(':').map(Number);
+        
+        let totalMinutes = (finH * 60 + finM) - (debutH * 60 + debutM);
+        
+        if (formData.chauffeur.interruptions) {
+          const [interH, interM] = formData.chauffeur.interruptions.split(':').map(Number);
+          totalMinutes -= (interH * 60 + interM);
+        }
+        
+        const heures = Math.floor(totalMinutes / 60);
+        const minutes = totalMinutes % 60;
+        return `${heures.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+      } catch {
+        return "--:--";
+      }
+    };
+
+    // Préparer les données pour le PDF
+    const pdfData = {
+      chauffeur: {
+        ...formData.chauffeur,
+        totalHeures: calculerTotalHeures()
+      },
+      vehicule: {
+        ...formData.vehicule,
+        kmParcourus: (formData.vehicule.kmFin - formData.vehicule.kmDebut) || 0
+      },
+      courses: formData.courses
+    };
+    
+    generateFeuilleRoutePDF(pdfData);
   } catch (error) {
     console.error("Erreur génération PDF:", error);
     setError("Erreur lors de la génération du PDF");
   }
 };
-
   const confirmValidation = async () => {
     setIsSubmitting(true);
     setError(null);
