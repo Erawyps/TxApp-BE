@@ -153,9 +153,7 @@ const onValidate = () => {
   setShowModal(true);
 };
 
-const handleDownloadPDF = () => {
-  try {
-    // Fonction pour calculer le total des heures
+// Fonction pour calculer le total des heures
     const calculerTotalHeures = () => {
       if (!formData.chauffeur.heureDebut || !formData.chauffeur.heureFin) return "--:--";
       
@@ -177,18 +175,19 @@ const handleDownloadPDF = () => {
         return "--:--";
       }
     };
-
+const handleDownloadPDF = () => {
+  try {
     // Préparer les données pour le PDF
     const pdfData = {
       chauffeur: {
-        ...formData.chauffeur,
+        ...feuilleRouteCtx.state.formData.chauffeur,
         totalHeures: calculerTotalHeures()
       },
       vehicule: {
-        ...formData.vehicule,
-        kmParcourus: (formData.vehicule.kmFin - formData.vehicule.kmDebut) || 0
+        ...feuilleRouteCtx.state.formData.vehicule,
+        kmParcourus: (feuilleRouteCtx.state.formData.vehicule.kmFin - feuilleRouteCtx.state.formData.vehicule.kmDebut)
       },
-      courses: formData.courses
+      courses: feuilleRouteCtx.state.formData.courses
     };
     
     generateFeuilleRoutePDF(pdfData);
