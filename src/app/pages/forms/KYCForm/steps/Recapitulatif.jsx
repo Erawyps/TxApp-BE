@@ -153,41 +153,36 @@ const onValidate = () => {
   setShowModal(true);
 };
 
-// Fonction pour calculer le total des heures
-    const calculerTotalHeures = () => {
-      if (!formData.chauffeur.heureDebut || !formData.chauffeur.heureFin) return "--:--";
-      
-      try {
-        const [debutH, debutM] = formData.chauffeur.heureDebut.split(':').map(Number);
-        const [finH, finM] = formData.chauffeur.heureFin.split(':').map(Number);
-        
-        let totalMinutes = (finH * 60 + finM) - (debutH * 60 + debutM);
-        
-        if (formData.chauffeur.interruptions) {
-          const [interH, interM] = formData.chauffeur.interruptions.split(':').map(Number);
-          totalMinutes -= (interH * 60 + interM);
-        }
-        
-        const heures = Math.floor(totalMinutes / 60);
-        const minutes = totalMinutes % 60;
-        return `${heures.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
-      } catch {
-        return "--:--";
-      }
-    };
+// Modifiez la fonction handleDownloadPDF
 const handleDownloadPDF = () => {
   try {
-    // Préparer les données pour le PDF
     const pdfData = {
+      date: formData.date,
       chauffeur: {
-        ...feuilleRouteCtx.state.formData.chauffeur,
-        totalHeures: calculerTotalHeures()
+        nom: formData.chauffeur.nom,
+        prenom: formData.chauffeur.prenom
       },
       vehicule: {
-        ...feuilleRouteCtx.state.formData.vehicule,
-        kmParcourus: (feuilleRouteCtx.state.formData.vehicule.kmFin - feuilleRouteCtx.state.formData.vehicule.kmDebut)
+        plaqueImmatriculation: formData.vehicule.plaqueImmatriculation,
+        numeroIdentification: formData.vehicule.numeroIdentification,
+        kmDebut: formData.vehicule.kmDebut,
+        kmFin: formData.vehicule.kmFin
       },
-      courses: feuilleRouteCtx.state.formData.courses
+      heure_debut: formData.heure_debut,
+      heure_fin: formData.heure_fin,
+      km_debut: formData.km_debut,
+      km_fin: formData.km_fin,
+      courses: formData.courses.map(course => ({
+        indexDepart: course.indexDepart,
+        indexArrivee: course.indexArrivee,
+        lieuEmbarquement: course.lieuEmbarquement,
+        lieuDebarquement: course.lieuDebarquement,
+        heureEmbarquement: course.heureEmbarquement,
+        heureDebarquement: course.heureDebarquement,
+        prixTaximetre: course.prixTaximetre,
+        sommePercue: course.sommePercue
+      })),
+      charges: formData.charges
     };
     
     generateFeuilleRoutePDF(pdfData);
