@@ -1,93 +1,92 @@
 import { PDFDocument, rgb, StandardFonts } from 'pdf-lib';
+import { PDF_COORDINATES } from './pdfConfig';
 
 export async function generateFeuilleRoutePDF(formData) {
   try {
-    // 1. Charger le modèle PDF
+    // Charger le modèle PDF
     const response = await fetch('/feuille_de_route_taxi.pdf');
-    if (!response.ok) throw new Error('Échec du chargement du modèle PDF');
     const existingPdfBytes = await response.arrayBuffer();
-
-    // 2. Charger le document PDF
     const pdfDoc = await PDFDocument.load(existingPdfBytes);
-    const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
+    const font = await pdfDoc.embedFont(StandardFonts.HelveticaBold); // Police plus visible
     const pages = pdfDoc.getPages();
     const [page1, page2] = pages;
 
-    // 3. Fonction helper pour dessiner du texte
-    const drawText = (page, text, x, y, size = 10, maxWidth = 100) => {
-      if (text === undefined || text === null || text === '') return;
+    // Fonction améliorée pour dessiner le texte
+    const drawText = (page, text, x, y, options = {}) => {
+      if (!text && text !== 0) return;
       
-      // Formatage spécial pour les nombres
-      if (typeof text === 'number') {
-        text = text.toFixed(2);
-      }
-      
+      const { 
+        size = 10, 
+        color = rgb(0, 0, 0),
+        maxWidth = null,
+        font: customFont = font
+      } = options;
+
       page.drawText(text.toString(), {
         x,
         y: 842 - y, // Inversion Y
         size,
-        font,
-        color: rgb(0, 0, 0),
-        maxWidth // Optionnel: pour éviter le débordement
+        font: customFont,
+        color,
+        maxWidth,
+        lineHeight: size * 1.2
       });
     };
 
-    // 4. Remplir les informations générales
-    // Date et nom (Page 1)
-    drawText(page1, formData.date, 100, 100);
-    drawText(page1, `${formData.chauffeur.prenom} ${formData.chauffeur.nom}`, 300, 100);
-    
-    // Véhicule (Page 1)
-    drawText(page1, formData.vehicule.plaqueImmatriculation, 100, 130);
-    drawText(page1, formData.vehicule.numeroIdentification, 300, 130);
-    
-    // Service (Page 1)
-    drawText(page1, formData.chauffeur.heureDebut, 100, 180);
-    drawText(page1, formData.chauffeur.heureFin, 200, 180);
-    drawText(page1, formData.vehicule.kmDebut, 300, 180);
-    drawText(page1, formData.vehicule.kmFin, 400, 180);
-    drawText(page1, formData.chauffeur.interruptions, 100, 200);
-    drawText(page1, formData.chauffeur.totalHeures, 200, 200);
-    drawText(page1, formData.vehicule.kmParcourus, 300, 200);
+    // Remplir les informations générales
+    const { date, chauffeurNom, plaqueImmatriculation, numeroIdentification } = PDF_COORDINATES;
+    drawText(page1, formData.date, date.x, date.y, { size: 11 });
+    drawText(page1, `${formData.chauffeur.prenom} ${formData.chauffeur.nom}`, chauffeurNom.x, chauffeurNom.y, { size: 11 });
+    drawText(page1, formData.vehicule.plaqueImmatriculation, plaqueImmatriculation.x, plaqueImmatriculation.y);
+    drawText(page1, formData.vehicule.numeroIdentification, numeroIdentification.x, numeroIdentification.y);
 
-    // 5. Remplir les courses
-    const courseStartY = 220;
-    const courseSpacing = 20;
-    const maxCoursesPage1 = 8;
+    // Remplir la section Service
+    const { heureDebut, heureFin, kmDebut, kmFin, interruptions, totalHeures, kmParcourus } = PDF_COORDINATES;
+    drawText(page1, formData.chauffeur.heureDebut, heureDebut.x, heureDebut.y);
+    drawText(page1, formData.chauffeur.heureFin, heureFin.x, heureFin.y);
+    drawText(page1, formData.vehicule.kmDebut, kmDebut.x, kmDebut.y);
+    drawText(page1, formData.vehicule.kmFin, kmFin.x, kmFin.y);
+    drawText(page1, formData.chauffeur.interruptions || 'Aucune', interruptions.x, interruptions.y);
+    drawText(page1, formData.chauffeur.totalHeures, totalHeures.x, totalHeures.y);
+    drawText(page1, formData.vehicule.kmParcourus, kmParcourus.x, kmParcourus.y);
 
+    // Remplir les courses
+    const { courses } = PDF_COORDINATES;
     formData.courses.forEach((course, index) => {
-      const yPos = courseStartY + (index * courseSpacing);
-      const targetPage = index < maxCoursesPage1 ? page1 : page2;
-      const displayIndex = index + 1;
+      const yPos = courses.startY + (index * courses.rowHeight);
+      const targetPage = index < courses.maxRowsPage1 ? page1 : page2;
       
-      drawText(targetPage, displayIndex.toString(), 50, yPos);
-      drawText(targetPage, course.indexDepart, 80, yPos);
-      drawText(targetPage, course.lieuEmbarquement, 150, yPos);
-      drawText(targetPage, course.heureEmbarquement, 250, yPos);
-      drawText(targetPage, course.indexArrivee, 350, yPos);
-      drawText(targetPage, course.lieuDebarquement, 420, yPos);
-      drawText(targetPage, course.heureDebarquement, 520, yPos);
-      drawText(targetPage, course.prixTaximetre, 620, yPos);
-      drawText(targetPage, course.sommePercue, 700, yPos);
+      const { columns } = courses;
+      drawText(targetPage, (index + 1).toString(), columns.numero.x, yPos);
+      drawText(targetPage, course.indexDepart, columns.indexDepart.x, yPos);
+      drawText(targetPage, course.lieuEmbarquement, columns.lieuEmbarquement.x, yPos, { 
+        maxWidth: columns.lieuEmbarquement.width 
+      });
+      drawText(targetPage, course.heureEmbarquement, columns.heureEmbarquement.x, yPos);
+      drawText(targetPage, course.indexArrivee, columns.indexArrivee.x, yPos);
+      drawText(targetPage, course.lieuDebarquement, columns.lieuDebarquement.x, yPos, {
+        maxWidth: columns.lieuDebarquement.width
+      });
+      drawText(targetPage, course.heureDebarquement, columns.heureDebarquement.x, yPos);
+      drawText(targetPage, `€${course.prixTaximetre}`, columns.prixTaximetre.x, yPos);
+      drawText(targetPage, `€${course.sommePercue}`, columns.sommePercue.x, yPos);
     });
 
-    // 6. Générer et télécharger le PDF
+    // Générer et télécharger le PDF
     const pdfBytes = await pdfDoc.save();
     const blob = new Blob([pdfBytes], { type: 'application/pdf' });
     const url = URL.createObjectURL(blob);
     
     const link = document.createElement('a');
     link.href = url;
-    link.download = `feuille-route-${formData.date || new Date().toISOString().split('T')[0]}.pdf`;
+    link.download = `feuille-route-${formData.date || 'sans-date'}.pdf`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-    
-    // Nettoyer après 1 minute au cas où
-    setTimeout(() => URL.revokeObjectURL(url), 60000);
-    
+    URL.revokeObjectURL(url);
+
   } catch (error) {
-    console.error('Erreur PDF:', error);
-    throw new Error(`Échec de la génération du PDF: ${error.message}`);
+    console.error('Erreur génération PDF:', error);
+    throw error;
   }
 }
