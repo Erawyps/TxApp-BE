@@ -153,25 +153,52 @@ const onValidate = () => {
   setShowModal(true);
 };
 
-// Modifiez la fonction handleDownloadPDF
+const calculerTotalHeures = () => {
+  if (!formData.heure_debut || !formData.heure_fin) return "00:00";
+  
+  try {
+    // Convertir les heures en minutes depuis minuit
+    const [debutH, debutM] = formData.heure_debut.split(':').map(Number);
+    const [finH, finM] = formData.heure_fin.split(':').map(Number);
+    
+    let totalMinutes = (finH * 60 + finM) - (debutH * 60 + debutM);
+    
+    // Soustraire les interruptions si elles existent
+    if (formData.interruptions) {
+      const [interH, interM] = formData.interruptions.split(':').map(Number);
+      totalMinutes -= (interH * 60 + interM);
+    }
+    
+    if (totalMinutes <= 0) return "00:00";
+    
+    // Convertir en format HH:MM
+    const hours = Math.floor(totalMinutes / 60);
+    const minutes = totalMinutes % 60;
+    return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+  } catch {
+    return "00:00";
+  }
+};
+// Dans Recapitulatif.jsx
 const handleDownloadPDF = () => {
   try {
     const pdfData = {
       date: formData.date,
       chauffeur: {
-        nom: formData.chauffeur.nom,
-        prenom: formData.chauffeur.prenom
+        nom: formData.chauffeur?.nom || '',
+        prenom: formData.chauffeur?.prenom || '',
+        heureDebut: formData.heure_debut,
+        heureFin: formData.heure_fin,
+        interruptions: formData.interruptions || 'Aucune',
+        totalHeures: calculerTotalHeures() // Utilisez votre fonction existante
       },
       vehicule: {
-        plaqueImmatriculation: formData.vehicule.plaqueImmatriculation,
-        numeroIdentification: formData.vehicule.numeroIdentification,
-        kmDebut: formData.vehicule.kmDebut,
-        kmFin: formData.vehicule.kmFin
+        plaqueImmatriculation: formData.vehicule?.plaqueImmatriculation || '',
+        numeroIdentification: formData.vehicule?.numeroIdentification || '',
+        kmDebut: formData.km_debut,
+        kmFin: formData.km_fin,
+        kmParcourus: (formData.km_fin || 0) - (formData.km_debut || 0)
       },
-      heure_debut: formData.heure_debut,
-      heure_fin: formData.heure_fin,
-      km_debut: formData.km_debut,
-      km_fin: formData.km_fin,
       courses: formData.courses.map(course => ({
         indexDepart: course.indexDepart,
         indexArrivee: course.indexArrivee,
