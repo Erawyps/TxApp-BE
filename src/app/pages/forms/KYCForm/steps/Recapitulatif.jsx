@@ -178,35 +178,39 @@ const calculerTotalHeures = () => {
   }
 };
 
+// Modifiez la fonction handleDownloadPDF
 const handleDownloadPDF = async () => {
   try {
-    // Formater correctement les données avant génération
     const pdfData = {
-      date: formatDate(formData.date), // Fonction à créer pour formater la date
+      date: formData.date,
       chauffeur: {
         nom: formData.chauffeur?.nom || '',
         prenom: formData.chauffeur?.prenom || '',
-        heureDebut: formatTime(formData.heure_debut),
-        heureFin: formatTime(formData.heure_fin),
-        interruptions: formData.interruptions ? formatTime(formData.interruptions) : 'Aucune',
+        heureDebut: formData.heure_debut,
+        heureFin: formData.heure_fin,
+        interruptions: formData.interruptions || 'Aucune',
         totalHeures: calculerTotalHeures()
       },
       vehicule: {
-        plaqueImmatriculation: formData.vehicule?.plaqueImmatriculation || 'N/A',
-        numeroIdentification: formData.vehicule?.numeroIdentification || 'N/A',
-        kmDebut: formData.km_debut || 0,
-        kmFin: formData.km_fin || 0,
+        plaqueImmatriculation: formData.vehicule?.plaqueImmatriculation || '',
+        numeroIdentification: formData.vehicule?.numeroIdentification || '',
+        kmDebut: formData.km_debut,
+        kmFin: formData.km_fin,
         kmParcourus: (formData.km_fin || 0) - (formData.km_debut || 0)
       },
       courses: formData.courses.map(course => ({
-        indexDepart: course.indexDepart || 0,
-        indexArrivee: course.indexArrivee || 0,
-        lieuEmbarquement: truncateText(course.lieuEmbarquement, 20), // Limiter à 20 caractères
-        lieuDebarquement: truncateText(course.lieuDebarquement, 20),
-        heureEmbarquement: formatTime(course.heureEmbarquement),
-        heureDebarquement: formatTime(course.heureDebarquement),
-        prixTaximetre: formatCurrency(course.prixTaximetre),
-        sommePercue: formatCurrency(course.sommePercue)
+        indexDepart: course.indexDepart,
+        indexArrivee: course.indexArrivee,
+        lieuEmbarquement: course.lieuEmbarquement,
+        lieuDebarquement: course.lieuDebarquement,
+        heureEmbarquement: course.heureEmbarquement,
+        heureDebarquement: course.heureDebarquement,
+        prixTaximetre: course.prixTaximetre?.toFixed(2),
+        sommePercue: course.sommePercue?.toFixed(2)
+      })),
+      charges: formData.charges.map(charge => ({
+        ...charge,
+        montant: charge.montant?.toFixed(2)
       }))
     };
 
@@ -215,25 +219,6 @@ const handleDownloadPDF = async () => {
     console.error("Erreur génération PDF:", error);
     setError("Erreur lors de la génération du PDF");
   }
-};
-
-// Fonctions utilitaires
-const formatDate = (dateString) => {
-  // Implémentez le formatage de date selon vos besoins
-  return dateString; // ou utiliser date-fns pour formater
-};
-
-const formatTime = (timeString) => {
-  if (!timeString) return '';
-  return timeString.length === 5 ? timeString : `${timeString}:00`;
-};
-
-const formatCurrency = (amount) => {
-  return parseFloat(amount || 0).toFixed(2);
-};
-
-const truncateText = (text, maxLength) => {
-  return text?.length > maxLength ? `${text.substring(0, maxLength)}...` : text;
 };
   const confirmValidation = async () => {
     setIsSubmitting(true);
