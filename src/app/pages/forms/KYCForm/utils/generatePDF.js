@@ -1,112 +1,93 @@
 import { PDFDocument, rgb, StandardFonts } from 'pdf-lib';
 
 export async function generateFeuilleRoutePDF(formData) {
-  // Charger le modèle PDF depuis le dossier public
-  const existingPdfBytes = await fetch('/feuille-de-route.pdf').then(res => 
-    res.arrayBuffer()
-  );
+  try {
+    // 1. Charger le modèle PDF
+    const response = await fetch('/feuille_de_route_taxi.pdf');
+    if (!response.ok) throw new Error('Échec du chargement du modèle PDF');
+    const existingPdfBytes = await response.arrayBuffer();
 
-  const pdfDoc = await PDFDocument.load(existingPdfBytes);
-  const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
-  const pages = pdfDoc.getPages();
-  const [page1, page2] = pages;
+    // 2. Charger le document PDF
+    const pdfDoc = await PDFDocument.load(existingPdfBytes);
+    const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
+    const pages = pdfDoc.getPages();
+    const [page1, page2] = pages;
 
-  // Fonction pour inverser l'axe Y (origine en bas à gauche dans pdf-lib)
-  const invertY = (y) => 842 - y; // Pour un PDF A4 (842pt de hauteur)
+    // 3. Fonction helper pour dessiner du texte
+    const drawText = (page, text, x, y, size = 10, maxWidth = 100) => {
+      if (text === undefined || text === null || text === '') return;
+      
+      // Formatage spécial pour les nombres
+      if (typeof text === 'number') {
+        text = text.toFixed(2);
+      }
+      
+      page.drawText(text.toString(), {
+        x,
+        y: 842 - y, // Inversion Y
+        size,
+        font,
+        color: rgb(0, 0, 0),
+        maxWidth // Optionnel: pour éviter le débordement
+      });
+    };
 
-  // ---------- Remplissage des informations générales ----------
-  // Date et nom du chauffeur
-  page1.drawText(formData.date || '', {
-    x: 100, y: invertY(100), size: 10, font, color: rgb(0, 0, 0)
-  });
-  
-  page1.drawText(formData.chauffeur.nom || '', {
-    x: 300, y: invertY(100), size: 10, font, color: rgb(0, 0, 0)
-  });
+    // 4. Remplir les informations générales
+    // Date et nom (Page 1)
+    drawText(page1, formData.date, 100, 100);
+    drawText(page1, `${formData.chauffeur.prenom} ${formData.chauffeur.nom}`, 300, 100);
+    
+    // Véhicule (Page 1)
+    drawText(page1, formData.vehicule.plaqueImmatriculation, 100, 130);
+    drawText(page1, formData.vehicule.numeroIdentification, 300, 130);
+    
+    // Service (Page 1)
+    drawText(page1, formData.chauffeur.heureDebut, 100, 180);
+    drawText(page1, formData.chauffeur.heureFin, 200, 180);
+    drawText(page1, formData.vehicule.kmDebut, 300, 180);
+    drawText(page1, formData.vehicule.kmFin, 400, 180);
+    drawText(page1, formData.chauffeur.interruptions, 100, 200);
+    drawText(page1, formData.chauffeur.totalHeures, 200, 200);
+    drawText(page1, formData.vehicule.kmParcourus, 300, 200);
 
-  // Véhicule
-  page1.drawText(formData.vehicule.plaqueImmatriculation || '', {
-    x: 100, y: invertY(130), size: 10, font, color: rgb(0, 0, 0)
-  });
-  
-  page1.drawText(formData.vehicule.numeroIdentification || '', {
-    x: 300, y: invertY(130), size: 10, font, color: rgb(0, 0, 0)
-  });
+    // 5. Remplir les courses
+    const courseStartY = 220;
+    const courseSpacing = 20;
+    const maxCoursesPage1 = 8;
 
-  // Service
-  page1.drawText(formData.heure_debut || '', {
-    x: 100, y: invertY(180), size: 10, font, color: rgb(0, 0, 0)
-  });
-  
-  page1.drawText(formData.heure_fin || '', {
-    x: 200, y: invertY(180), size: 10, font, color: rgb(0, 0, 0)
-  });
-  
-  page1.drawText(formData.km_debut?.toString() || '', {
-    x: 300, y: invertY(180), size: 10, font, color: rgb(0, 0, 0)
-  });
-  
-  page1.drawText(formData.km_fin?.toString() || '', {
-    x: 400, y: invertY(180), size: 10, font, color: rgb(0, 0, 0)
-  });
+    formData.courses.forEach((course, index) => {
+      const yPos = courseStartY + (index * courseSpacing);
+      const targetPage = index < maxCoursesPage1 ? page1 : page2;
+      const displayIndex = index + 1;
+      
+      drawText(targetPage, displayIndex.toString(), 50, yPos);
+      drawText(targetPage, course.indexDepart, 80, yPos);
+      drawText(targetPage, course.lieuEmbarquement, 150, yPos);
+      drawText(targetPage, course.heureEmbarquement, 250, yPos);
+      drawText(targetPage, course.indexArrivee, 350, yPos);
+      drawText(targetPage, course.lieuDebarquement, 420, yPos);
+      drawText(targetPage, course.heureDebarquement, 520, yPos);
+      drawText(targetPage, course.prixTaximetre, 620, yPos);
+      drawText(targetPage, course.sommePercue, 700, yPos);
+    });
 
-  // ---------- Remplissage des courses ----------
-  const courseStartY = 220;
-  const courseSpacing = 20;
-
-  formData.courses.forEach((course, index) => {
-    const yPos = invertY(courseStartY + (index * courseSpacing));
+    // 6. Générer et télécharger le PDF
+    const pdfBytes = await pdfDoc.save();
+    const blob = new Blob([pdfBytes], { type: 'application/pdf' });
+    const url = URL.createObjectURL(blob);
     
-    // Pour gérer le débordement sur la page 2
-    const targetPage = index < 8 ? page1 : page2;
-    const courseIndex = index < 8 ? index : index - 8;
-
-    targetPage.drawText((courseIndex + 1).toString(), {
-      x: 50, y: yPos, size: 10, font, color: rgb(0, 0, 0)
-    });
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `feuille-route-${formData.date || new Date().toISOString().split('T')[0]}.pdf`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
     
-    targetPage.drawText(course.indexDepart?.toString() || '', {
-      x: 80, y: yPos, size: 10, font, color: rgb(0, 0, 0)
-    });
+    // Nettoyer après 1 minute au cas où
+    setTimeout(() => URL.revokeObjectURL(url), 60000);
     
-    targetPage.drawText(course.lieuEmbarquement || '', {
-      x: 150, y: yPos, size: 10, font, color: rgb(0, 0, 0)
-    });
-    
-    targetPage.drawText(course.heureEmbarquement || '', {
-      x: 250, y: yPos, size: 10, font, color: rgb(0, 0, 0)
-    });
-    
-    targetPage.drawText(course.indexArrivee?.toString() || '', {
-      x: 350, y: yPos, size: 10, font, color: rgb(0, 0, 0)
-    });
-    
-    targetPage.drawText(course.lieuDebarquement || '', {
-      x: 420, y: yPos, size: 10, font, color: rgb(0, 0, 0)
-    });
-    
-    targetPage.drawText(course.heureDebarquement || '', {
-      x: 520, y: yPos, size: 10, font, color: rgb(0, 0, 0)
-    });
-    
-    targetPage.drawText(course.prixTaximetre?.toString() || '', {
-      x: 620, y: yPos, size: 10, font, color: rgb(0, 0, 0)
-    });
-    
-    targetPage.drawText(course.sommePercue?.toString() || '', {
-      x: 700, y: yPos, size: 10, font, color: rgb(0, 0, 0)
-    });
-  });
-
-  // ---------- Génération et téléchargement du PDF ----------
-  const pdfBytes = await pdfDoc.save();
-  const blob = new Blob([pdfBytes], { type: 'application/pdf' });
-  const url = URL.createObjectURL(blob);
-  
-  const link = document.createElement('a');
-  link.href = url;
-  link.download = `feuille-route-${formData.date || 'sans-date'}.pdf`;
-  link.click();
-  
-  URL.revokeObjectURL(url);
+  } catch (error) {
+    console.error('Erreur PDF:', error);
+    throw new Error(`Échec de la génération du PDF: ${error.message}`);
+  }
 }
