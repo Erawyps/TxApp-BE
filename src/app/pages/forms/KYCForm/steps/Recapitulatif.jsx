@@ -178,46 +178,48 @@ const calculerTotalHeures = () => {
   }
 };
 
-// Modifiez la fonction handleDownloadPDF
 const handleDownloadPDF = async () => {
   try {
+    // Préparer les données avec des valeurs par défaut
     const pdfData = {
-      date: formData.date,
+      date: formData.date || new Date().toISOString().split('T')[0],
       chauffeur: {
-        nom: formData.chauffeur?.nom || '',
+        nom: formData.chauffeur?.nom || 'Nom inconnu',
         prenom: formData.chauffeur?.prenom || '',
-        heureDebut: formData.heure_debut,
-        heureFin: formData.heure_fin,
+        heureDebut: formData.heure_debut || '00:00',
+        heureFin: formData.heure_fin || '00:00',
         interruptions: formData.interruptions || 'Aucune',
         totalHeures: calculerTotalHeures()
       },
       vehicule: {
-        plaqueImmatriculation: formData.vehicule?.plaqueImmatriculation || '',
-        numeroIdentification: formData.vehicule?.numeroIdentification || '',
-        kmDebut: formData.km_debut,
-        kmFin: formData.km_fin,
-        kmParcourus: (formData.km_fin || 0) - (formData.km_debut || 0)
+        plaqueImmatriculation: formData.vehicule?.plaqueImmatriculation || 'N/A',
+        numeroIdentification: formData.vehicule?.numeroIdentification || 'N/A',
+        kmDebut: formData.km_debut ?? 0,
+        kmFin: formData.km_fin ?? 0
       },
-      courses: formData.courses.map(course => ({
-        indexDepart: course.indexDepart,
-        indexArrivee: course.indexArrivee,
-        lieuEmbarquement: course.lieuEmbarquement,
-        lieuDebarquement: course.lieuDebarquement,
-        heureEmbarquement: course.heureEmbarquement,
-        heureDebarquement: course.heureDebarquement,
-        prixTaximetre: course.prixTaximetre?.toFixed(2),
-        sommePercue: course.sommePercue?.toFixed(2)
-      })),
-      charges: formData.charges.map(charge => ({
-        ...charge,
-        montant: charge.montant?.toFixed(2)
+      courses: (formData.courses || []).map(course => ({
+        indexDepart: course.indexDepart ?? 0,
+        indexArrivee: course.indexArrivee ?? 0,
+        lieuEmbarquement: course.lieuEmbarquement || 'Non spécifié',
+        lieuDebarquement: course.lieuDebarquement || 'Non spécifié',
+        heureEmbarquement: course.heureEmbarquement || '00:00',
+        heureDebarquement: course.heureDebarquement || '00:00',
+        prixTaximetre: parseFloat(course.prixTaximetre) || 0,
+        sommePercue: parseFloat(course.sommePercue) || 0
       }))
     };
 
+    // Ajouter un indicateur visuel pendant la génération
+    setIsSubmitting(true);
+    setError(null);
+    
     await generateFeuilleRoutePDF(pdfData);
+    
   } catch (error) {
     console.error("Erreur génération PDF:", error);
-    setError("Erreur lors de la génération du PDF");
+    setError(error.message || "Erreur lors de la génération du PDF");
+  } finally {
+    setIsSubmitting(false);
   }
 };
   const confirmValidation = async () => {
