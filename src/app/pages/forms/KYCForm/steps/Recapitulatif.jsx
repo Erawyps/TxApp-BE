@@ -118,6 +118,8 @@ export function Recapitulatif({ setCurrentStep, setValidated }) {
   };
 };
 
+
+
   const validerDonnees = () => {
   const erreurs = [];
 
@@ -153,7 +155,6 @@ const onValidate = () => {
   setShowModal(true);
 };
 
-// Ajoutez cette fonction dans le composant Recapitulatif
 const calculerTotalHeures = () => {
   if (!formData.heure_debut || !formData.heure_fin) return "00:00";
   
@@ -195,7 +196,8 @@ const handleDownloadPDF = async () => {
         plaqueImmatriculation: formData.vehicule?.plaqueImmatriculation || 'N/A',
         numeroIdentification: formData.vehicule?.numeroIdentification || 'N/A',
         kmDebut: formData.km_debut ?? 0,
-        kmFin: formData.km_fin ?? 0
+        kmFin: formData.km_fin ?? 0,
+        kmParcourus: (formData.km_fin || 0) - (formData.km_debut || 0)
       },
       courses: (formData.courses || []).map(course => ({
         indexDepart: course.indexDepart ?? 0,
