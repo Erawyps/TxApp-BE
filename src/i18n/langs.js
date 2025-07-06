@@ -1,11 +1,4 @@
 export const locales = {
-    en: {
-        label: "English",
-        dayjs: () => import('dayjs/locale/en'),
-        flatpickr: null,
-        i18n: () => import("./locales/en/translations.json"),
-        flag: 'united-kingdom'
-    },
     fr_be: {
         label: "Français (Belgique)",
         dayjs: () => import('dayjs/locale/fr'),
@@ -19,5 +12,12 @@ export const locales = {
         flatpickr: () => import("flatpickr/dist/l10n/nl").then((module) => module.Dutch),
         i18n: () => import("./locales/nl_be/translations.json"),
         flag: 'belgium'
+    },
+    en: {
+        label: "English",
+        dayjs: () => import('dayjs/locale/en'),
+        flatpickr: null,
+        i18n: () => import("./locales/en/translations.json"),
+        flag: 'united-kingdom'
     }
 }
