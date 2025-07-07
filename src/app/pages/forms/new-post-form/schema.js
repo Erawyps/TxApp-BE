@@ -1,6 +1,6 @@
 import * as Yup from 'yup';
 
-export const schema = Yup.object().shape({
+export const feuilleRouteSchema = Yup.object().shape({
   // En-tête de la feuille de route (informations mises en avant)
   header: Yup.object().shape({
     date: Yup.date()
@@ -126,3 +126,40 @@ export const schema = Yup.object().shape({
     date_validation: Yup.date().default(() => new Date())
   })
 });
+
+export const defaultData = {
+  header: {
+    date: new Date(),
+    chauffeur: {
+      id: "CH001",
+      nom: "Tehou",
+      prenom: "Hasler",
+      badge: "TX-2023-001"
+    },
+    vehicule: {
+      id: "VH001",
+      plaque: "TX-AA-171",
+      numero: "10"
+    }
+  },
+  shift: {
+    start: "08:00",
+    end: null,
+    interruptions: 0
+  },
+  kilometers: {
+    start: 125000,
+    end: null
+  },
+  courses: [],
+  charges: [],
+  totals: {
+    recettes: 0,
+    charges: 0,
+    salaire: 0
+  },
+  validation: {
+    signature: "",
+    date_validation: null
+  }
+};

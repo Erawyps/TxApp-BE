@@ -1,8 +1,7 @@
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
-import { schema } from './schema';
-import { defaultData } from './data';
+import { feuilleRouteSchema, defaultData } from './schema';
 
 // Composants
 import { HeaderSection } from './components/HeaderSection';
@@ -20,8 +19,8 @@ export default function FeuilleRouteTaxi() {
   const [isShiftActive, setIsShiftActive] = useState(false);
   const [generatedPDF, setGeneratedPDF] = useState(null);
 
-  const { control, watch, setValue, reset } = useForm({
-    resolver: yupResolver(schema),
+  const { control, watch, setValue, reset, handleSubmit } = useForm({
+    resolver: yupResolver(feuilleRouteSchema),
     defaultValues: defaultData
   });
 
@@ -62,6 +61,21 @@ export default function FeuilleRouteTaxi() {
     }
   };
 
+  // Validation finale
+  const onFinalSubmit = (data) => {
+    // Calcul des totaux
+    const recettes = data.courses.reduce((sum, c) => sum + (Number(c.prix) || 0), 0);
+    const charges = data.charges.reduce((sum, c) => sum + (Number(c.montant) || 0), 0);
+    
+    // Règle de calcul du salaire
+    const base = Math.min(recettes, 180);
+    const surplus = Math.max(recettes - 180, 0);
+    const salaire = (base * 0.4) + (surplus * 0.3);
+
+    setValue('totals', { recettes, charges, salaire });
+    generatePDF();
+  };
+
   // Étapes de l'application
   const steps = [
     {
@@ -84,7 +98,6 @@ export default function FeuilleRouteTaxi() {
         <div className="space-y-4">
           <QuickCourseForm 
             onAddCourse={addQuickCourse} 
-            currentLocation={values.currentLocation}
           />
           <CourseList 
             courses={values.courses}
@@ -113,7 +126,7 @@ export default function FeuilleRouteTaxi() {
         <ValidationStep 
           values={values}
           control={control}
-          onGeneratePDF={generatePDF}
+          onSubmit={handleSubmit(onFinalSubmit)}
         />
       )
     },
@@ -126,6 +139,7 @@ export default function FeuilleRouteTaxi() {
           onReset={() => {
             reset(defaultData);
             setCurrentStep(1);
+            setIsShiftActive(false);
           }}
         />
       )
