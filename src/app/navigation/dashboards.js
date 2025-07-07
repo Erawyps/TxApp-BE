@@ -10,7 +10,7 @@ export const dashboards = {
     id: 'dashboards',
     type: NAV_TYPE_ROOT,
     path: '/dashboards',
-    title: 'Dashboards - Vue d\'ensemble',
+    title: 'Tableaux de bord',
     //transKey: 'nav.dashboards.dashboards',
     Icon: DashboardsIcon,
     childs: [
@@ -18,7 +18,7 @@ export const dashboards = {
             id: 'dashboards.home',
             path: path(ROOT_DASHBOARDS, '/home'),
             type: NAV_TYPE_ITEM,
-            title: 'Gestion des Taxis - Vue d\'ensemble',
+            title: 'Gestion des Taxis',
             //transKey: 'nav.dashboards.home',
             Icon: HomeIcon,
         },
