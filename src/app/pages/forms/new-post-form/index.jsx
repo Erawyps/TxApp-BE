@@ -1,10 +1,12 @@
 // Import Dependencies
 import { yupResolver } from "@hookform/resolvers/yup";
 import { Controller, useForm, useFieldArray } from "react-hook-form";
+import { useRef } from "react";
 import { DocumentPlusIcon, TrashIcon } from "@heroicons/react/24/outline";
 import { toast } from "sonner";
-import { pdf, Document, Page, View, Text, StyleSheet } from '@react-pdf/renderer';
+import { pdf, Document, Page, View, Text, StyleSheet, Image } from '@react-pdf/renderer';
 import { saveAs } from 'file-saver';
+import { SignaturePad } from "components/form/SignaturePad";
 
 // Local Imports
 import { schema } from "./schema";
@@ -106,20 +108,20 @@ const FeuilleRoutePDF = ({ data }) => (
         <Text>FEUILLE DE ROUTE</Text>
       </View>
       <View style={styles.subtitle}>
-        <Text>(dénité de l&apos;exploitant)</Text>
+        <Text>(Identité de l&apos;exploitant)</Text>
       </View>
       
       {/* Section Véhicule */}
       <View style={{ flexDirection: 'row', marginBottom: 10 }}>
-        <Text>Date : {data.date}</Text>
-        <Text style={{ marginLeft: 20 }}>Nom du chauffeur : {data.chauffeur}</Text>
+        <Text>Date : {new Date(data.header.date).toLocaleDateString()}</Text>
+        <Text style={{ marginLeft: 20 }}>Nom du chauffeur : {data.header.chauffeur.prenom} {data.header.chauffeur.nom}</Text>
       </View>
       
       <View style={{ marginBottom: 10 }}>
         <Text style={styles.sectionTitle}>Véhicule</Text>
         <View style={{ flexDirection: 'row' }}>
-          <Text>n° plaque d&apos;immatriculation : {data.plaque}</Text>
-          <Text style={{ marginLeft: 20 }}>n° identification : {data.numero_identification}</Text>
+          <Text>n° plaque d&apos;immatriculation : {data.header.vehicule.plaque}</Text>
+          <Text style={{ marginLeft: 20 }}>n° identification : {data.header.vehicule.numero}</Text>
         </View>
       </View>
       
@@ -144,124 +146,31 @@ const FeuilleRoutePDF = ({ data }) => (
           
           <View style={styles.tableRow}>
             <View style={[styles.tableCol, { width: '25%' }]}>
-              <Text style={styles.tableCell}>Début {data.heure_debut}</Text>
+              <Text style={styles.tableCell}>Début {data.shift.start}</Text>
             </View>
             <View style={[styles.tableCol, { width: '25%' }]}>
-              <Text style={styles.tableCell}>Fin {data.heure_fin}</Text>
+              <Text style={styles.tableCell}>Fin {data.shift.end || '-'}</Text>
             </View>
             <View style={[styles.tableCol, { width: '25%' }]}>
-              <Text style={styles.tableCell}>Début {data.km_debut}</Text>
+              <Text style={styles.tableCell}>Début {data.kilometers.start}</Text>
             </View>
-            <View style={[styles.tableCol, { width: '25%' }]}>
-              <Text style={styles.tableCell}>Total</Text>
-            </View>
-          </View>
-          
-          <View style={styles.tableRow}>
-            <View style={[styles.tableCol, { width: '25%' }]}>
-              <Text style={styles.tableCell}>Interruptions</Text>
-            </View>
-            <View style={[styles.tableCol, { width: '25%' }]}>
-              <Text style={styles.tableCell}></Text>
-            </View>
-            <View style={[styles.tableCol, { width: '25%' }]}>
-              <Text style={styles.tableCell}>Fin {data.km_fin}</Text>
-            </View>
-            <View style={[styles.tableCol, { width: '25%' }]}>
-              <Text style={styles.tableCell}></Text>
-            </View>
-          </View>
-          
-          <View style={styles.tableRow}>
             <View style={[styles.tableCol, { width: '25%' }]}>
               <Text style={styles.tableCell}>Total</Text>
             </View>
+          </View>
+          
+          <View style={styles.tableRow}>
+            <View style={[styles.tableCol, { width: '25%' }]}>
+              <Text style={styles.tableCell}>Interruptions: {data.shift.interruptions || 0} min</Text>
+            </View>
             <View style={[styles.tableCol, { width: '25%' }]}>
               <Text style={styles.tableCell}></Text>
             </View>
             <View style={[styles.tableCol, { width: '25%' }]}>
-              <Text style={styles.tableCell}></Text>
+              <Text style={styles.tableCell}>Fin {data.kilometers.end || '-'}</Text>
             </View>
             <View style={[styles.tableCol, { width: '25%' }]}>
               <Text style={styles.tableCell}></Text>
-            </View>
-          </View>
-        </View>
-      </View>
-      
-      {/* Tableau Prise en charge */}
-      <View style={{ marginBottom: 15 }}>
-        <Text style={styles.sectionTitle}>Prise en charge</Text>
-        <View style={styles.table}>
-          <View style={styles.tableRow}>
-            <View style={[styles.tableColHeader, { width: '20%' }]}>
-              <Text style={styles.tableCellHeader}>Prise en charge</Text>
-            </View>
-            <View style={[styles.tableColHeader, { width: '20%' }]}>
-              <Text style={styles.tableCellHeader}>Index Km (Km totaux)</Text>
-            </View>
-            <View style={[styles.tableColHeader, { width: '20%' }]}>
-              <Text style={styles.tableCellHeader}>Km en charge</Text>
-            </View>
-            <View style={[styles.tableColHeader, { width: '20%' }]}>
-              <Text style={styles.tableCellHeader}>Chutes (€)</Text>
-            </View>
-            <View style={[styles.tableColHeader, { width: '20%' }]}>
-              <Text style={styles.tableCellHeader}>Recettes</Text>
-            </View>
-          </View>
-          
-          <View style={styles.tableRow}>
-            <View style={[styles.tableCol, { width: '20%' }]}>
-              <Text style={styles.tableCell}>Début</Text>
-            </View>
-            <View style={[styles.tableCol, { width: '20%' }]}>
-              <Text style={styles.tableCell}>{data.prise_en_charge_debut}</Text>
-            </View>
-            <View style={[styles.tableCol, { width: '20%' }]}>
-              <Text style={styles.tableCell}>{data.km_debut}</Text>
-            </View>
-            <View style={[styles.tableCol, { width: '20%' }]}>
-              <Text style={styles.tableCell}>{data.chutes_debut}</Text>
-            </View>
-            <View style={[styles.tableCol, { width: '20%' }]}>
-              <Text style={styles.tableCell}></Text>
-            </View>
-          </View>
-          
-          <View style={styles.tableRow}>
-            <View style={[styles.tableCol, { width: '20%' }]}>
-              <Text style={styles.tableCell}>Fin</Text>
-            </View>
-            <View style={[styles.tableCol, { width: '20%' }]}>
-              <Text style={styles.tableCell}>{data.prise_en_charge_fin}</Text>
-            </View>
-            <View style={[styles.tableCol, { width: '20%' }]}>
-              <Text style={styles.tableCell}>{data.km_fin}</Text>
-            </View>
-            <View style={[styles.tableCol, { width: '20%' }]}>
-              <Text style={styles.tableCell}>{data.chutes_fin}</Text>
-            </View>
-            <View style={[styles.tableCol, { width: '20%' }]}>
-              <Text style={styles.tableCell}></Text>
-            </View>
-          </View>
-          
-          <View style={styles.tableRow}>
-            <View style={[styles.tableCol, { width: '20%' }]}>
-              <Text style={styles.tableCell}>Total</Text>
-            </View>
-            <View style={[styles.tableCol, { width: '20%' }]}>
-              <Text style={styles.tableCell}></Text>
-            </View>
-            <View style={[styles.tableCol, { width: '20%' }]}>
-              <Text style={styles.tableCell}></Text>
-            </View>
-            <View style={[styles.tableCol, { width: '20%' }]}>
-              <Text style={styles.tableCell}></Text>
-            </View>
-            <View style={[styles.tableCol, { width: '20%' }]}>
-              <Text style={styles.tableCell}>{data.total}€</Text>
             </View>
           </View>
         </View>
@@ -285,10 +194,10 @@ const FeuilleRoutePDF = ({ data }) => (
               <Text style={styles.tableCellHeader}>Débarquement</Text>
             </View>
             <View style={[styles.tableColHeader, { width: '15%' }]}>
-              <Text style={styles.tableCellHeader}>Prix taximètre</Text>
+              <Text style={styles.tableCellHeader}>Prix</Text>
             </View>
             <View style={[styles.tableColHeader, { width: '10%' }]}>
-              <Text style={styles.tableCellHeader}>Sommes perçues*</Text>
+              <Text style={styles.tableCellHeader}>Paiement</Text>
             </View>
           </View>
           
@@ -298,24 +207,24 @@ const FeuilleRoutePDF = ({ data }) => (
                 <Text style={styles.tableCell}>{index + 1}</Text>
               </View>
               <View style={[styles.tableCol, { width: '15%' }]}>
-                <Text style={styles.tableCell}>{course.index_depart}</Text>
+                <Text style={styles.tableCell}>{course.depart.index}</Text>
               </View>
               <View style={[styles.tableCol, { width: '25%' }]}>
                 <Text style={styles.tableCell}>
-                  {course.lieu_embarquement} {course.heure_embarquement}
+                  {course.depart.lieu} {course.depart.heure}
                 </Text>
               </View>
               <View style={[styles.tableCol, { width: '25%' }]}>
                 <Text style={styles.tableCell}>
-                  {course.lieu_debarquement} {course.heure_debarquement}
+                  {course.arrivee.lieu} {course.arrivee.heure || '-'}
                 </Text>
               </View>
               <View style={[styles.tableCol, { width: '15%' }]}>
-                <Text style={styles.tableCell}>{course.prix_taximetre}€</Text>
+                <Text style={styles.tableCell}>{course.prix.toFixed(2)}€</Text>
               </View>
               <View style={[styles.tableCol, { width: '10%' }]}>
                 <Text style={styles.tableCell}>
-                  {course.prix_taximetre} {course.mode_paiement === 'facture' ? `(${course.client})` : '(cash)'}
+                  {course.mode_paiement === 'facture' ? `(${course.client})` : course.mode_paiement}
                 </Text>
               </View>
             </View>
@@ -323,26 +232,67 @@ const FeuilleRoutePDF = ({ data }) => (
         </View>
       </View>
       
-      {/* Signature et calculs */}
-      <View style={styles.signature}>
-        <Text>Signature du chauffeur : {data.total} - {data.factures}</Text>
-        <Text>- {data.factures} - {data.cash} = {data.salaire_cash}€</Text>
-      </View>
-      
-      <View style={{ marginTop: 10 }}>
-        <Text style={styles.sectionTitle}>COMPTE SALAIRE CASH</Text>
-        <Text style={styles.calculation}>- {data.total}–180 = {data.salaire_part1} {">"} 30%</Text>
-        <Text style={styles.calculation}>{data.salaire_part2}€ + 180 {'>'} 40% = {data.salaire_part3}€</Text>
-        <Text style={styles.calculation}>= {data.salaire_total}€</Text>
-        <Text style={styles.calculation}>= {data.salaire_cash}€</Text>
-      </View>
-      
-      {data.notes && (
-        <View style={{ marginTop: 10 }}>
-          <Text style={styles.sectionTitle}>Notes:</Text>
-          <Text>{data.notes}</Text>
+      {/* Tableau Charges */}
+      {data.charges.length > 0 && (
+        <View style={{ marginBottom: 15 }}>
+          <Text style={styles.sectionTitle}>Charges</Text>
+          <View style={styles.table}>
+            <View style={styles.tableRow}>
+              <View style={[styles.tableColHeader, { width: '30%' }]}>
+                <Text style={styles.tableCellHeader}>Type</Text>
+              </View>
+              <View style={[styles.tableColHeader, { width: '30%' }]}>
+                <Text style={styles.tableCellHeader}>Description</Text>
+              </View>
+              <View style={[styles.tableColHeader, { width: '20%' }]}>
+                <Text style={styles.tableCellHeader}>Montant</Text>
+              </View>
+              <View style={[styles.tableColHeader, { width: '20%' }]}>
+                <Text style={styles.tableCellHeader}>Paiement</Text>
+              </View>
+            </View>
+            
+            {data.charges.map((charge, index) => (
+              <View key={index} style={styles.tableRow}>
+                <View style={[styles.tableCol, { width: '30%' }]}>
+                  <Text style={styles.tableCell}>{charge.type}</Text>
+                </View>
+                <View style={[styles.tableCol, { width: '30%' }]}>
+                  <Text style={styles.tableCell}>{charge.description || '-'}</Text>
+                </View>
+                <View style={[styles.tableCol, { width: '20%' }]}>
+                  <Text style={styles.tableCell}>{charge.montant.toFixed(2)}€</Text>
+                </View>
+                <View style={[styles.tableCol, { width: '20%' }]}>
+                  <Text style={styles.tableCell}>{charge.mode_paiement}</Text>
+                </View>
+              </View>
+            ))}
+          </View>
         </View>
       )}
+      
+      {/* Totaux */}
+      <View style={{ marginBottom: 15 }}>
+        <Text style={styles.sectionTitle}>Totaux</Text>
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+          <Text>Recettes totales: {data.totals.recettes.toFixed(2)}€</Text>
+          <Text>Charges totales: {data.totals.charges.toFixed(2)}€</Text>
+          <Text>Salaire calculé: {data.totals.salaire.toFixed(2)}€</Text>
+        </View>
+      </View>
+      
+      {/* Signature */}
+      <View style={styles.signature}>
+        <Text>Signature du chauffeur :</Text>
+        {data.validation.signature && (
+          <Image 
+            src={data.validation.signature} 
+            style={{ width: 150, height: 50 }} 
+          />
+        )}
+        <Text>Date de validation : {new Date(data.validation.date_validation).toLocaleDateString()}</Text>
+      </View>
     </Page>
   </Document>
 );
@@ -350,29 +300,46 @@ const FeuilleRoutePDF = ({ data }) => (
 // ----------------------------------------------------------------------
 
 const initialState = {
-  date: "",
-  chauffeur_id: "",
-  vehicule_id: "",
-  heure_debut: "",
-  heure_fin: "",
-  interruptions: "",
-  km_debut: "",
-  km_fin: "",
-  prise_en_charge_debut: "",
-  prise_en_charge_fin: "",
-  chutes_debut: "",
-  chutes_fin: "",
+  header: {
+    date: new Date(),
+    chauffeur: {
+      id: "",
+      nom: "",
+      prenom: "",
+      badge: ""
+    },
+    vehicule: {
+      id: "",
+      plaque: "",
+      numero: ""
+    }
+  },
+  shift: {
+    start: "",
+    end: "",
+    interruptions: 0
+  },
+  kilometers: {
+    start: 0,
+    end: null
+  },
   courses: [],
   charges: [],
-  salaire_cash: "",
-  notes: ""
+  totals: {
+    recettes: 0,
+    charges: 0,
+    salaire: 0
+  },
+  validation: {
+    signature: "",
+    date_validation: null
+  }
 };
 
 const modesPaiement = [
   { value: "cash", label: "Cash" },
   { value: "bancontact", label: "Bancontact" },
-  { value: "facture", label: "Facture" },
-  { value: "avance", label: "Avance" }
+  { value: "facture", label: "Facture" }
 ];
 
 const typesCharge = [
@@ -391,7 +358,8 @@ const NewFeuilleRouteForm = () => {
     control,
     reset,
     watch,
-    getValues
+    getValues,
+    setValue
   } = useForm({
     resolver: yupResolver(schema),
     defaultValues: initialState,
@@ -402,61 +370,48 @@ const NewFeuilleRouteForm = () => {
     name: "courses"
   });
 
+  const sigPadRef = useRef();
+
   const { fields: chargeFields, append: appendCharge, remove: removeCharge } = useFieldArray({
     control,
     name: "charges"
   });
 
-  const onSubmit = (data) => {
-    console.log(data);
-    toast.success("Feuille de route enregistrée avec succès");
-    reset();
+  const onSubmit = async (data) => {
+    try {
+      // Calcul des totaux
+      const recettes = data.courses.reduce((sum, c) => sum + (Number(c.prix) || 0), 0);
+      const charges = data.charges.reduce((sum, c) => sum + (Number(c.montant) || 0), 0);
+      
+      // Règle de calcul du salaire (40% jusqu'à 180€, 30% au-delà)
+      const base = Math.min(recettes, 180);
+      const surplus = Math.max(recettes - 180, 0);
+      const salaire = (base * 0.4) + (surplus * 0.3);
+
+      // Mettre à jour les totaux
+      setValue('totals', { 
+        recettes: Number(recettes.toFixed(2)),
+        charges: Number(charges.toFixed(2)),
+        salaire: Number(salaire.toFixed(2))
+      });
+
+      console.log("Data to save:", data);
+      toast.success("Feuille de route enregistrée avec succès");
+      
+      // Générer le PDF automatiquement après enregistrement
+      handlePreview();
+    } catch (error) {
+      console.error("Erreur lors de l'enregistrement:", error);
+      toast.error("Une erreur est survenue lors de l'enregistrement");
+    }
   };
 
   const handlePreview = async () => {
     const formData = getValues();
     
-    // Calcul des totaux
-    const totalCourses = formData.courses.reduce((sum, course) => sum + parseFloat(course.prix_taximetre || 0), 0);
-    const totalFactures = formData.courses
-      .filter(c => c.mode_paiement === 'facture')
-      .reduce((sum, course) => sum + parseFloat(course.prix_taximetre || 0), 0);
-    const totalCash = formData.courses
-      .filter(c => c.mode_paiement === 'cash')
-      .reduce((sum, course) => sum + parseFloat(course.prix_taximetre || 0), 0);
-    
-    // Préparer les données pour le PDF
-    const pdfData = {
-      date: formData.date,
-      chauffeur: chauffeurs.find(c => c.id === formData.chauffeur_id)?.name || '',
-      plaque: vehicules.find(v => v.id === formData.vehicule_id)?.label.split(' - ')[0] || '',
-      numero_identification: vehicules.find(v => v.id === formData.vehicule_id)?.label.split(' - ')[1] || '',
-      heure_debut: formData.heure_debut,
-      heure_fin: formData.heure_fin,
-      km_debut: formData.km_debut,
-      km_fin: formData.km_fin,
-      prise_en_charge_debut: formData.prise_en_charge_debut,
-      prise_en_charge_fin: formData.prise_en_charge_fin,
-      chutes_debut: formData.chutes_debut,
-      chutes_fin: formData.chutes_fin,
-      courses: formData.courses.map(course => ({
-        ...course,
-        client: clients.find(cl => cl.id === course.client_id)?.name || ''
-      })),
-      total: totalCourses.toFixed(2),
-      factures: totalFactures.toFixed(2),
-      cash: totalCash.toFixed(2),
-      salaire_part1: (totalCourses - 180).toFixed(2),
-      salaire_part2: ((totalCourses - 180) * 0.3).toFixed(2),
-      salaire_part3: (180 * 0.4).toFixed(2),
-      salaire_total: ((totalCourses - 180) * 0.3 + 180 * 0.4).toFixed(2),
-      salaire_cash: (totalCash - ((totalCourses - 180) * 0.3 + 180 * 0.4)).toFixed(2),
-      notes: formData.notes
-    };
-    
     try {
-      const blob = await pdf(<FeuilleRoutePDF data={pdfData} />).toBlob();
-      saveAs(blob, `feuille_route_${formData.date || new Date().toISOString().split('T')[0]}.pdf`);
+      const blob = await pdf(<FeuilleRoutePDF data={formData} />).toBlob();
+      saveAs(blob, `feuille_route_${new Date(formData.header.date).toISOString().split('T')[0]}.pdf`);
     } catch (error) {
       console.error("Erreur lors de la génération du PDF:", error);
       toast.error("Une erreur est survenue lors de la génération du PDF");
@@ -465,22 +420,18 @@ const NewFeuilleRouteForm = () => {
 
   // Données simulées - à remplacer par des appels API
   const chauffeurs = [
-    { id: 1, name: "Hasler Tehou" },
-    { id: 2, name: "Yasser Mohamed" },
-    { id: 3, name: "Luc Martin" },
+    { id: "CH001", nom: "Tehou", prenom: "Hasler", badge: "TX-2023-001" },
+    { id: "CH002", nom: "Mohamed", prenom: "Yasser", badge: "TX-2023-002" },
+    { id: "CH003", nom: "Martin", prenom: "Luc", badge: "TX-2023-003" },
   ];
 
   const vehicules = [
-    { id: 1, label: "TXAA171 - Mercedes Classe E" },
-    { id: 2, label: "TXAB751 - Volkswagen Touran" },
-    { id: 3, label: "TXAC123 - Toyota Prius" },
+    { id: "VH001", plaque: "TX-AA-171", numero: "10", label: "TX-AA-171 - Mercedes Classe E" },
+    { id: "VH002", plaque: "TX-AB-751", numero: "4", label: "TX-AB-751 - Volkswagen Touran" },
+    { id: "VH003", plaque: "TX-AC-123", numero: "7", label: "TX-AC-123 - Toyota Prius" },
   ];
 
-  const clients = [
-    { id: 1, name: "SNCB" },
-    { id: 2, name: "William Lenox" },
-    { id: 3, name: "Particulier" },
-  ];
+  // Removed unused 'clients' variable
 
   return (
     <PageComponent title="Nouvelle Feuille de Route">
@@ -493,7 +444,7 @@ const NewFeuilleRouteForm = () => {
             </h2>
           </div>
           <div className="flex gap-2">
-            <Button className="min-w-[7rem]" variant="outlined" onClick={() => reset()}>
+            <Button className="min-w-[7rem]" variant="outlined" onClick={() => reset(initialState)}>
               Annuler
             </Button>
             <Button
@@ -532,22 +483,22 @@ const NewFeuilleRouteForm = () => {
                           onChange={field.onChange}
                           value={field.value || ""}
                           label="Date"
-                          error={errors?.date?.message}
+                          error={errors?.header?.date?.message}
                           options={{ disableMobile: true }}
                           placeholder="Sélectionner une date..."
                           {...field}
                         />
                       )}
                       control={control}
-                      name="date"
+                      name="header.date"
                     />
 
                     <Input
                       label="Interruptions (minutes)"
                       placeholder="0"
                       type="number"
-                      {...register("interruptions")}
-                      error={errors?.interruptions?.message}
+                      {...register("shift.interruptions")}
+                      error={errors?.shift?.interruptions?.message}
                     />
                   </div>
 
@@ -558,13 +509,13 @@ const NewFeuilleRouteForm = () => {
                           onChange={field.onChange}
                           value={field.value || ""}
                           label="Heure de début"
-                          error={errors?.heure_debut?.message}
+                          error={errors?.shift?.start?.message}
                           placeholder="HH:MM"
                           {...field}
                         />
                       )}
                       control={control}
-                      name="heure_debut"
+                      name="shift.start"
                     />
 
                     <Controller
@@ -573,13 +524,13 @@ const NewFeuilleRouteForm = () => {
                           onChange={field.onChange}
                           value={field.value || ""}
                           label="Heure de fin"
-                          error={errors?.heure_fin?.message}
+                          error={errors?.shift?.end?.message}
                           placeholder="HH:MM"
                           {...field}
                         />
                       )}
                       control={control}
-                      name="heure_fin"
+                      name="shift.end"
                     />
                   </div>
 
@@ -588,56 +539,16 @@ const NewFeuilleRouteForm = () => {
                       label="Index km début"
                       placeholder="000000"
                       type="number"
-                      {...register("km_debut")}
-                      error={errors?.km_debut?.message}
+                      {...register("kilometers.start")}
+                      error={errors?.kilometers?.start?.message}
                     />
 
                     <Input
                       label="Index km fin"
                       placeholder="000000"
                       type="number"
-                      {...register("km_fin")}
-                      error={errors?.km_fin?.message}
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <Input
-                      label="Prise en charge début"
-                      placeholder="0.00"
-                      type="number"
-                      step="0.01"
-                      {...register("prise_en_charge_debut")}
-                      error={errors?.prise_en_charge_debut?.message}
-                    />
-
-                    <Input
-                      label="Prise en charge fin"
-                      placeholder="0.00"
-                      type="number"
-                      step="0.01"
-                      {...register("prise_en_charge_fin")}
-                      error={errors?.prise_en_charge_fin?.message}
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <Input
-                      label="Chutes début (€)"
-                      placeholder="0.00"
-                      type="number"
-                      step="0.01"
-                      {...register("chutes_debut")}
-                      error={errors?.chutes_debut?.message}
-                    />
-
-                    <Input
-                      label="Chutes fin (€)"
-                      placeholder="0.00"
-                      type="number"
-                      step="0.01"
-                      {...register("chutes_fin")}
-                      error={errors?.chutes_fin?.message}
+                      {...register("kilometers.end")}
+                      error={errors?.kilometers?.end?.message}
                     />
                   </div>
                 </div>
@@ -664,65 +575,64 @@ const NewFeuilleRouteForm = () => {
                       
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <Input
+                          label="Lieu embarquement"
+                          placeholder="Adresse de départ"
+                          {...register(`courses.${index}.depart.lieu`)}
+                          error={errors?.courses?.[index]?.depart?.lieu?.message}
+                        />
+
+                        <Input
+                          label="Lieu débarquement"
+                          placeholder="Adresse d'arrivée"
+                          {...register(`courses.${index}.arrivee.lieu`)}
+                          error={errors?.courses?.[index]?.arrivee?.lieu?.message}
+                        />
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
+                        <Input
+                          label="Heure embarquement"
+                          placeholder="HH:MM"
+                          {...register(`courses.${index}.depart.heure`)}
+                          error={errors?.courses?.[index]?.depart?.heure?.message}
+                        />
+
+                        <Input
+                          label="Heure débarquement"
+                          placeholder="HH:MM"
+                          {...register(`courses.${index}.arrivee.heure`)}
+                          error={errors?.courses?.[index]?.arrivee?.heure?.message}
+                        />
+
+                        <Input
+                          label="Prix (€)"
+                          placeholder="0.00"
+                          type="number"
+                          step="0.01"
+                          {...register(`courses.${index}.prix`)}
+                          error={errors?.courses?.[index]?.prix?.message}
+                        />
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                        <Input
                           label="Index départ"
                           placeholder="000"
                           type="number"
-                          {...register(`courses.${index}.index_depart`)}
-                          error={errors?.courses?.[index]?.index_depart?.message}
+                          {...register(`courses.${index}.depart.index`)}
+                          error={errors?.courses?.[index]?.depart?.index?.message}
                         />
 
                         <Input
                           label="Index arrivée"
                           placeholder="000"
                           type="number"
-                          {...register(`courses.${index}.index_arrivee`)}
-                          error={errors?.courses?.[index]?.index_arrivee?.message}
+                          {...register(`courses.${index}.arrivee.index`)}
+                          error={errors?.courses?.[index]?.arrivee?.index?.message}
                         />
                       </div>
 
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-                        <Input
-                          label="Lieu embarquement"
-                          placeholder="Adresse de départ"
-                          {...register(`courses.${index}.lieu_embarquement`)}
-                          error={errors?.courses?.[index]?.lieu_embarquement?.message}
-                        />
-
-                        <Input
-                          label="Lieu débarquement"
-                          placeholder="Adresse d'arrivée"
-                          {...register(`courses.${index}.lieu_debarquement`)}
-                          error={errors?.courses?.[index]?.lieu_debarquement?.message}
-                        />
-                      </div>
-
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
-                        <Controller
-                          control={control}
-                          name={`courses.${index}.client_id`}
-                          render={({ field }) => (
-                            <Select
-                              options={clients}
-                              value={clients.find(c => c.id === field.value) || null}
-                              onChange={(val) => field.onChange(val?.id)}
-                              label="Client"
-                              placeholder="Sélectionner un client"
-                              getOptionLabel={(option) => option.name}
-                              getOptionValue={(option) => option.id}
-                              error={errors?.courses?.[index]?.client_id?.message}
-                            />
-                          )}
-                        />
-
-                        <Input
-                          label="Prix taximètre (€)"
-                          placeholder="0.00"
-                          type="number"
-                          step="0.01"
-                          {...register(`courses.${index}.prix_taximetre`)}
-                          error={errors?.courses?.[index]?.prix_taximetre?.message}
-                        />
-
                         <Controller
                           control={control}
                           name={`courses.${index}.mode_paiement`}
@@ -739,18 +649,27 @@ const NewFeuilleRouteForm = () => {
                             />
                           )}
                         />
+
+                        {watch(`courses.${index}.mode_paiement`) === "facture" && (
+                          <Input
+                            label="Client (pour facture)"
+                            placeholder="Nom du client"
+                            {...register(`courses.${index}.client`)}
+                            error={errors?.courses?.[index]?.client?.message}
+                          />
+                        )}
                       </div>
 
-                      {watch(`courses.${index}.mode_paiement`) === "facture" && (
-                        <div className="mt-4">
-                          <Input
-                            label="Numéro de bon"
-                            placeholder="Référence"
-                            {...register(`courses.${index}.numero_bon`)}
-                            error={errors?.courses?.[index]?.numero_bon?.message}
-                          />
-                        </div>
-                      )}
+                      <div className="mt-4">
+                        <Input
+                          label="Notes"
+                          placeholder="Informations complémentaires"
+                          {...register(`courses.${index}.notes`)}
+                          error={errors?.courses?.[index]?.notes?.message}
+                          as="textarea"
+                          rows={2}
+                        />
+                      </div>
                     </Card>
                   ))}
 
@@ -758,68 +677,33 @@ const NewFeuilleRouteForm = () => {
                     variant="outlined" 
                     className="w-full"
                     onClick={() => appendCourse({
-                      index_depart: "",
-                      index_arrivee: "",
-                      lieu_embarquement: "",
-                      lieu_debarquement: "",
-                      client_id: "",
-                      prix_taximetre: "",
-                      mode_paiement: "",
-                      numero_bon: ""
+                      depart: {
+                        lieu: "",
+                        index: 0,
+                        heure: ""
+                      },
+                      arrivee: {
+                        lieu: "",
+                        index: 0,
+                        heure: ""
+                      },
+                      prix: "",
+                      mode_paiement: "cash",
+                      client: "",
+                      notes: ""
                     })}
                   >
                     + Ajouter une course
                   </Button>
                 </div>
               </Card>
-            </div>
 
-            <div className="col-span-12 space-y-4 sm:space-y-5 lg:col-span-4 lg:space-y-6">
-              <Card className="space-y-5 p-4 sm:px-5">
-                <Controller
-                  render={({ field }) => (
-                    <Listbox
-                      data={vehicules}
-                      value={
-                        vehicules.find((v) => v.id === field.value) || null
-                      }
-                      onChange={(val) => field.onChange(val.id)}
-                      name={field.name}
-                      label="Véhicule"
-                      placeholder="Sélectionner un véhicule"
-                      displayField="label"
-                      error={errors?.vehicule_id?.message}
-                    />
-                  )}
-                  control={control}
-                  name="vehicule_id"
-                />
-
-                <Controller
-                  render={({ field: { value, onChange, ...rest } }) => (
-                    <Combobox
-                      data={chauffeurs}
-                      displayField="name"
-                      value={chauffeurs.find((c) => c.id === value) || null}
-                      onChange={(val) => onChange(val?.id)}
-                      placeholder="Sélectionner un chauffeur"
-                      label="Chauffeur"
-                      searchFields={["name"]}
-                      error={errors?.chauffeur_id?.message}
-                      highlight
-                      {...rest}
-                    />
-                  )}
-                  control={control}
-                  name="chauffeur_id"
-                />
-              </Card>
-
-              <Card className="p-4 sm:px-5">
+              {/* Section Charges */}
+              <Card className="mt-4 p-4 sm:px-5">
                 <h3 className="text-base font-medium text-gray-800 dark:text-dark-100">
                   Charges ({chargeFields.length})
                 </h3>
-                <div className="mt-3 space-y-5">
+                <div className="mt-5 space-y-5">
                   {chargeFields.map((field, index) => (
                     <Card key={field.id} className="p-4 mb-4 relative">
                       <div className="absolute top-2 right-2">
@@ -861,6 +745,35 @@ const NewFeuilleRouteForm = () => {
                         />
                       </div>
 
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                        <Controller
+                          control={control}
+                          name={`charges.${index}.mode_paiement`}
+                          render={({ field }) => (
+                            <Select
+                              options={[
+                                { value: "cash", label: "Cash" },
+                                { value: "bancontact", label: "Bancontact" }
+                              ]}
+                              value={modesPaiement.find(m => m.value === field.value) || null}
+                              onChange={(val) => field.onChange(val?.value)}
+                              label="Mode paiement"
+                              placeholder="Sélectionner"
+                              getOptionLabel={(option) => option.label}
+                              getOptionValue={(option) => option.value}
+                              error={errors?.charges?.[index]?.mode_paiement?.message}
+                            />
+                          )}
+                        />
+
+                        <Input
+                          label="Date"
+                          type="date"
+                          {...register(`charges.${index}.date`)}
+                          error={errors?.charges?.[index]?.date?.message}
+                        />
+                      </div>
+
                       <div className="mt-4">
                         <Input
                           label="Description"
@@ -876,35 +789,130 @@ const NewFeuilleRouteForm = () => {
                     variant="outlined" 
                     className="w-full"
                     onClick={() => appendCharge({
-                      type: "",
+                      type: "divers",
                       montant: "",
-                      description: ""
+                      mode_paiement: "cash",
+                      description: "",
+                      date: new Date().toISOString().split('T')[0]
                     })}
                   >
                     + Ajouter une charge
                   </Button>
                 </div>
               </Card>
+            </div>
+
+            <div className="col-span-12 space-y-4 sm:space-y-5 lg:col-span-4 lg:space-y-6">
+              <Card className="space-y-5 p-4 sm:px-5">
+                <Controller
+                  render={({ field }) => (
+                    <Listbox
+                      data={vehicules}
+                      value={
+                        vehicules.find((v) => v.id === field.value) || null
+                      }
+                      onChange={(val) => {
+                        field.onChange(val.id);
+                        setValue('header.vehicule', {
+                          id: val.id,
+                          plaque: val.plaque,
+                          numero: val.numero
+                        });
+                      }}
+                      name={field.name}
+                      label="Véhicule"
+                      placeholder="Sélectionner un véhicule"
+                      displayField="label"
+                      error={errors?.header?.vehicule?.id?.message}
+                    />
+                  )}
+                  control={control}
+                  name="header.vehicule.id"
+                />
+
+                <Controller
+                  render={({ field: { value, onChange, ...rest } }) => (
+                    <Combobox
+                      data={chauffeurs}
+                      displayField={(item) => `${item.prenom} ${item.nom} (${item.badge})`}
+                      value={chauffeurs.find((c) => c.id === value) || null}
+                      onChange={(val) => {
+                        onChange(val?.id);
+                        setValue('header.chauffeur', {
+                          id: val.id,
+                          nom: val.nom,
+                          prenom: val.prenom,
+                          badge: val.badge
+                        });
+                      }}
+                      placeholder="Sélectionner un chauffeur"
+                      label="Chauffeur"
+                      searchFields={["nom", "prenom", "badge"]}
+                      error={errors?.header?.chauffeur?.id?.message}
+                      highlight
+                      {...rest}
+                    />
+                  )}
+                  control={control}
+                  name="header.chauffeur.id"
+                />
+              </Card>
 
               <Card className="p-4 sm:px-5">
                 <h3 className="text-base font-medium text-gray-800 dark:text-dark-100">
-                  Récapitulatif
+                  Totaux calculés
+                </h3>
+                <div className="mt-3 space-y-3">
+                  <div className="flex justify-between">
+                    <Text>Recettes totales:</Text>
+                    <Text>{watch('totals.recettes')?.toFixed(2) || '0.00'}€</Text>
+                  </div>
+                  <div className="flex justify-between">
+                    <Text>Charges totales:</Text>
+                    <Text>{watch('totals.charges')?.toFixed(2) || '0.00'}€</Text>
+                  </div>
+                  <div className="flex justify-between font-bold">
+                    <Text>Salaire calculé:</Text>
+                    <Text>{watch('totals.salaire')?.toFixed(2) || '0.00'}€</Text>
+                  </div>
+                </div>
+              </Card>
+
+              <Card className="p-4 sm:px-5">
+                <h3 className="text-base font-medium text-gray-800 dark:text-dark-100">
+                  Validation
                 </h3>
                 <div className="mt-3 space-y-5">
-                  <Input
-                    label="Salaire en cash (€)"
-                    placeholder="0.00"
-                    type="number"
-                    step="0.01"
-                    {...register("salaire_cash")}
-                    error={errors?.salaire_cash?.message}
-                  />
-
+                  <Controller
+                  control={control}
+                  name="validation.signature"
+                  render={({ field }) => (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Signature
+                      </label>
+                      <SignaturePad
+                        ref={sigPadRef}
+                        onSave={(signature) => {
+                          field.onChange(signature);
+                        }}
+                        penColor="#000"
+                        backgroundColor="#f9fafb"
+                        height={120}
+                      />
+                      {errors?.validation?.signature?.message && (
+                        <p className="mt-1 text-sm text-red-600">
+                          {errors.validation.signature.message}
+                        </p>
+                      )}
+                    </div>
+                  )}
+                />
                   <Input
                     label="Notes"
                     placeholder="Informations complémentaires"
-                    {...register("notes")}
-                    error={errors?.notes?.message}
+                    {...register("header.notes")}
+                    error={errors?.header?.notes?.message}
                     as="textarea"
                     rows={3}
                   />
