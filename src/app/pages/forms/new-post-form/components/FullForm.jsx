@@ -1,6 +1,6 @@
 import { useForm, useFieldArray, Controller } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
-import { schema } from './schema';
+import { schema } from '../schema';
 import { Button, Card, Input, Select } from "components/ui";
 import { DocumentPlusIcon, TrashIcon } from "@heroicons/react/24/outline";
 import { toast } from "sonner";
@@ -8,7 +8,7 @@ import { SignaturePad } from "components/form/SignaturePad";
 import { DatePicker } from "components/shared/form/Datepicker";
 import { TimePicker } from "./components/TimePicker";
 
-export function FullForm({ chauffeurs, vehicules, control, onSwitchMode }) {
+export function FullForm({chauffeurs, vehicules, control, onSwitchMode }) {
   const { 
     register, 
     handleSubmit, 
