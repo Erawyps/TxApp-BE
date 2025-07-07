@@ -11,7 +11,7 @@ export const forms = {
     id: 'forms',
     type: NAV_TYPE_ROOT,
     path: 'forms',
-    title: 'Formulaires - Créer une nouvelle feuille de route',
+    title: 'eFormulaires - Feuille de routes',
     //transKey: 'nav.forms.forms',
     Icon: FormsIcon,
     childs: [

@@ -19,7 +19,7 @@ export const tables = {
             id: 'tables.orders-datatable-2',
             path: path(ROOT_APPS, '/orders-datatable-2'),
             type: NAV_TYPE_ITEM,
-            title: 'Feuilles de route - Liste des feuilles de route',
+            title: 'Liste des feuilles de route',
             //transKey: 'nav.tables.orders-datatable-2',
             Icon: TableIcon
         },
