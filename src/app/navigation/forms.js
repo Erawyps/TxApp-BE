@@ -19,7 +19,7 @@ export const forms = {
             id: 'forms.ekyc-form',
             type: NAV_TYPE_ITEM,
             path: path(ROOT_FORMS, '/ekyc-form'),
-            title: 'eFormulaire - Feuille de route',
+            title: 'eFormulaire - Administration',
             //transKey: 'nav.forms.ekyc-form',
             Icon: IdIcon
         },
@@ -27,7 +27,7 @@ export const forms = {
             id: 'forms.new-post-form',
             type: NAV_TYPE_ITEM,
             path: path(ROOT_FORMS, '/new-post-form'),
-            title: 'Formulaire - Créer une nouvelle feuille de route',
+            title: 'eFormulaire - Chauffeur',
             //transKey: 'nav.forms.new-post-form',
             Icon: DocumentAddIcon
         },
