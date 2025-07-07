@@ -6,7 +6,7 @@ import { DocumentPlusIcon, TrashIcon } from "@heroicons/react/24/outline";
 import { toast } from "sonner";
 import { SignaturePad } from "components/form/SignaturePad";
 import { DatePicker } from "components/shared/form/Datepicker";
-import { TimePicker } from "./components/TimePicker";
+import { TimePicker } from "./TimePicker"; // Assurez-vous d'avoir un composant TimePicker
 
 export function FullForm({chauffeurs, vehicules, control, onSwitchMode }) {
   const { 
