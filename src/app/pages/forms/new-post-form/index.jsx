@@ -1,20 +1,13 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import { schema } from './schema';
-import { useAuth } from 'context/AuthContext';
 import { DriverMode } from './components/DriverMode';
-import { FullForm } from './components/FullForm';
-import { getChauffeurByUserId, getVehicules } from 'api/taxi';
+import { FullForm } from './components/FullForm'; // Votre formulaire complet existant
 
 export function FeuilleRouteForm() {
-  const { user } = useAuth();
   const [mode, setMode] = useState('driver'); // 'driver' ou 'full'
-  const [chauffeur, setChauffeur] = useState(null);
-  const [vehicules, setVehicules] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
-
-  const { control, handleSubmit, setValue } = useForm({
+  const { control, setValue, watch } = useForm({
     resolver: yupResolver(schema),
     defaultValues: {
       header: {
@@ -25,8 +18,7 @@ export function FeuilleRouteForm() {
       shift: {
         start: '',
         end: '',
-        duree_interruptions: 0,
-        nombre_interruptions: 0
+        interruptions: 0
       },
       kilometers: {
         start: 0,
@@ -35,116 +27,87 @@ export function FeuilleRouteForm() {
       courses: [],
       charges: [],
       totals: {
-        recettes_total: 0,
-        charges_total: 0,
-        salaire_total: 0
+        recettes: 0,
+        charges: 0,
+        salaire: 0
+      },
+      validation: {
+        signature: null,
+        date_validation: null
       }
     }
   });
 
-  // Chargement des données initiales
-  useEffect(() => {
-    const loadData = async () => {
-      try {
-        // 1. Charger les infos du chauffeur
-        if (user) {
-          const chauffeurData = await getChauffeurByUserId(user.id);
-          setChauffeur(chauffeurData);
-          
-          // Pré-remplir les infos chauffeur dans le formulaire
-          setValue('header.chauffeur', {
-            id: chauffeurData.id,
-            utilisateur_id: user.id,
-            nom: user.nom,
-            prenom: user.prenom,
-            numero_badge: chauffeurData.numero_badge,
-            type_contrat: chauffeurData.type_contrat,
-            compte_bancaire: chauffeurData.compte_bancaire
-          });
-        }
-
-        // 2. Charger la liste des véhicules disponibles
-        const vehiculesData = await getVehicules();
-        setVehicules(vehiculesData);
-        
-      } catch (error) {
-        console.error("Erreur chargement données:", error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    loadData();
-  }, [user, setValue]);
-
-  const onSubmit = async (data) => {
-    try {
-      // Calcul des totaux
-      const recettes = data.courses.reduce((sum, c) => sum + (c.somme_percue || 0), 0);
-      const charges = data.charges.reduce((sum, c) => sum + (c.montant || 0), 0);
-      
-      // Calcul du salaire selon les règles métier
-      const salaire = calculateSalaire(data.header.chauffeur.id, recettes);
-      
-      // Mettre à jour les totaux
-      setValue('totals', {
-        recettes_total: recettes,
-        charges_total: charges,
-        salaire_total: salaire
-      });
-
-      // Enregistrement ou génération PDF
-      console.log("Données validées:", data);
-      
-    } catch (error) {
-      console.error("Erreur soumission:", error);
-    }
+  // Données simulées - à remplacer par des appels API
+  const currentUser = {
+    id: 'USR001',
+    nom: 'Tehou',
+    prenom: 'Hasler',
+    type_utilisateur: 'Indépendant'
   };
 
-  if (isLoading) {
-    return <div>Chargement en cours...</div>;
-  }
+  const currentDriver = {
+    id: 'CH001',
+    utilisateur_id: 'USR001',
+    nom: 'Tehou',
+    prenom: 'Hasler',
+    numero_badge: 'TX-2023-001',
+    type_contrat: 'Indépendant',
+    compte_bancaire: 'BE123456789012',
+    taux_commission: 40,
+    salaire_base: 0,
+    currentLocation: 'Bruxelles, Belgique'
+  };
 
-  if (!chauffeur) {
+  const vehicules = [
+    {
+      id: 'VH001',
+      plaque_immatriculation: 'TX-AA-171',
+      numero_identification: '10',
+      marque: 'Mercedes',
+      modele: 'Classe E',
+      type_vehicule: 'Berline'
+    },
+    {
+      id: 'VH002',
+      plaque_immatriculation: 'TX-AB-751',
+      numero_identification: '4',
+      marque: 'Volkswagen',
+      modele: 'Touran',
+      type_vehicule: 'Van'
+    }
+  ];
+
+  const handleDriverSubmit = (data) => {
+    // Mettre à jour les valeurs du formulaire
+    setValue('validation.signature', data.signature);
+    setValue('validation.date_validation', data.date_validation);
+    setValue('totals', data.totals);
+    
+    // Envoyer les données au serveur
+    console.log('Feuille de route validée:', watch());
+    alert('Feuille de route enregistrée avec succès');
+  };
+
+  if (mode === 'driver') {
     return (
-      <div className="alert alert-warning">
-        <p>Vous n&apos;êtes pas enregistré comme chauffeur.</p>
-        <p>Veuillez contacter l&apos;administrateur pour compléter votre profil.</p>
-        <button onClick={() => setMode('full')}>
-          Accéder au mode administrateur
-        </button>
-      </div>
+      <DriverMode 
+        chauffeur={currentDriver}
+        vehicules={vehicules}
+        control={control}
+        onSubmit={handleDriverSubmit}
+        onSwitchMode={() => setMode('full')}
+      />
     );
   }
 
   return (
-    <div className="feuille-route-container">
-      {mode === 'driver' ? (
-        <DriverMode
-          chauffeur={chauffeur}
-          vehicules={vehicules}
-          control={control}
-          onSubmit={handleSubmit(onSubmit)}
-          onSwitchMode={() => setMode('full')}
-        />
-      ) : (
-        <FullForm
-          chauffeur={chauffeur}
-          vehicules={vehicules}
-          control={control}
-          onSubmit={handleSubmit(onSubmit)}
-          onSwitchMode={() => setMode('driver')}
-        />
-      )}
-    </div>
+    <FullForm 
+      currentUser={currentUser}
+      chauffeurs={[currentDriver]}
+      vehicules={vehicules}
+      control={control}
+      onSwitchMode={() => setMode('driver')}
+    />
   );
-}
-
-// Helper function pour calculer le salaire
-function calculateSalaire(chauffeurId, recettes) {
-  // Implémentez la logique de calcul basée sur les règles métier
-  // Par exemple : 40% jusqu'à 180€, 30% au-delà
-  const base = Math.min(recettes, 180);
-  const surplus = Math.max(recettes - 180, 0);
-  return (base * 0.4) + (surplus * 0.3);
 }
