@@ -10,14 +10,14 @@ export function VehicleInfo({ vehicules, control, currentVehicle }) {
       <Controller
         name="header.vehicule.id"
         control={control}
-        render={({ field }) => (
+        render={({ field, fieldState: { error } }) => (
           <Select
             label="Sélectionner un véhicule"
             options={vehicules.map(v => ({
               value: v.id,
               label: `${v.plaque_immatriculation} - ${v.marque || ''} ${v.modele || ''}`
             }))}
-            value={vehicules.find(v => v.id === field.value)?.id || ''}
+            value={field.value}
             onChange={(value) => {
               const selected = vehicules.find(v => v.id === value);
               field.onChange(value);
@@ -31,6 +31,7 @@ export function VehicleInfo({ vehicules, control, currentVehicle }) {
                 type_vehicule: selected.type_vehicule
               });
             }}
+            error={error?.message}
           />
         )}
       />
