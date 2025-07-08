@@ -38,11 +38,11 @@ export function ExpensesSection({ onAddExpense, charges, onRemoveCharge }) {
   };
 
   return (
-    <Card>
-      <h3>Dépenses</h3>
+    <Card className="p-4">
+      <h3 className="text-lg font-medium">Dépenses</h3>
       
-      <form onSubmit={handleSubmit}>
-        <div className="form-row">
+      <form onSubmit={handleSubmit} className="mt-4 space-y-4">
+        <div className="grid grid-cols-2 gap-4">
           <Select
             label="Type"
             options={expenseTypes}
@@ -60,7 +60,7 @@ export function ExpensesSection({ onAddExpense, charges, onRemoveCharge }) {
           />
         </div>
         
-        <div className="form-row">
+        <div className="grid grid-cols-2 gap-4">
           <Select
             label="Paiement"
             options={[
@@ -78,25 +78,26 @@ export function ExpensesSection({ onAddExpense, charges, onRemoveCharge }) {
           />
         </div>
         
-        <Button type="submit">
+        <Button type="submit" className="w-full">
           Ajouter Dépense
         </Button>
       </form>
       
       {charges.length > 0 && (
-        <div className="expenses-list">
-          <h4>Dépenses enregistrées</h4>
-          <ul>
+        <div className="mt-4">
+          <h4 className="font-medium">Dépenses enregistrées</h4>
+          <ul className="mt-2 space-y-2">
             {charges.map((charge, index) => (
-              <li key={index} className="expense-item">
+              <li key={index} className="flex justify-between items-center p-2 border rounded-lg">
                 <div>
-                  <span>{charge.type}</span>
-                  <span>{charge.montant} €</span>
+                  <span className="font-medium">{charge.type}</span>
+                  <span className="ml-2">{charge.montant} €</span>
                 </div>
-                <div>
-                  <span>{charge.mode_paiement}</span>
+                <div className="flex items-center">
+                  <span className="text-sm text-gray-500 mr-2">{charge.mode_paiement}</span>
                   <Button 
                     variant="ghost" 
+                    size="sm"
                     onClick={() => onRemoveCharge(index)}
                   >
                     Supprimer
