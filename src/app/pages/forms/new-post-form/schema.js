@@ -1,6 +1,5 @@
 import * as Yup from 'yup';
 
-// Schéma pour la feuille de route (remplace le schéma blog)
 export const schema = Yup.object().shape({
   header: Yup.object().shape({
     date: Yup.date().default(() => new Date()),
@@ -9,6 +8,11 @@ export const schema = Yup.object().shape({
     }).required('Chauffeur requis'),
     vehicule: Yup.object().shape({
       id: Yup.string().required('Véhicule requis'),
+      plaque_immatriculation: Yup.string().optional(),
+      numero_identification: Yup.string().optional(),
+      marque: Yup.string().optional(),
+      modele: Yup.string().optional(),
+      type_vehicule: Yup.string().optional()
     }).required('Véhicule requis')
   }).required('Header requis'),
 
@@ -30,14 +34,14 @@ export const schema = Yup.object().shape({
 
   courses: Yup.array().of(
     Yup.object().shape({
-      id: Yup.string(),
+      id: Yup.string().optional(),
       depart: Yup.object().shape({
         lieu: Yup.string().required('Lieu de départ requis'),
-        heure: Yup.string()
+        heure: Yup.string().optional()
       }),
       arrivee: Yup.object().shape({
         lieu: Yup.string().required('Lieu d\'arrivée requis'),
-        heure: Yup.string()
+        heure: Yup.string().optional()
       }),
       prix: Yup.number().min(0).required('Prix requis'),
       mode_paiement: Yup.string().oneOf(['cash', 'bancontact', 'facture']).default('cash'),
@@ -47,12 +51,12 @@ export const schema = Yup.object().shape({
 
   charges: Yup.array().of(
     Yup.object().shape({
-      id: Yup.string(),
+      id: Yup.string().optional(),
       type: Yup.string().oneOf(['carburant', 'peage', 'entretien', 'carwash', 'divers']).required('Type requis'),
       montant: Yup.number().min(0).required('Montant requis'),
       mode_paiement: Yup.string().oneOf(['cash', 'bancontact']).default('cash'),
       description: Yup.string().nullable(),
-      date: Yup.string()
+      date: Yup.string().optional()
     })
   ).default([])
 });
@@ -61,7 +65,14 @@ export const defaultData = {
   header: {
     date: new Date(),
     chauffeur: { id: "CH001" },
-    vehicule: { id: "VH001" }
+    vehicule: { 
+      id: "VH001",
+      plaque_immatriculation: "",
+      numero_identification: "",
+      marque: "",
+      modele: "",
+      type_vehicule: ""
+    }
   },
   shift: {
     start: "",

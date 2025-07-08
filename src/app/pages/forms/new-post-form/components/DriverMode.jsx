@@ -19,19 +19,37 @@ export function DriverMode({ chauffeur, vehicules, control, onSubmit, onSwitchMo
   });
 
   const [activeTab, setActiveTab] = useState('shift');
-  const watch = useWatch({ control });
+  const watchedValues = useWatch({ control });
 
-  // Vérification sécurisée des valeurs
-  const totalRecettes = courseFields.reduce((sum, _, index) => {
-    const prix = watch(`courses.${index}.prix`);
-    return sum + (prix && !isNaN(parseFloat(prix)) ? parseFloat(prix) : 0);
-  }, 0);
+  // Vérification sécurisée des valeurs avec gestion d'erreurs
+  const getTotalRecettes = () => {
+    try {
+      return courseFields.reduce((sum, _, index) => {
+        const cours = watchedValues?.courses?.[index];
+        const prix = cours?.prix;
+        return sum + (prix && !isNaN(parseFloat(prix)) ? parseFloat(prix) : 0);
+      }, 0);
+    } catch (error) {
+      console.error('Erreur calcul recettes:', error);
+      return 0;
+    }
+  };
 
-  const totalCharges = chargeFields.reduce((sum, _, index) => {
-    const montant = watch(`charges.${index}.montant`);
-    return sum + (montant && !isNaN(parseFloat(montant)) ? parseFloat(montant) : 0);
-  }, 0);
+  const getTotalCharges = () => {
+    try {
+      return chargeFields.reduce((sum, _, index) => {
+        const charge = watchedValues?.charges?.[index];
+        const montant = charge?.montant;
+        return sum + (montant && !isNaN(parseFloat(montant)) ? parseFloat(montant) : 0);
+      }, 0);
+    } catch (error) {
+      console.error('Erreur calcul charges:', error);
+      return 0;
+    }
+  };
 
+  const totalRecettes = getTotalRecettes();
+  const totalCharges = getTotalCharges();
   const base = Math.min(totalRecettes, 180);
   const surplus = Math.max(totalRecettes - 180, 0);
   const salaire = (base * 0.4) + (surplus * 0.3);
@@ -46,6 +64,28 @@ export function DriverMode({ chauffeur, vehicules, control, onSubmit, onSwitchMo
       </Card>
     );
   }
+
+  const handleAddCourse = (course) => {
+    try {
+      appendCourse({
+        ...course,
+        id: `CRS-${Date.now()}`,
+      });
+    } catch (error) {
+      console.error('Erreur ajout course:', error);
+    }
+  };
+
+  const handleAddExpense = (expense) => {
+    try {
+      appendCharge({
+        ...expense,
+        id: `CHG-${Date.now()}`
+      });
+    } catch (error) {
+      console.error('Erreur ajout dépense:', error);
+    }
+  };
 
   return (
     <div className="space-y-4">
@@ -76,7 +116,7 @@ export function DriverMode({ chauffeur, vehicules, control, onSubmit, onSwitchMo
         <Button 
           variant={activeTab === 'courses' ? 'primary' : 'ghost'}
           onClick={() => setActiveTab('courses')}
-          disabled={!watch('shift.start')}
+          disabled={!watchedValues?.shift?.start}
           className="flex-1"
         >
           Courses ({courseFields.length})
@@ -84,7 +124,7 @@ export function DriverMode({ chauffeur, vehicules, control, onSubmit, onSwitchMo
         <Button 
           variant={activeTab === 'validation' ? 'primary' : 'ghost'}
           onClick={() => setActiveTab('validation')}
-          disabled={!watch('shift.start')}
+          disabled={!watchedValues?.shift?.start}
           className="flex-1"
         >
           Fin Shift
@@ -97,7 +137,6 @@ export function DriverMode({ chauffeur, vehicules, control, onSubmit, onSwitchMo
             <VehicleInfo 
               vehicules={vehicules} 
               control={control}
-              currentVehicle={watch('header.vehicule')}
             />
             <ShiftInfo 
               control={control}
@@ -109,22 +148,12 @@ export function DriverMode({ chauffeur, vehicules, control, onSubmit, onSwitchMo
         {activeTab === 'courses' && (
           <>
             <QuickCourseForm 
-              onAddCourse={(course) => {
-                appendCourse({
-                  ...course,
-                  id: `CRS-${Date.now()}`,
-                });
-              }}
+              onAddCourse={handleAddCourse}
               currentLocation={chauffeur.currentLocation}
             />
             
             <ExpensesSection 
-              onAddExpense={(expense) => {
-                appendCharge({
-                  ...expense,
-                  id: `CHG-${Date.now()}`
-                });
-              }}
+              onAddExpense={handleAddExpense}
               charges={chargeFields}
               onRemoveCharge={removeCharge}
             />
