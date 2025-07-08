@@ -9,7 +9,13 @@ import { Page } from 'components/shared/Page';
 
 export default function FeuilleRouteApp() {
   const [mode, setMode] = useState('driver');
-  const { control, handleSubmit, reset } = useForm({
+  
+  const { 
+    control, 
+    handleSubmit, 
+    reset,
+    formState: { errors }
+  } = useForm({
     resolver: yupResolver(schema),
     defaultValues: defaultData
   });
@@ -53,6 +59,11 @@ export default function FeuilleRouteApp() {
       toast.error("Une erreur est survenue lors de l'enregistrement");
     }
   };
+
+  // Affichage des erreurs en mode développement
+  if (import.meta.env?.NODE_ENV === 'development' && Object.keys(errors).length > 0) {
+    console.log('Erreurs de validation:', errors);
+  }
 
   return (
     <Page title="Feuille de Route">
