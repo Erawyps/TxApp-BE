@@ -20,11 +20,16 @@ export function ExpensesSection({ onAddExpense, charges, onRemoveCharge }) {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (!form.montant) return;
+    const montant = parseFloat(form.montant);
+    
+    if (isNaN(montant)) {
+      alert('Veuillez entrer un montant valide');
+      return;
+    }
     
     onAddExpense({
       type: form.type,
-      montant: parseFloat(form.montant),
+      montant: montant,
       mode_paiement: form.mode_paiement,
       description: form.description,
       date: new Date().toISOString()
@@ -58,10 +63,11 @@ export function ExpensesSection({ onAddExpense, charges, onRemoveCharge }) {
           </div>
           
           <div className="form-group">
-            <label>Montant (€)</label>
+            <label>Montant (€) *</label>
             <input
               type="number"
               step="0.01"
+              min="0"
               value={form.montant}
               onChange={(e) => setForm({...form, montant: e.target.value})}
               required
@@ -72,11 +78,12 @@ export function ExpensesSection({ onAddExpense, charges, onRemoveCharge }) {
         
         <div className="form-row">
           <div className="form-group">
-            <label>Paiement</label>
+            <label>Paiement *</label>
             <select
               value={form.mode_paiement}
               onChange={(e) => setForm({...form, mode_paiement: e.target.value})}
               className="input-field"
+              required
             >
               <option value="cash">Cash</option>
               <option value="bancontact">Bancontact</option>
@@ -106,7 +113,7 @@ export function ExpensesSection({ onAddExpense, charges, onRemoveCharge }) {
               <li key={index} className="expense-item">
                 <div>
                   <span className="expense-type">{charge.type}</span>
-                  <span className="expense-amount">{charge.montant} €</span>
+                  <span className="expense-amount">{charge.montant.toFixed(2)} €</span>
                 </div>
                 <div>
                   <span className="expense-payment">{charge.mode_paiement}</span>
@@ -140,6 +147,14 @@ export function ExpensesSection({ onAddExpense, charges, onRemoveCharge }) {
           display: block;
           margin-bottom: 5px;
           font-weight: 500;
+        }
+        label:after {
+          content: ' *';
+          color: red;
+          opacity: 0;
+        }
+        label[required]:after {
+          opacity: 1;
         }
         .input-field {
           width: 100%;

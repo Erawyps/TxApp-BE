@@ -21,23 +21,51 @@ export function DriverMode({ chauffeur, vehicules, control, onSubmit, onSwitchMo
   const [activeTab, setActiveTab] = useState('shift');
   const watch = useWatch({ control });
 
-  // Calcul des totaux
-  const totalRecettes = courseFields.reduce((sum, _, index) => {
-    return sum + (parseFloat(watch(`courses.${index}.prix`)) || 0);
-  }, 0);
+  const calculateTotals = () => {
+    const courses = watch('courses') || [];
+    const charges = watch('charges') || [];
+    
+    const recettes = courses.reduce((sum, c) => sum + (parseFloat(c.prix) || 0), 0);
+    const chargesTotal = charges.reduce((sum, c) => sum + (parseFloat(c.montant) || 0), 0);
+    
+    const base = Math.min(recettes, 180);
+    const surplus = Math.max(recettes - 180, 0);
+    const salaire = (base * 0.4) + (surplus * 0.3);
 
-  const totalCharges = chargeFields.reduce((sum, _, index) => {
-    return sum + (parseFloat(watch(`charges.${index}.montant`)) || 0);
-  }, 0);
+    return {
+      recettes,
+      charges: chargesTotal,
+      salaire
+    };
+  };
 
-  // Règle de calcul du salaire (40% jusqu'à 180€, 30% au-delà)
-  const base = Math.min(totalRecettes, 180);
-  const surplus = Math.max(totalRecettes - 180, 0);
-  const salaire = (base * 0.4) + (surplus * 0.3);
+  const handleSubmit = async (data) => {
+    try {
+      const totals = calculateTotals();
+      
+      // Préparer les données finales
+      const formData = {
+        ...data,
+        totals,
+        validation: {
+          ...data.validation,
+          date_validation: new Date().toISOString()
+        }
+      };
+
+      console.log("Données validées:", formData);
+      onSubmit(formData);
+    } catch (error) {
+      console.error("Erreur lors de la validation:", error);
+      alert(`Erreur: ${error.message}`);
+    }
+  };
+
+  const totals = calculateTotals();
 
   return (
     <div className="driver-mode">
-      {/* Header avec infos chauffeur (lecture seule) */}
+      {/* Header avec infos chauffeur */}
       <Card className="driver-header">
         <h2>Feuille de Route - {chauffeur.prenom} {chauffeur.nom}</h2>
         <div className="driver-info">
@@ -124,15 +152,15 @@ export function DriverMode({ chauffeur, vehicules, control, onSubmit, onSwitchMo
               <h3>Récapitulatif</h3>
               <div className="total-row">
                 <span>Total Recettes:</span>
-                <span>{totalRecettes.toFixed(2)} €</span>
+                <span>{totals.recettes.toFixed(2)} €</span>
               </div>
               <div className="total-row">
                 <span>Total Charges:</span>
-                <span>{totalCharges.toFixed(2)} €</span>
+                <span>{totals.charges.toFixed(2)} €</span>
               </div>
               <div className="total-row highlight">
                 <span>Salaire estimé:</span>
-                <span>{salaire.toFixed(2)} €</span>
+                <span>{totals.salaire.toFixed(2)} €</span>
               </div>
             </Card>
           </>
@@ -140,13 +168,9 @@ export function DriverMode({ chauffeur, vehicules, control, onSubmit, onSwitchMo
 
         {activeTab === 'validation' && (
           <ValidationStep 
-            onSubmit={onSubmit}
+            onSubmit={handleSubmit}
             control={control}
-            totals={{
-              recettes: totalRecettes,
-              charges: totalCharges,
-              salaire: salaire
-            }}
+            totals={totals}
           />
         )}
       </div>
