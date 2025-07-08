@@ -10,10 +10,8 @@ const TimePicker = forwardRef(({ value, onChange, error, label, placeholder, ...
       placeholder={placeholder || "HH:MM"}
       value={value}
       onChange={(e) => {
-        // Validation basique du format
         const val = e.target.value;
         if (val === "" || /^([0-1]?[0-9]|2[0-3]):?([0-5]?[0-9])?$/.test(val)) {
-          // Ajout automatique du ":" si nécessaire
           const formattedValue = val.length === 2 && !val.includes(':') 
             ? `${val}:` 
             : val;
@@ -21,7 +19,6 @@ const TimePicker = forwardRef(({ value, onChange, error, label, placeholder, ...
         }
       }}
       onBlur={(e) => {
-        // Formatage final au blur
         const val = e.target.value;
         if (val.includes(':') && val.length === 4) {
           onChange(val.padEnd(5, '0'));

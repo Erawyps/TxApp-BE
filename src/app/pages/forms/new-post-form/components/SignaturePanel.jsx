@@ -1,4 +1,5 @@
 import { useRef, useEffect } from 'react';
+import { Button } from 'components/ui';
 
 export function SignaturePanel({ control, name }) {
   const canvasRef = useRef(null);
@@ -8,7 +9,6 @@ export function SignaturePanel({ control, name }) {
     const canvas = canvasRef.current;
     const ctx = canvas.getContext('2d');
     
-    // Configuration du canvas
     const resizeCanvas = () => {
       const ratio = window.devicePixelRatio || 1;
       canvas.width = canvas.offsetWidth * ratio;
@@ -23,7 +23,6 @@ export function SignaturePanel({ control, name }) {
     
     resizeCanvas();
     
-    // Gestion des événements
     const startDrawing = (e) => {
       isDrawing.current = true;
       const { offsetX, offsetY } = getCoordinates(e);
@@ -40,11 +39,9 @@ export function SignaturePanel({ control, name }) {
     
     const stopDrawing = () => {
       isDrawing.current = false;
-      // Sauvegarder la signature
       control.setValue(name, canvas.toDataURL());
     };
     
-    // Gestion à la fois souris et tactile
     canvas.addEventListener('mousedown', startDrawing);
     canvas.addEventListener('mousemove', draw);
     canvas.addEventListener('mouseup', stopDrawing);
@@ -102,30 +99,12 @@ export function SignaturePanel({ control, name }) {
           }}
         />
       </div>
-      <button 
-        type="button" 
+      <Button 
+        variant="outline"
         onClick={clearSignature}
-        className="clear-btn"
       >
         Effacer
-      </button>
-      
-      <style>{`
-        .signature-panel {
-          margin: 20px 0;
-        }
-        .signature-container {
-          width: 100%;
-          height: 200px;
-          margin: 10px 0;
-        }
-        .clear-btn {
-          background: #f5f5f5;
-          border: 1px solid #ddd;
-          padding: 5px 10px;
-          cursor: pointer;
-        }
-      `}</style>
+      </Button>
     </div>
   );
 }

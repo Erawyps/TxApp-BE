@@ -1,7 +1,7 @@
-import { Card } from 'components/ui';
+import { Card, Button} from 'components/ui';
+import { Input } from 'components/ui';
 import { useState } from 'react';
 import { SignaturePad } from 'components/form/SignaturePad';
-import { Button } from 'components/ui';
 
 export function ValidationStep({ onSubmit, control, totals }) {
   const [signature, setSignature] = useState(null);
@@ -24,35 +24,26 @@ export function ValidationStep({ onSubmit, control, totals }) {
   };
 
   return (
-    <Card className="validation-step">
+    <Card>
       <h3>Fin du Shift</h3>
       
-      <div className="form-group">
-        <label>Kilométrage final</label>
-        <input
-          type="number"
-          {...control.register('kilometers.end', { valueAsNumber: true })}
-          className="input-field"
-        />
-      </div>
+      <Input
+        label="Kilométrage final"
+        type="number"
+        {...control.register('kilometers.end', { valueAsNumber: true })}
+      />
       
-      <div className="form-group">
-        <label>Heure de fin</label>
-        <input
-          type="time"
-          {...control.register('shift.end')}
-          className="input-field"
-        />
-      </div>
+      <Input
+        label="Heure de fin"
+        type="time"
+        {...control.register('shift.end')}
+      />
       
-      <div className="form-group">
-        <label>Interruptions (minutes)</label>
-        <input
-          type="number"
-          {...control.register('shift.interruptions', { valueAsNumber: true })}
-          className="input-field"
-        />
-      </div>
+      <Input
+        label="Interruptions (minutes)"
+        type="number"
+        {...control.register('shift.interruptions', { valueAsNumber: true })}
+      />
       
       <div className="totals-summary">
         <h4>Récapitulatif</h4>
@@ -82,64 +73,10 @@ export function ValidationStep({ onSubmit, control, totals }) {
       
       <Button 
         onClick={handleSubmit}
-        className="validate-button"
+        color="primary"
       >
         Valider le Shift
       </Button>
-      
-      <style>{`
-        .validation-step {
-          margin-bottom: 15px;
-        }
-        .form-group {
-          margin-bottom: 15px;
-        }
-        label {
-          display: block;
-          margin-bottom: 5px;
-          font-weight: 500;
-        }
-        .input-field {
-          width: 100%;
-          padding: 10px;
-          border: 1px solid #ddd;
-          border-radius: 4px;
-        }
-        .totals-summary {
-          margin: 20px 0;
-          padding: 15px;
-          background: #f5f5f5;
-          border-radius: 4px;
-        }
-        .totals-summary h4 {
-          margin-top: 0;
-        }
-        .total-row {
-          display: flex;
-          justify-content: space-between;
-          padding: 8px 0;
-          border-bottom: 1px solid #eee;
-        }
-        .total-row.highlight {
-          font-weight: bold;
-          color: #2c3e50;
-        }
-        .signature-section {
-          margin: 20px 0;
-        }
-        .validate-button {
-          width: 100%;
-          padding: 12px;
-          background: #2ecc71;
-          color : white;
-          border: none;
-          border-radius: 4px;
-          cursor: pointer;
-        }
-        .validate-button:hover {
-          background: #27ae60;
-        }
-      `}</style>
     </Card>
   );
-}     
+}
