@@ -21,23 +21,39 @@ export function DriverMode({ chauffeur, vehicules, control, onSubmit, onSwitchMo
   const [activeTab, setActiveTab] = useState('shift');
   const watch = useWatch({ control });
 
+  // Vérification sécurisée des valeurs
   const totalRecettes = courseFields.reduce((sum, _, index) => {
-    return sum + (parseFloat(watch(`courses.${index}.prix`) || 0));
+    const prix = watch(`courses.${index}.prix`);
+    return sum + (prix && !isNaN(parseFloat(prix)) ? parseFloat(prix) : 0);
   }, 0);
 
   const totalCharges = chargeFields.reduce((sum, _, index) => {
-    return sum + (parseFloat(watch(`charges.${index}.montant`) || 0));
+    const montant = watch(`charges.${index}.montant`);
+    return sum + (montant && !isNaN(parseFloat(montant)) ? parseFloat(montant) : 0);
   }, 0);
 
   const base = Math.min(totalRecettes, 180);
   const surplus = Math.max(totalRecettes - 180, 0);
   const salaire = (base * 0.4) + (surplus * 0.3);
 
+  // Vérification que les données nécessaires sont présentes
+  if (!chauffeur || !vehicules || vehicules.length === 0) {
+    return (
+      <Card className="p-4">
+        <div className="text-center text-red-500">
+          Erreur: Données manquantes (chauffeur ou véhicules)
+        </div>
+      </Card>
+    );
+  }
+
   return (
     <div className="space-y-4">
       <Card className="p-4">
         <div className="flex items-center justify-between">
-          <h2 className="text-xl font-medium">Feuille de Route - {chauffeur.prenom} {chauffeur.nom}</h2>
+          <h2 className="text-xl font-medium">
+            Feuille de Route - {chauffeur.prenom} {chauffeur.nom}
+          </h2>
           <Button variant="outline" onClick={onSwitchMode}>
             Mode complet
           </Button>

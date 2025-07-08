@@ -5,41 +5,53 @@ export const schema = Yup.object().shape({
     date: Yup.date().default(() => new Date()),
     chauffeur: Yup.object().shape({
       id: Yup.string().required('Chauffeur requis'),
-    }),
+    }).required('Chauffeur requis'),
     vehicule: Yup.object().shape({
       id: Yup.string().required('Véhicule requis'),
-    })
-  }),
+    }).required('Véhicule requis')
+  }).required('Header requis'),
 
   shift: Yup.object().shape({
-    start: Yup.string(),
-    end: Yup.string(),
-    interruptions: Yup.number().min(0)
+    start: Yup.string().nullable(),
+    end: Yup.string().nullable(),
+    interruptions: Yup.number().min(0).default(0)
   }),
 
   kilometers: Yup.object().shape({
-    start: Yup.number().min(0),
-    end: Yup.number().min(Yup.ref('start'))
+    start: Yup.number().min(0).required('Kilométrage de départ requis'),
+    end: Yup.number().min(0).nullable()
+      .when('start', (start, schema) => {
+        return start ? schema.min(start, 'Le kilométrage de fin doit être supérieur au départ') : schema;
+      })
   }),
 
   courses: Yup.array().of(
     Yup.object().shape({
+      id: Yup.string(),
       depart: Yup.object().shape({
-        lieu: Yup.string().required('Lieu requis'),
+        lieu: Yup.string().required('Lieu de départ requis'),
+        heure: Yup.string()
       }),
       arrivee: Yup.object().shape({
-        lieu: Yup.string().required('Lieu requis'),
+        lieu: Yup.string().required('Lieu d\'arrivée requis'),
+        heure: Yup.string()
       }),
       prix: Yup.number().min(0).required('Prix requis'),
+      mode_paiement: Yup.string().oneOf(['cash', 'bancontact', 'facture']).default('cash'),
+      client: Yup.string().nullable()
     })
-  ),
+  ).default([]),
 
   charges: Yup.array().of(
     Yup.object().shape({
-      type: Yup.string().required('Type requis'),
+      id: Yup.string(),
+      type: Yup.string().oneOf(['carburant', 'peage', 'entretien', 'carwash', 'divers']).required('Type requis'),
       montant: Yup.number().min(0).required('Montant requis'),
+      mode_paiement: Yup.string().oneOf(['cash', 'bancontact']).default('cash'),
+      description: Yup.string().nullable(),
+      date: Yup.string()
     })
-  )
+  ).default([])
 });
 
 export const defaultData = {
