@@ -56,7 +56,7 @@ export default function FeuilleRouteApp() {
 
   return (
     <Page title="Feuille de Route">
-      <div className="transition-content px-(--margin-x) pb-6">
+      <div className="px-4 pb-6">
         {mode === 'driver' ? (
           <DriverMode 
             chauffeur={currentDriver}
