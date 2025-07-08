@@ -5,6 +5,7 @@ import { schema, defaultData } from './schema';
 import { DriverMode } from './components/DriverMode';
 import { FullForm } from './components/FullForm';
 import { toast } from 'sonner';
+import { ErrorBoundary } from 'components/ErrorBoundary';
 
 export default function FeuilleRouteApp() {
   const [mode, setMode] = useState('driver');
@@ -66,6 +67,7 @@ export default function FeuilleRouteApp() {
   }
 
   return (
+    <ErrorBoundary>
     <FullForm 
       chauffeurs={[currentDriver]}
       vehicules={vehicules}
@@ -73,5 +75,6 @@ export default function FeuilleRouteApp() {
       onSwitchMode={() => setMode('driver')}
       onSubmit={handleSubmit(handleSubmitForm)}
     />
+    </ErrorBoundary>
   );
 }
