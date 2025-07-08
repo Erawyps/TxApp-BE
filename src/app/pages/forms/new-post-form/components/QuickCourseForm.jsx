@@ -29,11 +29,11 @@ export function QuickCourseForm({ onAddCourse, currentLocation }) {
       client: form.mode_paiement === 'facture' ? form.client : null
     });
     
-    setForm({
-      ...form,
+    setForm(prev => ({
+      ...prev,
       arrivee: '',
       prix: ''
-    });
+    }));
   };
 
   return (
@@ -82,7 +82,6 @@ export function QuickCourseForm({ onAddCourse, currentLocation }) {
             label="Client (facture)"
             value={form.client}
             onChange={(e) => setForm({...form, client: e.target.value})}
-            required
           />
         )}
         

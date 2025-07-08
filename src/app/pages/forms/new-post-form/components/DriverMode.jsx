@@ -22,11 +22,11 @@ export function DriverMode({ chauffeur, vehicules, control, onSubmit, onSwitchMo
   const watch = useWatch({ control });
 
   const totalRecettes = courseFields.reduce((sum, _, index) => {
-    return sum + (parseFloat(watch(`courses.${index}.prix`)) || 0);
+    return sum + (parseFloat(watch(`courses.${index}.prix`) || 0));
   }, 0);
 
   const totalCharges = chargeFields.reduce((sum, _, index) => {
-    return sum + (parseFloat(watch(`charges.${index}.montant`)) || 0);
+    return sum + (parseFloat(watch(`charges.${index}.montant`) || 0));
   }, 0);
 
   const base = Math.min(totalRecettes, 180);
@@ -42,7 +42,7 @@ export function DriverMode({ chauffeur, vehicules, control, onSubmit, onSwitchMo
             Mode complet
           </Button>
         </div>
-        <div className="mt-2 text-sm text-gray-600 dark:text-dark-200">
+        <div className="mt-2 text-sm text-gray-600">
           <span>Badge: {chauffeur.numero_badge}</span>
           <span className="mx-2">•</span>
           <span>Contrat: {chauffeur.type_contrat}</span>
@@ -97,7 +97,6 @@ export function DriverMode({ chauffeur, vehicules, control, onSubmit, onSwitchMo
                 appendCourse({
                   ...course,
                   id: `CRS-${Date.now()}`,
-                  order: courseFields.length + 1
                 });
               }}
               currentLocation={chauffeur.currentLocation}
@@ -125,7 +124,7 @@ export function DriverMode({ chauffeur, vehicules, control, onSubmit, onSwitchMo
                   <span>Total Charges:</span>
                   <span className="font-medium">{totalCharges.toFixed(2)} €</span>
                 </div>
-                <div className="flex justify-between text-primary-600 dark:text-primary-400">
+                <div className="flex justify-between text-primary-600">
                   <span>Salaire estimé:</span>
                   <span className="font-bold">{salaire.toFixed(2)} €</span>
                 </div>

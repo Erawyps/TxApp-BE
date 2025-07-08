@@ -1,6 +1,5 @@
 import { Card, Button, Input } from 'components/ui';
 import { useState } from 'react';
-import { SignaturePanel } from './SignaturePanel';
 
 export function ValidationStep({ onSubmit, control, totals }) {
   const [signature, setSignature] = useState(null);
@@ -12,10 +11,8 @@ export function ValidationStep({ onSubmit, control, totals }) {
     }
     
     onSubmit({
-      validation: {
-        signature,
-        date_validation: new Date().toISOString()
-      },
+      signature,
+      date_validation: new Date().toISOString(),
       totals: {
         recettes: totals.recettes,
         charges: totals.charges,
@@ -31,7 +28,7 @@ export function ValidationStep({ onSubmit, control, totals }) {
       <Input
         label="Kilométrage final"
         type="number"
-        {...control.register('kilometers.end', { valueAsNumber: true })}
+        {...control.register('kilometers.end')}
       />
       
       <Input
@@ -43,10 +40,10 @@ export function ValidationStep({ onSubmit, control, totals }) {
       <Input
         label="Interruptions (minutes)"
         type="number"
-        {...control.register('shift.interruptions', { valueAsNumber: true })}
+        {...control.register('shift.interruptions')}
       />
       
-      <div className="space-y-2">
+      <div className="space-y-2 p-3 bg-gray-50 rounded-lg">
         <h4 className="font-medium">Récapitulatif</h4>
         <div className="flex justify-between">
           <span>Total Recettes:</span>
@@ -56,26 +53,29 @@ export function ValidationStep({ onSubmit, control, totals }) {
           <span>Total Charges:</span>
           <span>{totals.charges.toFixed(2)} €</span>
         </div>
-        <div className="flex justify-between text-primary-600 dark:text-primary-400 font-bold">
+        <div className="flex justify-between font-bold text-primary-600">
           <span>Salaire estimé:</span>
           <span>{totals.salaire.toFixed(2)} €</span>
         </div>
       </div>
       
-      <div className="signature-section">
+      <div className="mt-4">
         <label className="block mb-2">Signature</label>
-        <SignaturePanel 
-          onSave={setSignature}
-          penColor="#000"
-          backgroundColor="#f9fafb"
-          height={150}
-        />
+        <div className="border rounded-lg h-40 bg-gray-50 flex items-center justify-center">
+          <button 
+            type="button" 
+            className="text-gray-500"
+            onClick={() => setSignature('signature-data')}
+          >
+            Cliquez pour signer
+          </button>
+        </div>
       </div>
       
       <Button 
         onClick={handleSubmit}
         color="primary"
-        className="w-full"
+        className="w-full mt-4"
       >
         Valider le Shift
       </Button>
