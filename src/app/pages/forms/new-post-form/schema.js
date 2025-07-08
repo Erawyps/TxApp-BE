@@ -9,14 +9,12 @@ export const schema = Yup.object().shape({
       id: Yup.string().required('Chauffeur requis'),
       nom: Yup.string().required('Nom requis'),
       prenom: Yup.string().required('Prénom requis'),
-      badge: Yup.string().required('Numéro de badge requis')
+      numero_badge: Yup.string().required('Numéro de badge requis')
     }),
     vehicule: Yup.object().shape({
       id: Yup.string().required('Véhicule requis'),
-      plaque: Yup.string()
-        .required('Plaque requise')
-        .matches(/^[A-Z]{2}-[0-9]{3}-[A-Z]{2}$/, 'Format plaque invalide'),
-      numero: Yup.string().required('Numéro d\'identification requis')
+      plaque_immatriculation: Yup.string().required('Plaque requise'),
+      numero_identification: Yup.string().required('Numéro d\'identification requis')
     })
   }),
 
@@ -53,21 +51,12 @@ export const schema = Yup.object().shape({
       order: Yup.number().required(),
       depart: Yup.object().shape({
         lieu: Yup.string().required('Lieu de départ requis'),
-        index: Yup.number()
-          .required('Index départ requis')
-          .min(0, 'Doit être positif'),
         heure: Yup.string()
           .matches(/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/, 'Format HH:MM invalide')
           .required('Heure départ requise')
       }),
       arrivee: Yup.object().shape({
-        lieu: Yup.string().required('Lieu d\'arrivée requis'),
-        index: Yup.number()
-          .required('Index arrivée requis')
-          .min(Yup.ref('..depart.index'), 'Doit être supérieur à l\'index de départ'),
-        heure: Yup.string()
-          .matches(/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/, 'Format HH:MM invalide')
-          .nullable()
+        lieu: Yup.string().required('Lieu d\'arrivée requis')
       }),
       prix: Yup.number()
         .required('Prix requis')
@@ -79,8 +68,7 @@ export const schema = Yup.object().shape({
         .when('mode_paiement', {
           is: 'facture',
           then: Yup.string().required('Client requis pour les factures')
-        }),
-      notes: Yup.string().nullable()
+        })
     })
   ),
 
@@ -99,18 +87,7 @@ export const schema = Yup.object().shape({
       description: Yup.string().nullable(),
       date: Yup.date().default(() => new Date())
     })
-  ),
-
-  totals: Yup.object().shape({
-    recettes: Yup.number().min(0),
-    charges: Yup.number().min(0),
-    salaire: Yup.number().min(0)
-  }),
-
-  validation: Yup.object().shape({
-    signature: Yup.string().required('Signature requise'),
-    date_validation: Yup.date().default(() => new Date())
-  })
+  )
 });
 
 export const defaultData = {
@@ -120,32 +97,23 @@ export const defaultData = {
       id: "CH001",
       nom: "Tehou",
       prenom: "Hasler",
-      badge: "TX-2023-001"
+      numero_badge: "TX-2023-001"
     },
     vehicule: {
       id: "VH001",
-      plaque: "TX-AA-171",
-      numero: "10"
+      plaque_immatriculation: "TX-AA-171",
+      numero_identification: "10"
     }
   },
   shift: {
-    start: "08:00",
-    end: null,
+    start: "",
+    end: "",
     interruptions: 0
   },
   kilometers: {
-    start: 125000,
+    start: 0,
     end: null
   },
   courses: [],
-  charges: [],
-  totals: {
-    recettes: 0,
-    charges: 0,
-    salaire: 0
-  },
-  validation: {
-    signature: "",
-    date_validation: null
-  }
+  charges: []
 };
