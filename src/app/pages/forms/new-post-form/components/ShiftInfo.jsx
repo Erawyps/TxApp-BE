@@ -11,8 +11,8 @@ export function ShiftInfo({ control, onStartShift }) {
   };
 
   return (
-    <Card>
-      <h3>Début du Shift</h3>
+    <Card className="p-4">
+      <h3 className="text-lg font-medium">Début du Shift</h3>
       
       <Controller
         control={control}
@@ -24,6 +24,7 @@ export function ShiftInfo({ control, onStartShift }) {
             value={field.value}
             onChange={field.onChange}
             error={fieldState.error?.message}
+            className="mt-4"
           />
         )}
       />
@@ -31,6 +32,7 @@ export function ShiftInfo({ control, onStartShift }) {
       <Button 
         onClick={handleStartShift}
         color="primary"
+        className="mt-4 w-full"
       >
         Démarrer le Shift
       </Button>

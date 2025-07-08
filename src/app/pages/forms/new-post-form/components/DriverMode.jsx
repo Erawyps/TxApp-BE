@@ -29,14 +29,13 @@ export function DriverMode({ chauffeur, vehicules, control, onSubmit, onSwitchMo
     return sum + (parseFloat(watch(`charges.${index}.montant`)) || 0);
   }, 0);
 
-  // Calcul du salaire selon la règle mixte 40/30
   const base = Math.min(totalRecettes, 180);
   const surplus = Math.max(totalRecettes - 180, 0);
   const salaire = (base * 0.4) + (surplus * 0.3);
 
   return (
-    <div className="driver-mode space-y-4">
-      <Card className="driver-header p-4">
+    <div className="space-y-4">
+      <Card className="p-4">
         <div className="flex items-center justify-between">
           <h2 className="text-xl font-medium">Feuille de Route - {chauffeur.prenom} {chauffeur.nom}</h2>
           <Button variant="outline" onClick={onSwitchMode}>
@@ -76,9 +75,9 @@ export function DriverMode({ chauffeur, vehicules, control, onSubmit, onSwitchMo
         </Button>
       </div>
 
-      <div className="driver-content">
+      <div className="space-y-4">
         {activeTab === 'shift' && (
-          <div className="space-y-4">
+          <>
             <VehicleInfo 
               vehicules={vehicules} 
               control={control}
@@ -88,19 +87,18 @@ export function DriverMode({ chauffeur, vehicules, control, onSubmit, onSwitchMo
               control={control}
               onStartShift={() => setActiveTab('courses')}
             />
-          </div>
+          </>
         )}
 
         {activeTab === 'courses' && (
-          <div className="space-y-4">
+          <>
             <QuickCourseForm 
               onAddCourse={(course) => {
-                const newCourse = {
+                appendCourse({
                   ...course,
                   id: `CRS-${Date.now()}`,
                   order: courseFields.length + 1
-                };
-                appendCourse(newCourse);
+                });
               }}
               currentLocation={chauffeur.currentLocation}
             />
@@ -133,7 +131,7 @@ export function DriverMode({ chauffeur, vehicules, control, onSubmit, onSwitchMo
                 </div>
               </div>
             </Card>
-          </div>
+          </>
         )}
 
         {activeTab === 'validation' && (

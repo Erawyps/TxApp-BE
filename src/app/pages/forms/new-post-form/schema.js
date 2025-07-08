@@ -23,14 +23,7 @@ export const schema = Yup.object().shape({
       .required('Heure de début requise')
       .matches(/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/, 'Format HH:MM invalide'),
     end: Yup.string()
-      .matches(/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/, 'Format HH:MM invalide')
-      .test(
-        'heure-superieure',
-        'L\'heure de fin doit être après l\'heure de début',
-        function(value) {
-          return !this.parent.start || !value || value > this.parent.start
-        }
-      ),
+      .matches(/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/, 'Format HH:MM invalide'),
     interruptions: Yup.number()
       .min(0, 'Doit être positif')
       .nullable()
@@ -47,8 +40,6 @@ export const schema = Yup.object().shape({
 
   courses: Yup.array().of(
     Yup.object().shape({
-      id: Yup.string().required(),
-      order: Yup.number().required(),
       depart: Yup.object().shape({
         lieu: Yup.string().required('Lieu de départ requis'),
         heure: Yup.string()
@@ -74,7 +65,6 @@ export const schema = Yup.object().shape({
 
   charges: Yup.array().of(
     Yup.object().shape({
-      id: Yup.string().required(),
       type: Yup.string()
         .required('Type de charge requis')
         .oneOf(['carburant', 'peage', 'entretien', 'carwash', 'divers']),
@@ -84,8 +74,7 @@ export const schema = Yup.object().shape({
       mode_paiement: Yup.string()
         .required('Mode paiement requis')
         .oneOf(['cash', 'bancontact']),
-      description: Yup.string().nullable(),
-      date: Yup.date().default(() => new Date())
+      description: Yup.string().nullable()
     })
   )
 });

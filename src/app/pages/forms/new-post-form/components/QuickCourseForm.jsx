@@ -19,13 +19,10 @@ export function QuickCourseForm({ onAddCourse, currentLocation }) {
     onAddCourse({
       depart: {
         lieu: form.depart,
-        index: 0,
-        heure: heureActuelle,
-        position: null
+        heure: heureActuelle
       },
       arrivee: {
-        lieu: form.arrivee,
-        index: 0
+        lieu: form.arrivee
       },
       prix: parseFloat(form.prix),
       mode_paiement: form.mode_paiement,
@@ -40,10 +37,10 @@ export function QuickCourseForm({ onAddCourse, currentLocation }) {
   };
 
   return (
-    <Card>
-      <h3>Nouvelle Course</h3>
+    <Card className="p-4">
+      <h3 className="text-lg font-medium">Nouvelle Course</h3>
       
-      <form onSubmit={handleSubmit}>
+      <form onSubmit={handleSubmit} className="mt-4 space-y-4">
         <Input
           label="Départ"
           value={form.depart}
@@ -58,7 +55,7 @@ export function QuickCourseForm({ onAddCourse, currentLocation }) {
           required
         />
         
-        <div className="form-row">
+        <div className="grid grid-cols-2 gap-4">
           <Input
             label="Prix (€)"
             type="number"
@@ -89,7 +86,7 @@ export function QuickCourseForm({ onAddCourse, currentLocation }) {
           />
         )}
         
-        <Button type="submit">
+        <Button type="submit" className="w-full" color="primary">
           Ajouter Course
         </Button>
       </form>

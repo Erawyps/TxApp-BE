@@ -5,7 +5,7 @@ import { schema, defaultData } from './schema';
 import { DriverMode } from './components/DriverMode';
 import { FullForm } from './components/FullForm';
 import { toast } from 'sonner';
-import { ErrorBoundary } from 'components/ErrorBoundary';
+import { Page } from 'components/shared/Page';
 
 export default function FeuilleRouteApp() {
   const [mode, setMode] = useState('driver');
@@ -54,27 +54,27 @@ export default function FeuilleRouteApp() {
     }
   };
 
-  if (mode === 'driver') {
-    return (
-      <DriverMode 
-        chauffeur={currentDriver}
-        vehicules={vehicules}
-        control={control}
-        onSubmit={handleSubmit(handleSubmitForm)}
-        onSwitchMode={() => setMode('full')}
-      />
-    );
-  }
-
   return (
-    <ErrorBoundary>
-    <FullForm 
-      chauffeurs={[currentDriver]}
-      vehicules={vehicules}
-      control={control}
-      onSwitchMode={() => setMode('driver')}
-      onSubmit={handleSubmit(handleSubmitForm)}
-    />
-    </ErrorBoundary>
+    <Page title="Feuille de Route">
+      <div className="transition-content px-(--margin-x) pb-6">
+        {mode === 'driver' ? (
+          <DriverMode 
+            chauffeur={currentDriver}
+            vehicules={vehicules}
+            control={control}
+            onSubmit={handleSubmit(handleSubmitForm)}
+            onSwitchMode={() => setMode('full')}
+          />
+        ) : (
+          <FullForm 
+            chauffeurs={[currentDriver]}
+            vehicules={vehicules}
+            control={control}
+            onSwitchMode={() => setMode('driver')}
+            onSubmit={handleSubmit(handleSubmitForm)}
+          />
+        )}
+      </div>
+    </Page>
   );
 }

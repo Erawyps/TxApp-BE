@@ -1,7 +1,7 @@
 import { useRef, useEffect } from 'react';
 import { Button } from 'components/ui';
 
-export function SignaturePanel({ control, name }) {
+export function SignaturePanel({ onSave, penColor = '#000', backgroundColor = '#f9fafb', height = 150 }) {
   const canvasRef = useRef(null);
   const isDrawing = useRef(false);
   
@@ -10,15 +10,13 @@ export function SignaturePanel({ control, name }) {
     const ctx = canvas.getContext('2d');
     
     const resizeCanvas = () => {
-      const ratio = window.devicePixelRatio || 1;
-      canvas.width = canvas.offsetWidth * ratio;
-      canvas.height = canvas.offsetHeight * ratio;
-      canvas.style.width = '100%';
-      canvas.style.height = '100%';
-      ctx.scale(ratio, ratio);
-      ctx.strokeStyle = '#000000';
+      canvas.width = canvas.offsetWidth;
+      canvas.height = height;
+      ctx.strokeStyle = penColor;
       ctx.lineWidth = 2;
       ctx.lineCap = 'round';
+      ctx.fillStyle = backgroundColor;
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
     };
     
     resizeCanvas();
@@ -39,7 +37,7 @@ export function SignaturePanel({ control, name }) {
     
     const stopDrawing = () => {
       isDrawing.current = false;
-      control.setValue(name, canvas.toDataURL());
+      onSave(canvas.toDataURL());
     };
     
     canvas.addEventListener('mousedown', startDrawing);
@@ -47,35 +45,20 @@ export function SignaturePanel({ control, name }) {
     canvas.addEventListener('mouseup', stopDrawing);
     canvas.addEventListener('mouseleave', stopDrawing);
     
-    canvas.addEventListener('touchstart', (e) => {
-      e.preventDefault();
-      startDrawing(e.touches[0]);
-    });
-    
-    canvas.addEventListener('touchmove', (e) => {
-      e.preventDefault();
-      draw(e.touches[0]);
-    });
-    
-    canvas.addEventListener('touchend', stopDrawing);
-    
     return () => {
       canvas.removeEventListener('mousedown', startDrawing);
       canvas.removeEventListener('mousemove', draw);
       canvas.removeEventListener('mouseup', stopDrawing);
       canvas.removeEventListener('mouseleave', stopDrawing);
-      canvas.removeEventListener('touchstart', startDrawing);
-      canvas.removeEventListener('touchmove', draw);
-      canvas.removeEventListener('touchend', stopDrawing);
     };
-  }, [control, name]);
+  }, [onSave, penColor, backgroundColor, height]);
   
   const getCoordinates = (e) => {
     const canvas = canvasRef.current;
     const rect = canvas.getBoundingClientRect();
     return {
-      offsetX: (e.clientX - rect.left) * (canvas.width / rect.width),
-      offsetY: (e.clientY - rect.top) * (canvas.height / rect.height)
+      offsetX: e.clientX - rect.left,
+      offsetY: e.clientY - rect.top
     };
   };
   
@@ -83,18 +66,20 @@ export function SignaturePanel({ control, name }) {
     const canvas = canvasRef.current;
     const ctx = canvas.getContext('2d');
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    control.setValue(name, '');
+    ctx.fillStyle = backgroundColor;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    onSave(null);
   };
 
   return (
-    <div className="signature-panel">
-      <p>Signez ci-dessous :</p>
-      <div className="signature-container">
+    <div className="signature-panel space-y-2">
+      <div className="signature-container border rounded-lg overflow-hidden">
         <canvas 
           ref={canvasRef}
           style={{
-            border: '1px solid #ddd',
-            backgroundColor: '#f9f9f9',
+            width: '100%',
+            height: `${height}px`,
+            backgroundColor: backgroundColor,
             touchAction: 'none'
           }}
         />
@@ -102,6 +87,7 @@ export function SignaturePanel({ control, name }) {
       <Button 
         variant="outline"
         onClick={clearSignature}
+        className="w-full"
       >
         Effacer
       </Button>

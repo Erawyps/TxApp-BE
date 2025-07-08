@@ -30,16 +30,7 @@ export function FullForm({ chauffeurs, vehicules, control, onSwitchMode, onSubmi
         end: null
       },
       courses: [],
-      charges: [],
-      totals: {
-        recettes: 0,
-        charges: 0,
-        salaire: 0
-      },
-      validation: {
-        signature: null,
-        date_validation: null
-      }
+      charges: []
     }
   });
 
@@ -54,28 +45,28 @@ export function FullForm({ chauffeurs, vehicules, control, onSwitchMode, onSubmi
   });
 
   const handleFormSubmit = (data) => {
-  try {
-    // Calcul des totaux
-    const recettes = data.courses.reduce((sum, c) => sum + (Number(c.prix) || 0), 0);
-    const charges = data.charges.reduce((sum, c) => sum + (Number(c.montant) || 0), 0);
-    
-    // Règle de calcul du salaire
-    const base = Math.min(recettes, 180);
-    const surplus = Math.max(recettes - 180, 0);
-    const salaire = (base * 0.4) + (surplus * 0.3);
+    try {
+      // Calcul des totaux
+      const recettes = data.courses.reduce((sum, c) => sum + (Number(c.prix) || 0), 0);
+      const charges = data.charges.reduce((sum, c) => sum + (Number(c.montant) || 0), 0);
+      
+      // Règle de calcul du salaire
+      const base = Math.min(recettes, 180);
+      const surplus = Math.max(recettes - 180, 0);
+      const salaire = (base * 0.4) + (surplus * 0.3);
 
-    setValue('totals', { 
-      recettes: Number(recettes.toFixed(2)),
-      charges: Number(charges.toFixed(2)),
-      salaire: Number(salaire.toFixed(2))
-    });
+      setValue('totals', { 
+        recettes: Number(recettes.toFixed(2)),
+        charges: Number(charges.toFixed(2)),
+        salaire: Number(salaire.toFixed(2))
+      });
 
-    onSubmit(data);
-  } catch (error) {
-    console.error("Erreur lors de l'enregistrement:", error);
-    toast.error("Une erreur est survenue lors de l'enregistrement");
-  }
-};
+      onSubmit(data);
+    } catch (error) {
+      console.error("Erreur lors de l'enregistrement:", error);
+      toast.error("Une erreur est survenue lors de l'enregistrement");
+    }
+  };
 
   const handleReset = () => {
     reset();
@@ -83,20 +74,20 @@ export function FullForm({ chauffeurs, vehicules, control, onSwitchMode, onSubmi
   };
 
   return (
-    <div className="full-form-container">
-      <div className="form-header">
-        <h2>Feuille de Route Complète</h2>
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <h2 className="text-xl font-medium">Feuille de Route Complète</h2>
         <Button variant="outline" onClick={onSwitchMode}>
           Mode Conduite
         </Button>
       </div>
 
-      <form onSubmit={handleSubmit(handleFormSubmit)}>
+      <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-4">
         {/* Section En-tête */}
-        <Card>
-          <h3>Informations Générales</h3>
+        <Card className="p-4">
+          <h3 className="text-lg font-medium">Informations Générales</h3>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
             <Controller
               name="header.date"
               control={control}
@@ -163,11 +154,8 @@ export function FullForm({ chauffeurs, vehicules, control, onSwitchMode, onSubmi
           </div>
         </Card>
 
-        {/* Autres sections (Shift, Kilométrage, Courses, Charges, Validation) */}
-        {/* ... (similaire à ce que vous avez déjà) ... */}
-        
         {/* Actions */}
-        <div className="form-actions">
+        <div className="flex space-x-2">
           <Button type="button" variant="outline" onClick={handleReset}>
             Réinitialiser
           </Button>
