@@ -61,7 +61,7 @@ export default function FeuilleRouteApp() {
   };
 
   // Affichage des erreurs en mode développement
-  if (import.meta.env?.NODE_ENV === 'development' && Object.keys(errors).length > 0) {
+  if (import.meta.env.MODE === 'development' && Object.keys(errors).length > 0) {
     console.log('Erreurs de validation:', errors);
   }
 
