@@ -4,7 +4,7 @@ import { Select } from 'components/shared/form/Select';
 
 export function VehicleInfo({ vehicules, control, currentVehicle }) {
   return (
-    <Card className="vehicle-info">
+    <Card>
       <h3>Véhicule</h3>
       
       <Controller
@@ -21,11 +21,10 @@ export function VehicleInfo({ vehicules, control, currentVehicle }) {
             onChange={(value) => {
               const selected = vehicules.find(v => v.id === value);
               field.onChange(value);
-              // Mettre à jour toutes les infos du véhicule
               control.setValue('header.vehicule', {
                 id: selected.id,
-                plaque_immatriculation: selected.plaque_immatriculation,
-                numero_identification: selected.numero_identification,
+                plaque: selected.plaque_immatriculation,
+                numero: selected.numero_identification,
                 marque: selected.marque,
                 modele: selected.modele,
                 type_vehicule: selected.type_vehicule
@@ -38,28 +37,13 @@ export function VehicleInfo({ vehicules, control, currentVehicle }) {
       
       {currentVehicle && (
         <div className="vehicle-details">
-          <p><strong>Plaque:</strong> {currentVehicle.plaque_immatriculation}</p>
-          <p><strong>Numéro:</strong> {currentVehicle.numero_identification}</p>
+          <p><strong>Plaque:</strong> {currentVehicle.plaque}</p>
+          <p><strong>Numéro:</strong> {currentVehicle.numero}</p>
           {currentVehicle.type_vehicule && (
             <p><strong>Type:</strong> {currentVehicle.type_vehicule}</p>
           )}
         </div>
       )}
-      
-      <style>{`
-        .vehicle-info {
-          margin-bottom: 15px;
-        }
-        .vehicle-details {
-          margin-top: 10px;
-          padding: 10px;
-          background: #f5f5f5;
-          border-radius: 4px;
-        }
-        .vehicle-details p {
-          margin: 5px 0;
-        }
-      `}</style>
     </Card>
   );
 }

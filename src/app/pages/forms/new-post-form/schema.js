@@ -2,54 +2,150 @@ import * as Yup from 'yup';
 
 export const schema = Yup.object().shape({
   header: Yup.object().shape({
-    date: Yup.date().required('La date est requise'),
+    date: Yup.date()
+      .required('La date est requise')
+      .default(() => new Date()),
     chauffeur: Yup.object().shape({
-      id: Yup.string().required(),
-      nom: Yup.string().required(),
-      prenom: Yup.string().required(),
-      numero_badge: Yup.string().required()
+      id: Yup.string().required('Chauffeur requis'),
+      nom: Yup.string().required('Nom requis'),
+      prenom: Yup.string().required('Prénom requis'),
+      badge: Yup.string().required('Numéro de badge requis')
     }),
     vehicule: Yup.object().shape({
-      id: Yup.string().required(),
-      plaque_immatriculation: Yup.string().required(),
-      numero_identification: Yup.string().required()
+      id: Yup.string().required('Véhicule requis'),
+      plaque: Yup.string()
+        .required('Plaque requise')
+        .matches(/^[A-Z]{2}-[0-9]{3}-[A-Z]{2}$/, 'Format plaque invalide'),
+      numero: Yup.string().required('Numéro d\'identification requis')
     })
   }),
+
   shift: Yup.object().shape({
-    start: Yup.string().required(),
-    end: Yup.string().nullable(),
-    interruptions: Yup.number().min(0).nullable()
+    start: Yup.string()
+      .required('Heure de début requise')
+      .matches(/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/, 'Format HH:MM invalide'),
+    end: Yup.string()
+      .matches(/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/, 'Format HH:MM invalide')
+      .test(
+        'heure-superieure',
+        'L\'heure de fin doit être après l\'heure de début',
+        function(value) {
+          return !this.parent.start || !value || value > this.parent.start
+        }
+      ),
+    interruptions: Yup.number()
+      .min(0, 'Doit être positif')
+      .nullable()
   }),
+
   kilometers: Yup.object().shape({
-    start: Yup.number().required().min(0),
-    end: Yup.number().nullable().min(Yup.ref('start'))
+    start: Yup.number()
+      .required('Km de début requis')
+      .min(0, 'Doit être positif'),
+    end: Yup.number()
+      .min(Yup.ref('start'), 'Doit être supérieur au km de début')
+      .nullable()
   }),
+
   courses: Yup.array().of(
     Yup.object().shape({
       id: Yup.string().required(),
+      order: Yup.number().required(),
       depart: Yup.object().shape({
-        lieu: Yup.string().required(),
-        index: Yup.number().required().min(0),
-        heure: Yup.string().required()
+        lieu: Yup.string().required('Lieu de départ requis'),
+        index: Yup.number()
+          .required('Index départ requis')
+          .min(0, 'Doit être positif'),
+        heure: Yup.string()
+          .matches(/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/, 'Format HH:MM invalide')
+          .required('Heure départ requise')
       }),
       arrivee: Yup.object().shape({
-        lieu: Yup.string().required(),
-        index: Yup.number().required().min(Yup.ref('..depart.index'))
+        lieu: Yup.string().required('Lieu d\'arrivée requis'),
+        index: Yup.number()
+          .required('Index arrivée requis')
+          .min(Yup.ref('..depart.index'), 'Doit être supérieur à l\'index de départ'),
+        heure: Yup.string()
+          .matches(/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/, 'Format HH:MM invalide')
+          .nullable()
       }),
-      prix: Yup.number().required().min(0),
-      mode_paiement: Yup.string().required()
+      prix: Yup.number()
+        .required('Prix requis')
+        .min(0, 'Doit être positif'),
+      mode_paiement: Yup.string()
+        .required('Mode paiement requis')
+        .oneOf(['cash', 'bancontact', 'facture']),
+      client: Yup.string()
+        .when('mode_paiement', {
+          is: 'facture',
+          then: Yup.string().required('Client requis pour les factures')
+        }),
+      notes: Yup.string().nullable()
     })
   ),
+
   charges: Yup.array().of(
     Yup.object().shape({
       id: Yup.string().required(),
-      type: Yup.string().required(),
-      montant: Yup.number().required().min(0),
-      mode_paiement: Yup.string().required()
+      type: Yup.string()
+        .required('Type de charge requis')
+        .oneOf(['carburant', 'peage', 'entretien', 'carwash', 'divers']),
+      montant: Yup.number()
+        .required('Montant requis')
+        .min(0, 'Doit être positif'),
+      mode_paiement: Yup.string()
+        .required('Mode paiement requis')
+        .oneOf(['cash', 'bancontact']),
+      description: Yup.string().nullable(),
+      date: Yup.date().default(() => new Date())
     })
   ),
+
+  totals: Yup.object().shape({
+    recettes: Yup.number().min(0),
+    charges: Yup.number().min(0),
+    salaire: Yup.number().min(0)
+  }),
+
   validation: Yup.object().shape({
-    signature: Yup.string().required(),
-    date_validation: Yup.date().nullable()
+    signature: Yup.string().required('Signature requise'),
+    date_validation: Yup.date().default(() => new Date())
   })
 });
+
+export const defaultData = {
+  header: {
+    date: new Date(),
+    chauffeur: {
+      id: "CH001",
+      nom: "Tehou",
+      prenom: "Hasler",
+      badge: "TX-2023-001"
+    },
+    vehicule: {
+      id: "VH001",
+      plaque: "TX-AA-171",
+      numero: "10"
+    }
+  },
+  shift: {
+    start: "08:00",
+    end: null,
+    interruptions: 0
+  },
+  kilometers: {
+    start: 125000,
+    end: null
+  },
+  courses: [],
+  charges: [],
+  totals: {
+    recettes: 0,
+    charges: 0,
+    salaire: 0
+  },
+  validation: {
+    signature: "",
+    date_validation: null
+  }
+};

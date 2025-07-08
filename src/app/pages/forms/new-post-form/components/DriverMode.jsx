@@ -2,7 +2,7 @@ import { useFieldArray, useWatch } from 'react-hook-form';
 import { useState } from 'react';
 import { VehicleInfo } from './VehicleInfo';
 import { ShiftInfo } from './ShiftInfo';
-import { Card } from 'components/ui';
+import { Card, Button } from 'components/ui';
 import { ExpensesSection } from './ExpensesSection';
 import { QuickCourseForm } from './QuickCourseForm';
 import { ValidationStep } from './ValidationStep';
@@ -21,92 +21,58 @@ export function DriverMode({ chauffeur, vehicules, control, onSubmit, onSwitchMo
   const [activeTab, setActiveTab] = useState('shift');
   const watch = useWatch({ control });
 
-  const calculateTotals = () => {
-    const courses = watch('courses') || [];
-    const charges = watch('charges') || [];
-    
-    const recettes = courses.reduce((sum, c) => sum + (parseFloat(c.prix) || 0), 0);
-    const chargesTotal = charges.reduce((sum, c) => sum + (parseFloat(c.montant) || 0), 0);
-    
-    const base = Math.min(recettes, 180);
-    const surplus = Math.max(recettes - 180, 0);
-    const salaire = (base * 0.4) + (surplus * 0.3);
+  // Calcul des totaux
+  const totalRecettes = courseFields.reduce((sum, _, index) => {
+    return sum + (parseFloat(watch(`courses.${index}.prix`)) || 0);
+  }, 0);
 
-    return {
-      recettes,
-      charges: chargesTotal,
-      salaire
-    };
-  };
+  const totalCharges = chargeFields.reduce((sum, _, index) => {
+    return sum + (parseFloat(watch(`charges.${index}.montant`)) || 0);
+  }, 0);
 
-  const handleSubmit = async (data) => {
-    try {
-      const totals = calculateTotals();
-      
-      // Préparer les données finales
-      const formData = {
-        ...data,
-        totals,
-        validation: {
-          ...data.validation,
-          date_validation: new Date().toISOString()
-        }
-      };
-
-      console.log("Données validées:", formData);
-      onSubmit(formData);
-    } catch (error) {
-      console.error("Erreur lors de la validation:", error);
-      alert(`Erreur: ${error.message}`);
-    }
-  };
-
-  const totals = calculateTotals();
+  // Règle de calcul du salaire
+  const base = Math.min(totalRecettes, 180);
+  const surplus = Math.max(totalRecettes - 180, 0);
+  const salaire = (base * 0.4) + (surplus * 0.3);
 
   return (
     <div className="driver-mode">
-      {/* Header avec infos chauffeur */}
       <Card className="driver-header">
         <h2>Feuille de Route - {chauffeur.prenom} {chauffeur.nom}</h2>
         <div className="driver-info">
           <div>
             <span>Badge: {chauffeur.numero_badge}</span>
             <span>Contrat: {chauffeur.type_contrat}</span>
-            {chauffeur.taux_commission && (
-              <span>Commission: {chauffeur.taux_commission}%</span>
-            )}
           </div>
-          <button onClick={onSwitchMode} className="switch-mode">
+          <Button variant="outline" onClick={onSwitchMode}>
             Mode complet
-          </button>
+          </Button>
         </div>
       </Card>
 
-      {/* Navigation par onglets */}
       <div className="driver-tabs">
-        <button 
-          className={activeTab === 'shift' ? 'active' : ''}
+        <Button 
+          variant={activeTab === 'shift' ? 'primary' : 'ghost'}
           onClick={() => setActiveTab('shift')}
         >
           Début Shift
-        </button>
-        <button 
-          className={activeTab === 'courses' ? 'active' : ''}
+        </Button>
+        <Button 
+          variant={activeTab === 'courses' ? 'primary' : 'ghost'}
           onClick={() => setActiveTab('courses')}
           disabled={!watch('shift.start')}
         >
           Courses ({courseFields.length})
-        </button>
-        <button 
-          className={activeTab === 'validation' ? 'active' : ''}
+        </Button>
+        <Button 
+          variant={activeTab === 'validation' ? 'primary' : 'ghost'}
           onClick={() => setActiveTab('validation')}
           disabled={!watch('shift.start')}
         >
           Fin Shift
-        </button>
+        </Button>
       </div>
 
-      {/* Contenu des onglets */}
       <div className="driver-content">
         {activeTab === 'shift' && (
           <>
@@ -115,7 +81,6 @@ export function DriverMode({ chauffeur, vehicules, control, onSubmit, onSwitchMo
               control={control}
               currentVehicle={watch('header.vehicule')}
             />
-            
             <ShiftInfo 
               control={control}
               onStartShift={() => setActiveTab('courses')}
@@ -134,7 +99,7 @@ export function DriverMode({ chauffeur, vehicules, control, onSubmit, onSwitchMo
                 };
                 appendCourse(newCourse);
               }}
-              currentLocation={chauffeur.currentLocation || 'Unknown'}
+              currentLocation={chauffeur.currentLocation}
             />
             
             <ExpensesSection 
@@ -152,15 +117,15 @@ export function DriverMode({ chauffeur, vehicules, control, onSubmit, onSwitchMo
               <h3>Récapitulatif</h3>
               <div className="total-row">
                 <span>Total Recettes:</span>
-                <span>{totals.recettes.toFixed(2)} €</span>
+                <span>{totalRecettes.toFixed(2)} €</span>
               </div>
               <div className="total-row">
                 <span>Total Charges:</span>
-                <span>{totals.charges.toFixed(2)} €</span>
+                <span>{totalCharges.toFixed(2)} €</span>
               </div>
               <div className="total-row highlight">
                 <span>Salaire estimé:</span>
-                <span>{totals.salaire.toFixed(2)} €</span>
+                <span>{salaire.toFixed(2)} €</span>
               </div>
             </Card>
           </>
@@ -168,94 +133,16 @@ export function DriverMode({ chauffeur, vehicules, control, onSubmit, onSwitchMo
 
         {activeTab === 'validation' && (
           <ValidationStep 
-            onSubmit={handleSubmit}
+            onSubmit={onSubmit}
             control={control}
-            totals={totals}
+            totals={{
+              recettes: totalRecettes,
+              charges: totalCharges,
+              salaire: salaire
+            }}
           />
         )}
       </div>
-
-      {/* Styles */}
-      <style>{`
-        .driver-mode {
-          max-width: 100%;
-          padding: 10px;
-        }
-        .driver-header {
-          background: #2c3e50;
-          color: white;
-          padding: 15px;
-          margin-bottom: 15px;
-        }
-        .driver-header h2 {
-          margin: 0;
-          font-size: 1.2rem;
-        }
-        .driver-info {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          margin-top: 10px;
-          font-size: 0.9rem;
-        }
-        .driver-info div {
-          display: flex;
-          gap: 15px;
-        }
-        .switch-mode {
-          background: transparent;
-          color: white;
-          border: 1px solid white;
-          padding: 5px 10px;
-          border-radius: 4px;
-          cursor: pointer;
-        }
-        .driver-tabs {
-          display: flex;
-          margin-bottom: 15px;
-          border-bottom: 1px solid #ddd;
-        }
-        .driver-tabs button {
-          flex: 1;
-          padding: 10px;
-          border: none;
-          background: none;
-          cursor: pointer;
-          font-weight: 500;
-          border-bottom: 3px solid transparent;
-        }
-        .driver-tabs button.active {
-          border-bottom: 3px solid #3498db;
-          color: #3498db;
-        }
-        .driver-tabs button:disabled {
-          opacity: 0.5;
-          cursor: not-allowed;
-        }
-        .driver-content {
-          margin-bottom: 20px;
-        }
-        .totals-card {
-          margin-top: 15px;
-        }
-        .total-row {
-          display: flex;
-          justify-content: space-between;
-          padding: 8px 0;
-          border-bottom: 1px solid #eee;
-        }
-        .total-row.highlight {
-          font-weight: bold;
-          color: #2c3e50;
-        }
-        
-        @media (max-width: 768px) {
-          .driver-info div {
-            flex-direction: column;
-            gap: 5px;
-          }
-        }
-      `}</style>
     </div>
   );
 }
