@@ -1,9 +1,8 @@
-import { useForm, useFieldArray } from 'react-hook-form';
+import { useForm, useFieldArray, Controller } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import { schema } from '../schema';
 import { Button, Card, Input, Select } from "components/ui";
 import { toast } from "sonner";
-
 
 export function FullForm({ chauffeurs, vehicules, control, onSwitchMode, onSubmit }) {
   const { 
@@ -15,8 +14,8 @@ export function FullForm({ chauffeurs, vehicules, control, onSwitchMode, onSubmi
     defaultValues: {
       header: {
         date: new Date(),
-        chauffeur: null,
-        vehicule: null
+        chauffeur: { id: "CH001" },
+        vehicule: { id: "VH001" }
       },
       shift: {
         start: "",
@@ -38,7 +37,8 @@ export function FullForm({ chauffeurs, vehicules, control, onSwitchMode, onSubmi
   const handleFormSubmit = (data) => {
     try {
       onSubmit(data);
-    } catch {
+    } catch (error) {
+      console.error('Erreur lors de la soumission:', error);
       toast.error("Erreur lors de l'enregistrement");
     }
   };
@@ -66,24 +66,38 @@ export function FullForm({ chauffeurs, vehicules, control, onSwitchMode, onSubmi
               />
             </div>
             
-            <Select
-              label="Chauffeur"
-              options={chauffeurs.map(c => ({
-                value: c.id,
-                label: `${c.prenom} ${c.nom}`
-              }))}
-              {...register("header.chauffeur.id")}
+            <Controller
+              name="header.chauffeur.id"
+              control={control}
+              render={({ field, fieldState: { error } }) => (
+                <Select
+                  {...field}
+                  label="Chauffeur"
+                  options={chauffeurs.map(c => ({
+                    value: c.id,
+                    label: `${c.prenom} ${c.nom}`
+                  }))}
+                  error={error?.message}
+                />
+              )}
             />
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-            <Select
-              label="Véhicule"
-              options={vehicules.map(v => ({
-                value: v.id,
-                label: `${v.plaque_immatriculation}`
-              }))}
-              {...register("header.vehicule.id")}
+            <Controller
+              name="header.vehicule.id"
+              control={control}
+              render={({ field, fieldState: { error } }) => (
+                <Select
+                  {...field}
+                  label="Véhicule"
+                  options={vehicules.map(v => ({
+                    value: v.id,
+                    label: `${v.plaque_immatriculation}`
+                  }))}
+                  error={error?.message}
+                />
+              )}
             />
 
             <Input

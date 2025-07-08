@@ -20,8 +20,10 @@ export const schema = Yup.object().shape({
   kilometers: Yup.object().shape({
     start: Yup.number().min(0).required('Kilométrage de départ requis'),
     end: Yup.number().min(0).nullable()
-      .when('start', (start, schema) => {
-        return start ? schema.min(start, 'Le kilométrage de fin doit être supérieur au départ') : schema;
+      .when('start', {
+        is: (start) => start != null,
+        then: (schema) => schema.min(Yup.ref('start'), 'Le kilométrage de fin doit être supérieur au départ'),
+        otherwise: (schema) => schema
       })
   }),
 

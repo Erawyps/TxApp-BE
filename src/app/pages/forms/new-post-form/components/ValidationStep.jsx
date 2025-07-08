@@ -1,5 +1,6 @@
 import { Card, Button, Input } from 'components/ui';
 import { useState } from 'react';
+import { Controller } from 'react-hook-form';
 
 export function ValidationStep({ onSubmit, control, totals }) {
   const [signature, setSignature] = useState(null);
@@ -25,22 +26,43 @@ export function ValidationStep({ onSubmit, control, totals }) {
     <Card className="p-4 space-y-4">
       <h3 className="text-lg font-medium">Fin du Shift</h3>
       
-      <Input
-        label="Kilométrage final"
-        type="number"
-        {...control.register('kilometers.end')}
+      <Controller
+        name="kilometers.end"
+        control={control}
+        render={({ field, fieldState: { error } }) => (
+          <Input
+            {...field}
+            label="Kilométrage final"
+            type="number"
+            error={error?.message}
+          />
+        )}
       />
       
-      <Input
-        label="Heure de fin"
-        type="time"
-        {...control.register('shift.end')}
+      <Controller
+        name="shift.end"
+        control={control}
+        render={({ field, fieldState: { error } }) => (
+          <Input
+            {...field}
+            label="Heure de fin"
+            type="time"
+            error={error?.message}
+          />
+        )}
       />
       
-      <Input
-        label="Interruptions (minutes)"
-        type="number"
-        {...control.register('shift.interruptions')}
+      <Controller
+        name="shift.interruptions"
+        control={control}
+        render={({ field, fieldState: { error } }) => (
+          <Input
+            {...field}
+            label="Interruptions (minutes)"
+            type="number"
+            error={error?.message}
+          />
+        )}
       />
       
       <div className="space-y-2 p-3 bg-gray-50 rounded-lg">
