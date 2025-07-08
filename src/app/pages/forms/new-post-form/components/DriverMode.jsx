@@ -21,7 +21,6 @@ export function DriverMode({ chauffeur, vehicules, control, onSubmit, onSwitchMo
   const [activeTab, setActiveTab] = useState('shift');
   const watch = useWatch({ control });
 
-  // Calcul des totaux
   const totalRecettes = courseFields.reduce((sum, _, index) => {
     return sum + (parseFloat(watch(`courses.${index}.prix`)) || 0);
   }, 0);
@@ -30,30 +29,32 @@ export function DriverMode({ chauffeur, vehicules, control, onSubmit, onSwitchMo
     return sum + (parseFloat(watch(`charges.${index}.montant`)) || 0);
   }, 0);
 
-  // Règle de calcul du salaire
+  // Calcul du salaire selon la règle mixte 40/30
   const base = Math.min(totalRecettes, 180);
   const surplus = Math.max(totalRecettes - 180, 0);
   const salaire = (base * 0.4) + (surplus * 0.3);
 
   return (
-    <div className="driver-mode">
-      <Card className="driver-header">
-        <h2>Feuille de Route - {chauffeur.prenom} {chauffeur.nom}</h2>
-        <div className="driver-info">
-          <div>
-            <span>Badge: {chauffeur.numero_badge}</span>
-            <span>Contrat: {chauffeur.type_contrat}</span>
-          </div>
+    <div className="driver-mode space-y-4">
+      <Card className="driver-header p-4">
+        <div className="flex items-center justify-between">
+          <h2 className="text-xl font-medium">Feuille de Route - {chauffeur.prenom} {chauffeur.nom}</h2>
           <Button variant="outline" onClick={onSwitchMode}>
             Mode complet
           </Button>
         </div>
+        <div className="mt-2 text-sm text-gray-600 dark:text-dark-200">
+          <span>Badge: {chauffeur.numero_badge}</span>
+          <span className="mx-2">•</span>
+          <span>Contrat: {chauffeur.type_contrat}</span>
+        </div>
       </Card>
 
-      <div className="driver-tabs">
+      <div className="flex space-x-2">
         <Button 
           variant={activeTab === 'shift' ? 'primary' : 'ghost'}
           onClick={() => setActiveTab('shift')}
+          className="flex-1"
         >
           Début Shift
         </Button>
@@ -61,6 +62,7 @@ export function DriverMode({ chauffeur, vehicules, control, onSubmit, onSwitchMo
           variant={activeTab === 'courses' ? 'primary' : 'ghost'}
           onClick={() => setActiveTab('courses')}
           disabled={!watch('shift.start')}
+          className="flex-1"
         >
           Courses ({courseFields.length})
         </Button>
@@ -68,6 +70,7 @@ export function DriverMode({ chauffeur, vehicules, control, onSubmit, onSwitchMo
           variant={activeTab === 'validation' ? 'primary' : 'ghost'}
           onClick={() => setActiveTab('validation')}
           disabled={!watch('shift.start')}
+          className="flex-1"
         >
           Fin Shift
         </Button>
@@ -75,7 +78,7 @@ export function DriverMode({ chauffeur, vehicules, control, onSubmit, onSwitchMo
 
       <div className="driver-content">
         {activeTab === 'shift' && (
-          <>
+          <div className="space-y-4">
             <VehicleInfo 
               vehicules={vehicules} 
               control={control}
@@ -85,11 +88,11 @@ export function DriverMode({ chauffeur, vehicules, control, onSubmit, onSwitchMo
               control={control}
               onStartShift={() => setActiveTab('courses')}
             />
-          </>
+          </div>
         )}
 
         {activeTab === 'courses' && (
-          <>
+          <div className="space-y-4">
             <QuickCourseForm 
               onAddCourse={(course) => {
                 const newCourse = {
@@ -113,22 +116,24 @@ export function DriverMode({ chauffeur, vehicules, control, onSubmit, onSwitchMo
               onRemoveCharge={removeCharge}
             />
             
-            <Card className="totals-card">
-              <h3>Récapitulatif</h3>
-              <div className="total-row">
-                <span>Total Recettes:</span>
-                <span>{totalRecettes.toFixed(2)} €</span>
-              </div>
-              <div className="total-row">
-                <span>Total Charges:</span>
-                <span>{totalCharges.toFixed(2)} €</span>
-              </div>
-              <div className="total-row highlight">
-                <span>Salaire estimé:</span>
-                <span>{salaire.toFixed(2)} €</span>
+            <Card className="p-4">
+              <h3 className="text-lg font-medium">Récapitulatif</h3>
+              <div className="mt-3 space-y-2">
+                <div className="flex justify-between">
+                  <span>Total Recettes:</span>
+                  <span className="font-medium">{totalRecettes.toFixed(2)} €</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Total Charges:</span>
+                  <span className="font-medium">{totalCharges.toFixed(2)} €</span>
+                </div>
+                <div className="flex justify-between text-primary-600 dark:text-primary-400">
+                  <span>Salaire estimé:</span>
+                  <span className="font-bold">{salaire.toFixed(2)} €</span>
+                </div>
               </div>
             </Card>
-          </>
+          </div>
         )}
 
         {activeTab === 'validation' && (
