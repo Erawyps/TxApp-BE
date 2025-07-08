@@ -51,7 +51,25 @@ export default function FeuilleRouteApp() {
 
   const handleSubmitForm = (data) => {
     try {
+      // Validation des données avant soumission
       console.log('Feuille de route validée:', data);
+      
+      // Vérification des champs obligatoires
+      if (!data.header?.chauffeur?.id) {
+        toast.error('Chauffeur requis');
+        return;
+      }
+      
+      if (!data.header?.vehicule?.id) {
+        toast.error('Véhicule requis');
+        return;
+      }
+      
+      if (!data.kilometers?.start && data.kilometers?.start !== 0) {
+        toast.error('Kilométrage de départ requis');
+        return;
+      }
+      
       toast.success('Feuille de route enregistrée avec succès');
       reset(defaultData);
     } catch (error) {
