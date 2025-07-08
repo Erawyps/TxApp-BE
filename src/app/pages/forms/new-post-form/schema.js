@@ -1,5 +1,6 @@
 import * as Yup from 'yup';
 
+// Schéma pour la feuille de route (remplace le schéma blog)
 export const schema = Yup.object().shape({
   header: Yup.object().shape({
     date: Yup.date().default(() => new Date()),

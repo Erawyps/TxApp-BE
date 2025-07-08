@@ -1,38 +1,17 @@
-import { useForm, useFieldArray, Controller } from 'react-hook-form';
-import { yupResolver } from '@hookform/resolvers/yup';
-import { schema } from '../schema';
-import { Button, Card, Input, Select } from "components/ui";
+import { useFieldArray, Controller } from 'react-hook-form';
+import { Button, Card, Input } from "components/ui";
 import { toast } from "sonner";
 
 export function FullForm({ chauffeurs, vehicules, control, onSwitchMode, onSubmit }) {
-  const { 
-    register, 
-    handleSubmit, 
-    reset
-  } = useForm({
-    resolver: yupResolver(schema),
-    defaultValues: {
-      header: {
-        date: new Date(),
-        chauffeur: { id: "CH001" },
-        vehicule: { id: "VH001" }
-      },
-      shift: {
-        start: "",
-        end: "",
-        interruptions: 0
-      },
-      kilometers: {
-        start: 0,
-        end: null
-      },
-      courses: [],
-      charges: []
-    }
+  useFieldArray({
+    control,
+    name: "courses"
   });
 
-  useFieldArray({ control, name: "courses" });
-  useFieldArray({ control, name: "charges" });
+  useFieldArray({
+    control,
+    name: "charges"
+  });
 
   const handleFormSubmit = (data) => {
     try {
@@ -52,33 +31,46 @@ export function FullForm({ chauffeurs, vehicules, control, onSwitchMode, onSubmi
         </Button>
       </div>
 
-      <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-4">
+      <div className="space-y-4">
         <Card className="p-4">
           <h3 className="text-lg font-medium">Informations Générales</h3>
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-            <div>
-              <label className="block mb-1">Date</label>
-              <input 
-                type="date" 
-                className="w-full p-2 border rounded"
-                {...register("header.date")}
-              />
-            </div>
+            <Controller
+              name="header.date"
+              control={control}
+              render={({ field }) => (
+                <div>
+                  <label className="block mb-1">Date</label>
+                  <input 
+                    type="date" 
+                    className="w-full p-2 border rounded"
+                    value={field.value ? new Date(field.value).toISOString().split('T')[0] : ''}
+                    onChange={(e) => field.onChange(new Date(e.target.value))}
+                  />
+                </div>
+              )}
+            />
             
             <Controller
               name="header.chauffeur.id"
               control={control}
               render={({ field, fieldState: { error } }) => (
-                <Select
-                  {...field}
-                  label="Chauffeur"
-                  options={chauffeurs.map(c => ({
-                    value: c.id,
-                    label: `${c.prenom} ${c.nom}`
-                  }))}
-                  error={error?.message}
-                />
+                <div>
+                  <label className="block mb-1">Chauffeur</label>
+                  <select
+                    value={field.value}
+                    onChange={(e) => field.onChange(e.target.value)}
+                    className="w-full p-2 border rounded"
+                  >
+                    {chauffeurs.map(c => (
+                      <option key={c.id} value={c.id}>
+                        {c.prenom} {c.nom}
+                      </option>
+                    ))}
+                  </select>
+                  {error && <span className="text-red-500 text-sm">{error.message}</span>}
+                </div>
               )}
             />
           </div>
@@ -88,35 +80,116 @@ export function FullForm({ chauffeurs, vehicules, control, onSwitchMode, onSubmi
               name="header.vehicule.id"
               control={control}
               render={({ field, fieldState: { error } }) => (
-                <Select
-                  {...field}
-                  label="Véhicule"
-                  options={vehicules.map(v => ({
-                    value: v.id,
-                    label: `${v.plaque_immatriculation}`
-                  }))}
-                  error={error?.message}
-                />
+                <div>
+                  <label className="block mb-1">Véhicule</label>
+                  <select
+                    value={field.value}
+                    onChange={(e) => field.onChange(e.target.value)}
+                    className="w-full p-2 border rounded"
+                  >
+                    {vehicules.map(v => (
+                      <option key={v.id} value={v.id}>
+                        {v.plaque_immatriculation} - {v.marque} {v.modele}
+                      </option>
+                    ))}
+                  </select>
+                  {error && <span className="text-red-500 text-sm">{error.message}</span>}
+                </div>
               )}
             />
 
-            <Input
-              label="Interruptions (minutes)"
-              type="number"
-              {...register("shift.interruptions")}
+            <Controller
+              name="shift.interruptions"
+              control={control}
+              render={({ field }) => (
+                <Input
+                  label="Interruptions (minutes)"
+                  type="number"
+                  value={field.value}
+                  onChange={(e) => field.onChange(Number(e.target.value))}
+                />
+              )}
+            />
+          </div>
+        </Card>
+
+        <Card className="p-4">
+          <h3 className="text-lg font-medium">Shift</h3>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+            <Controller
+              name="shift.start"
+              control={control}
+              render={({ field }) => (
+                <Input
+                  label="Heure de début"
+                  type="time"
+                  value={field.value}
+                  onChange={(e) => field.onChange(e.target.value)}
+                />
+              )}
+            />
+            
+            <Controller
+              name="shift.end"
+              control={control}
+              render={({ field }) => (
+                <Input
+                  label="Heure de fin"
+                  type="time"
+                  value={field.value}
+                  onChange={(e) => field.onChange(e.target.value)}
+                />
+              )}
+            />
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+            <Controller
+              name="kilometers.start"
+              control={control}
+              render={({ field }) => (
+                <Input
+                  label="Kilométrage début"
+                  type="number"
+                  value={field.value}
+                  onChange={(e) => field.onChange(Number(e.target.value))}
+                />
+              )}
+            />
+            
+            <Controller
+              name="kilometers.end"
+              control={control}
+              render={({ field }) => (
+                <Input
+                  label="Kilométrage fin"
+                  type="number"
+                  value={field.value || ''}
+                  onChange={(e) => field.onChange(Number(e.target.value))}
+                />
+              )}
             />
           </div>
         </Card>
 
         <div className="flex space-x-2">
-          <Button type="button" variant="outline" onClick={() => reset()}>
+          <Button 
+            type="button" 
+            variant="outline" 
+            onClick={() => control.reset()}
+          >
             Réinitialiser
           </Button>
-          <Button type="submit" color="primary">
+          <Button 
+            type="button" 
+            color="primary"
+            onClick={() => handleFormSubmit(control.getValues())}
+          >
             Enregistrer
           </Button>
         </div>
-      </form>
+      </div>
     </div>
   );
 }
