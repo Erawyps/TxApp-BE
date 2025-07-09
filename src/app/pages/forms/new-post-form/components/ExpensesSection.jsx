@@ -2,45 +2,68 @@ import { useState } from 'react';
 import { Card, Button, Input } from 'components/ui';
 
 export function ExpensesSection({ onAddExpense }) {
-  const [type, setType] = useState('carburant');
-  const [montant, setMontant] = useState('');
-  const [modePaiement, setModePaiement] = useState('cash');
-  const [description, setDescription] = useState('');
+  const [form, setForm] = useState({
+    type: 'carburant',
+    montant: '',
+    mode_paiement: 'cash',
+    description: ''
+  });
+
+  const expenseTypes = [
+    { value: 'carburant', label: 'Carburant' },
+    { value: 'peage', label: 'Péage' },
+    { value: 'entretien', label: 'Entretien' },
+    { value: 'carwash', label: 'Nettoyage' },
+    { value: 'divers', label: 'Divers' }
+  ];
+
+  const paymentMethods = [
+    { value: 'cash', label: 'Espèces' },
+    { value: 'bancontact', label: 'Bancontact' }
+  ];
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (!montant) return;
+    if (!form.montant || isNaN(parseFloat(form.montant))) return;
     
     onAddExpense({
-      type,
-      montant: parseFloat(montant),
-      mode_paiement: modePaiement,
-      description,
+      type: form.type,
+      montant: parseFloat(form.montant),
+      mode_paiement: form.mode_paiement,
+      description: form.description,
       date: new Date().toISOString()
     });
     
-    setMontant('');
-    setDescription('');
+    setForm({
+      type: 'carburant',
+      montant: '',
+      mode_paiement: 'cash',
+      description: ''
+    });
   };
 
   return (
-    <Card className="p-4">
-      <h3 className="text-lg font-medium">Nouvelle Dépense</h3>
+    <Card className="p-5">
+      <h3 className="text-lg font-semibold text-gray-800 dark:text-dark-100 mb-4">
+        Nouvelle Dépense
+      </h3>
       
-      <form onSubmit={handleSubmit} className="mt-4 space-y-4">
+      <form onSubmit={handleSubmit} className="space-y-4">
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="block mb-1 text-sm font-medium text-gray-700 dark:text-dark-300">Type</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-dark-300 mb-1">
+              Type de dépense
+            </label>
             <select
-              value={type}
-              onChange={(e) => setType(e.target.value)}
+              value={form.type}
+              onChange={(e) => setForm({...form, type: e.target.value})}
               className="w-full p-2 border rounded-lg bg-white dark:bg-dark-800 text-gray-800 dark:text-dark-100 focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
             >
-              <option value="carburant">Carburant</option>
-              <option value="peage">Péage</option>
-              <option value="entretien">Entretien</option>
-              <option value="carwash">Carwash</option>
-              <option value="divers">Divers</option>
+              {expenseTypes.map((type) => (
+                <option key={type.value} value={type.value}>
+                  {type.label}
+                </option>
+              ))}
             </select>
           </div>
           
@@ -48,36 +71,44 @@ export function ExpensesSection({ onAddExpense }) {
             label="Montant (€)"
             type="number"
             step="0.01"
-            value={montant}
-            onChange={(e) => setMontant(e.target.value)}
+            min="0"
+            value={form.montant}
+            onChange={(e) => setForm({...form, montant: e.target.value})}
             required
-            className="[&>input]:bg-white dark:[&>input]:bg-dark-800"
           />
         </div>
         
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="block mb-1 text-sm font-medium text-gray-700 dark:text-dark-300">Paiement</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-dark-300 mb-1">
+              Mode de paiement
+            </label>
             <select
-              value={modePaiement}
-              onChange={(e) => setModePaiement(e.target.value)}
+              value={form.mode_paiement}
+              onChange={(e) => setForm({...form, mode_paiement: e.target.value})}
               className="w-full p-2 border rounded-lg bg-white dark:bg-dark-800 text-gray-800 dark:text-dark-100 focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
             >
-              <option value="cash">Cash</option>
-              <option value="bancontact">Bancontact</option>
+              {paymentMethods.map((method) => (
+                <option key={method.value} value={method.value}>
+                  {method.label}
+                </option>
+              ))}
             </select>
           </div>
           
           <Input
-            label="Description"
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            className="[&>input]:bg-white dark:[&>input]:bg-dark-800"
+            label="Description (optionnel)"
+            value={form.description}
+            onChange={(e) => setForm({...form, description: e.target.value})}
           />
         </div>
         
-        <Button type="submit" className="w-full" color="primary">
-          Ajouter Dépense
+        <Button 
+          type="submit" 
+          className="w-full mt-2"
+          variant="primary"
+        >
+          Enregistrer la dépense
         </Button>
       </form>
     </Card>
