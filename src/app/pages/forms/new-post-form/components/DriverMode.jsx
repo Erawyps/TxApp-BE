@@ -9,7 +9,15 @@ import { ExpensesSection } from './ExpensesSection';
 import { QuickCourseForm } from './QuickCourseForm';
 import { ValidationStep } from './ValidationStep';
 import { toast } from 'sonner';
-import {  ArrowTrendingUpIcon, ArrowTrendingDownIcon, ReceiptIcon, CheckIcon, ArrowRightIcon, DevicePhoneMobileIcon, BanknotesIcon } from '@heroicons/react/24/outline';
+import { 
+  ArrowTrendingUpIcon, 
+  ArrowTrendingDownIcon, 
+  ReceiptIcon, 
+  CheckIcon, 
+  ArrowRightIcon, 
+  DevicePhoneMobileIcon,
+  BanknotesIcon 
+} from '@heroicons/react/24/outline';
 
 export function DriverMode({ chauffeur, vehicules, control, onSubmit, onSwitchMode }) {
   const { fields: courseFields, append: appendCourse } = useFieldArray({
