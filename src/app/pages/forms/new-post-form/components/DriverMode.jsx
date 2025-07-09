@@ -11,8 +11,7 @@ import { ValidationStep } from './ValidationStep';
 import { toast } from 'sonner';
 import { 
   ArrowTrendingUpIcon, 
-  ArrowTrendingDownIcon, 
-  ReceiptIcon, 
+  ArrowTrendingDownIcon,
   CheckIcon, 
   ArrowRightIcon, 
   DevicePhoneMobileIcon,
@@ -83,7 +82,7 @@ export function DriverMode({ chauffeur, vehicules, control, onSubmit, onSwitchMo
 
   const tabs = [
     { label: "Début", icon: <ArrowRightIcon className="h-5 w-5" /> },
-    { label: "Courses", icon: <ReceiptIcon className="h-5 w-5" />, badge: courseFields.length },
+    { label: "Courses",  badge: courseFields.length },
     { label: "Fin", icon: <CheckIcon className="h-5 w-5" /> }
   ];
 
