@@ -1,6 +1,7 @@
 // FullForm.jsx
 import { useFieldArray, Controller } from 'react-hook-form';
-import { Button, Card, Input, Select, TabGroup, TabItem } from "components/ui";
+import { Button, Card, Input, Select } from "components/ui";
+import { TabGroup, TabItem } from "components/ui/Tabs";
 import { toast } from "sonner";
 import { Page } from "components/shared/Page";
 import { useState } from 'react';
