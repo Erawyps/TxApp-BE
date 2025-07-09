@@ -8,6 +8,7 @@ import { QuickCourseForm } from './QuickCourseForm';
 import { ValidationStep } from './ValidationStep';
 import { CourseList } from './CourseList';
 import { ExpenseList } from './ExpenseList';
+import { SummaryCard } from './SummaryCard';
 import clsx from 'clsx';
 
 export function DriverMode({ chauffeur, vehicules, control, onSubmit, onSwitchMode }) {
@@ -33,6 +34,7 @@ export function DriverMode({ chauffeur, vehicules, control, onSubmit, onSwitchMo
     }
   });
 
+  // Fonction helper sécurisée pour récupérer les valeurs
   const safeGetValue = (path, defaultValue = 0) => {
     try {
       const keys = path.split('.');
@@ -53,32 +55,34 @@ export function DriverMode({ chauffeur, vehicules, control, onSubmit, onSwitchMo
     }
   };
 
+  // Calculs des totaux
   const totalRecettes = courseFields.reduce((sum, _, index) => {
     const prix = safeGetValue(`courses.${index}.prix`, 0);
-    const numericPrix = typeof prix === 'number' ? prix : parseFloat(prix) || 0;
-    return sum + numericPrix;
+    return sum + (typeof prix === 'number' ? prix : parseFloat(prix) || 0);
   }, 0);
 
   const totalCharges = chargeFields.reduce((sum, _, index) => {
     const montant = safeGetValue(`charges.${index}.montant`, 0);
-    const numericMontant = typeof montant === 'number' ? montant : parseFloat(montant) || 0;
-    return sum + numericMontant;
+    return sum + (typeof montant === 'number' ? montant : parseFloat(montant) || 0);
   }, 0);
 
   const base = Math.min(totalRecettes, 180);
   const surplus = Math.max(totalRecettes - 180, 0);
   const salaire = (base * 0.4) + (surplus * 0.3);
 
+  // Gestion des erreurs de données manquantes
   if (!chauffeur || !vehicules || vehicules.length === 0) {
     return (
-      <Card className="p-4">
-        <div className="text-center text-red-500">
-          Erreur: Données manquantes (chauffeur ou véhicules)
+      <Card className="p-6 text-center">
+        <div className="text-red-500 dark:text-red-400">
+          <p className="text-lg font-medium">Données manquantes</p>
+          <p className="mt-2">Veuillez sélectionner un chauffeur et un véhicule</p>
         </div>
       </Card>
     );
   }
 
+  // Handlers
   const handleAddCourse = (course) => {
     try {
       appendCourse({
@@ -101,81 +105,64 @@ export function DriverMode({ chauffeur, vehicules, control, onSubmit, onSwitchMo
     }
   };
 
-  const handleRemoveCharge = (index) => {
-    try {
-      removeCharge(index);
-    } catch (error) {
-      console.error('Erreur lors de la suppression de la charge:', error);
-    }
-  };
-
   return (
-    <div className="space-y-4">
-      <Card className="p-4">
+    <div className="space-y-6">
+      {/* Header */}
+      <Card className="p-5">
         <div className="flex items-center justify-between">
-          <h2 className="text-xl font-medium">
-            Feuille de Route - {chauffeur.prenom} {chauffeur.nom}
-          </h2>
-          <Button variant="outline" onClick={onSwitchMode}>
+          <div>
+            <h2 className="text-xl font-semibold text-gray-800 dark:text-dark-100">
+              Feuille de Route - {chauffeur.prenom} {chauffeur.nom}
+            </h2>
+            <div className="mt-1 flex items-center space-x-4 text-sm text-gray-600 dark:text-dark-300">
+              <span>Badge: {chauffeur.numero_badge}</span>
+              <span>•</span>
+              <span>Contrat: {chauffeur.type_contrat}</span>
+            </div>
+          </div>
+          <Button 
+            variant="outlined" 
+            onClick={onSwitchMode}
+            className="border-gray-300 dark:border-dark-500"
+          >
             Mode complet
           </Button>
         </div>
-        <div className="mt-2 text-sm text-gray-600 dark:text-dark-300">
-          <span>Badge: {chauffeur.numero_badge}</span>
-          <span className="mx-2">•</span>
-          <span>Contrat: {chauffeur.type_contrat}</span>
-        </div>
       </Card>
 
-      <div className="flex space-x-2 border-b-2 border-gray-200 dark:border-dark-500">
-        <Button 
-          variant={activeTab === 'shift' ? 'primary' : 'ghost'}
-          onClick={() => setActiveTab('shift')}
-          className={clsx(
-            "relative flex items-center justify-center px-4 py-2 font-medium transition-colors",
-            activeTab === 'shift' 
-              ? "text-primary-600 border-b-2 border-primary-600 dark:border-primary-400 dark:text-primary-400"
-              : "text-gray-600 dark:text-dark-300 hover:text-gray-800 dark:hover:text-dark-100"
-          )}
-        >
-          Début Shift
-        </Button>
-        <Button 
-          variant={activeTab === 'courses' ? 'primary' : 'ghost'}
-          onClick={() => setActiveTab('courses')}
-          disabled={!safeGetValue('shift.start')}
-          className={clsx(
-            "relative flex items-center justify-center px-4 py-2 font-medium transition-colors",
-            activeTab === 'courses' 
-              ? "text-primary-600 border-b-2 border-primary-600 dark:border-primary-400 dark:text-primary-400"
-              : "text-gray-600 dark:text-dark-300 hover:text-gray-800 dark:hover:text-dark-100",
-            !safeGetValue('shift.start') && "opacity-50 cursor-not-allowed"
-          )}
-        >
-          <span>Courses</span>
-          <Badge className="ml-2 h-5 w-5 rounded-full bg-primary-500 text-xs text-white">
-            {courseFields.length}
-          </Badge>
-        </Button>
-        <Button 
-          variant={activeTab === 'validation' ? 'primary' : 'ghost'}
-          onClick={() => setActiveTab('validation')}
-          disabled={!safeGetValue('shift.start')}
-          className={clsx(
-            "relative flex items-center justify-center px-4 py-2 font-medium transition-colors",
-            activeTab === 'validation' 
-              ? "text-primary-600 border-b-2 border-primary-600 dark:border-primary-400 dark:text-primary-400"
-              : "text-gray-600 dark:text-dark-300 hover:text-gray-800 dark:hover:text-dark-100",
-            !safeGetValue('shift.start') && "opacity-50 cursor-not-allowed"
-          )}
-        >
-          Fin Shift
-        </Button>
+      {/* Navigation par onglets */}
+      <div className="border-b-2 border-gray-200 dark:border-dark-500">
+        <div className="flex space-x-1">
+          <TabButton
+            active={activeTab === 'shift'}
+            onClick={() => setActiveTab('shift')}
+            count={null}
+          >
+            Début Shift
+          </TabButton>
+          <TabButton
+            active={activeTab === 'courses'}
+            onClick={() => setActiveTab('courses')}
+            disabled={!safeGetValue('shift.start')}
+            count={courseFields.length}
+          >
+            Courses
+          </TabButton>
+          <TabButton
+            active={activeTab === 'validation'}
+            onClick={() => setActiveTab('validation')}
+            disabled={!safeGetValue('shift.start')}
+            count={null}
+          >
+            Fin Shift
+          </TabButton>
+        </div>
       </div>
 
-      <div className="space-y-4">
+      {/* Contenu des onglets */}
+      <div className="space-y-6">
         {activeTab === 'shift' && (
-          <>
+          <div className="grid gap-6 md:grid-cols-2">
             <VehicleInfo 
               vehicules={vehicules} 
               control={control}
@@ -185,49 +172,44 @@ export function DriverMode({ chauffeur, vehicules, control, onSubmit, onSwitchMo
               control={control}
               onStartShift={() => setActiveTab('courses')}
             />
-          </>
+          </div>
         )}
 
         {activeTab === 'courses' && (
-          <>
-            <QuickCourseForm 
-              onAddCourse={handleAddCourse}
-              currentLocation={chauffeur.currentLocation}
-            />
-            {courseFields.length > 0 && (
-              <CourseList 
-                courses={watchedValues.courses || []} 
-                onRemoveCourse={removeCourse}
+          <div className="grid gap-6 lg:grid-cols-3">
+            <div className="space-y-6 lg:col-span-2">
+              <QuickCourseForm 
+                onAddCourse={handleAddCourse}
+                currentLocation={chauffeur.currentLocation}
               />
-            )}
-            <ExpensesSection 
-              onAddExpense={handleAddExpense}
-            />
-            {chargeFields.length > 0 && (
-              <ExpenseList 
-                expenses={watchedValues.charges || []} 
-                onRemoveExpense={handleRemoveCharge}
+              
+              <ExpensesSection 
+                onAddExpense={handleAddExpense}
               />
-            )}
+            </div>
             
-            <Card className="p-4">
-              <h3 className="text-lg font-medium">Récapitulatif</h3>
-              <div className="mt-3 space-y-2">
-                <div className="flex justify-between">
-                  <span>Total Recettes:</span>
-                  <span className="font-medium">{totalRecettes.toFixed(2)} €</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Total Charges:</span>
-                  <span className="font-medium">{totalCharges.toFixed(2)} €</span>
-                </div>
-                <div className="flex justify-between text-primary-600 dark:text-primary-400">
-                  <span>Salaire estimé:</span>
-                  <span className="font-bold">{salaire.toFixed(2)} €</span>
-                </div>
-              </div>
-            </Card>
-          </>
+            <div className="space-y-6 lg:col-span-1">
+              {courseFields.length > 0 && (
+                <CourseList 
+                  courses={watchedValues.courses || []} 
+                  onRemoveCourse={removeCourse}
+                />
+              )}
+              
+              {chargeFields.length > 0 && (
+                <ExpenseList 
+                  expenses={watchedValues.charges || []} 
+                  onRemoveExpense={removeCharge}
+                />
+              )}
+              
+              <SummaryCard
+                recettes={totalRecettes}
+                charges={totalCharges}
+                salaire={salaire}
+              />
+            </div>
+          </div>
         )}
 
         {activeTab === 'validation' && (
@@ -243,5 +225,30 @@ export function DriverMode({ chauffeur, vehicules, control, onSubmit, onSwitchMo
         )}
       </div>
     </div>
+  );
+}
+
+// Composant TabButton réutilisable
+function TabButton({ active, onClick, disabled, count, children }) {
+  return (
+    <button
+      onClick={onClick}
+      disabled={disabled}
+      className={clsx(
+        "relative flex items-center justify-center px-4 py-3 font-medium transition-colors",
+        "focus:outline-none",
+        active
+          ? "text-primary-600 border-b-2 border-primary-600 dark:border-primary-400 dark:text-primary-400"
+          : "text-gray-600 hover:text-gray-800 dark:text-dark-300 dark:hover:text-dark-100",
+        disabled && "opacity-50 cursor-not-allowed"
+      )}
+    >
+      {children}
+      {count !== null && count > 0 && (
+        <Badge className="ml-2 bg-primary-500 text-white">
+          {count}
+        </Badge>
+      )}
+    </button>
   );
 }

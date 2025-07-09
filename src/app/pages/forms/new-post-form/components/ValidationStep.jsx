@@ -23,84 +23,101 @@ export function ValidationStep({ onSubmit, control, totals }) {
   };
 
   return (
-    <Card className="p-4 space-y-4">
-      <h3 className="text-lg font-medium">Fin du Shift</h3>
+    <Card className="p-5">
+      <h3 className="text-lg font-semibold text-gray-800 dark:text-dark-100 mb-4">
+        Validation du Shift
+      </h3>
       
-      <Controller
-        name="kilometers.end"
-        control={control}
-        render={({ field, fieldState: { error } }) => (
-          <Input
-            {...field}
-            label="Kilométrage final"
-            type="number"
-            error={error?.message}
-          />
-        )}
-      />
-      
-      <Controller
-        name="shift.end"
-        control={control}
-        render={({ field, fieldState: { error } }) => (
-          <Input
-            {...field}
-            label="Heure de fin"
-            type="time"
-            error={error?.message}
-          />
-        )}
-      />
-      
-      <Controller
-        name="shift.interruptions"
-        control={control}
-        render={({ field, fieldState: { error } }) => (
-          <Input
-            {...field}
-            label="Interruptions (minutes)"
-            type="number"
-            error={error?.message}
-          />
-        )}
-      />
-      
-      <div className="space-y-2 p-3 bg-gray-50 rounded-lg">
-        <h4 className="font-medium">Récapitulatif</h4>
-        <div className="flex justify-between">
-          <span>Total Recettes:</span>
-          <span>{totals.recettes.toFixed(2)} €</span>
+      <div className="space-y-4">
+        <Controller
+          name="kilometers.end"
+          control={control}
+          render={({ field, fieldState: { error } }) => (
+            <Input
+              {...field}
+              label="Kilométrage final (km)"
+              type="number"
+              min="0"
+              step="1"
+              error={error?.message}
+            />
+          )}
+        />
+        
+        <Controller
+          name="shift.end"
+          control={control}
+          render={({ field, fieldState: { error } }) => (
+            <Input
+              {...field}
+              label="Heure de fin"
+              type="time"
+              error={error?.message}
+            />
+          )}
+        />
+        
+        <Controller
+          name="shift.interruptions"
+          control={control}
+          render={({ field, fieldState: { error } }) => (
+            <Input
+              {...field}
+              label="Interruptions (minutes)"
+              type="number"
+              min="0"
+              error={error?.message}
+            />
+          )}
+        />
+        
+        <div className="p-4 bg-gray-50 dark:bg-dark-700 rounded-lg">
+          <h4 className="font-medium text-gray-800 dark:text-dark-100 mb-3">
+            Récapitulatif financier
+          </h4>
+          <div className="space-y-2">
+            <div className="flex justify-between">
+              <span className="text-gray-600 dark:text-dark-300">Total Recettes:</span>
+              <span className="font-medium text-gray-800 dark:text-dark-100">
+                {totals.recettes.toFixed(2)} €
+              </span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-gray-600 dark:text-dark-300">Total Charges:</span>
+              <span className="font-medium text-gray-800 dark:text-dark-100">
+                {totals.charges.toFixed(2)} €
+              </span>
+            </div>
+            <div className="flex justify-between text-primary-600 dark:text-primary-400">
+              <span className="font-medium">Salaire estimé:</span>
+              <span className="font-bold">{totals.salaire.toFixed(2)} €</span>
+            </div>
+          </div>
         </div>
-        <div className="flex justify-between">
-          <span>Total Charges:</span>
-          <span>{totals.charges.toFixed(2)} €</span>
+        
+        <div className="mt-4">
+          <label className="block text-sm font-medium text-gray-700 dark:text-dark-300 mb-2">
+            Signature
+          </label>
+          <div className="border-2 border-dashed border-gray-300 dark:border-dark-500 rounded-lg h-40 bg-white dark:bg-dark-800 flex items-center justify-center">
+            <button 
+              type="button" 
+              className="text-gray-500 dark:text-dark-400"
+              onClick={() => setSignature('signature-data')}
+            >
+              Cliquez pour signer
+            </button>
+          </div>
         </div>
-        <div className="flex justify-between font-bold text-primary-600">
-          <span>Salaire estimé:</span>
-          <span>{totals.salaire.toFixed(2)} €</span>
-        </div>
+        
+        <Button 
+          onClick={handleSubmit}
+          variant="primary"
+          className="w-full mt-4"
+        >
+          Valider le Shift
+        </Button>
       </div>
-      
-      <div className="mt-4">
-        <label className="block mb-2">Signature</label>
-        <div className="border rounded-lg h-40 bg-gray-50 flex items-center justify-center">
-          <button 
-            type="button" 
-            className="text-gray-500"
-            onClick={() => setSignature('signature-data')}
-          >
-            Cliquez pour signer
-          </button>
-        </div>
-      </div>
-      
-      <Button 
-        onClick={handleSubmit}
-        color="primary"
-        className="w-full mt-4"
-      >
-        Valider le Shift
-      </Button>
     </Card>
   );
 }
