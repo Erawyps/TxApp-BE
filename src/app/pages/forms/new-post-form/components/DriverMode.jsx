@@ -9,14 +9,16 @@ import { ExpensesSection } from './ExpensesSection';
 import { QuickCourseForm } from './QuickCourseForm';
 import { ValidationStep } from './ValidationStep';
 import { toast } from 'sonner';
+// Correction de l'import dans DriverMode.jsx
 import { 
-  ArrowTrendingUpIcon, 
-  ArrowTrendingDownIcon,
+  ArrowUpIcon,         // Alternative à ArrowTrendingUpIcon
+  ArrowDownIcon,       // Alternative à ArrowTrendingDownIcon 
+  ReceiptTaxIcon,      // Alternative à ReceiptPercentIcon
   CheckIcon, 
   ArrowRightIcon, 
-  DevicePhoneMobileIcon,
-  BanknotesIcon 
-} from '@heroicons/react/24/outline';
+  DeviceMobileIcon,    // Alternative à DevicePhoneMobileIcon
+  CashIcon             // Alternative à BanknotesIcon
+} from '@heroicons/react/outline';  // Ou solid selon le style voulu
 
 export function DriverMode({ chauffeur, vehicules, control, onSubmit, onSwitchMode }) {
   const { fields: courseFields, append: appendCourse } = useFieldArray({
@@ -82,7 +84,7 @@ export function DriverMode({ chauffeur, vehicules, control, onSubmit, onSwitchMo
 
   const tabs = [
     { label: "Début", icon: <ArrowRightIcon className="h-5 w-5" /> },
-    { label: "Courses",  badge: courseFields.length },
+    { label: "Courses", icon: <ReceiptTaxIcon className="h-5 w-5" />, badge: courseFields.length },
     { label: "Fin", icon: <CheckIcon className="h-5 w-5" /> }
   ];
 
@@ -105,7 +107,7 @@ export function DriverMode({ chauffeur, vehicules, control, onSubmit, onSwitchMo
           <Button 
             variant="ghost" 
             size="sm"
-            icon={<DevicePhoneMobileIcon className="h-5 w-5" />}
+            icon={<DeviceMobileIcon className="h-5 w-5" />}
             onClick={onSwitchMode}
             className="hidden sm:flex"
           >
@@ -197,7 +199,7 @@ export function DriverMode({ chauffeur, vehicules, control, onSubmit, onSwitchMo
           variant="primary" 
           size="lg" 
           rounded="full"
-          icon={<DevicePhoneMobileIcon className="h-5 w-5" />}
+          icon={<DeviceMobileIcon className="h-5 w-5" />}
           onClick={onSwitchMode}
         >
           Mode complet
@@ -240,9 +242,9 @@ function SummaryCard({ recettes, charges, salaire }) {
 
 function SummaryItem({ label, value, color, highlight = false, icon }) {
   const iconMap = {
-    revenue: <ArrowTrendingUpIcon className="h-5 w-5 text-green-500" />,
-    expense: <ArrowTrendingDownIcon className="h-5 w-5 text-red-500" />,
-    salary: <BanknotesIcon className="h-5 w-5 text-primary-500" />
+    revenue: <ArrowUpIcon className="h-5 w-5 text-green-500" />,
+    expense: <ArrowDownIcon className="h-5 w-5 text-red-500" />,
+    salary: <CashIcon className="h-5 w-5 text-primary-500" />
   };
 
   return (
