@@ -1,24 +1,11 @@
-// components/DriverMode.jsx
-import { useState } from 'react';
 import { useFieldArray, useWatch } from 'react-hook-form';
-import { TabGroup, TabList, Tab, TabPanels, TabPanel, MobileTabSelect } from 'components/ui/Tabs';
+import { useState } from 'react';
 import { VehicleInfo } from './VehicleInfo';
 import { ShiftInfo } from './ShiftInfo';
-import { Card, Button, Badge } from 'components/ui';
+import { Card, Button } from 'components/ui';
 import { ExpensesSection } from './ExpensesSection';
 import { QuickCourseForm } from './QuickCourseForm';
 import { ValidationStep } from './ValidationStep';
-import { toast } from 'sonner';
-// Correction de l'import dans DriverMode.jsx
-import { 
-  ArrowUpIcon,         // Alternative à ArrowTrendingUpIcon
-  ArrowDownIcon,       // Alternative à ArrowTrendingDownIcon 
-  ReceiptTaxIcon,      // Alternative à ReceiptPercentIcon
-  CheckIcon, 
-  ArrowRightIcon, 
-  DeviceMobileIcon,    // Alternative à DevicePhoneMobileIcon
-  CashIcon             // Alternative à BanknotesIcon
-} from '@heroicons/react/outline';  // Ou solid selon le style voulu
 
 export function DriverMode({ chauffeur, vehicules, control, onSubmit, onSwitchMode }) {
   const { fields: courseFields, append: appendCourse } = useFieldArray({
@@ -31,30 +18,67 @@ export function DriverMode({ chauffeur, vehicules, control, onSubmit, onSwitchMo
     name: "charges"
   });
 
-  const [selectedTab, setSelectedTab] = useState(0);
-  const watchedValues = useWatch({ control });
+  const [activeTab, setActiveTab] = useState('shift');
+  
+  // Utilisation sécurisée de useWatch avec des valeurs par défaut
+  const watchedValues = useWatch({ 
+    control, 
+    defaultValue: {
+      courses: [],
+      charges: [],
+      shift: { start: '' },
+      header: { vehicule: null }
+    }
+  });
 
-  const getTotalRecettes = () => {
-    return courseFields.reduce((sum, _, index) => {
-      const cours = watchedValues?.courses?.[index];
-      const prix = cours?.prix;
-      return sum + (prix && !isNaN(parseFloat(prix)) ? parseFloat(prix) : 0);
-    }, 0);
+  // Fonction helper pour obtenir une valeur sécurisée
+  const safeGetValue = (path, defaultValue = 0) => {
+    try {
+      const keys = path.split('.');
+      let value = watchedValues;
+      
+      for (const key of keys) {
+        if (value && typeof value === 'object' && key in value) {
+          value = value[key];
+        } else {
+          return defaultValue;
+        }
+      }
+      
+      return value !== undefined && value !== null ? value : defaultValue;
+    } catch (error) {
+      console.warn(`Erreur lors de la récupération de ${path}:`, error);
+      return defaultValue;
+    }
   };
 
-  const getTotalCharges = () => {
-    return chargeFields.reduce((sum, _, index) => {
-      const charge = watchedValues?.charges?.[index];
-      const montant = charge?.montant;
-      return sum + (montant && !isNaN(parseFloat(montant)) ? parseFloat(montant) : 0);
-    }, 0);
-  };
+  // Calculs sécurisés
+  const totalRecettes = courseFields.reduce((sum, _, index) => {
+    const prix = safeGetValue(`courses.${index}.prix`, 0);
+    const numericPrix = typeof prix === 'number' ? prix : parseFloat(prix) || 0;
+    return sum + numericPrix;
+  }, 0);
 
-  const totalRecettes = getTotalRecettes();
-  const totalCharges = getTotalCharges();
+  const totalCharges = chargeFields.reduce((sum, _, index) => {
+    const montant = safeGetValue(`charges.${index}.montant`, 0);
+    const numericMontant = typeof montant === 'number' ? montant : parseFloat(montant) || 0;
+    return sum + numericMontant;
+  }, 0);
+
   const base = Math.min(totalRecettes, 180);
   const surplus = Math.max(totalRecettes - 180, 0);
   const salaire = (base * 0.4) + (surplus * 0.3);
+
+  // Vérification que les données nécessaires sont présentes
+  if (!chauffeur || !vehicules || vehicules.length === 0) {
+    return (
+      <Card className="p-4">
+        <div className="text-center text-red-500">
+          Erreur: Données manquantes (chauffeur ou véhicules)
+        </div>
+      </Card>
+    );
+  }
 
   const handleAddCourse = (course) => {
     try {
@@ -62,10 +86,8 @@ export function DriverMode({ chauffeur, vehicules, control, onSubmit, onSwitchMo
         ...course,
         id: `CRS-${Date.now()}`,
       });
-      toast.success('Course ajoutée');
     } catch (error) {
-      console.error('Erreur ajout course:', error);
-      toast.error('Erreur lors de l\'ajout de la course');
+      console.error('Erreur lors de l\'ajout de la course:', error);
     }
   };
 
@@ -75,199 +97,123 @@ export function DriverMode({ chauffeur, vehicules, control, onSubmit, onSwitchMo
         ...expense,
         id: `CHG-${Date.now()}`
       });
-      toast.success('Dépense ajoutée');
     } catch (error) {
-      console.error('Erreur ajout dépense:', error);
-      toast.error('Erreur lors de l\'ajout de la dépense');
+      console.error('Erreur lors de l\'ajout de la charge:', error);
     }
   };
 
-  const tabs = [
-    { label: "Début", icon: <ArrowRightIcon className="h-5 w-5" /> },
-    { label: "Courses", icon: <ReceiptTaxIcon className="h-5 w-5" />, badge: courseFields.length },
-    { label: "Fin", icon: <CheckIcon className="h-5 w-5" /> }
-  ];
-
-  return (
-    <div className="space-y-4 pb-20">
-      {/* Header avec infos chauffeur */}
-      <Card className="bg-primary-50 dark:bg-dark-700">
-        <div className="flex items-center justify-between p-4">
-          <div>
-            <h2 className="text-xl font-medium text-primary-800 dark:text-primary-100">
-              {chauffeur.prenom} {chauffeur.nom}
-            </h2>
-            <div className="mt-1 flex items-center gap-2">
-              <Badge color="primary">{chauffeur.numero_badge}</Badge>
-              <span className="text-sm text-gray-600 dark:text-gray-300">
-                {chauffeur.type_contrat}
-              </span>
-            </div>
-          </div>
-          <Button 
-            variant="ghost" 
-            size="sm"
-            icon={<DeviceMobileIcon className="h-5 w-5" />}
-            onClick={onSwitchMode}
-            className="hidden sm:flex"
-          >
-            Mode complet
-          </Button>
-        </div>
-      </Card>
-
-      {/* Navigation par onglets - Version mobile */}
-      <MobileTabSelect 
-        tabs={tabs} 
-        selectedIndex={selectedTab} 
-        onChange={setSelectedTab} 
-      />
-
-      {/* Navigation par onglets - Version desktop */}
-      <TabGroup className="hidden sm:block">
-        <TabList>
-          {tabs.map((tab, idx) => (
-            <Tab 
-              key={idx}
-              icon={tab.icon}
-              badge={tab.badge}
-              disabled={idx > 0 && !watchedValues?.shift?.start}
-            >
-              {tab.label}
-            </Tab>
-          ))}
-        </TabList>
-        
-        <TabPanels>
-          <TabPanel>
-            <div className="space-y-4 p-4">
-              <VehicleInfo vehicules={vehicules} control={control} />
-              <ShiftInfo 
-                control={control}
-                onStartShift={() => {
-                  setSelectedTab(1);
-                  toast.success('Shift démarré');
-                }}
-              />
-            </div>
-          </TabPanel>
-          
-          <TabPanel>
-            <div className="space-y-4 p-4">
-              <QuickCourseForm 
-                onAddCourse={handleAddCourse}
-                currentLocation={chauffeur.currentLocation}
-              />
-              
-              <ExpensesSection 
-                onAddExpense={handleAddExpense}
-                charges={chargeFields}
-                onRemoveCharge={(index) => {
-                  removeCharge(index);
-                  toast.success('Dépense supprimée');
-                }}
-              />
-              
-              <SummaryCard 
-                recettes={totalRecettes}
-                charges={totalCharges}
-                salaire={salaire}
-              />
-            </div>
-          </TabPanel>
-          
-          <TabPanel>
-            <ValidationStep 
-              onSubmit={(data) => {
-                onSubmit(data);
-                toast.success('Shift validé avec succès');
-              }}
-              control={control}
-              totals={{
-                recettes: totalRecettes,
-                charges: totalCharges,
-                salaire: salaire
-              }}
-            />
-          </TabPanel>
-        </TabPanels>
-      </TabGroup>
-
-      {/* Bouton flottant pour le mode mobile */}
-      <div className="fixed bottom-4 right-4 sm:hidden">
-        <Button 
-          variant="primary" 
-          size="lg" 
-          rounded="full"
-          icon={<DeviceMobileIcon className="h-5 w-5" />}
-          onClick={onSwitchMode}
-        >
-          Mode complet
-        </Button>
-      </div>
-    </div>
-  );
-}
-
-function SummaryCard({ recettes, charges, salaire }) {
-  return (
-    <Card className="bg-gray-50 dark:bg-dark-700">
-      <h3 className="flex items-center text-lg font-medium">
-        <span className="mr-2">💰</span> Récapitulatif
-      </h3>
-      <div className="mt-3 space-y-3">
-        <SummaryItem 
-          label="Total Recettes" 
-          value={recettes} 
-          color="green" 
-          icon="revenue"
-        />
-        <SummaryItem 
-          label="Total Charges" 
-          value={charges} 
-          color="red"
-          icon="expense"
-        />
-        <SummaryItem 
-          label="Salaire estimé" 
-          value={salaire} 
-          color="primary"
-          highlight
-          icon="salary"
-        />
-      </div>
-    </Card>
-  );
-}
-
-function SummaryItem({ label, value, color, highlight = false, icon }) {
-  const iconMap = {
-    revenue: <ArrowUpIcon className="h-5 w-5 text-green-500" />,
-    expense: <ArrowDownIcon className="h-5 w-5 text-red-500" />,
-    salary: <CashIcon className="h-5 w-5 text-primary-500" />
+  const handleRemoveCharge = (index) => {
+    try {
+      removeCharge(index);
+    } catch (error) {
+      console.error('Erreur lors de la suppression de la charge:', error);
+    }
   };
 
   return (
-    <div className={`flex justify-between items-center p-3 rounded-lg ${
-      highlight 
-        ? 'bg-primary-50 dark:bg-primary-900 border border-primary-100 dark:border-primary-800' 
-        : 'bg-white dark:bg-dark-600'
-    }`}>
-      <div className="flex items-center gap-2">
-        {icon && iconMap[icon]}
-        <span className={highlight ? 'font-semibold' : ''}>{label}</span>
+    <div className="space-y-4">
+      <Card className="p-4">
+        <div className="flex items-center justify-between">
+          <h2 className="text-xl font-medium">
+            Feuille de Route - {chauffeur.prenom} {chauffeur.nom}
+          </h2>
+          <Button variant="outline" onClick={onSwitchMode}>
+            Mode complet
+          </Button>
+        </div>
+        <div className="mt-2 text-sm text-gray-600">
+          <span>Badge: {chauffeur.numero_badge}</span>
+          <span className="mx-2">•</span>
+          <span>Contrat: {chauffeur.type_contrat}</span>
+        </div>
+      </Card>
+
+      <div className="flex space-x-2">
+        <Button 
+          variant={activeTab === 'shift' ? 'primary' : 'ghost'}
+          onClick={() => setActiveTab('shift')}
+          className="flex-1"
+        >
+          Début Shift
+        </Button>
+        <Button 
+          variant={activeTab === 'courses' ? 'primary' : 'ghost'}
+          onClick={() => setActiveTab('courses')}
+          disabled={!safeGetValue('shift.start')}
+          className="flex-1"
+        >
+          Courses ({courseFields.length})
+        </Button>
+        <Button 
+          variant={activeTab === 'validation' ? 'primary' : 'ghost'}
+          onClick={() => setActiveTab('validation')}
+          disabled={!safeGetValue('shift.start')}
+          className="flex-1"
+        >
+          Fin Shift
+        </Button>
       </div>
-      <span className={`font-mono ${
-        highlight ? 'font-bold' : 'font-medium'
-      } ${
-        color === 'green' 
-          ? 'text-green-600 dark:text-green-400' 
-          : color === 'red' 
-            ? 'text-red-600 dark:text-red-400' 
-            : 'text-primary-600 dark:text-primary-400'
-      }`}>
-        {value.toFixed(2)} €
-      </span>
+
+      <div className="space-y-4">
+        {activeTab === 'shift' && (
+          <>
+            <VehicleInfo 
+              vehicules={vehicules} 
+              control={control}
+              currentVehicle={safeGetValue('header.vehicule')}
+            />
+            <ShiftInfo 
+              control={control}
+              onStartShift={() => setActiveTab('courses')}
+            />
+          </>
+        )}
+
+        {activeTab === 'courses' && (
+          <>
+            <QuickCourseForm 
+              onAddCourse={handleAddCourse}
+              currentLocation={chauffeur.currentLocation}
+            />
+            
+            <ExpensesSection 
+              onAddExpense={handleAddExpense}
+              charges={chargeFields}
+              onRemoveCharge={handleRemoveCharge}
+            />
+            
+            <Card className="p-4">
+              <h3 className="text-lg font-medium">Récapitulatif</h3>
+              <div className="mt-3 space-y-2">
+                <div className="flex justify-between">
+                  <span>Total Recettes:</span>
+                  <span className="font-medium">{totalRecettes.toFixed(2)} €</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Total Charges:</span>
+                  <span className="font-medium">{totalCharges.toFixed(2)} €</span>
+                </div>
+                <div className="flex justify-between text-primary-600">
+                  <span>Salaire estimé:</span>
+                  <span className="font-bold">{salaire.toFixed(2)} €</span>
+                </div>
+              </div>
+            </Card>
+          </>
+        )}
+
+        {activeTab === 'validation' && (
+          <ValidationStep 
+            onSubmit={onSubmit}
+            control={control}
+            totals={{
+              recettes: totalRecettes,
+              charges: totalCharges,
+              salaire: salaire
+            }}
+          />
+        )}
+      </div>
     </div>
   );
 }

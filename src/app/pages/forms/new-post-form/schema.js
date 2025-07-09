@@ -1,5 +1,6 @@
 import * as Yup from 'yup';
 
+// Schéma de validation pour la feuille de route
 export const schema = Yup.object().shape({
   header: Yup.object().shape({
     date: Yup.date().default(() => new Date()),
@@ -8,23 +9,22 @@ export const schema = Yup.object().shape({
     }).required('Chauffeur requis'),
     vehicule: Yup.object().shape({
       id: Yup.string().required('Véhicule requis'),
-      plaque_immatriculation: Yup.string().optional(),
-      numero_identification: Yup.string().optional(),
-      marque: Yup.string().optional(),
-      modele: Yup.string().optional(),
-      type_vehicule: Yup.string().optional()
     }).required('Véhicule requis')
   }).required('Header requis'),
 
   shift: Yup.object().shape({
     start: Yup.string().nullable(),
     end: Yup.string().nullable(),
-    interruptions: Yup.number().min(0).default(0)
+    interruptions: Yup.number().min(0, 'Les interruptions ne peuvent pas être négatives').default(0)
   }),
 
   kilometers: Yup.object().shape({
-    start: Yup.number().min(0).required('Kilométrage de départ requis'),
-    end: Yup.number().min(0).nullable()
+    start: Yup.number()
+      .min(0, 'Le kilométrage ne peut pas être négatif')
+      .required('Kilométrage de départ requis'),
+    end: Yup.number()
+      .min(0, 'Le kilométrage ne peut pas être négatif')
+      .nullable()
       .when('start', {
         is: (start) => start != null,
         then: (schema) => schema.min(Yup.ref('start'), 'Le kilométrage de fin doit être supérieur au départ'),
@@ -34,45 +34,49 @@ export const schema = Yup.object().shape({
 
   courses: Yup.array().of(
     Yup.object().shape({
-      id: Yup.string().optional(),
+      id: Yup.string(),
       depart: Yup.object().shape({
         lieu: Yup.string().required('Lieu de départ requis'),
-        heure: Yup.string().optional()
+        heure: Yup.string()
       }),
       arrivee: Yup.object().shape({
         lieu: Yup.string().required('Lieu d\'arrivée requis'),
-        heure: Yup.string().optional()
+        heure: Yup.string()
       }),
-      prix: Yup.number().min(0).required('Prix requis'),
-      mode_paiement: Yup.string().oneOf(['cash', 'bancontact', 'facture']).default('cash'),
+      prix: Yup.number()
+        .min(0, 'Le prix ne peut pas être négatif')
+        .required('Prix requis'),
+      mode_paiement: Yup.string()
+        .oneOf(['cash', 'bancontact', 'facture'], 'Mode de paiement invalide')
+        .default('cash'),
       client: Yup.string().nullable()
     })
   ).default([]),
 
   charges: Yup.array().of(
     Yup.object().shape({
-      id: Yup.string().optional(),
-      type: Yup.string().oneOf(['carburant', 'peage', 'entretien', 'carwash', 'divers']).required('Type requis'),
-      montant: Yup.number().min(0).required('Montant requis'),
-      mode_paiement: Yup.string().oneOf(['cash', 'bancontact']).default('cash'),
+      id: Yup.string(),
+      type: Yup.string()
+        .oneOf(['carburant', 'peage', 'entretien', 'carwash', 'divers'], 'Type de charge invalide')
+        .required('Type requis'),
+      montant: Yup.number()
+        .min(0, 'Le montant ne peut pas être négatif')
+        .required('Montant requis'),
+      mode_paiement: Yup.string()
+        .oneOf(['cash', 'bancontact'], 'Mode de paiement invalide')
+        .default('cash'),
       description: Yup.string().nullable(),
-      date: Yup.string().optional()
+      date: Yup.string()
     })
   ).default([])
 });
 
+// Données par défaut
 export const defaultData = {
   header: {
     date: new Date(),
     chauffeur: { id: "CH001" },
-    vehicule: { 
-      id: "VH001",
-      plaque_immatriculation: "",
-      numero_identification: "",
-      marque: "",
-      modele: "",
-      type_vehicule: ""
-    }
+    vehicule: { id: "VH001" }
   },
   shift: {
     start: "",
