@@ -194,18 +194,15 @@ export function DriverMode({ chauffeur, vehicules, control, onSubmit, onSwitchMo
               onAddCourse={handleAddCourse}
               currentLocation={chauffeur.currentLocation}
             />
-            
-            <ExpensesSection 
-              onAddExpense={handleAddExpense}
-            />
-            
             {courseFields.length > 0 && (
               <CourseList 
                 courses={watchedValues.courses || []} 
                 onRemoveCourse={removeCourse}
               />
             )}
-            
+            <ExpensesSection 
+              onAddExpense={handleAddExpense}
+            />
             {chargeFields.length > 0 && (
               <ExpenseList 
                 expenses={watchedValues.charges || []} 
