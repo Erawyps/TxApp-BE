@@ -52,7 +52,7 @@ export function QuickCourseForm({ onAddCourse, currentLocation }) {
   return (
     <Card className="p-4">
       <h3 className="text-lg font-medium flex items-center">
-        <span className="mr-2">🚖</span> Nouvelle Course
+        <span className="mr-2">🚖 Nouvelle Course</span>
       </h3>
       
       <form onSubmit={handleSubmit} className="mt-4 space-y-3">
@@ -62,6 +62,7 @@ export function QuickCourseForm({ onAddCourse, currentLocation }) {
           onChange={(e) => setForm({...form, depart: e.target.value})}
           required
           icon="location"
+          className="[&>input]:bg-white dark:[&>input]:bg-dark-800"
         />
         
         <Input
@@ -70,6 +71,7 @@ export function QuickCourseForm({ onAddCourse, currentLocation }) {
           onChange={(e) => setForm({...form, arrivee: e.target.value})}
           required
           icon="flag"
+          className="[&>input]:bg-white dark:[&>input]:bg-dark-800"
         />
         
         <div className="grid grid-cols-2 gap-3">
@@ -81,6 +83,7 @@ export function QuickCourseForm({ onAddCourse, currentLocation }) {
             onChange={(e) => setForm({...form, prix: e.target.value})}
             required
             icon="euro"
+            className="[&>input]:bg-white dark:[&>input]:bg-dark-800"
           />
           
           <Select
@@ -92,6 +95,7 @@ export function QuickCourseForm({ onAddCourse, currentLocation }) {
             ]}
             value={form.mode_paiement}
             onChange={(value) => setForm({...form, mode_paiement: value})}
+            className="[&>button]:bg-white dark:[&>button]:bg-dark-800"
           />
         </div>
         
@@ -102,6 +106,7 @@ export function QuickCourseForm({ onAddCourse, currentLocation }) {
             onChange={(e) => setForm({...form, client: e.target.value})}
             icon="user"
             required
+            className="[&>input]:bg-white dark:[&>input]:bg-dark-800"
           />
         )}
         
@@ -109,6 +114,7 @@ export function QuickCourseForm({ onAddCourse, currentLocation }) {
           type="submit" 
           className="w-full mt-2"
           icon="plus"
+          color="primary"
         >
           Ajouter Course
         </Button>

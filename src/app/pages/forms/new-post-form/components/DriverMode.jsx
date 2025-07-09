@@ -2,13 +2,16 @@ import { useFieldArray, useWatch } from 'react-hook-form';
 import { useState } from 'react';
 import { VehicleInfo } from './VehicleInfo';
 import { ShiftInfo } from './ShiftInfo';
-import { Card, Button } from 'components/ui';
+import { Card, Button, Badge } from 'components/ui';
 import { ExpensesSection } from './ExpensesSection';
 import { QuickCourseForm } from './QuickCourseForm';
 import { ValidationStep } from './ValidationStep';
+import { CourseList } from './CourseList';
+import { ExpenseList } from './ExpenseList';
+import clsx from 'clsx';
 
 export function DriverMode({ chauffeur, vehicules, control, onSubmit, onSwitchMode }) {
-  const { fields: courseFields, append: appendCourse } = useFieldArray({
+  const { fields: courseFields, append: appendCourse, remove: removeCourse } = useFieldArray({
     control,
     name: "courses"
   });
@@ -20,7 +23,6 @@ export function DriverMode({ chauffeur, vehicules, control, onSubmit, onSwitchMo
 
   const [activeTab, setActiveTab] = useState('shift');
   
-  // Utilisation sécurisée de useWatch avec des valeurs par défaut
   const watchedValues = useWatch({ 
     control, 
     defaultValue: {
@@ -31,7 +33,6 @@ export function DriverMode({ chauffeur, vehicules, control, onSubmit, onSwitchMo
     }
   });
 
-  // Fonction helper pour obtenir une valeur sécurisée
   const safeGetValue = (path, defaultValue = 0) => {
     try {
       const keys = path.split('.');
@@ -52,7 +53,6 @@ export function DriverMode({ chauffeur, vehicules, control, onSubmit, onSwitchMo
     }
   };
 
-  // Calculs sécurisés
   const totalRecettes = courseFields.reduce((sum, _, index) => {
     const prix = safeGetValue(`courses.${index}.prix`, 0);
     const numericPrix = typeof prix === 'number' ? prix : parseFloat(prix) || 0;
@@ -69,7 +69,6 @@ export function DriverMode({ chauffeur, vehicules, control, onSubmit, onSwitchMo
   const surplus = Math.max(totalRecettes - 180, 0);
   const salaire = (base * 0.4) + (surplus * 0.3);
 
-  // Vérification que les données nécessaires sont présentes
   if (!chauffeur || !vehicules || vehicules.length === 0) {
     return (
       <Card className="p-4">
@@ -121,18 +120,23 @@ export function DriverMode({ chauffeur, vehicules, control, onSubmit, onSwitchMo
             Mode complet
           </Button>
         </div>
-        <div className="mt-2 text-sm text-gray-600">
+        <div className="mt-2 text-sm text-gray-600 dark:text-dark-300">
           <span>Badge: {chauffeur.numero_badge}</span>
           <span className="mx-2">•</span>
           <span>Contrat: {chauffeur.type_contrat}</span>
         </div>
       </Card>
 
-      <div className="flex space-x-2">
+      <div className="flex space-x-2 border-b-2 border-gray-200 dark:border-dark-500">
         <Button 
           variant={activeTab === 'shift' ? 'primary' : 'ghost'}
           onClick={() => setActiveTab('shift')}
-          className="flex-1"
+          className={clsx(
+            "relative flex items-center justify-center px-4 py-2 font-medium transition-colors",
+            activeTab === 'shift' 
+              ? "text-primary-600 border-b-2 border-primary-600 dark:border-primary-400 dark:text-primary-400"
+              : "text-gray-600 dark:text-dark-300 hover:text-gray-800 dark:hover:text-dark-100"
+          )}
         >
           Début Shift
         </Button>
@@ -140,15 +144,30 @@ export function DriverMode({ chauffeur, vehicules, control, onSubmit, onSwitchMo
           variant={activeTab === 'courses' ? 'primary' : 'ghost'}
           onClick={() => setActiveTab('courses')}
           disabled={!safeGetValue('shift.start')}
-          className="flex-1"
+          className={clsx(
+            "relative flex items-center justify-center px-4 py-2 font-medium transition-colors",
+            activeTab === 'courses' 
+              ? "text-primary-600 border-b-2 border-primary-600 dark:border-primary-400 dark:text-primary-400"
+              : "text-gray-600 dark:text-dark-300 hover:text-gray-800 dark:hover:text-dark-100",
+            !safeGetValue('shift.start') && "opacity-50 cursor-not-allowed"
+          )}
         >
-          Courses ({courseFields.length})
+          <span>Courses</span>
+          <Badge className="ml-2 h-5 w-5 rounded-full bg-primary-500 text-xs text-white">
+            {courseFields.length}
+          </Badge>
         </Button>
         <Button 
           variant={activeTab === 'validation' ? 'primary' : 'ghost'}
           onClick={() => setActiveTab('validation')}
           disabled={!safeGetValue('shift.start')}
-          className="flex-1"
+          className={clsx(
+            "relative flex items-center justify-center px-4 py-2 font-medium transition-colors",
+            activeTab === 'validation' 
+              ? "text-primary-600 border-b-2 border-primary-600 dark:border-primary-400 dark:text-primary-400"
+              : "text-gray-600 dark:text-dark-300 hover:text-gray-800 dark:hover:text-dark-100",
+            !safeGetValue('shift.start') && "opacity-50 cursor-not-allowed"
+          )}
         >
           Fin Shift
         </Button>
@@ -178,9 +197,21 @@ export function DriverMode({ chauffeur, vehicules, control, onSubmit, onSwitchMo
             
             <ExpensesSection 
               onAddExpense={handleAddExpense}
-              charges={chargeFields}
-              onRemoveCharge={handleRemoveCharge}
             />
+            
+            {courseFields.length > 0 && (
+              <CourseList 
+                courses={watchedValues.courses || []} 
+                onRemoveCourse={removeCourse}
+              />
+            )}
+            
+            {chargeFields.length > 0 && (
+              <ExpenseList 
+                expenses={watchedValues.charges || []} 
+                onRemoveExpense={handleRemoveCharge}
+              />
+            )}
             
             <Card className="p-4">
               <h3 className="text-lg font-medium">Récapitulatif</h3>
@@ -193,7 +224,7 @@ export function DriverMode({ chauffeur, vehicules, control, onSubmit, onSwitchMo
                   <span>Total Charges:</span>
                   <span className="font-medium">{totalCharges.toFixed(2)} €</span>
                 </div>
-                <div className="flex justify-between text-primary-600">
+                <div className="flex justify-between text-primary-600 dark:text-primary-400">
                   <span>Salaire estimé:</span>
                   <span className="font-bold">{salaire.toFixed(2)} €</span>
                 </div>

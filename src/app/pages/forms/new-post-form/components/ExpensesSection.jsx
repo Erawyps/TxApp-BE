@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Card, Button, Input } from 'components/ui';
 
-export function ExpensesSection({ onAddExpense, charges, onRemoveCharge }) {
+export function ExpensesSection({ onAddExpense }) {
   const [type, setType] = useState('carburant');
   const [montant, setMontant] = useState('');
   const [modePaiement, setModePaiement] = useState('cash');
@@ -25,16 +25,16 @@ export function ExpensesSection({ onAddExpense, charges, onRemoveCharge }) {
 
   return (
     <Card className="p-4">
-      <h3 className="text-lg font-medium">Dépenses</h3>
+      <h3 className="text-lg font-medium">Nouvelle Dépense</h3>
       
       <form onSubmit={handleSubmit} className="mt-4 space-y-4">
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="block mb-1">Type</label>
+            <label className="block mb-1 text-sm font-medium text-gray-700 dark:text-dark-300">Type</label>
             <select
               value={type}
               onChange={(e) => setType(e.target.value)}
-              className="w-full p-2 border rounded"
+              className="w-full p-2 border rounded-lg bg-white dark:bg-dark-800 text-gray-800 dark:text-dark-100 focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
             >
               <option value="carburant">Carburant</option>
               <option value="peage">Péage</option>
@@ -51,16 +51,17 @@ export function ExpensesSection({ onAddExpense, charges, onRemoveCharge }) {
             value={montant}
             onChange={(e) => setMontant(e.target.value)}
             required
+            className="[&>input]:bg-white dark:[&>input]:bg-dark-800"
           />
         </div>
         
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="block mb-1">Paiement</label>
+            <label className="block mb-1 text-sm font-medium text-gray-700 dark:text-dark-300">Paiement</label>
             <select
               value={modePaiement}
               onChange={(e) => setModePaiement(e.target.value)}
-              className="w-full p-2 border rounded"
+              className="w-full p-2 border rounded-lg bg-white dark:bg-dark-800 text-gray-800 dark:text-dark-100 focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
             >
               <option value="cash">Cash</option>
               <option value="bancontact">Bancontact</option>
@@ -71,39 +72,14 @@ export function ExpensesSection({ onAddExpense, charges, onRemoveCharge }) {
             label="Description"
             value={description}
             onChange={(e) => setDescription(e.target.value)}
+            className="[&>input]:bg-white dark:[&>input]:bg-dark-800"
           />
         </div>
         
-        <Button type="submit" className="w-full">
+        <Button type="submit" className="w-full" color="primary">
           Ajouter Dépense
         </Button>
       </form>
-      
-      {charges.length > 0 && (
-        <div className="mt-4">
-          <h4 className="font-medium">Dépenses enregistrées</h4>
-          <ul className="mt-2 space-y-2">
-            {charges.map((charge, index) => (
-              <li key={index} className="flex justify-between items-center p-2 bg-gray-50 rounded">
-                <div>
-                  <span className="font-medium capitalize">{charge.type}</span>
-                  <span className="ml-2">{charge.montant} €</span>
-                </div>
-                <div>
-                  <span className="text-sm text-gray-500 mr-2">{charge.mode_paiement}</span>
-                  <Button 
-                    variant="ghost" 
-                    size="sm"
-                    onClick={() => onRemoveCharge(index)}
-                  >
-                    Supprimer
-                  </Button>
-                </div>
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
     </Card>
   );
 }
