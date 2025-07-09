@@ -6,6 +6,7 @@ import { DriverMode } from './components/DriverMode';
 import { FullForm } from './components/FullForm';
 import { toast } from 'sonner';
 import { Page } from 'components/shared/Page';
+import ErrorBoundary from './components/ErrorBoundary';
 
 export default function FeuilleRouteApp() {
   const [mode, setMode] = useState('driver');
@@ -14,7 +15,8 @@ export default function FeuilleRouteApp() {
     control, 
     handleSubmit, 
     reset,
-    formState: { errors }
+    formState: { errors },
+    watch
   } = useForm({
     resolver: yupResolver(schema),
     defaultValues: defaultData
@@ -51,25 +53,7 @@ export default function FeuilleRouteApp() {
 
   const handleSubmitForm = (data) => {
     try {
-      // Validation des données avant soumission
       console.log('Feuille de route validée:', data);
-      
-      // Vérification des champs obligatoires
-      if (!data.header?.chauffeur?.id) {
-        toast.error('Chauffeur requis');
-        return;
-      }
-      
-      if (!data.header?.vehicule?.id) {
-        toast.error('Véhicule requis');
-        return;
-      }
-      
-      if (!data.kilometers?.start && data.kilometers?.start !== 0) {
-        toast.error('Kilométrage de départ requis');
-        return;
-      }
-      
       toast.success('Feuille de route enregistrée avec succès');
       reset(defaultData);
     } catch (error) {
@@ -78,32 +62,41 @@ export default function FeuilleRouteApp() {
     }
   };
 
+  // Gestionnaire d'erreur pour éviter les crashes
+  const handleError = (errors) => {
+    console.error('Erreurs de validation:', errors);
+    toast.error('Veuillez corriger les erreurs dans le formulaire');
+  };
+
   // Affichage des erreurs en mode développement
   if (import.meta.env.MODE === 'development' && Object.keys(errors).length > 0) {
     console.log('Erreurs de validation:', errors);
   }
 
   return (
-    <Page title="Feuille de Route">
-      <div className="px-4 pb-6">
-        {mode === 'driver' ? (
-          <DriverMode 
-            chauffeur={currentDriver}
-            vehicules={vehicules}
-            control={control}
-            onSubmit={handleSubmit(handleSubmitForm)}
-            onSwitchMode={() => setMode('full')}
-          />
-        ) : (
-          <FullForm 
-            chauffeurs={[currentDriver]}
-            vehicules={vehicules}
-            control={control}
-            onSwitchMode={() => setMode('driver')}
-            onSubmit={handleSubmit(handleSubmitForm)}
-          />
-        )}
-      </div>
-    </Page>
+    <ErrorBoundary>
+      <Page title="Feuille de Route">
+        <div className="px-4 pb-6">
+          {mode === 'driver' ? (
+            <DriverMode 
+              chauffeur={currentDriver}
+              vehicules={vehicules}
+              control={control}
+              onSubmit={handleSubmit(handleSubmitForm, handleError)}
+              onSwitchMode={() => setMode('full')}
+              watch={watch}
+            />
+          ) : (
+            <FullForm 
+              chauffeurs={[currentDriver]}
+              vehicules={vehicules}
+              control={control}
+              onSwitchMode={() => setMode('driver')}
+              onSubmit={handleSubmit(handleSubmitForm, handleError)}
+            />
+          )}
+        </div>
+      </Page>
+    </ErrorBoundary>
   );
 }
