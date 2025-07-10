@@ -13,7 +13,7 @@ import {
   ClockIcon,
   CurrencyEuroIcon,
   CalculatorIcon,
-  TruckIcon,
+  FlagIcon,
   TrashIcon
 } from '@heroicons/react/24/outline';
 import { useMediaQuery } from 'hooks/useMediaQuery';
@@ -42,7 +42,7 @@ export function FullForm({ chauffeurs, vehicules, control, onSwitchMode, onSubmi
       id: 'general', 
       label: "Général", 
       icon: <DocumentTextIcon className="h-5 w-5" />,
-      mobileIcon: <TruckIcon className="h-5 w-5" />
+      mobileIcon: <FlagIcon className="h-5 w-5" />
     },
     { 
       id: 'courses', 
