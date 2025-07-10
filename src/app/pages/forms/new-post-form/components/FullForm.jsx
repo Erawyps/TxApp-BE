@@ -5,8 +5,12 @@ import { toast } from 'sonner';
 import { Page } from 'components/shared/Page';
 import { useState } from 'react';
 import { 
+  DocumentTextIcon, 
+  ReceiptPercentIcon, 
+  CreditCardIcon, 
   CheckCircleIcon,
   DevicePhoneMobileIcon,
+  ClockIcon,
   CurrencyEuroIcon,
   CalculatorIcon,
   TruckIcon,
@@ -36,23 +40,27 @@ export function FullForm({ chauffeurs, vehicules, control, onSwitchMode, onSubmi
   const tabs = [
     { 
       id: 'general', 
-      label: "Général",
-      icon: <TruckIcon className="h-5 w-5 flex-shrink-0" /> 
+      label: "Général", 
+      icon: <DocumentTextIcon className="h-5 w-5" />,
+      mobileIcon: <TruckIcon className="h-5 w-5" />
     },
     { 
       id: 'courses', 
-      label: "Courses",
-      icon: <CurrencyEuroIcon className="h-5 w-5 flex-shrink-0" />
+      label: "Courses", 
+      icon: <ReceiptPercentIcon className="h-5 w-5" />,
+      mobileIcon: <CurrencyEuroIcon className="h-5 w-5" />
     },
     { 
       id: 'charges', 
-      label: "Dépenses",
-      icon: <CalculatorIcon className="h-5 w-5 flex-shrink-0" />
+      label: "Dépenses", 
+      icon: <CreditCardIcon className="h-5 w-5" />,
+      mobileIcon: <CalculatorIcon className="h-5 w-5" />
     },
     { 
       id: 'validation', 
-      label: "Validation",
-      icon: <CheckCircleIcon className="h-5 w-5 flex-shrink-0" />
+      label: "Validation", 
+      icon: <CheckCircleIcon className="h-5 w-5" />,
+      mobileIcon: <ClockIcon className="h-5 w-5" />
     }
   ];
 
@@ -87,28 +95,43 @@ export function FullForm({ chauffeurs, vehicules, control, onSwitchMode, onSubmi
           </div>
         </Card>
 
-         {/* Navigation par onglets améliorée */}
-      <Card className="p-0 overflow-hidden">
-        <TabGroup>
-          <TabList className="flex justify-center border-b border-gray-200 dark:border-dark-500">
-            {tabs.map((tab) => (
-              <Tab
-                key={tab.id}
-                active={activeTab === tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={clsx(
-                  "relative flex items-center gap-2 px-4 py-3 font-medium transition-colors",
-                  "focus:outline-none min-w-[120px] justify-center",
-                  activeTab === tab.id
-                    ? "text-primary-600 border-b-2 border-primary-600 dark:border-primary-400 dark:text-primary-400"
-                    : "text-gray-600 hover:text-gray-800 dark:text-dark-300 dark:hover:text-dark-100"
-                )}
-              >
-                {tab.icon}
-                <span>{tab.label}</span>
-              </Tab>
-            ))}
-          </TabList>
+        {/* Navigation par onglets améliorée */}
+        <Card className="p-0 overflow-hidden">
+          <TabGroup>
+            <TabList 
+              className={clsx(
+                "flex justify-center border-b border-gray-200 dark:border-dark-500",
+                isMobile ? "grid grid-cols-4 gap-0" : ""
+              )}
+            >
+              {tabs.map((tab) => (
+                <Tab
+                  key={tab.id}
+                  active={activeTab === tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  className={clsx(
+                    "relative flex items-center justify-center px-4 py-3 font-medium transition-colors",
+                    "focus:outline-none w-full",
+                    activeTab === tab.id
+                      ? "text-primary-600 border-b-2 border-primary-600 dark:border-primary-400 dark:text-primary-400"
+                      : "text-gray-600 hover:text-gray-800 dark:text-dark-300 dark:hover:text-dark-100",
+                    isMobile ? "flex-col !py-2 !px-1" : "flex-row gap-2"
+                  )}
+                >
+                  <span className={clsx(
+                    activeTab === tab.id 
+                      ? "text-primary-600 dark:text-primary-400" 
+                      : "text-gray-500 dark:text-dark-400"
+                  )}>
+                    {isMobile ? tab.mobileIcon : tab.icon}
+                  </span>
+                  {!isMobile && tab.label}
+                  {isMobile && (
+                    <span className="text-xs mt-1">{tab.label}</span>
+                  )}
+                </Tab>
+              ))}
+            </TabList>
             
             <TabPanels>
               <TabPanel>
