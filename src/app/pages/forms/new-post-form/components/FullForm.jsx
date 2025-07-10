@@ -98,6 +98,7 @@ export function FullForm({ chauffeurs, vehicules, control, onSwitchMode, onSubmi
         {/* Navigation par onglets améliorée */}
         <Card className="p-0 overflow-hidden">
           <TabGroup>
+
             <TabList 
                 className={clsx(
                     "flex justify-center border-b border-gray-200 dark:border-dark-500",
