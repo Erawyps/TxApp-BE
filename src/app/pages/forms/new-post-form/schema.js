@@ -1,10 +1,10 @@
 import * as Yup from 'yup';
 
 // Liste des constantes pour les valeurs enumrées
-const CHARGE_TYPES = ['Carburant', 'Péage', 'Entretien', 'Carwash', 'Divers'];
-const PAYMENT_MODES = ['CASH', 'BC', 'VIR', 'F-SNCB', 'F-WL', 'F-TX', 'F-AM', 'F-COM', 'F-HOP', 'AVC', 'DEM'];
-const CONTRACT_TYPES = ['CDI', 'CDD', 'Indépendant'];
-const VEHICLE_TYPES = ['Berline', 'Van', 'Luxe', 'Eco'];
+export const CHARGE_TYPES = ['Carburant', 'Péage', 'Entretien', 'Carwash', 'Divers'];
+export const PAYMENT_MODES = ['CASH', 'BC', 'VIR', 'F-SNCB', 'F-WL', 'F-TX', 'F-AM', 'F-COM', 'F-HOP', 'AVC', 'DEM'];
+export const CONTRACT_TYPES = ['CDI', 'CDD', 'Indépendant'];
+export const VEHICLE_TYPES = ['Berline', 'Van', 'Luxe', 'Eco'];
 
 export const schema = Yup.object().shape({
   // En-tête avec informations obligatoires
