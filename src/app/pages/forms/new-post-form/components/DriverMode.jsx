@@ -64,16 +64,19 @@ export function DriverMode({ chauffeur, vehicules, control, onSubmit, onSwitchMo
   };
 
   // Calculs des totaux
-  const totalRecettes = courseFields.reduce((sum, _, index) => {
-    const prix = safeGetValue(`courses.${index}.prix`, 0);
+    const totalRecettes = courseFields.reduce((sum, _, index) => {
+    const course = watchedValues.courses?.[index] || {};
+    const prix = course.somme_percue || course.prix || 0;
     return sum + (typeof prix === 'number' ? prix : parseFloat(prix) || 0);
   }, 0);
 
   const totalCharges = chargeFields.reduce((sum, _, index) => {
-    const montant = safeGetValue(`charges.${index}.montant`, 0);
+    const charge = watchedValues.charges?.[index] || {};
+    const montant = charge.montant || 0;
     return sum + (typeof montant === 'number' ? montant : parseFloat(montant) || 0);
   }, 0);
 
+  // Règle de calcul du salaire
   const base = Math.min(totalRecettes, 180);
   const surplus = Math.max(totalRecettes - 180, 0);
   const salaire = (base * 0.4) + (surplus * 0.3);
