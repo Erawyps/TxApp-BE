@@ -14,7 +14,7 @@ import clsx from 'clsx';
 import { 
   ClockIcon,
   CurrencyEuroIcon,
-  TruckIcon,
+  FlagIcon,
   DevicePhoneMobileIcon
 } from '@heroicons/react/24/outline';
 
@@ -159,7 +159,7 @@ export function DriverMode({ chauffeur, vehicules, control, onSubmit, onSwitchMo
                 : "text-gray-600 hover:text-gray-800 dark:text-dark-300 dark:hover:text-dark-100",
             )}
           >
-            <TruckIcon className={clsx(
+            <FlagIcon className={clsx(
               "h-5 w-5 mb-1",
               activeTab === 'shift' 
                 ? "text-primary-600 dark:text-primary-400" 
