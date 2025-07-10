@@ -10,6 +10,14 @@ import { CourseList } from './CourseList';
 import { ExpenseList } from './ExpenseList';
 import { SummaryCard } from './SummaryCard';
 import clsx from 'clsx';
+import { TabGroup, TabList, Tab, TabPanels, TabPanel } from 'components/ui/Tabs';
+import { 
+  ClockIcon,
+  CurrencyEuroIcon,
+  TruckIcon,
+  DevicePhoneMobileIcon
+} from '@heroicons/react/24/outline';
+import { useMediaQuery } from 'hooks/useMediaQuery';
 
 export function DriverMode({ chauffeur, vehicules, control, onSubmit, onSwitchMode }) {
   const { fields: courseFields, append: appendCourse, remove: removeCourse } = useFieldArray({
@@ -23,6 +31,7 @@ export function DriverMode({ chauffeur, vehicules, control, onSubmit, onSwitchMo
   });
 
   const [activeTab, setActiveTab] = useState('shift');
+  const isMobile = useMediaQuery('(max-width: 768px)');
   
   const watchedValues = useWatch({ 
     control, 
@@ -105,180 +114,184 @@ export function DriverMode({ chauffeur, vehicules, control, onSubmit, onSwitchMo
     }
   };
 
+  const tabs = [
+    { 
+      id: 'shift', 
+      label: "Début Shift", 
+      icon: <TruckIcon className="h-5 w-5" />,
+      mobileIcon: <TruckIcon className="h-5 w-5" />,
+      disabled: false
+    },
+    { 
+      id: 'courses', 
+      label: "Courses", 
+      icon: <CurrencyEuroIcon className="h-5 w-5" />,
+      mobileIcon: <CurrencyEuroIcon className="h-5 w-5" />,
+      disabled: !safeGetValue('shift.start'),
+      count: courseFields.length
+    },
+    { 
+      id: 'validation', 
+      label: "Fin Shift", 
+      icon: <ClockIcon className="h-5 w-5" />,
+      mobileIcon: <ClockIcon className="h-5 w-5" />,
+      disabled: !safeGetValue('shift.start')
+    }
+  ];
+
   return (
     <div className="space-y-6">
-      {/* Header */}
+      {/* En-tête unifié avec FullForm */}
       <Card className="p-5">
         <div className="flex items-center justify-between">
           <div>
             <h2 className="text-xl font-semibold text-gray-800 dark:text-dark-100">
               Feuille de Route - {chauffeur.prenom} {chauffeur.nom}
             </h2>
-            <div className="mt-1 flex items-center space-x-4 text-sm text-gray-600 dark:text-dark-300">
-              <span>Badge: {chauffeur.numero_badge}</span>
-              <span>•</span>
-              <span>Contrat: {chauffeur.type_contrat}</span>
+            <div className="mt-1 text-sm text-gray-600 dark:text-dark-300">
+              {new Date().toLocaleDateString('fr-FR', { 
+                weekday: 'long', 
+                year: 'numeric', 
+                month: 'long', 
+                day: 'numeric' 
+              })}
             </div>
           </div>
           <Button 
             variant="outlined" 
             onClick={onSwitchMode}
             className="border-gray-300 dark:border-dark-500"
+            icon={<DevicePhoneMobileIcon className="h-5 w-5" />}
+            size={isMobile ? 'sm' : 'md'}
           >
-            Mode complet
+            {isMobile ? 'Mode complet' : 'Mode complet'}
           </Button>
         </div>
       </Card>
 
-      {/* Navigation par onglets améliorée */}
-      <div className="border-b-2 border-gray-200 dark:border-dark-500">
-        <div className="flex justify-center space-x-1">
-          <TabButton
-            active={activeTab === 'shift'}
-            onClick={() => setActiveTab('shift')}
-            count={null}
-            icon={
-              <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-            }
+      {/* Navigation par onglets identique à FullForm */}
+      <Card className="p-0 overflow-hidden">
+        <TabGroup>
+          <TabList 
+            className={clsx(
+              "flex justify-center border-b border-gray-200 dark:border-dark-500",
+              isMobile ? "grid grid-cols-3 gap-0" : ""
+            )}
           >
-            Début Shift
-          </TabButton>
-          <TabButton
-            active={activeTab === 'courses'}
-            onClick={() => setActiveTab('courses')}
-            disabled={!safeGetValue('shift.start')}
-            count={courseFields.length}
-            icon={
-              <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-              </svg>
-            }
-          >
-            Courses
-          </TabButton>
-          <TabButton
-            active={activeTab === 'validation'}
-            onClick={() => setActiveTab('validation')}
-            disabled={!safeGetValue('shift.start')}
-            count={null}
-            icon={
-              <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-              </svg>
-            }
-          >
-            Fin Shift
-          </TabButton>
-        </div>
-      </div>
-
-      {/* Contenu des onglets */}
-      <div className="space-y-6">
-        {activeTab === 'shift' && (
-          <div className="grid gap-6 md:grid-cols-2">
-            <VehicleInfo 
-              vehicules={vehicules} 
-              control={control}
-              currentVehicle={safeGetValue('header.vehicule')}
-            />
-            <ShiftInfo 
-              control={control}
-              onStartShift={() => setActiveTab('courses')}
-            />
-          </div>
-        )}
-
-        {activeTab === 'courses' && (
-          <div className="grid gap-6 lg:grid-cols-3">
-            <div className="space-y-6 lg:col-span-2">
-              <QuickCourseForm 
-                onAddCourse={handleAddCourse}
-                currentLocation={chauffeur.currentLocation}
-              />
-              
-              <ExpensesSection 
-                onAddExpense={handleAddExpense}
-              />
-            </div>
+            {tabs.map((tab) => (
+              <Tab
+                key={tab.id}
+                active={activeTab === tab.id}
+                onClick={() => !tab.disabled && setActiveTab(tab.id)}
+                className={clsx(
+                  "relative flex items-center justify-center px-4 py-3 font-medium transition-colors",
+                  "focus:outline-none w-full",
+                  activeTab === tab.id
+                    ? "text-primary-600 border-b-2 border-primary-600 dark:border-primary-400 dark:text-primary-400"
+                    : "text-gray-600 hover:text-gray-800 dark:text-dark-300 dark:hover:text-dark-100",
+                  tab.disabled && "opacity-50 cursor-not-allowed",
+                  isMobile ? "flex-col !py-2 !px-1" : "flex-row gap-2"
+                )}
+              >
+                <span className={clsx(
+                  activeTab === tab.id 
+                    ? "text-primary-600 dark:text-primary-400" 
+                    : "text-gray-500 dark:text-dark-400"
+                )}>
+                  {isMobile ? tab.mobileIcon : tab.icon}
+                </span>
+                {!isMobile && tab.label}
+                {isMobile && (
+                  <span className="text-xs mt-1">{tab.label}</span>
+                )}
+                {tab.count !== undefined && tab.count > 0 && (
+                  <Badge 
+                    className={clsx(
+                      "ml-2",
+                      activeTab === tab.id 
+                        ? "bg-primary-500 text-white" 
+                        : "bg-gray-200 dark:bg-dark-600 text-gray-800 dark:text-dark-100"
+                    )}
+                  >
+                    {tab.count}
+                  </Badge>
+                )}
+              </Tab>
+            ))}
+          </TabList>
+          
+          <TabPanels>
+            <TabPanel>
+              {activeTab === 'shift' && (
+                <div className="grid gap-6 md:grid-cols-2">
+                  <VehicleInfo 
+                    vehicules={vehicules} 
+                    control={control}
+                    currentVehicle={safeGetValue('header.vehicule')}
+                  />
+                  <ShiftInfo 
+                    control={control}
+                    onStartShift={() => setActiveTab('courses')}
+                  />
+                </div>
+              )}
+            </TabPanel>
             
-            <div className="space-y-6 lg:col-span-1">
-              {courseFields.length > 0 && (
-                <CourseList 
-                  courses={watchedValues.courses || []} 
-                  onRemoveCourse={removeCourse}
+            <TabPanel>
+              {activeTab === 'courses' && (
+                <div className="grid gap-6 lg:grid-cols-3">
+                  <div className="space-y-6 lg:col-span-2">
+                    <QuickCourseForm 
+                      onAddCourse={handleAddCourse}
+                      currentLocation={chauffeur.currentLocation}
+                    />
+                    
+                    <ExpensesSection 
+                      onAddExpense={handleAddExpense}
+                    />
+                  </div>
+                  
+                  <div className="space-y-6 lg:col-span-1">
+                    {courseFields.length > 0 && (
+                      <CourseList 
+                        courses={watchedValues.courses || []} 
+                        onRemoveCourse={removeCourse}
+                      />
+                    )}
+                    
+                    {chargeFields.length > 0 && (
+                      <ExpenseList 
+                        expenses={watchedValues.charges || []} 
+                        onRemoveExpense={removeCharge}
+                      />
+                    )}
+                    
+                    <SummaryCard
+                      recettes={totalRecettes}
+                      charges={totalCharges}
+                      salaire={salaire}
+                    />
+                  </div>
+                </div>
+              )}
+            </TabPanel>
+            
+            <TabPanel>
+              {activeTab === 'validation' && (
+                <ValidationStep 
+                  onSubmit={onSubmit}
+                  control={control}
+                  totals={{
+                    recettes: totalRecettes,
+                    charges: totalCharges,
+                    salaire: salaire
+                  }}
                 />
               )}
-              
-              {chargeFields.length > 0 && (
-                <ExpenseList 
-                  expenses={watchedValues.charges || []} 
-                  onRemoveExpense={removeCharge}
-                />
-              )}
-              
-              <SummaryCard
-                recettes={totalRecettes}
-                charges={totalCharges}
-                salaire={salaire}
-              />
-            </div>
-          </div>
-        )}
-
-        {activeTab === 'validation' && (
-          <ValidationStep 
-            onSubmit={onSubmit}
-            control={control}
-            totals={{
-              recettes: totalRecettes,
-              charges: totalCharges,
-              salaire: salaire
-            }}
-          />
-        )}
-      </div>
+            </TabPanel>
+          </TabPanels>
+        </TabGroup>
+      </Card>
     </div>
-  );
-}
-
-// Composant TabButton réutilisable amélioré
-function TabButton({ active, onClick, disabled, count, icon, children }) {
-  return (
-    <button
-      onClick={onClick}
-      disabled={disabled}
-      className={clsx(
-        "relative flex items-center justify-center px-4 py-3 font-medium transition-colors",
-        "focus:outline-none",
-        active
-          ? "text-primary-600 border-b-2 border-primary-600 dark:border-primary-400 dark:text-primary-400"
-          : "text-gray-600 hover:text-gray-800 dark:text-dark-300 dark:hover:text-dark-100",
-        disabled && "opacity-50 cursor-not-allowed",
-        "flex-col md:flex-row gap-2" // Disposition responsive
-      )}
-    >
-      <div className="flex items-center gap-2">
-        {icon && (
-          <span className={clsx(
-            active ? "text-primary-600 dark:text-primary-400" : "text-gray-500 dark:text-dark-400"
-          )}>
-            {icon}
-          </span>
-        )}
-        <span>{children}</span>
-      </div>
-      {count !== null && count > 0 && (
-        <Badge 
-          className={clsx(
-            "ml-2",
-            active ? "bg-primary-500 text-white" : "bg-gray-200 dark:bg-dark-600 text-gray-800 dark:text-dark-100"
-          )}
-        >
-          {count}
-        </Badge>
-      )}
-    </button>
   );
 }
