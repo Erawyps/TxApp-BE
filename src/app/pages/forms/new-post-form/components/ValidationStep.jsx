@@ -1,4 +1,16 @@
 import { Card, Button, Input } from 'components/ui';
+
+// Define or import calculatePriseEnCharge function
+function calculatePriseEnCharge() {
+  // Add logic for calculating 'prise_en_charge_fin'
+  return 0; // Replace with actual calculation
+}
+
+// Define or import calculateChutes function
+function calculateChutes() {
+  // Add logic for calculating 'chutes_fin'
+  return 0; // Replace with actual calculation
+}
 import { useState } from 'react';
 import { Controller } from 'react-hook-form';
 
@@ -10,14 +22,20 @@ export function ValidationStep({ onSubmit, control, totals }) {
       alert('Veuillez signer pour valider');
       return;
     }
-    
+
+    const data = {}; // Define or fetch the data object here
+
     onSubmit({
-      signature,
-      date_validation: new Date().toISOString(),
-      totals: {
-        recettes: totals.recettes,
-        charges: totals.charges,
-        salaire: totals.salaire
+      ...data,
+      validation: {
+        prise_en_charge_fin: calculatePriseEnCharge(), // Ensure calculatePriseEnCharge is defined or imported
+        date_validation: new Date().toISOString(),
+        // valide_par: currentUserId  À obtenir du contexte d'authentification
+      },
+      kilometers: {
+        ...data.kilometers,
+        prise_en_charge_fin: calculatePriseEnCharge(),
+        chutes_fin: calculateChutes()
       }
     });
   };

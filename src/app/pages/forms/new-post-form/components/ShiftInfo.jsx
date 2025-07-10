@@ -38,6 +38,32 @@ export function ShiftInfo({ control, onStartShift }) {
             />
           )}
         />
+
+        <Controller
+        name="kilometers.prise_en_charge_debut"
+        control={control}
+        render={({ field }) => (
+            <Input
+            {...field}
+            label="Prise en charge début (€)"
+            type="number"
+            step="0.01"
+            />
+        )}
+        />
+
+        <Controller
+        name="kilometers.chutes_debut"
+        control={control}
+        render={({ field }) => (
+            <Input
+            {...field}
+            label="Chutes début (€)"
+            type="number"
+            step="0.01"
+            />
+        )}
+        />
         
         <Button 
           onClick={onStartShift}

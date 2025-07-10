@@ -125,7 +125,7 @@ export function DriverMode({ chauffeur, vehicules, control, onSubmit, onSwitchMo
               Feuille de Route - {chauffeur.prenom} {chauffeur.nom}
             </h2>
             <div className="mt-1 flex flex-wrap items-center gap-x-4 text-sm text-gray-600 dark:text-dark-300">
-              <span>Badge: {chauffeur.numero_badge}</span>
+              <span>N° d&apos;immatriculation: {chauffeur.badge}</span>
               <span>Contrat: {chauffeur.type_contrat}</span>
             </div>
           </div>
