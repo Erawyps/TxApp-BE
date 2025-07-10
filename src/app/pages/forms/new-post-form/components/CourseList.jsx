@@ -4,7 +4,7 @@ import { TrashIcon } from '@heroicons/react/24/outline';
 
 export function CourseList({ courses, onRemoveCourse }) {
   const formatTime = (timeString) => {
-    if (!timeString) return '';
+    if (!timeString) return 'Non renseignée';
     const [hours, minutes] = timeString.split(':');
     return `${hours}h${minutes}`;
   };
@@ -31,18 +31,21 @@ export function CourseList({ courses, onRemoveCourse }) {
             <div className="flex justify-between items-start">
               <div>
                 <div className="font-medium">
-                  {course.lieu_embarquement} → {course.lieu_debarquement}
+                  {course.lieu_embarquement || course.depart?.lieu} → 
+                  {course.lieu_debarquement || course.arrivee?.lieu}
                 </div>
                 <div className="mt-1 text-sm">
-                  <span>{course.prix_taximetre.toFixed(2)} € (Perçu: {course.somme_percue.toFixed(2)} €)</span>
+                  <span>{course.prix_taximetre?.toFixed(2) || course.prix?.toFixed(2)} €</span>
                   <span className="mx-2">•</span>
-                  <span>{getPaymentMethodLabel(course.mode_paiement_id)}</span>
+                  <span>{getPaymentMethodLabel(course.mode_paiement_id || course.mode_paiement)}</span>
                   {course.est_facture && (
                     <span className="ml-2 text-blue-500">Facturé</span>
                   )}
                 </div>
                 <div className="mt-1 text-xs text-gray-500">
-                  {formatTime(course.heure_embarquement)} → {formatTime(course.heure_debarquement)}
+                  <span>Embarquement: {formatTime(course.heure_embarquement)}</span>
+                  <span className="mx-2">•</span>
+                  <span>Débarquement: {formatTime(course.heure_debarquement || course.arrivee?.heure)}</span>
                 </div>
               </div>
               <Button 

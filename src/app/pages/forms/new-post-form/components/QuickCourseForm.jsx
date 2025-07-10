@@ -6,6 +6,7 @@ export function QuickCourseForm({ onAddCourse, currentLocation }) {
   const [form, setForm] = useState({
     lieu_embarquement: currentLocation || '',
     lieu_debarquement: '',
+    heure_debarquement: '', // Nouveau champ
     prix_taximetre: '',
     somme_percue: '',
     mode_paiement_id: 'CASH',
@@ -32,14 +33,15 @@ export function QuickCourseForm({ onAddCourse, currentLocation }) {
       lieu_embarquement: form.lieu_embarquement,
       lieu_debarquement: form.lieu_debarquement,
       heure_embarquement: now,
+      heure_debarquement: form.heure_debarquement || null, // Enregistre l'heure si fournie
       prix_taximetre: parseFloat(form.prix_taximetre),
       somme_percue: parseFloat(form.somme_percue || form.prix_taximetre),
       mode_paiement_id: form.mode_paiement_id,
       client_id: form.mode_paiement_id.startsWith('F-') ? form.client_id : null,
       est_facture: form.mode_paiement_id.startsWith('F-'),
       notes: form.notes,
-      index_depart: 0, // À remplacer par la valeur réelle
-      index_arrivee: 0  // À remplacer par la valeur réelle
+      index_depart: 0,
+      index_arrivee: 0
     });
     
     toast.success('Course ajoutée avec succès');
@@ -47,6 +49,7 @@ export function QuickCourseForm({ onAddCourse, currentLocation }) {
     setForm({
       lieu_embarquement: currentLocation || '',
       lieu_debarquement: '',
+      heure_debarquement: '', // Réinitialisation
       prix_taximetre: '',
       somme_percue: '',
       mode_paiement_id: 'CASH',
@@ -65,7 +68,6 @@ export function QuickCourseForm({ onAddCourse, currentLocation }) {
           value={form.lieu_embarquement}
           onChange={(e) => setForm({...form, lieu_embarquement: e.target.value})}
           required
-          placeholder="Adresse de départ"
         />
         
         <Input
@@ -73,7 +75,14 @@ export function QuickCourseForm({ onAddCourse, currentLocation }) {
           value={form.lieu_debarquement}
           onChange={(e) => setForm({...form, lieu_debarquement: e.target.value})}
           required
-          placeholder="Adresse de destination"
+        />
+
+        {/* Nouveau champ pour l'heure de débarquement */}
+        <Input
+          label="Heure de débarquement (optionnel)"
+          type="time"
+          value={form.heure_debarquement}
+          onChange={(e) => setForm({...form, heure_debarquement: e.target.value})}
         />
         
         <div className="grid grid-cols-2 gap-4">
@@ -115,7 +124,6 @@ export function QuickCourseForm({ onAddCourse, currentLocation }) {
               value={form.client_id}
               onChange={(e) => setForm({...form, client_id: e.target.value})}
               required
-              placeholder="ID client"
             />
           )}
         </div>
