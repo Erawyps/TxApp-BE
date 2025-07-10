@@ -360,14 +360,35 @@ const CoursesTab = ({ control, isMobile }) => {
   });
 
   const handleAddCourse = (course) => {
+    // Conversion depuis le format Driver si nécessaire
+    const newCourse = course.lieu_embarquement ? course : {
+      lieu_embarquement: course.depart.lieu,
+      lieu_debarquement: course.arrivee.lieu,
+      heure_embarquement: course.depart.heure,
+      heure_debarquement: course.arrivee.heure,
+      prix_taximetre: course.prix,
+      somme_percue: course.prix,
+      mode_paiement_id: course.mode_paiement === 'cash' ? 'CASH' : 
+                        course.mode_paiement === 'bancontact' ? 'BC' : 'F-TX',
+      est_facture: course.mode_paiement === 'facture',
+      client_id: course.client || null,
+      notes: course.notes,
+      index_depart: 0,
+      index_arrivee: 0
+    };
+    
     append({
-      ...course,
+      ...newCourse,
       id: `CRS-${Date.now()}`,
     });
     toast.success('Course ajoutée');
   };
 
-  return (
+  const handleRemoveCourse = (index) => {
+    remove(index);
+  };
+
+ return (
     <div className="space-y-4 p-4">
       <QuickCourseForm 
         onAddCourse={handleAddCourse}
@@ -390,35 +411,43 @@ const CoursesTab = ({ control, isMobile }) => {
                 <div className="flex justify-between items-start">
                   <div className="flex-1">
                     <p className="font-medium text-gray-800 dark:text-dark-100">
-                      {course.depart.lieu} → {course.arrivee.lieu}
+                      {course.lieu_embarquement || course.depart?.lieu} → 
+                      {course.lieu_debarquement || course.arrivee?.lieu}
                     </p>
                     <div className="mt-2 flex flex-wrap items-center gap-2 text-sm">
                       <Badge className="bg-primary-100 text-primary-800 dark:bg-primary-900/30 dark:text-primary-400">
-                        {course.prix.toFixed(2)} €
+                        {course.prix_taximetre?.toFixed(2) || course.prix?.toFixed(2)} €
                       </Badge>
-                      <Badge className="bg-gray-100 text-gray-800 dark:bg-dark-600 dark:text-dark-100 capitalize">
-                        {course.mode_paiement}
+                      <Badge className="bg-gray-100 text-gray-800 dark:bg-dark-600 dark:text-dark-100">
+                        {course.mode_paiement_id || 
+                         (course.mode_paiement === 'cash' ? 'CASH' : 
+                          course.mode_paiement === 'bancontact' ? 'BC' : 'F-TX')}
                       </Badge>
-                      {course.client && (
+                      {(course.client_id || course.client) && (
                         <Badge className="bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400">
-                          Client: {course.client}
+                          Client: {course.client_id || course.client}
                         </Badge>
                       )}
                     </div>
-                    {course.depart.heure && (
+                    {course.heure_embarquement && (
                       <div className="mt-2 text-xs text-gray-500 dark:text-dark-400">
-                        Heure: {course.depart.heure}
+                        Heure: {course.heure_embarquement}
                       </div>
                     )}
                   </div>
                   <Button 
                     variant="ghost" 
                     size={isMobile ? "lg" : "md"}
-                    onClick={() => remove(index)}
+                    onClick={() => handleRemoveCourse(index)}
                     className="text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 ml-2"
                     icon={<TrashIcon className="h-5 w-5" />}
                   />
                 </div>
+                {course.notes && (
+                  <div className="mt-2 text-sm text-gray-600 dark:text-dark-300">
+                    📝 {course.notes}
+                  </div>
+                )}
               </div>
             ))}
           </div>
@@ -428,7 +457,7 @@ const CoursesTab = ({ control, isMobile }) => {
   );
 };
 
-// Composant ChargesTab optimisé
+// Composant ChargesTab révisé
 const ChargesTab = ({ control, isMobile }) => {
   const { fields, append, remove } = useFieldArray({
     control,
@@ -436,12 +465,24 @@ const ChargesTab = ({ control, isMobile }) => {
   });
 
   const handleAddCharge = (charge) => {
-    append({
-      ...charge,
-      id: `CHG-${Date.now()}`,
+    // Conversion depuis le format Driver si nécessaire
+    const newCharge = charge.type_charge ? charge : {
+      type_charge: charge.type.toLowerCase(),
+      montant: charge.montant,
+      mode_paiement_id: charge.mode_paiement === 'cash' ? 'CASH' : 'BC',
+      description: charge.description,
       date: new Date().toISOString()
+    };
+    
+    append({
+      ...newCharge,
+      id: `CHG-${Date.now()}`,
     });
     toast.success('Dépense ajoutée');
+  };
+
+  const handleRemoveCharge = (index) => {
+    remove(index);
   };
 
   return (
@@ -467,14 +508,15 @@ const ChargesTab = ({ control, isMobile }) => {
                 <div className="flex justify-between items-start">
                   <div className="flex-1">
                     <p className="font-medium text-gray-800 dark:text-dark-100 capitalize">
-                      {charge.type}
+                      {charge.type_charge || charge.type}
                     </p>
                     <div className="mt-2 flex flex-wrap items-center gap-2 text-sm">
                       <Badge className="bg-primary-100 text-primary-800 dark:bg-primary-900/30 dark:text-primary-400">
                         {charge.montant.toFixed(2)} €
                       </Badge>
-                      <Badge className="bg-gray-100 text-gray-800 dark:bg-dark-600 dark:text-dark-100 capitalize">
-                        {charge.mode_paiement}
+                      <Badge className="bg-gray-100 text-gray-800 dark:bg-dark-600 dark:text-dark-100">
+                        {charge.mode_paiement_id || 
+                         (charge.mode_paiement === 'cash' ? 'CASH' : 'BC')}
                       </Badge>
                     </div>
                     {charge.description && (
@@ -486,7 +528,7 @@ const ChargesTab = ({ control, isMobile }) => {
                   <Button 
                     variant="ghost" 
                     size={isMobile ? "lg" : "md"}
-                    onClick={() => remove(index)}
+                    onClick={() => handleRemoveCharge(index)}
                     className="text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 ml-2"
                     icon={<TrashIcon className="h-5 w-5" />}
                   />
