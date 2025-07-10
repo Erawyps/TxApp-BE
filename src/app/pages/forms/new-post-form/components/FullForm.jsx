@@ -96,46 +96,46 @@ export function FullForm({ chauffeurs, vehicules, control, onSwitchMode, onSubmi
         </Card>
 
         {/* Navigation par onglets améliorée */}
-<Card className="p-0 overflow-hidden">
-  <TabGroup>
-    <TabList 
-      className={clsx(
-        "flex justify-center border-b border-gray-200 dark:border-dark-500",
-        isMobile ? "grid grid-cols-4 gap-0" : ""
-      )}
-    >
-      {tabs.map((tab) => (
-        <Tab
-          key={tab.id}
-          active={activeTab === tab.id}
-          onClick={() => setActiveTab(tab.id)}
-          className={clsx(
-            "relative flex flex-col items-center justify-center px-2 py-3 font-medium transition-colors",
-            "focus:outline-none w-full h-full",
-            activeTab === tab.id
-              ? "text-primary-600 border-b-2 border-primary-600 dark:border-primary-400 dark:text-primary-400"
-              : "text-gray-600 hover:text-gray-800 dark:text-dark-300 dark:hover:text-dark-100"
-          )}
-        >
-          <div className="flex flex-col items-center justify-center h-full">
-            <span className={clsx(
-              "flex items-center justify-center h-6 w-6",
-              activeTab === tab.id 
-                ? "text-primary-600 dark:text-primary-400" 
-                : "text-gray-500 dark:text-dark-400"
-            )}>
-              {isMobile ? tab.mobileIcon : tab.icon}
-            </span>
-            <span className={clsx(
-              "mt-1 text-center",
-              isMobile ? "text-xs" : "text-sm"
-            )}>
-              {tab.label}
-            </span>
-          </div>
-        </Tab>
-      ))}
-    </TabList>
+        <Card className="p-0 overflow-hidden">
+          <TabGroup>
+            <TabList 
+                className={clsx(
+                    "flex justify-center border-b border-gray-200 dark:border-dark-500",
+                    isMobile ? "grid grid-cols-4 gap-0" : ""
+                )}
+                >
+                {tabs.map((tab) => (
+                    <Tab
+                    key={tab.id}
+                    active={activeTab === tab.id}
+                    onClick={() => setActiveTab(tab.id)}
+                    className={clsx(
+                        "relative flex flex-col items-center justify-center px-2 py-3 font-medium transition-colors",
+                        "focus:outline-none w-full h-full",
+                        activeTab === tab.id
+                        ? "text-primary-600 border-b-2 border-primary-600 dark:border-primary-400 dark:text-primary-400"
+                        : "text-gray-600 hover:text-gray-800 dark:text-dark-300 dark:hover:text-dark-100"
+                    )}
+                    >
+                    <div className="flex flex-col items-center justify-center h-full">
+                        <span className={clsx(
+                        "flex items-center justify-center h-6 w-6",
+                        activeTab === tab.id 
+                            ? "text-primary-600 dark:text-primary-400" 
+                            : "text-gray-500 dark:text-dark-400"
+                        )}>
+                        {isMobile ? tab.mobileIcon : tab.icon}
+                        </span>
+                        <span className={clsx(
+                        "mt-1 text-center",
+                        isMobile ? "text-xs" : "text-sm"
+                        )}>
+                        {tab.label}
+                        </span>
+                    </div>
+                    </Tab>
+                ))}
+            </TabList>
             
             <TabPanels>
               <TabPanel>
