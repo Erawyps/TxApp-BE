@@ -10,11 +10,7 @@ import { CourseList } from './CourseList';
 import { ExpenseList } from './ExpenseList';
 import { SummaryCard } from './SummaryCard';
 import clsx from 'clsx';
-import { 
-  CheckCircleIcon,
-  CurrencyEuroIcon,
-  ClockIcon
-} from '@heroicons/react/24/outline';
+
 export function DriverMode({ chauffeur, vehicules, control, onSubmit, onSwitchMode }) {
   const { fields: courseFields, append: appendCourse, remove: removeCourse } = useFieldArray({
     control,
@@ -109,26 +105,6 @@ export function DriverMode({ chauffeur, vehicules, control, onSubmit, onSwitchMo
     }
   };
 
-  const tabs = [
-    { 
-      id: 'shift', 
-      label: "Début Shift",
-      icon: <ClockIcon className="h-5 w-5 flex-shrink-0" />
-    },
-    { 
-      id: 'courses', 
-      label: "Courses",
-      icon: <CurrencyEuroIcon className="h-5 w-5 flex-shrink-0" />,
-      disabled: !safeGetValue('shift.start')
-    },
-    { 
-      id: 'validation', 
-      label: "Fin Shift",
-      icon: <CheckCircleIcon className="h-5 w-5 flex-shrink-0" />,
-      disabled: !safeGetValue('shift.start')
-    }
-  ];
-
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -155,43 +131,48 @@ export function DriverMode({ chauffeur, vehicules, control, onSubmit, onSwitchMo
       </Card>
 
       {/* Navigation par onglets améliorée */}
-            <Card className="p-0 overflow-hidden">
-        <div className="border-b-2 border-gray-200 dark:border-dark-500">
-          <div className="flex justify-center">
-            {tabs.map((tab) => (
-              <button
-                key={tab.id}
-                onClick={() => !tab.disabled && setActiveTab(tab.id)}
-                disabled={tab.disabled}
-                className={clsx(
-                  "relative flex items-center gap-2 px-4 py-3 font-medium transition-colors",
-                  "focus:outline-none min-w-[120px] justify-center",
-                  activeTab === tab.id
-                    ? "text-primary-600 border-b-2 border-primary-600 dark:border-primary-400 dark:text-primary-400"
-                    : "text-gray-600 hover:text-gray-800 dark:text-dark-300 dark:hover:text-dark-100",
-                  tab.disabled && "opacity-50 cursor-not-allowed"
-                )}
-              >
-                {tab.icon}
-                <span>{tab.label}</span>
-                {tab.count !== undefined && tab.count > 0 && (
-                  <Badge 
-                    className={clsx(
-                      "ml-2",
-                      activeTab === tab.id 
-                        ? "bg-primary-500 text-white" 
-                        : "bg-gray-200 dark:bg-dark-600 text-gray-800 dark:text-dark-100"
-                    )}
-                  >
-                    {tab.count}
-                  </Badge>
-                )}
-              </button>
-            ))}
-          </div>
+      <div className="border-b-2 border-gray-200 dark:border-dark-500">
+        <div className="flex justify-center space-x-1">
+          <TabButton
+            active={activeTab === 'shift'}
+            onClick={() => setActiveTab('shift')}
+            count={null}
+            icon={
+              <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            }
+          >
+            Début Shift
+          </TabButton>
+          <TabButton
+            active={activeTab === 'courses'}
+            onClick={() => setActiveTab('courses')}
+            disabled={!safeGetValue('shift.start')}
+            count={courseFields.length}
+            icon={
+              <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+              </svg>
+            }
+          >
+            Courses
+          </TabButton>
+          <TabButton
+            active={activeTab === 'validation'}
+            onClick={() => setActiveTab('validation')}
+            disabled={!safeGetValue('shift.start')}
+            count={null}
+            icon={
+              <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              </svg>
+            }
+          >
+            Fin Shift
+          </TabButton>
         </div>
-      </Card>
-
+      </div>
 
       {/* Contenu des onglets */}
       <div className="space-y-6">
@@ -262,4 +243,42 @@ export function DriverMode({ chauffeur, vehicules, control, onSubmit, onSwitchMo
   );
 }
 
-// The unused TabButton component has been removed.
+// Composant TabButton réutilisable amélioré
+function TabButton({ active, onClick, disabled, count, icon, children }) {
+  return (
+    <button
+      onClick={onClick}
+      disabled={disabled}
+      className={clsx(
+        "relative flex items-center justify-center px-4 py-3 font-medium transition-colors",
+        "focus:outline-none",
+        active
+          ? "text-primary-600 border-b-2 border-primary-600 dark:border-primary-400 dark:text-primary-400"
+          : "text-gray-600 hover:text-gray-800 dark:text-dark-300 dark:hover:text-dark-100",
+        disabled && "opacity-50 cursor-not-allowed",
+        "flex-col md:flex-row gap-2" // Disposition responsive
+      )}
+    >
+      <div className="flex items-center gap-2">
+        {icon && (
+          <span className={clsx(
+            active ? "text-primary-600 dark:text-primary-400" : "text-gray-500 dark:text-dark-400"
+          )}>
+            {icon}
+          </span>
+        )}
+        <span>{children}</span>
+      </div>
+      {count !== null && count > 0 && (
+        <Badge 
+          className={clsx(
+            "ml-2",
+            active ? "bg-primary-500 text-white" : "bg-gray-200 dark:bg-dark-600 text-gray-800 dark:text-dark-100"
+          )}
+        >
+          {count}
+        </Badge>
+      )}
+    </button>
+  );
+}
