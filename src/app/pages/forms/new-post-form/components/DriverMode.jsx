@@ -16,7 +16,6 @@ import {
   TruckIcon,
   DevicePhoneMobileIcon
 } from '@heroicons/react/24/outline';
-import { useMediaQuery } from 'hooks/useMediaQuery';
 
 export function DriverMode({ chauffeur, vehicules, control, onSubmit, onSwitchMode }) {
   const { fields: courseFields, append: appendCourse, remove: removeCourse } = useFieldArray({
@@ -30,7 +29,7 @@ export function DriverMode({ chauffeur, vehicules, control, onSubmit, onSwitchMo
   });
 
   const [activeTab, setActiveTab] = useState('shift');
-  const isMobile = useMediaQuery('(max-width: 768px)');
+  // Removed unused isMobile variable
   
   const watchedValues = useWatch({ 
     control, 
@@ -114,29 +113,33 @@ export function DriverMode({ chauffeur, vehicules, control, onSubmit, onSwitchMo
   };
 
   return (
-    <div className="space-y-6">
-      {/* En-tête avec contenu original mais disposition FullForm */}
+     <div className="space-y-6">
+      {/* En-tête aligné avec FullForm mais contenu original */}
       <Card className="p-5">
-        <div className="flex items-center justify-between">
-          <div>
-            <h2 className="text-xl font-semibold text-gray-800 dark:text-dark-100">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          {/* Partie gauche - Contenu original */}
+          <div className="flex-1 min-w-0">
+            <h2 className="text-xl font-semibold text-gray-800 dark:text-dark-100 truncate">
               Feuille de Route - {chauffeur.prenom} {chauffeur.nom}
             </h2>
-            <div className="mt-1 flex items-center space-x-4 text-sm text-gray-600 dark:text-dark-300">
+            <div className="mt-1 flex flex-wrap items-center gap-x-4 text-sm text-gray-600 dark:text-dark-300">
               <span>Badge: {chauffeur.numero_badge}</span>
-              <span>•</span>
               <span>Contrat: {chauffeur.type_contrat}</span>
             </div>
           </div>
-          <Button 
-            variant="outlined" 
-            onClick={onSwitchMode}
-            className="border-gray-300 dark:border-dark-500"
-            icon={<DevicePhoneMobileIcon className="h-5 w-5" />}
-            size={isMobile ? 'sm' : 'md'}
-          >
-            Mode complet
-          </Button>
+
+          {/* Partie droite - Bouton identique à FullForm */}
+          <div className="flex-shrink-0">
+            <Button 
+              variant="outlined" 
+              onClick={onSwitchMode}
+              className="border-gray-300 dark:border-dark-500 w-full sm:w-auto"
+              icon={<DevicePhoneMobileIcon className="h-5 w-5" />}
+              size="md"
+            >
+              Mode complet
+            </Button>
+          </div>
         </div>
       </Card>
 
