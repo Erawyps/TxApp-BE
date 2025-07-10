@@ -9,6 +9,7 @@ import { ValidationStep } from './ValidationStep';
 import { CourseList } from './CourseList';
 import { ExpenseList } from './ExpenseList';
 import { SummaryCard } from './SummaryCard';
+import { Page } from 'components/shared/Page';
 import clsx from 'clsx';
 import { 
   ClockIcon,
@@ -113,7 +114,8 @@ export function DriverMode({ chauffeur, vehicules, control, onSubmit, onSwitchMo
   };
 
   return (
-     <div className="space-y-6">
+    <Page title="Feuille de Route - Chauffeur">
+     <div className="space-y-4 p-4 pb-20 md:pb-4">
       {/* En-tête aligné avec FullForm mais contenu original */}
       <Card className="p-5">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
@@ -290,5 +292,6 @@ export function DriverMode({ chauffeur, vehicules, control, onSubmit, onSwitchMo
         )}
       </div>
     </div>
+    </Page>
   );
 }
