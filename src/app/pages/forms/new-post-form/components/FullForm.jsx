@@ -547,18 +547,25 @@ const ValidationTab = ({ control, onSubmit, isMobile }) => {
   const watchedValues = useWatch({ control });
   
   const calculateTotals = () => {
-    const courses = watchedValues.courses || [];
-    const charges = watchedValues.charges || [];
-    
-    const recettes = courses.reduce((sum, course) => sum + (course.prix || 0), 0);
-    const chargesTotal = charges.reduce((sum, charge) => sum + (charge.montant || 0), 0);
-    
-    const base = Math.min(recettes, 180);
-    const surplus = Math.max(recettes - 180, 0);
-    const salaire = (base * 0.4) + (surplus * 0.3);
-    
-    return { recettes, charges: chargesTotal, salaire };
-  };
+  const courses = watchedValues.courses || [];
+  const charges = watchedValues.charges || [];
+  
+  const recettes = courses.reduce((sum, course) => {
+    const amount = course.somme_percue || course.prix || 0;
+    return sum + (typeof amount === 'number' ? amount : parseFloat(amount) || 0);
+  }, 0);
+  
+  const chargesTotal = charges.reduce((sum, charge) => {
+    const amount = charge.montant || 0;
+    return sum + (typeof amount === 'number' ? amount : parseFloat(amount) || 0);
+  }, 0);
+  
+  const base = Math.min(recettes, 180);
+  const surplus = Math.max(recettes - 180, 0);
+  const salaire = (base * 0.4) + (surplus * 0.3);
+  
+  return { recettes, charges: chargesTotal, salaire };
+};
 
   const totals = calculateTotals();
 
