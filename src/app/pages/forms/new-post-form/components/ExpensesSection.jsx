@@ -1,37 +1,37 @@
 import { useState } from 'react';
 import { Card, Button, Input } from 'components/ui';
+import { CHARGE_TYPES } from '../schema';
 
 export function ExpensesSection({ onAddExpense }) {
-  const [form, setForm] = useState({
-    type: 'carburant',
-    montant: '',
-    mode_paiement: 'cash',
-    description: ''
-  });
+  // Modifications nécessaires:
+const [form, setForm] = useState({
+  type_charge: 'Carburant',
+  montant: '',
+  mode_paiement_id: 'CASH',
+  description: ''
+});
 
-  const expenseTypes = [
-    { value: 'carburant', label: 'Carburant' },
-    { value: 'peage', label: 'Péage' },
-    { value: 'entretien', label: 'Entretien' },
-    { value: 'carwash', label: 'Nettoyage' },
-    { value: 'divers', label: 'Divers' }
-  ];
+// Options mises à jour:
+const expenseTypes = CHARGE_TYPES.map(type => ({ 
+  value: type, 
+  label: type 
+}));
 
-  const paymentMethods = [
-    { value: 'cash', label: 'Espèces' },
-    { value: 'bancontact', label: 'Bancontact' }
-  ];
+const paymentMethods = [
+  { value: 'CASH', label: 'Espèces' },
+  { value: 'BC', label: 'Bancontact' }
+];
 
   const handleSubmit = (e) => {
     e.preventDefault();
     if (!form.montant || isNaN(parseFloat(form.montant))) return;
     
     onAddExpense({
-      type: form.type,
-      montant: parseFloat(form.montant),
-      mode_paiement: form.mode_paiement,
-      description: form.description,
-      date: new Date().toISOString()
+    type_charge: form.type_charge,
+    montant: parseFloat(form.montant),
+    mode_paiement_id: form.mode_paiement_id,
+    description: form.description,
+    date: new Date().toISOString()
     });
     
     setForm({

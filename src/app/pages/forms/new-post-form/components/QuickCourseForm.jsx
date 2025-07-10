@@ -1,53 +1,46 @@
 import { useState } from 'react';
 import { Card, Button, Input, Select } from 'components/ui';
-import { toast } from 'sonner';
 
 export function QuickCourseForm({ onAddCourse, currentLocation }) {
   const [form, setForm] = useState({
-    depart: currentLocation || '',
-    arrivee: '',
-    prix: '',
-    mode_paiement: 'cash',
-    client: ''
+    lieu_embarquement: currentLocation || '',
+    lieu_debarquement: '',
+    prix_taximetre: '',
+    somme_percue: '',
+    mode_paiement_id: 'CASH', // Utiliser les codes de la DB
+    client_id: '',
+    notes: ''
   });
 
   const handleSubmit = (e) => {
     e.preventDefault();
     
-    if (!form.depart || !form.arrivee) {
-      toast.error('Veuillez remplir les lieux de départ et d\'arrivée');
-      return;
-    }
-    
-    if (!form.prix || isNaN(parseFloat(form.prix))) {
-      toast.error('Veuillez entrer un prix valide');
-      return;
-    }
-    
-    const heureActuelle = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    const now = new Date().toISOString().split('T')[1].substring(0, 5);
     
     onAddCourse({
-      depart: {
-        lieu: form.depart,
-        heure: heureActuelle
-      },
-      arrivee: {
-        lieu: form.arrivee
-      },
-      prix: parseFloat(form.prix),
-      mode_paiement: form.mode_paiement,
-      client: form.mode_paiement === 'facture' ? form.client : null
+      lieu_embarquement: form.lieu_embarquement,
+      lieu_debarquement: form.lieu_debarquement,
+      heure_embarquement: now,
+      prix_taximetre: parseFloat(form.prix_taximetre),
+      somme_percue: parseFloat(form.somme_percue),
+      mode_paiement_id: form.mode_paiement_id,
+      client_id: form.mode_paiement_id.startsWith('F-') ? form.client_id : null,
+      est_facture: form.mode_paiement_id.startsWith('F-'),
+      notes: form.notes,
+      index_depart: 0, // À calculer
+      index_arrivee: 0  // À calculer
     });
-    
-    toast.success('Course ajoutée avec succès');
     
     setForm(prev => ({
       ...prev,
-      arrivee: '',
-      prix: '',
-      client: ''
+      lieu_debarquement: '',
+      prix_taximetre: '',
+      somme_percue: '',
+      client_id: '',
+      notes: ''
     }));
   };
+
 
   return (
     <Card className="p-5">
