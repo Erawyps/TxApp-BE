@@ -12,7 +12,7 @@ import {
   DevicePhoneMobileIcon,
   ClockIcon,
   CurrencyEuroIcon,
-  FuelIcon,
+  CalculatorIcon,
   TruckIcon,
   TrashIcon
 } from '@heroicons/react/24/outline';
@@ -54,7 +54,7 @@ export function FullForm({ chauffeurs, vehicules, control, onSwitchMode, onSubmi
       id: 'charges', 
       label: "Dépenses", 
       icon: <CreditCardIcon className="h-5 w-5" />,
-      mobileIcon: <FuelIcon className="h-5 w-5" />
+      mobileIcon: <CalculatorIcon className="h-5 w-5" />
     },
     { 
       id: 'validation', 
