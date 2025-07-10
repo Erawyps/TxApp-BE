@@ -5,33 +5,47 @@ import { TrashIcon } from '@heroicons/react/24/outline';
 export function ExpenseList({ expenses, onRemoveExpense }) {
   if (expenses.length === 0) return null;
 
+  const getTypeLabel = (type) => {
+    const types = {
+      'carburant': 'Carburant',
+      'peage': 'Péage',
+      'entretien': 'Entretien',
+      'carwash': 'Nettoyage',
+      'divers': 'Divers'
+    };
+    return types[type] || type;
+  };
+
+  const getPaymentLabel = (method) => {
+    const methods = {
+      'CASH': 'Espèces',
+      'BC': 'Bancontact'
+    };
+    return methods[method] || method;
+  };
+
   return (
     <Card className="p-5">
       <div className="flex items-center justify-between mb-4">
-        <h3 className="text-lg font-semibold text-gray-800 dark:text-dark-100">
-          Liste des Dépenses
-        </h3>
+        <h3 className="text-lg font-semibold">Dépenses ({expenses.length})</h3>
         <Badge variant="primary">{expenses.length}</Badge>
       </div>
       
       <div className="space-y-3">
-        {expenses.map((expense, index) => (
-          <div 
-            key={expense.id} 
-            className="p-4 border rounded-lg bg-white dark:bg-dark-700 border-gray-200 dark:border-dark-500"
-          >
+        {expenses.map((expense) => (
+          <div key={expense.id} className="p-4 border rounded-lg">
             <div className="flex justify-between items-start">
               <div>
-                <div className="font-medium text-gray-800 dark:text-dark-100 capitalize">
-                  {expense.type}
+                <div className="font-medium capitalize">
+                  {getTypeLabel(expense.type_charge)}
                 </div>
-                <div className="mt-1 text-sm text-gray-600 dark:text-dark-300">
+                <div className="mt-1 text-sm">
                   <span className="font-medium">{expense.montant.toFixed(2)} €</span>
                   <span className="mx-2">•</span>
-                  <span className="capitalize">{expense.mode_paiement}</span>
+                  <span className="capitalize">{getPaymentLabel(expense.mode_paiement_id)}</span>
                 </div>
                 {expense.description && (
-                  <div className="mt-1 text-sm text-gray-500 dark:text-dark-400">
+                  <div className="mt-1 text-sm text-gray-500">
                     {expense.description}
                   </div>
                 )}
@@ -39,8 +53,8 @@ export function ExpenseList({ expenses, onRemoveExpense }) {
               <Button 
                 variant="ghost" 
                 size="sm"
-                onClick={() => onRemoveExpense(index)}
-                className="text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20"
+                onClick={() => onRemoveExpense(expense.id)}
+                className="text-red-500 hover:bg-red-50"
                 icon={<TrashIcon className="h-4 w-4" />}
               />
             </div>
