@@ -26,6 +26,7 @@ import { ExpensesSection } from './ExpensesSection';
 export function FullForm({ chauffeurs, vehicules, control, onSwitchMode, onSubmit }) {
   const [activeTab, setActiveTab] = useState('general');
   const isMobile = useMediaQuery('(max-width: 768px)');
+  const [visuallyActiveTab, setVisuallyActiveTab] = useState(null);
 
   const handleFormSubmit = (data) => {
     try {
@@ -98,26 +99,28 @@ export function FullForm({ chauffeurs, vehicules, control, onSwitchMode, onSubmi
         {/* Navigation par onglets améliorée */}
         <Card className="p-0 overflow-hidden">
           <TabGroup>
-
             <TabList 
+            className={clsx(
+                "flex justify-center border-b border-gray-200 dark:border-dark-500",
+                isMobile ? "grid grid-cols-4 gap-0" : ""
+            )}
+            >
+            {tabs.map((tab) => (
+                <Tab
+                key={tab.id}
+                active={visuallyActiveTab === tab.id} // Utilise visuallyActiveTab au lieu de activeTab
+                onClick={() => {
+                    setActiveTab(tab.id);
+                    setVisuallyActiveTab(tab.id); // Active visuellement seulement au clic
+                }}
                 className={clsx(
-                    "flex justify-center border-b border-gray-200 dark:border-dark-500",
-                    isMobile ? "grid grid-cols-4 gap-0" : ""
+                    "relative flex flex-col items-center justify-center px-2 py-3 font-medium transition-colors",
+                    "focus:outline-none w-full h-full",
+                    visuallyActiveTab === tab.id
+                    ? "text-primary-600 border-b-2 border-primary-600 dark:border-primary-400 dark:text-primary-400"
+                    : "text-gray-600 hover:text-gray-800 dark:text-dark-300 dark:hover:text-dark-100"
                 )}
                 >
-                {tabs.map((tab) => (
-                    <Tab
-                    key={tab.id}
-                    active={activeTab === tab.id}
-                    onClick={() => setActiveTab(tab.id)}
-                    className={clsx(
-                        "relative flex flex-col items-center justify-center px-2 py-3 font-medium transition-colors",
-                        "focus:outline-none w-full h-full",
-                        activeTab === tab.id
-                        ? "text-primary-600 border-b-2 border-primary-600 dark:border-primary-400 dark:text-primary-400"
-                        : "text-gray-600 hover:text-gray-800 dark:text-dark-300 dark:hover:text-dark-100"
-                    )}
-                    >
                     <div className="flex flex-col items-center justify-center h-full">
                         <span className={clsx(
                         "flex items-center justify-center h-6 w-6",
@@ -139,14 +142,14 @@ export function FullForm({ chauffeurs, vehicules, control, onSwitchMode, onSubmi
             </TabList>
             
             <TabPanels>
-              <TabPanel>
-                <GeneralTab 
-                  chauffeurs={chauffeurs}
-                  vehicules={vehicules}
-                  control={control}
-                  isMobile={isMobile}
-                />
-              </TabPanel>
+                <TabPanel show={activeTab === 'general'}>
+                    <GeneralTab 
+                    chauffeurs={chauffeurs}
+                    vehicules={vehicules}
+                    control={control}
+                    isMobile={isMobile}
+                    />
+                </TabPanel>
               
               <TabPanel>
                 <CoursesTab 
