@@ -247,29 +247,39 @@ export function DriverMode({ chauffeur, vehicules, control, onSubmit, onSwitchMo
                 />
               </div>
               
-              <div className="space-y-6 lg:col-span-1">
-                <ScrollShadow className="h-[400px] hide-scrollbar">
-                <SummaryCard
-                  recettes={totalRecettes}
-                  charges={totalCharges}
-                  salaire={salaire}
-                />
+              <div className="space-y-4 lg:col-span-1"> {/* Réduit l'espacement vertical global */}
+  <ScrollShadow className="h-[400px] hide-scrollbar">
+    <div className="space-y-3 pr-2"> {/* Espacement interne et padding pour scrollbar */}
+      {/* SummaryCard - Toujours visible */}
+      <SummaryCard
+        recettes={totalRecettes}
+        charges={totalCharges}
+        salaire={salaire}
+        className="mb-3" // Marge supplémentaire en bas
+      />
 
-                {courseFields.length > 0 && (
-                  <CourseList 
-                    courses={watchedValues.courses || []} 
-                    onRemoveCourse={removeCourse}
-                  />
-                )}
-                
-                {chargeFields.length > 0 && (
-                  <ExpenseList 
-                    expenses={watchedValues.charges || []} 
-                    onRemoveExpense={removeCharge}
-                  />
-                )}
-                </ScrollShadow>
-              </div>
+      {/* CourseList - Conditionnel */}
+      {courseFields.length > 0 && (
+        <div className="pb-2"> {/* Padding en bas pour séparation */}
+          <CourseList 
+            courses={watchedValues.courses || []} 
+            onRemoveCourse={removeCourse}
+            compact // Ajoutez cette prop si votre composant supporte un mode compact
+          />
+        </div>
+      )}
+      
+      {/* ExpenseList - Conditionnel */}
+      {chargeFields.length > 0 && (
+        <ExpenseList 
+          expenses={watchedValues.charges || []} 
+          onRemoveExpense={removeCharge}
+          className="mt-2" // Marge supplémentaire en haut
+        />
+      )}
+    </div>
+  </ScrollShadow>
+</div>
             </div>
           )}
 
