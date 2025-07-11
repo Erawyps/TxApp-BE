@@ -1,43 +1,39 @@
+// ExpensesSection.jsx
 import { useState } from 'react';
 import { Card, Button, Input } from 'components/ui';
-import { CHARGE_TYPES } from '../schema';
 
-export function ExpensesSection({ onAddExpense }) {
-  // Modifications nécessaires:
-const [form, setForm] = useState({
-  type_charge: 'Carburant',
-  montant: '',
-  mode_paiement_id: 'CASH',
-  description: ''
-});
-
-// Options mises à jour:
-const expenseTypes = CHARGE_TYPES.map(type => ({ 
-  value: type, 
-  label: type 
-}));
-
-const paymentMethods = [
+// Définir les constantes dans le composant ou les importer
+const CHARGE_TYPES = ['Carburant', 'Péage', 'Entretien', 'Carwash', 'Divers'];
+const PAYMENT_METHODS = [
   { value: 'CASH', label: 'Espèces' },
   { value: 'BC', label: 'Bancontact' }
 ];
+
+export function ExpensesSection({ onAddExpense }) {
+  const [form, setForm] = useState({
+    type_charge: CHARGE_TYPES[0], // 'Carburant' par défaut
+    montant: '',
+    mode_paiement_id: PAYMENT_METHODS[0].value, // 'CASH' par défaut
+    description: ''
+  });
 
   const handleSubmit = (e) => {
     e.preventDefault();
     if (!form.montant || isNaN(parseFloat(form.montant))) return;
     
     onAddExpense({
-    type_charge: form.type_charge,
-    montant: parseFloat(form.montant),
-    mode_paiement_id: form.mode_paiement_id,
-    description: form.description,
-    date: new Date().toISOString()
+      type_charge: form.type_charge,
+      montant: parseFloat(form.montant),
+      mode_paiement_id: form.mode_paiement_id,
+      description: form.description,
+      date: new Date().toISOString()
     });
     
+    // Réinitialisation avec les bons noms de champs
     setForm({
-      type: 'carburant',
+      type_charge: CHARGE_TYPES[0],
       montant: '',
-      mode_paiement: 'cash',
+      mode_paiement_id: PAYMENT_METHODS[0].value,
       description: ''
     });
   };
@@ -55,13 +51,13 @@ const paymentMethods = [
               Type de dépense
             </label>
             <select
-              value={form.type}
-              onChange={(e) => setForm({...form, type: e.target.value})}
+              value={form.type_charge}
+              onChange={(e) => setForm({...form, type_charge: e.target.value})}
               className="w-full p-2 border rounded-lg bg-white dark:bg-dark-800 text-gray-800 dark:text-dark-100 focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
             >
-              {expenseTypes.map((type) => (
-                <option key={type.value} value={type.value}>
-                  {type.label}
+              {CHARGE_TYPES.map((type) => (
+                <option key={type} value={type}>
+                  {type}
                 </option>
               ))}
             </select>
@@ -84,11 +80,11 @@ const paymentMethods = [
               Mode de paiement
             </label>
             <select
-              value={form.mode_paiement}
-              onChange={(e) => setForm({...form, mode_paiement: e.target.value})}
+              value={form.mode_paiement_id}
+              onChange={(e) => setForm({...form, mode_paiement_id: e.target.value})}
               className="w-full p-2 border rounded-lg bg-white dark:bg-dark-800 text-gray-800 dark:text-dark-100 focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
             >
-              {paymentMethods.map((method) => (
+              {PAYMENT_METHODS.map((method) => (
                 <option key={method.value} value={method.value}>
                   {method.label}
                 </option>
