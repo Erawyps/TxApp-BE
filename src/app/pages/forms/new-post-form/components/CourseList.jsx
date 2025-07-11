@@ -1,7 +1,7 @@
-import { Button } from 'components/ui';
+import { Button, ScrollShadow } from 'components/ui';
 import { Card } from 'components/ui';
 import { TrashIcon } from '@heroicons/react/24/outline';
-import { ScrollShadow } from '@nextui-org/react';
+
 
 export function CourseList({ courses, onRemoveCourse }) {
   const formatTime = (timeString) => {
@@ -16,11 +16,8 @@ export function CourseList({ courses, onRemoveCourse }) {
         <h3 className="text-lg font-semibold">Courses ({courses.length})</h3>
       </div>
       
-      <ScrollShadow 
-        className="h-[300px] hide-scrollbar" 
-        hideScrollBar
-        visibility="both"
-      >
+      <ScrollShadow className="h-52 hide-scrollbar">
+
         <div className="space-y-3 pr-2">
           {courses.map((course) => (
             <div 
