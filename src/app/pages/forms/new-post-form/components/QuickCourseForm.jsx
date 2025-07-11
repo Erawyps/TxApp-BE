@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Card, Button, Input, Select } from 'components/ui';
+import { Card, Button, Input, Select, ScrollShadow } from 'components/ui';
 import { toast } from 'sonner';
 
 export function QuickCourseForm({ onAddCourse, currentLocation }) {
@@ -62,51 +62,44 @@ export function QuickCourseForm({ onAddCourse, currentLocation }) {
     <Card className="p-5">
       <h3 className="text-lg font-semibold mb-4">Nouvelle Course</h3>
       
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <Input
-          label="Lieu de départ"
-          value={form.lieu_embarquement}
-          onChange={(e) => setForm({...form, lieu_embarquement: e.target.value})}
-          required
-        />
-        
-        <Input
-          label="Lieu d'arrivée"
-          value={form.lieu_debarquement}
-          onChange={(e) => setForm({...form, lieu_debarquement: e.target.value})}
-          required
-        />
-
-        {/* Nouveau champ pour l'heure de débarquement */}
-        <Input
-          label="Heure de débarquement (optionnel)"
-          type="time"
-          value={form.heure_debarquement}
-          onChange={(e) => setForm({...form, heure_debarquement: e.target.value})}
-        />
-        
-        <div className="grid grid-cols-2 gap-4">
+       <ScrollShadow className="max-h-96 hide-scrollbar"> {/* Hauteur maximale de 384px */}
+        <form onSubmit={handleSubmit} className="space-y-4 pr-2">
           <Input
-            label="Prix taximètre (€)"
-            type="number"
-            step="0.01"
-            min="0"
-            value={form.prix_taximetre}
-            onChange={(e) => setForm({...form, prix_taximetre: e.target.value})}
+            label="Lieu de départ"
+            value={form.lieu_embarquement}
+            onChange={(e) => setForm({...form, lieu_embarquement: e.target.value})}
             required
           />
           
           <Input
-            label="Somme perçue (€)"
-            type="number"
-            step="0.01"
-            min="0"
-            value={form.somme_percue || form.prix_taximetre}
-            onChange={(e) => setForm({...form, somme_percue: e.target.value})}
+            label="Lieu d'arrivée"
+            value={form.lieu_debarquement}
+            onChange={(e) => setForm({...form, lieu_debarquement: e.target.value})}
+            required
           />
-        </div>
-        
-        <div className="grid grid-cols-2 gap-4">
+          
+          <div className="grid grid-cols-2 gap-4">
+            <Input
+              label="Prix taximètre (€)"
+              type="number"
+              step="0.01"
+              min="0"
+              value={form.prix_taximetre}
+              onChange={(e) => setForm({...form, prix_taximetre: e.target.value})}
+              required
+            />
+            
+            <Input
+              label="Somme perçue (€)"
+              type="number"
+              step="0.01"
+              min="0"
+              value={form.somme_percue}
+              onChange={(e) => setForm({...form, somme_percue: e.target.value})}
+              required
+            />
+          </div>
+          
           <Select
             label="Mode de paiement"
             options={[
@@ -120,28 +113,28 @@ export function QuickCourseForm({ onAddCourse, currentLocation }) {
           
           {form.mode_paiement_id.startsWith('F-') && (
             <Input
-              label="Réf. client"
+              label="Client (pour facture)"
               value={form.client_id}
               onChange={(e) => setForm({...form, client_id: e.target.value})}
               required
             />
           )}
-        </div>
-        
-        <Input
-          label="Notes (optionnel)"
-          value={form.notes}
-          onChange={(e) => setForm({...form, notes: e.target.value})}
-        />
-        
-        <Button 
-          type="submit" 
-          className="w-full mt-2"
-          variant="primary"
-        >
-          Ajouter la course
-        </Button>
-      </form>
+          
+          <Input
+            label="Notes (optionnel)"
+            value={form.notes}
+            onChange={(e) => setForm({...form, notes: e.target.value})}
+          />
+          
+          <Button 
+            type="submit" 
+            className="w-full mt-2"
+            variant="primary"
+          >
+            Ajouter la course
+          </Button>
+        </form>
+      </ScrollShadow>
     </Card>
   );
 }
