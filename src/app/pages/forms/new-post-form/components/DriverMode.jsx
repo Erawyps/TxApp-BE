@@ -2,7 +2,7 @@ import { useFieldArray, useWatch } from 'react-hook-form';
 import { useState } from 'react';
 import { VehicleInfo } from './VehicleInfo';
 import { ShiftInfo } from './ShiftInfo';
-import { Card, Button, Badge } from 'components/ui';
+import { Card, Button, Badge, ScrollShadow } from 'components/ui';
 import { ValidationStep } from './ValidationStep';
 import { CourseList } from './CourseList';
 import { ExpenseList } from './ExpenseList';
@@ -248,6 +248,13 @@ export function DriverMode({ chauffeur, vehicules, control, onSubmit, onSwitchMo
               </div>
               
               <div className="space-y-6 lg:col-span-1">
+                <ScrollShadow className="h-[400px] hide-scrollbar">
+                <SummaryCard
+                  recettes={totalRecettes}
+                  charges={totalCharges}
+                  salaire={salaire}
+                />
+
                 {courseFields.length > 0 && (
                   <CourseList 
                     courses={watchedValues.courses || []} 
@@ -261,12 +268,7 @@ export function DriverMode({ chauffeur, vehicules, control, onSubmit, onSwitchMo
                     onRemoveExpense={removeCharge}
                   />
                 )}
-                
-                <SummaryCard
-                  recettes={totalRecettes}
-                  charges={totalCharges}
-                  salaire={salaire}
-                />
+                </ScrollShadow>
               </div>
             </div>
           )}
