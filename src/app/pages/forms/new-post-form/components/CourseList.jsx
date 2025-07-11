@@ -3,20 +3,11 @@ import { Card } from 'components/ui';
 import { TrashIcon } from '@heroicons/react/24/outline';
 
 export function CourseList({ courses, onRemoveCourse }) {
+  // Fonction de formatage améliorée
   const formatTime = (timeString) => {
     if (!timeString) return 'Non renseignée';
     const [hours, minutes] = timeString.split(':');
-    return `${hours}h${minutes}`;
-  };
-
-  const getPaymentMethodLabel = (code) => {
-    const methods = {
-      'CASH': 'Espèces',
-      'BC': 'Bancontact',
-      'F-SNCB': 'Facture SNCB',
-      'F-TX': 'Facture Taxi'
-    };
-    return methods[code] || code;
+    return `${hours.padStart(2, '0')}h${minutes}`;
   };
 
   return (
@@ -31,13 +22,10 @@ export function CourseList({ courses, onRemoveCourse }) {
             <div className="flex justify-between items-start">
               <div>
                 <div className="font-medium">
-                  {course.lieu_embarquement || course.depart?.lieu} → 
-                  {course.lieu_debarquement || course.arrivee?.lieu}
+                  {course.lieu_embarquement} → {course.lieu_debarquement}
                 </div>
                 <div className="mt-1 text-sm">
-                  <span>{course.prix_taximetre?.toFixed(2) || course.prix?.toFixed(2)} €</span>
-                  <span className="mx-2">•</span>
-                  <span>{getPaymentMethodLabel(course.mode_paiement_id || course.mode_paiement)}</span>
+                  <span>{course.prix_taximetre?.toFixed(2)} € (Perçu: {course.somme_percue?.toFixed(2)} €)</span>
                   {course.est_facture && (
                     <span className="ml-2 text-blue-500">Facturé</span>
                   )}
@@ -45,7 +33,7 @@ export function CourseList({ courses, onRemoveCourse }) {
                 <div className="mt-1 text-xs text-gray-500">
                   <span>Embarquement: {formatTime(course.heure_embarquement)}</span>
                   <span className="mx-2">•</span>
-                  <span>Débarquement: {formatTime(course.heure_debarquement || course.arrivee?.heure)}</span>
+                  <span>Débarquement: {formatTime(course.heure_debarquement)}</span>
                 </div>
               </div>
               <Button 

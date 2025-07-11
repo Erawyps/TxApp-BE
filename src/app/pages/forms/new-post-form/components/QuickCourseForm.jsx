@@ -76,6 +76,13 @@ export function QuickCourseForm({ onAddCourse, currentLocation }) {
             onChange={(e) => setForm({...form, lieu_debarquement: e.target.value})}
             required
           />
+
+          <Input
+            label="Heure de débarquement (optionnel)"
+            type="time"
+            value={form.heure_debarquement}
+            onChange={(e) => setForm({...form, heure_debarquement: e.target.value})}
+          />
           
           <div className="grid grid-cols-2 gap-4">
             <Input
