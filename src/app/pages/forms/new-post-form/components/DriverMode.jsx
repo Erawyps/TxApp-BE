@@ -71,10 +71,10 @@ export function DriverMode({ chauffeur, vehicules, control, onSubmit, onSwitchMo
   }, 0);
 
   const totalCharges = chargeFields.reduce((sum, _, index) => {
-    const charge = watchedValues.charges?.[index] || {};
-    const montant = charge.montant || 0;
-    return sum + (typeof montant === 'number' ? montant : parseFloat(montant) || 0);
-  }, 0);
+  const charge = watchedValues.charges?.[index] || {};
+  const montant = charge.montant || 0;
+  return sum + (typeof montant === 'number' ? montant : parseFloat(montant) || 0);
+}, 0);
 
   // Règle de calcul du salaire
   const base = Math.min(totalRecettes, 180);
