@@ -63,23 +63,28 @@ export function DriverMode({ chauffeur, vehicules, control, onSubmit, onSwitchMo
     }
   };
 
-  // Calculs des totaux
-    const totalRecettes = courseFields.reduce((sum, _, index) => {
-    const course = watchedValues.courses?.[index] || {};
-    const prix = course.somme_percue || course.prix || 0;
-    return sum + (typeof prix === 'number' ? prix : parseFloat(prix) || 0);
-  }, 0);
+  // Dans DriverMode.jsx
+const calculateSalary = (recettes, charges) => {
+  const base = Math.min(recettes, 180);
+  const surplus = Math.max(recettes - 180, 0);
+  const salaireBrut = (base * 0.4) + (surplus * 0.3);
+  return Math.max(salaireBrut - charges, 0);
+};
 
-  const totalCharges = chargeFields.reduce((sum, _, index) => {
+// Calcul des totaux
+const totalRecettes = courseFields.reduce((sum, _, index) => {
+  const course = watchedValues.courses?.[index] || {};
+  const prix = course.somme_percue || course.prix || 0;
+  return sum + (typeof prix === 'number' ? prix : parseFloat(prix) || 0);
+}, 0);
+
+const totalCharges = chargeFields.reduce((sum, _, index) => {
   const charge = watchedValues.charges?.[index] || {};
   const montant = charge.montant || 0;
   return sum + (typeof montant === 'number' ? montant : parseFloat(montant) || 0);
 }, 0);
 
-  // Règle de calcul du salaire
-  const base = Math.min(totalRecettes, 180);
-  const surplus = Math.max(totalRecettes - 180, 0);
-  const salaire = (base * 0.4) + (surplus * 0.3);
+const salaire = calculateSalary(totalRecettes, totalCharges);
 
   // Gestion des erreurs de données manquantes
   if (!chauffeur || !vehicules || vehicules.length === 0) {
