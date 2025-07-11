@@ -5,7 +5,7 @@ import { TrashIcon } from '@heroicons/react/24/outline';
 export function ExpenseList({ expenses, onRemoveExpense }) {
   if (expenses.length === 0) return null;
 
-  // Fonction pour formater la date
+  // Fonctions utilitaires
   const formatDate = (dateString) => {
     if (!dateString) return '';
     try {
@@ -20,7 +20,6 @@ export function ExpenseList({ expenses, onRemoveExpense }) {
     }
   };
 
-  // Fonction pour obtenir le libellé du mode de paiement
   const getPaymentLabel = (modePaiementId) => {
     const modes = {
       'CASH': 'Espèces',
@@ -33,16 +32,16 @@ export function ExpenseList({ expenses, onRemoveExpense }) {
   };
 
   return (
-    <Card className="p-5">
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="text-lg font-semibold text-gray-800 dark:text-dark-100">
-          Liste des Dépenses
+    <Card className="p-4">
+      <div className="flex items-center justify-between mb-3">
+        <h3 className="text-md font-semibold text-gray-800 dark:text-dark-100">
+          Dépenses
         </h3>
         <Badge variant="primary">{expenses.length}</Badge>
       </div>
       
-      <ScrollShadow className="h-[300px] hide-scrollbar" visibility="both">
-        <div className="space-y-3 pr-2"> {/* Ajout de padding pour éviter que le scrollbar ne cache le contenu */}
+      <ScrollShadow className="h-[200px] hide-scrollbar" visibility="both">
+        <div className="space-y-2 pr-2">
           {expenses.map((expense, index) => {
             const paymentLabel = getPaymentLabel(expense.mode_paiement_id || expense.mode_paiement);
             const chargeType = expense.type_charge || expense.type;
@@ -52,36 +51,42 @@ export function ExpenseList({ expenses, onRemoveExpense }) {
             return (
               <div 
                 key={expense.id} 
-                className="p-4 border rounded-lg bg-white dark:bg-dark-700 border-gray-200 dark:border-dark-500"
+                className="p-3 border rounded-md bg-white dark:bg-dark-700 border-gray-200 dark:border-dark-500 hover:bg-gray-50 dark:hover:bg-dark-600 transition-colors"
               >
-                <div className="flex justify-between items-start">
+                <div className="flex justify-between items-start gap-2">
                   <div className="flex-1 min-w-0">
-                    <div className="font-medium text-gray-800 dark:text-dark-100 truncate">
-                      {chargeType}
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium text-gray-800 dark:text-dark-100 truncate">
+                        {chargeType}
+                      </span>
+                      <span className="text-sm font-semibold text-primary-600 dark:text-primary-400">
+                        {formattedAmount} €
+                      </span>
                     </div>
-                    <div className="mt-1 text-sm text-gray-600 dark:text-dark-300 space-x-2">
-                      <span className="font-medium">{formattedAmount} €</span>
-                      <span>•</span>
+                    
+                    <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-gray-500 dark:text-dark-400">
                       <span>{paymentLabel}</span>
                       {formattedDate && (
-                        <>
-                          <span>•</span>
-                          <span>{formattedDate}</span>
-                        </>
+                        <span className="flex items-center">
+                          <span className="mx-1">•</span>
+                          {formattedDate}
+                        </span>
                       )}
                     </div>
+
                     {expense.description && (
-                      <div className="mt-1 text-sm text-gray-500 dark:text-dark-400 truncate">
+                      <div className="mt-1 text-xs text-gray-500 dark:text-dark-400 line-clamp-1">
                         {expense.description}
                       </div>
                     )}
                   </div>
+                  
                   <Button 
                     variant="ghost" 
-                    size="sm"
+                    size="xs"
                     onClick={() => onRemoveExpense(index)}
-                    className="text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 flex-shrink-0 ml-2"
-                    icon={<TrashIcon className="h-4 w-4" />}
+                    className="text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 flex-shrink-0"
+                    icon={<TrashIcon className="h-3.5 w-3.5" />}
                   />
                 </div>
               </div>
