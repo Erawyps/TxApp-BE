@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Card, Button, Input, Select, ScrollShadow } from 'components/ui';
+import { Card, Button, Input, Select } from 'components/ui';
 import { toast } from 'sonner';
 
 export function QuickCourseForm({ onAddCourse, currentLocation }) {
@@ -62,7 +62,6 @@ export function QuickCourseForm({ onAddCourse, currentLocation }) {
     <Card className="p-5">
       <h3 className="text-lg font-semibold mb-4">Nouvelle Course</h3>
       
-       <ScrollShadow className="max-h-96 hide-scrollbar"> {/* Hauteur maximale de 384px */}
         <form onSubmit={handleSubmit} className="space-y-4 pr-2">
           <Input
             label="Lieu de départ"
@@ -134,7 +133,6 @@ export function QuickCourseForm({ onAddCourse, currentLocation }) {
             Ajouter la course
           </Button>
         </form>
-      </ScrollShadow>
     </Card>
   );
 }
