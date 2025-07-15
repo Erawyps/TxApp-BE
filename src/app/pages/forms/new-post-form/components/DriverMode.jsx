@@ -1,5 +1,5 @@
 import { useFieldArray, useWatch } from 'react-hook-form';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { VehicleInfo } from './VehicleInfo';
 import { ShiftInfo } from './ShiftInfo';
 import { Card, Button, Badge, ScrollShadow } from 'components/ui';
@@ -29,6 +29,46 @@ export function DriverMode({ chauffeur, vehicules, control, onSubmit, onSwitchMo
   });
 
   const [activeTab, setActiveTab] = useState('shift');
+
+  // Ajoutez ici les useEffect pour la sauvegarde automatique
+  useEffect(() => {
+    const saveData = () => {
+      const data = control.getValues();
+      localStorage.setItem('driverShiftData', JSON.stringify(data));
+    };
+
+    // Sauvegarder toutes les 5 secondes
+    const interval = setInterval(saveData, 5000);
+    
+    // Sauvegarder aussi quand on quitte la page
+    window.addEventListener('beforeunload', saveData);
+    
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('beforeunload', saveData);
+    };
+  }, [control]);
+
+  // Charger les données sauvegardées au montage
+  useEffect(() => {
+    const savedData = localStorage.getItem('driverShiftData');
+    if (savedData) {
+      try {
+        const parsedData = JSON.parse(savedData);
+        control.reset(parsedData);
+        
+        // Vérifier si le shift était en cours pour repositionner l'onglet actif
+        if (parsedData.shift?.start && !parsedData.shift?.end) {
+          setActiveTab('courses');
+        } else if (parsedData.shift?.start && parsedData.shift?.end) {
+          setActiveTab('validation');
+        }
+      } catch (error) {
+        console.error('Erreur lors du parsing des données sauvegardées:', error);
+        localStorage.removeItem('driverShiftData');
+      }
+    }
+  }, [control]);
   
   const watchedValues = useWatch({ 
     control, 

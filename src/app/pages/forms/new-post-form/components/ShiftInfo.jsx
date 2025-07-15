@@ -10,60 +10,119 @@ export function ShiftInfo({ control, onStartShift }) {
       </h3>
       
       <div className="space-y-4">
+        <div className="grid grid-cols-2 gap-4">
+          <Controller
+            name="shift.start"
+            control={control}
+            render={({ field, fieldState: { error } }) => (
+              <Input
+                {...field}
+                label="Heure de début"
+                type="time"
+                error={error?.message}
+                required
+              />
+            )}
+          />
+          
+          <Controller
+            name="shift.end"
+            control={control}
+            render={({ field, fieldState: { error } }) => (
+              <Input
+                {...field}
+                label="Heure de fin estimée"
+                type="time"
+                error={error?.message}
+                required
+              />
+            )}
+          />
+        </div>
+
         <Controller
-          name="kilometers.start"
+          name="shift.interruptions"
           control={control}
           render={({ field, fieldState: { error } }) => (
             <Input
               {...field}
-              label="Kilométrage de départ (km)"
+              label="Interruptions (minutes)"
               type="number"
               min="0"
-              step="1"
               error={error?.message}
-              placeholder="0"
-            />
-          )}
-        />
-        
-        <Controller
-          name="shift.start"
-          control={control}
-          render={({ field, fieldState: { error } }) => (
-            <Input
-              {...field}
-              label="Heure de début"
-              type="time"
-              error={error?.message}
+              required
             />
           )}
         />
 
-        <Controller
-        name="kilometers.prise_en_charge_debut"
-        control={control}
-        render={({ field }) => (
-            <Input
-            {...field}
-            label="Prise en charge début (€)"
-            type="number"
-            step="0.01"
-            />
-        )}
-        />
+        <div className="grid grid-cols-2 gap-4">
+          <Controller
+            name="kilometers.start"
+            control={control}
+            render={({ field, fieldState: { error } }) => (
+              <Input
+                {...field}
+                label="Index km début"
+                type="number"
+                min="0"
+                step="1"
+                error={error?.message}
+                placeholder="0"
+                required
+              />
+            )}
+          />
+          
+          <Controller
+            name="kilometers.prise_en_charge_debut"
+            control={control}
+            render={({ field, fieldState: { error } }) => (
+              <Input
+                {...field}
+                label="Prise en charge début (€)"
+                type="number"
+                step="0.01"
+                min="0"
+                error={error?.message}
+                required
+              />
+            )}
+          />
+        </div>
 
-        <Controller
-        name="kilometers.chutes_debut"
-        control={control}
-        render={({ field }) => (
-            <Input
-            {...field}
-            label="Chutes début (€)"
-            type="number"
-            step="0.01"
-            />
-        )}
-        />
+        <div className="grid grid-cols-2 gap-4">
+          <Controller
+            name="kilometers.km_en_charge_debut"
+            control={control}
+            render={({ field, fieldState: { error } }) => (
+              <Input
+                {...field}
+                label="Km en charge début"
+                type="number"
+                min="0"
+                step="1"
+                error={error?.message}
+                required
+              />
+            )}
+          />
+          
+          <Controller
+            name="kilometers.chutes_debut"
+            control={control}
+            render={({ field, fieldState: { error } }) => (
+              <Input
+                {...field}
+                label="Chutes début (€)"
+                type="number"
+                step="0.01"
+                min="0"
+                error={error?.message}
+                required
+              />
+            )}
+          />
+        </div>
         
         <Button 
           onClick={onStartShift}

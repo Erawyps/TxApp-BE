@@ -54,17 +54,28 @@ export const schema = Yup.object().shape({
 
   // Kilométrage et mesures
   kilometers: Yup.object().shape({
-    start: Yup.number()
-      .required('Km de début requis')
-      .min(0, 'Doit être positif'),
-    end: Yup.number()
-      .min(Yup.ref('start'), 'Doit être supérieur au km de départ')
-      .nullable(),
-    prise_en_charge_debut: Yup.number().nullable(),
-    prise_en_charge_fin: Yup.number().nullable(),
-    chutes_debut: Yup.number().nullable(),
-    chutes_fin: Yup.number().nullable()
-  }),
+  start: Yup.number()
+    .required('Km de début requis')
+    .min(0, 'Doit être positif'),
+  end: Yup.number()
+    .min(Yup.ref('start'), 'Doit être supérieur au km de départ')
+    .nullable(),
+  prise_en_charge_debut: Yup.number()
+    .required('Prise en charge début requise')
+    .min(0, 'Doit être positif'),
+  prise_en_charge_fin: Yup.number()
+    .min(0, 'Doit être positif')
+    .nullable(),
+  km_en_charge_debut: Yup.number()
+    .required('Km en charge début requis')
+    .min(0, 'Doit être positif'),
+  chutes_debut: Yup.number()
+    .required('Chutes début requises')
+    .min(0, 'Doit être positif'),
+  chutes_fin: Yup.number()
+    .min(0, 'Doit être positif')
+    .nullable()
+}),
 
   // Liste des courses
   courses: Yup.array().of(
