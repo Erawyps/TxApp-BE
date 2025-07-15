@@ -1,21 +1,11 @@
-import { Card, Button, Input } from 'components/ui';
-
-// Define or import calculatePriseEnCharge function
-function calculatePriseEnCharge() {
-  // Add logic for calculating 'prise_en_charge_fin'
-  return 0; // Replace with actual calculation
-}
-
-// Define or import calculateChutes function
-function calculateChutes() {
-  // Add logic for calculating 'chutes_fin'
-  return 0; // Replace with actual calculation
-}
 import { useState } from 'react';
+import { Card, Button, Input } from 'components/ui';
 import { Controller } from 'react-hook-form';
+import { ExpenseModal } from './ExpenseModal';
 
 export function ValidationStep({ onSubmit, control, totals }) {
   const [signature, setSignature] = useState(null);
+  const [isExpenseModalOpen, setIsExpenseModalOpen] = useState(false);
 
   const handleSubmit = () => {
     if (!signature) {
@@ -23,19 +13,18 @@ export function ValidationStep({ onSubmit, control, totals }) {
       return;
     }
 
-    const data = {}; // Define or fetch the data object here
-
+    const data = control.getValues();
+    
     onSubmit({
       ...data,
       validation: {
-        prise_en_charge_fin: calculatePriseEnCharge(), // Ensure calculatePriseEnCharge is defined or imported
+        signature,
         date_validation: new Date().toISOString(),
-        // valide_par: currentUserId  À obtenir du contexte d'authentification
       },
       kilometers: {
         ...data.kilometers,
-        prise_en_charge_fin: calculatePriseEnCharge(),
-        chutes_fin: calculateChutes()
+        prise_en_charge_fin: data.kilometers.prise_en_charge_fin || 0,
+        chutes_fin: data.kilometers.chutes_fin || 0
       }
     });
   };
@@ -47,52 +36,86 @@ export function ValidationStep({ onSubmit, control, totals }) {
       </h3>
       
       <div className="space-y-4">
-        <Controller
-          name="kilometers.end"
-          control={control}
-          render={({ field, fieldState: { error } }) => (
-            <Input
-              {...field}
-              label="Kilométrage final (km)"
-              type="number"
-              min="0"
-              step="1"
-              error={error?.message}
-            />
-          )}
-        />
-        
-        <Controller
-          name="shift.end"
-          control={control}
-          render={({ field, fieldState: { error } }) => (
-            <Input
-              {...field}
-              label="Heure de fin"
-              type="time"
-              error={error?.message}
-            />
-          )}
-        />
-        
-        <Controller
-          name="shift.interruptions"
-          control={control}
-          render={({ field, fieldState: { error } }) => (
-            <Input
-              {...field}
-              label="Interruptions (minutes)"
-              type="number"
-              min="0"
-              error={error?.message}
-            />
-          )}
-        />
+        <div className="grid grid-cols-2 gap-4">
+          <Controller
+            name="kilometers.end"
+            control={control}
+            render={({ field, fieldState: { error } }) => (
+              <Input
+                {...field}
+                label="Kilométrage final (km)"
+                type="number"
+                min="0"
+                step="1"
+                error={error?.message}
+                required
+              />
+            )}
+          />
+          
+          <Controller
+            name="shift.end"
+            control={control}
+            render={({ field, fieldState: { error } }) => (
+              <Input
+                {...field}
+                label="Heure de fin"
+                type="time"
+                error={error?.message}
+                required
+              />
+            )}
+          />
+        </div>
+
+        <div className="grid grid-cols-2 gap-4">
+          <Controller
+            name="kilometers.prise_en_charge_fin"
+            control={control}
+            render={({ field, fieldState: { error } }) => (
+              <Input
+                {...field}
+                label="Prise en charge fin (€)"
+                type="number"
+                step="0.01"
+                min="0"
+                error={error?.message}
+                required
+              />
+            )}
+          />
+          
+          <Controller
+            name="kilometers.chutes_fin"
+            control={control}
+            render={({ field, fieldState: { error } }) => (
+              <Input
+                {...field}
+                label="Chutes fin (€)"
+                type="number"
+                step="0.01"
+                min="0"
+                error={error?.message}
+                required
+              />
+            )}
+          />
+        </div>
         
         <div className="p-4 bg-gray-50 dark:bg-dark-700 rounded-lg">
-          <h4 className="font-medium text-gray-800 dark:text-dark-100 mb-3">
-            Récapitulatif financier
-          </h4>
+          <div className="flex justify-between items-center mb-3">
+            <h4 className="font-medium text-gray-800 dark:text-dark-100">
+              Récapitulatif financier
+            </h4>
+            <Button 
+              size="sm"
+              variant="outlined"
+              onClick={() => setIsExpenseModalOpen(true)}
+            >
+              Ajouter dépense
+            </Button>
+          </div>
+          
           <div className="space-y-2">
             <div className="flex justify-between">
               <span className="text-gray-600 dark:text-dark-300">Total Recettes:</span>
@@ -136,6 +159,15 @@ export function ValidationStep({ onSubmit, control, totals }) {
           Valider le Shift
         </Button>
       </div>
+
+      <ExpenseModal
+        isOpen={isExpenseModalOpen}
+        onClose={() => setIsExpenseModalOpen(false)}
+        onSave={(expense) => {
+          // Ajouter la dépense via appendCharge (à implémenter)
+          console.log('Nouvelle dépense:', expense);
+        }}
+      />
     </Card>
   );
 }
