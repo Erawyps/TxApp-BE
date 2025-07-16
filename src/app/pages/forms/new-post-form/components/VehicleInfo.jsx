@@ -1,8 +1,16 @@
 import { Card } from 'components/ui';
 import { Controller } from 'react-hook-form';
 import { Badge } from 'components/ui';
+import { Fragment } from 'react';
+import { useWatch } from 'react-hook-form';
 
 export function VehicleInfo({ vehicules, control }) {
+  const currentVehicle = useWatch({
+    control,
+    name: 'header.vehicule',
+    defaultValue: {}
+  });
+
   return (
     <Card className="p-5">
       <h3 className="text-lg font-semibold text-gray-800 dark:text-dark-100 mb-4">
@@ -52,32 +60,26 @@ export function VehicleInfo({ vehicules, control }) {
                   Détails du véhicule
                 </h4>
                 <div className="grid grid-cols-2 gap-3 text-sm">
-                  <div className="text-gray-600 dark:text-dark-300">Plaque:</div>
-                  <div className="font-medium text-gray-800 dark:text-dark-100">
-                    {control.getValues('header.vehicule.plaque_immatriculation')}
-                  </div>
-                  
-                  <div className="text-gray-600 dark:text-dark-300">Numéro ID:</div>
-                  <div className="font-medium text-gray-800 dark:text-dark-100">
-                    {control.getValues('header.vehicule.numero_identification')}
-                  </div>
-                  
-                  <div className="text-gray-600 dark:text-dark-300">Marque:</div>
-                  <div className="font-medium text-gray-800 dark:text-dark-100">
-                    {control.getValues('header.vehicule.marque')}
-                  </div>
-                  
-                  <div className="text-gray-600 dark:text-dark-300">Modèle:</div>
-                  <div className="font-medium text-gray-800 dark:text-dark-100">
-                    {control.getValues('header.vehicule.modele')}
-                  </div>
-                  
-                  <div className="text-gray-600 dark:text-dark-300">Type:</div>
-                  <div className="font-medium text-gray-800 dark:text-dark-100">
-                    <Badge variant="outlined" className="capitalize">
-                      {control.getValues('header.vehicule.type_vehicule')}
-                    </Badge>
-                  </div>
+                  {[
+                    ['Plaque', 'plaque_immatriculation'],
+                    ['Numéro ID', 'numero_identification'],
+                    ['Marque', 'marque'],
+                    ['Modèle', 'modele'],
+                    ['Type', 'type_vehicule']
+                  ].map(([label, key]) => (
+                    <Fragment key={key}>
+                      <div className="text-gray-600 dark:text-dark-300">{label}:</div>
+                      <div className="font-medium text-gray-800 dark:text-dark-100">
+                        {key === 'type_vehicule' ? (
+                          <Badge variant="outlined" className="capitalize">
+                            {currentVehicle[key] || 'Non spécifié'}
+                          </Badge>
+                        ) : (
+                          currentVehicle[key] || 'Non spécifié'
+                        )}
+                      </div>
+                    </Fragment>
+                  ))}
                 </div>
               </div>
             )}

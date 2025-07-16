@@ -61,17 +61,14 @@ export const schema = Yup.object().shape({
     .min(Yup.ref('start'), 'Doit être supérieur au km de départ')
     .nullable(),
   prise_en_charge_debut: Yup.number()
-    .required('Prise en charge début requise')
-    .min(0, 'Doit être positif'),
+    .min(0, 'Doit être positif')
+    .nullable(),
   prise_en_charge_fin: Yup.number()
     .min(0, 'Doit être positif')
     .nullable(),
-  km_en_charge_debut: Yup.number()
-    .required('Km en charge début requis')
-    .min(0, 'Doit être positif'),
   chutes_debut: Yup.number()
-    .required('Chutes début requises')
-    .min(0, 'Doit être positif'),
+    .min(0, 'Doit être positif')
+    .nullable(),
   chutes_fin: Yup.number()
     .min(0, 'Doit être positif')
     .nullable()
@@ -174,13 +171,13 @@ export const defaultData = {
     duree_interruptions: null
   },
   kilometers: {
-    start: 0,
-    end: null,
-    prise_en_charge_debut: null,
-    prise_en_charge_fin: null,
-    chutes_debut: null,
-    chutes_fin: null
-  },
+  start: null,
+  end: null,
+  prise_en_charge_debut: null,
+  prise_en_charge_fin: null,
+  chutes_debut: null,
+  chutes_fin: null
+},
   courses: [],
   charges: [],
   totals: {
