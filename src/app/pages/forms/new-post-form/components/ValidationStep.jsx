@@ -1,9 +1,15 @@
 import { SignaturePanel } from './SignaturePanel';
 import { useFormContext } from 'react-hook-form';
-import { calculateSalary } from '../utils/calculateSalary';
 
 export function ValidationStep({ control, onSubmit }) {
   const { handleSubmit, formState } = useFormContext();
+
+  // Calculer le salaire basé sur les courses et charges
+  const calculateSalary = (courses, charges) => {
+    const totalCourses = courses.reduce((sum, course) => sum + (course.somme_percue || 0), 0);
+    const totalCharges = charges.reduce((sum, charge) => sum + (charge.montant || 0), 0);
+    return totalCourses - totalCharges;
+  };
 
   const handleValidation = (data) => {
     // Calculs garantis synchrones
