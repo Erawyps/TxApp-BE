@@ -651,6 +651,7 @@ const ChargesTab = ({ control, isMobile }) => {
 };
 
 // Composant ValidationTab optimisé
+// Composant ValidationTab corrigé
 const ValidationTab = ({ control, onSubmit }) => {
   const { fields: chargeFields } = useFieldArray({ 
     control, 
@@ -662,16 +663,24 @@ const ValidationTab = ({ control, onSubmit }) => {
     name: "courses" 
   });
 
+  // Surveiller les valeurs du formulaire pour les calculs en temps réel
+  const watchedValues = useWatch({ 
+    control, 
+    defaultValue: {
+      courses: [],
+      charges: [],
+      validation: {},
+      kilometers: {},
+      shift: {}
+    }
+  });
+
   const calculateTotals = () => {
-    const values = control.getValues();
-    
-    const recettes = courseFields.reduce((sum, _, index) => {
-      const course = values.courses?.[index] || {};
-      return sum + (parseFloat(course.somme_percue) || 0);
+    const recettes = (watchedValues.courses || []).reduce((sum, course) => {
+      return sum + (parseFloat(course.somme_percue) || parseFloat(course.prix_taximetre) || 0);
     }, 0);
     
-    const charges = chargeFields.reduce((sum, _, index) => {
-      const charge = values.charges?.[index] || {};
+    const charges = (watchedValues.charges || []).reduce((sum, charge) => {
       return sum + (parseFloat(charge.montant) || 0);
     }, 0);
     
@@ -689,7 +698,7 @@ const ValidationTab = ({ control, onSubmit }) => {
   const handleSubmit = () => {
     try {
       const totals = calculateTotals();
-      const values = control.getValues();
+      const values = control.getValues(); // Maintenant control est accessible
       
       if (!values.validation?.signature) {
         toast.error('Veuillez signer pour valider');
@@ -738,6 +747,22 @@ const ValidationTab = ({ control, onSubmit }) => {
           </h4>
           
           <div className="space-y-2">
+            <div className="flex justify-between">
+              <span className="text-gray-600 dark:text-dark-300">Courses:</span>
+              <span className="font-medium text-gray-800 dark:text-dark-100">
+                {courseFields.length}
+              </span>
+            </div>
+            
+            <div className="flex justify-between">
+              <span className="text-gray-600 dark:text-dark-300">Dépenses:</span>
+              <span className="font-medium text-gray-800 dark:text-dark-100">
+                {chargeFields.length}
+              </span>
+            </div>
+            
+            <hr className="my-2" />
+            
             <div className="flex justify-between">
               <span className="text-gray-600 dark:text-dark-300">Total Recettes:</span>
               <span className="font-medium text-gray-800 dark:text-dark-100">
