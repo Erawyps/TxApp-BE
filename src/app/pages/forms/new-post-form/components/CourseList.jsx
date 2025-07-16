@@ -42,10 +42,10 @@ export function CourseList({ courses, onRemoveCourse }) {
                   
                   <div className="mt-1 flex items-center gap-2">
                     <span className="text-sm font-semibold text-primary-600 dark:text-primary-400">
-                      {course.prix_taximetre?.toFixed(2)} €
+                      {course.somme_percue?.toFixed(2)} €
                     </span>
                     <span className="text-xs text-gray-500 dark:text-dark-400">
-                      (Perçu: {course.somme_percue?.toFixed(2)} €)
+                      (Prix taximétré: {course.prix_taximetre?.toFixed(2)} €)
                     </span>
                   </div>
 
