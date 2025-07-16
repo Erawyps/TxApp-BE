@@ -90,17 +90,17 @@ export function DriverMode({ chauffeur, vehicules, control, onSwitchMode }) {
     const montant = charge.montant || 0;
     return sum + (typeof montant === 'number' ? montant : parseFloat(montant) || 0);
   }, 0);
-  const calculateSalary = (courses, charges) => {
+  // Modifier la fonction de calcul du salaire
+const calculateSalary = (courses) => {
   const recettes = courses.reduce((sum, c) => sum + (c.somme_percue || c.prix || 0), 0);
-  const chargesTotal = charges.reduce((sum, c) => sum + (c.montant || 0), 0);
   
   const base = Math.min(recettes, 180);
   const surplus = Math.max(recettes - 180, 0);
-  return Math.max((base * 0.4) + (surplus * 0.3) - chargesTotal, 0);
+  return (base * 0.4) + (surplus * 0.3);
 };
 
 // Utilisation :
-const salaire = calculateSalary(watchedValues.courses || [], watchedValues.charges || []);
+const salaire = calculateSalary(watchedValues.courses || []);
 
 
   /**const calculateSalary = (recettes, charges) => {

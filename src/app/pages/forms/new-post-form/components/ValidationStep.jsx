@@ -59,31 +59,28 @@ export function ValidationStep({
     setIsSubmitting(true);
     
     try {
-      // Calcul final des totaux
-      const finalRecettes = totals.recettes || 0;
-      const finalCharges = totals.charges || 0;
-      const finalSalaire = totals.salaire || 0;
       
-      const finalData = {
-        ...watchedValues,
-        shift: {
-          ...watchedValues.shift,
-          end: endShiftTime,
-          km_fin: parseFloat(kmEnd),
-          km_parcourus: parseFloat(kmEnd) - (watchedValues.header?.km_depart || 0)
-        },
-        totals: {
-          recettes: finalRecettes,
-          charges: finalCharges,
-          salaire: finalSalaire,
-          km_parcourus: parseFloat(kmEnd) - (watchedValues.header?.km_depart || 0)
-        },
-        validation: {
-          signature: signature.trim(),
-          date_validation: new Date().toISOString(),
-          validated_by: 'driver'
-        }
-      };
+      // Dans la fonction handleSubmit
+const finalData = {
+  ...watchedValues,
+  shift: {
+    ...watchedValues.shift,
+    end: endShiftTime,
+    km_fin: parseFloat(kmEnd),
+    km_parcourus: parseFloat(kmEnd) - (watchedValues.header?.km_depart || 0)
+  },
+  totals: {
+    recettes: totals.recettes || 0,
+    charges: totals.charges || 0,
+    salaire: totals.salaire || 0, // Le salaire est déjà calculé sans les charges
+    km_parcourus: parseFloat(kmEnd) - (watchedValues.header?.km_depart || 0)
+  },
+  validation: {
+    signature: signature.trim(),
+    date_validation: new Date().toISOString(),
+    validated_by: 'driver'
+  }
+};
 
       await onSubmit(finalData);
       

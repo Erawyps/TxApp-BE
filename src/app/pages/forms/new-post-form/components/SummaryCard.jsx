@@ -18,13 +18,11 @@ export function SummaryCard({ recettes, charges, salaire, showDetails = false })
     const base = Math.min(recettes, 180);
     const surplus = Math.max(recettes - 180, 0);
     const salaireBrut = (base * 0.4) + (surplus * 0.3);
-    const salaireNet = Math.max(salaireBrut - charges, 0);
     
     return {
       base,
       surplus,
       salaireBrut,
-      salaireNet,
       tauxBase: 0.4,
       tauxSurplus: 0.3
     };
@@ -55,15 +53,15 @@ export function SummaryCard({ recettes, charges, salaire, showDetails = false })
           </span>
         </div>
 
-        {/* Charges */}
-        <div className="flex items-center justify-between p-3 bg-red-50 dark:bg-red-900/20 rounded-lg">
+        {/* Charges (affichage seulement) */}
+        <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
           <div className="flex items-center gap-2">
-            <MinusIcon className="h-4 w-4 text-red-600 dark:text-red-400" />
-            <span className="font-medium text-red-800 dark:text-red-200">
-              Total Charges
+            <MinusIcon className="h-4 w-4 text-gray-600 dark:text-gray-400" />
+            <span className="font-medium text-gray-800 dark:text-gray-200">
+              Total Charges (Société)
             </span>
           </div>
-          <span className="text-lg font-bold text-red-900 dark:text-red-100">
+          <span className="text-lg font-bold text-gray-900 dark:text-gray-100">
             {formatCurrency(charges)}
           </span>
         </div>
@@ -89,10 +87,6 @@ export function SummaryCard({ recettes, charges, salaire, showDetails = false })
                 <span>Salaire brut</span>
                 <span>{formatCurrency(breakdown.salaireBrut)}</span>
               </div>
-              <div className="flex justify-between">
-                <span>Charges</span>
-                <span>- {formatCurrency(charges)}</span>
-              </div>
             </div>
           </div>
         )}
@@ -102,7 +96,7 @@ export function SummaryCard({ recettes, charges, salaire, showDetails = false })
           <div className="flex items-center gap-2">
             <CurrencyEuroIcon className="h-5 w-5 text-primary-600 dark:text-primary-400" />
             <span className="text-lg font-semibold text-primary-800 dark:text-primary-200">
-              Salaire Net
+              Salaire Chauffeur
             </span>
           </div>
           <span className="text-2xl font-bold text-primary-900 dark:text-primary-100">
