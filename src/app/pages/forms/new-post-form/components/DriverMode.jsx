@@ -5,7 +5,6 @@ import { ShiftInfo } from './ShiftInfo';
 import { Card, Button, Badge, ScrollShadow } from 'components/ui';
 import { ValidationStep } from './ValidationStep';
 import { CourseList } from './CourseList';
-import { ExpenseList } from './ExpenseList';
 import { SummaryCard } from './SummaryCard';
 import { Page } from 'components/shared/Page';
 import clsx from 'clsx';
@@ -18,6 +17,7 @@ import {
 import { FormScrollContainer } from './FormScrollContainer';
 
 export function DriverMode({ chauffeur, vehicules, control, onSubmit, onSwitchMode }) {
+  // Gestion des tableaux de courses et dépenses
   const { fields: courseFields, append: appendCourse, remove: removeCourse } = useFieldArray({
     control,
     name: "courses"
@@ -29,18 +29,15 @@ export function DriverMode({ chauffeur, vehicules, control, onSubmit, onSwitchMo
   });
 
   const [activeTab, setActiveTab] = useState('shift');
-
-  // Ajoutez ici les useEffect pour la sauvegarde automatique
+  
+  // Sauvegarde automatique
   useEffect(() => {
     const saveData = () => {
       const data = control.getValues();
       localStorage.setItem('driverShiftData', JSON.stringify(data));
     };
 
-    // Sauvegarder toutes les 5 secondes
     const interval = setInterval(saveData, 5000);
-    
-    // Sauvegarder aussi quand on quitte la page
     window.addEventListener('beforeunload', saveData);
     
     return () => {
@@ -49,7 +46,7 @@ export function DriverMode({ chauffeur, vehicules, control, onSubmit, onSwitchMo
     };
   }, [control]);
 
-  // Charger les données sauvegardées au montage
+  // Restauration des données sauvegardées
   useEffect(() => {
     const savedData = localStorage.getItem('driverShiftData');
     if (savedData) {
@@ -57,7 +54,7 @@ export function DriverMode({ chauffeur, vehicules, control, onSubmit, onSwitchMo
         const parsedData = JSON.parse(savedData);
         control.reset(parsedData);
         
-        // Vérifier si le shift était en cours pour repositionner l'onglet actif
+        // Positionnement de l'onglet actif selon l'état sauvegardé
         if (parsedData.shift?.start && !parsedData.shift?.end) {
           setActiveTab('courses');
         } else if (parsedData.shift?.start && parsedData.shift?.end) {
@@ -69,7 +66,8 @@ export function DriverMode({ chauffeur, vehicules, control, onSubmit, onSwitchMo
       }
     }
   }, [control]);
-  
+
+  // Surveillance des valeurs du formulaire
   const watchedValues = useWatch({ 
     control, 
     defaultValue: {
@@ -80,33 +78,7 @@ export function DriverMode({ chauffeur, vehicules, control, onSubmit, onSwitchMo
     }
   });
 
-  const safeGetValue = (path, defaultValue = 0) => {
-    try {
-      const keys = path.split('.');
-      let value = watchedValues;
-      
-      for (const key of keys) {
-        if (value && typeof value === 'object' && key in value) {
-          value = value[key];
-        } else {
-          return defaultValue;
-        }
-      }
-      
-      return value !== undefined && value !== null ? value : defaultValue;
-    } catch (error) {
-      console.warn(`Erreur lors de la récupération de ${path}:`, error);
-      return defaultValue;
-    }
-  };
-
-  const calculateSalary = (recettes, charges) => {
-    const base = Math.min(recettes, 180);
-    const surplus = Math.max(recettes - 180, 0);
-    const salaireBrut = (base * 0.4) + (surplus * 0.3);
-    return Math.max(salaireBrut - charges, 0);
-  };
-
+  // Calcul des totaux
   const totalRecettes = courseFields.reduce((sum, _, index) => {
     const course = watchedValues.courses?.[index] || {};
     const prix = course.somme_percue || course.prix || 0;
@@ -119,7 +91,30 @@ export function DriverMode({ chauffeur, vehicules, control, onSubmit, onSwitchMo
     return sum + (typeof montant === 'number' ? montant : parseFloat(montant) || 0);
   }, 0);
 
+  const calculateSalary = (recettes, charges) => {
+    const base = Math.min(recettes, 180);
+    const surplus = Math.max(recettes - 180, 0);
+    const salaireBrut = (base * 0.4) + (surplus * 0.3);
+    return Math.max(salaireBrut - charges, 0);
+  };
+
   const salaire = calculateSalary(totalRecettes, totalCharges);
+
+  // Gestion des courses
+  const handleAddCourse = (course) => {
+    appendCourse({
+      ...course,
+      id: `CRS-${Date.now()}`,
+    });
+  };
+
+  // Gestion des dépenses (utilisée dans ValidationStep)
+  const handleAddExpense = (expense) => {
+    appendCharge({
+      ...expense,
+      id: `CHG-${Date.now()}`
+    });
+  };
 
   if (!chauffeur || !vehicules || vehicules.length === 0) {
     return (
@@ -132,31 +127,10 @@ export function DriverMode({ chauffeur, vehicules, control, onSubmit, onSwitchMo
     );
   }
 
-  const handleAddCourse = (course) => {
-    try {
-      appendCourse({
-        ...course,
-        id: `CRS-${Date.now()}`,
-      });
-    } catch (error) {
-      console.error('Erreur lors de l\'ajout de la course:', error);
-    }
-  };
-
-  const handleAddExpense = (expense) => {
-    try {
-      appendCharge({
-        ...expense,
-        id: `CHG-${Date.now()}`
-      });
-    } catch (error) {
-      console.error('Erreur lors de l\'ajout de la charge:', error);
-    }
-  };
-
   return (
     <Page title="Feuille de Route - Chauffeur">
       <div className="space-y-4 p-4 pb-20 md:pb-4">
+        {/* En-tête */}
         <Card className="p-5">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <div className="flex-1 min-w-0">
@@ -164,25 +138,24 @@ export function DriverMode({ chauffeur, vehicules, control, onSubmit, onSwitchMo
                 Feuille de Route - {chauffeur.prenom} {chauffeur.nom}
               </h2>
               <div className="mt-1 flex flex-wrap items-center gap-x-4 text-sm text-gray-600 dark:text-dark-300">
-                <span>N° d&apos;immatriculation: {chauffeur.badge}</span>
+                <span>Badge: {chauffeur.numero_badge}</span>
                 <span>Contrat: {chauffeur.type_contrat}</span>
               </div>
             </div>
 
-            <div className="flex-shrink-0">
-              <Button 
-                variant="outlined" 
-                onClick={onSwitchMode}
-                className="border-gray-300 dark:border-dark-500 w-full sm:w-auto"
-                icon={<DevicePhoneMobileIcon className="h-5 w-5" />}
-                size="md"
-              >
-                Mode complet
-              </Button>
-            </div>
+            <Button 
+              variant="outlined" 
+              onClick={onSwitchMode}
+              className="border-gray-300 dark:border-dark-500 w-full sm:w-auto"
+              icon={<DevicePhoneMobileIcon className="h-5 w-5" />}
+              size="md"
+            >
+              Mode complet
+            </Button>
           </div>
         </Card>
 
+        {/* Navigation par onglets */}
         <div className="border-b-2 border-gray-200 dark:border-dark-500">
           <div className="flex justify-center space-x-1">
             <button
@@ -205,15 +178,15 @@ export function DriverMode({ chauffeur, vehicules, control, onSubmit, onSwitchMo
             </button>
 
             <button
-              onClick={() => !safeGetValue('shift.start') || setActiveTab('courses')}
-              disabled={!safeGetValue('shift.start')}
+              onClick={() => !watchedValues.shift?.start || setActiveTab('courses')}
+              disabled={!watchedValues.shift?.start}
               className={clsx(
                 "relative flex flex-col items-center justify-center px-4 py-3 font-medium transition-colors w-full",
                 "focus:outline-none",
                 activeTab === 'courses'
                   ? "text-primary-600 border-b-2 border-primary-600 dark:border-primary-400 dark:text-primary-400"
                   : "text-gray-600 hover:text-gray-800 dark:text-dark-300 dark:hover:text-dark-100",
-                !safeGetValue('shift.start') && "opacity-50 cursor-not-allowed"
+                !watchedValues.shift?.start && "opacity-50 cursor-not-allowed"
               )}
             >
               <div className="relative">
@@ -240,15 +213,15 @@ export function DriverMode({ chauffeur, vehicules, control, onSubmit, onSwitchMo
             </button>
 
             <button
-              onClick={() => !safeGetValue('shift.start') || setActiveTab('validation')}
-              disabled={!safeGetValue('shift.start')}
+              onClick={() => !watchedValues.shift?.start || setActiveTab('validation')}
+              disabled={!watchedValues.shift?.start}
               className={clsx(
                 "relative flex flex-col items-center justify-center px-4 py-3 font-medium transition-colors w-full",
                 "focus:outline-none",
                 activeTab === 'validation'
                   ? "text-primary-600 border-b-2 border-primary-600 dark:border-primary-400 dark:text-primary-400"
                   : "text-gray-600 hover:text-gray-800 dark:text-dark-300 dark:hover:text-dark-100",
-                !safeGetValue('shift.start') && "opacity-50 cursor-not-allowed"
+                !watchedValues.shift?.start && "opacity-50 cursor-not-allowed"
               )}
             >
               <ClockIcon className={clsx(
@@ -262,13 +235,13 @@ export function DriverMode({ chauffeur, vehicules, control, onSubmit, onSwitchMo
           </div>
         </div>
 
+        {/* Contenu des onglets */}
         <div className="space-y-6">
           {activeTab === 'shift' && (
             <div className="grid gap-6 md:grid-cols-2">
               <VehicleInfo 
                 vehicules={vehicules} 
                 control={control}
-                currentVehicle={safeGetValue('header.vehicule')}
               />
               <ShiftInfo 
                 control={control}
@@ -279,47 +252,31 @@ export function DriverMode({ chauffeur, vehicules, control, onSubmit, onSwitchMo
 
           {activeTab === 'courses' && (
             <div className="grid gap-6 lg:grid-cols-3">
-              <div className="space-y-6 lg:col-span-2">
+              <div className="lg:col-span-2">
                 <FormScrollContainer
                   onAddCourse={handleAddCourse}
-                  onAddExpense={handleAddExpense}
                   currentLocation={chauffeur.currentLocation}
                 />
               </div>
               
-              <div className="space-y-4 lg:col-span-1"> {/* Réduit l'espacement vertical global */}
-  <ScrollShadow className="h-[400px] hide-scrollbar">
-    <div className="space-y-3 pr-2"> {/* Espacement interne et padding pour scrollbar */}
-      {/* SummaryCard - Toujours visible */}
-      <SummaryCard
-        recettes={totalRecettes}
-        charges={totalCharges}
-        salaire={salaire}
-        className="mb-3" // Marge supplémentaire en bas
-      />
-
-      {/* CourseList - Conditionnel */}
-      {courseFields.length > 0 && (
-        <div className="pb-2"> {/* Padding en bas pour séparation */}
-          <CourseList 
-            courses={watchedValues.courses || []} 
-            onRemoveCourse={removeCourse}
-            compact // Ajoutez cette prop si votre composant supporte un mode compact
-          />
-        </div>
-      )}
-      
-      {/* ExpenseList - Conditionnel */}
-      {chargeFields.length > 0 && (
-        <ExpenseList 
-          expenses={watchedValues.charges || []} 
-          onRemoveExpense={removeCharge}
-          className="mt-2" // Marge supplémentaire en haut
-        />
-      )}
-    </div>
-  </ScrollShadow>
-</div>
+              <div className="lg:col-span-1">
+                <ScrollShadow className="h-[400px] hide-scrollbar">
+                  <div className="space-y-3 pr-2">
+                    <SummaryCard
+                      recettes={totalRecettes}
+                      charges={totalCharges}
+                      salaire={salaire}
+                    />
+                    {courseFields.length > 0 && (
+                      <CourseList 
+                        courses={watchedValues.courses || []} 
+                        onRemoveCourse={removeCourse}
+                        compact
+                      />
+                    )}
+                  </div>
+                </ScrollShadow>
+              </div>
             </div>
           )}
 
@@ -332,6 +289,9 @@ export function DriverMode({ chauffeur, vehicules, control, onSubmit, onSwitchMo
                 charges: totalCharges,
                 salaire: salaire
               }}
+              expenses={watchedValues.charges || []}
+              onRemoveExpense={removeCharge}
+              onAddExpense={handleAddExpense}
             />
           )}
         </div>
