@@ -90,8 +90,18 @@ export function DriverMode({ chauffeur, vehicules, control, onSubmit, onSwitchMo
     const montant = charge.montant || 0;
     return sum + (typeof montant === 'number' ? montant : parseFloat(montant) || 0);
   }, 0);
-  // Calcul du salaire sans les charges
-  const salaire = Math.max(totalRecettes - totalCharges, 0);
+  // Calcul du salaire sans prendre en compte les charges
+  // Utilisation de Math.max pour éviter les salaires négatifs
+  // Le salaire est calculé comme suit :
+  // - Si le total des recettes est inférieur à 180, le salaire est 40% des recettes
+  // - Si le total des recettes est supérieur à 180, le salaire is 40% des 180 premiers euros plus 30% du surplus
+  // - Le salaire final est le maximum entre 0 et le total des recettes moins les charges 
+  const salaire = Math.max(
+    totalRecettes <= 180
+      ? totalRecettes * 0.4
+      : (180 * 0.4) + ((totalRecettes - 180) * 0.3),
+    0
+  ) - totalCharges;
 
 
   /**const calculateSalary = (recettes, charges) => {
