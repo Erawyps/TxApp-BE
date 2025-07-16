@@ -1,11 +1,13 @@
 import { useRef, useEffect } from 'react';
+import { useController } from 'react-hook-form';
 import { toast } from 'sonner';
 import { Button } from 'components/ui';
 
 export function SignaturePanel({ control, name }) {
+  const { field } = useController({ name, control });
   const canvasRef = useRef(null);
   const isDrawing = useRef(false);
-  
+
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -65,7 +67,7 @@ export function SignaturePanel({ control, name }) {
     if (!canvas) return;
     
     const signatureData = canvas.toDataURL();
-    control.setValue(name, signatureData);
+    field.onChange(signatureData);
     toast.success('Signature enregistrée');
   };
 
@@ -77,7 +79,7 @@ export function SignaturePanel({ control, name }) {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.fillStyle = '#fff';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
-    control.setValue(name, null);
+    field.onChange(null);
   };
 
   return (
