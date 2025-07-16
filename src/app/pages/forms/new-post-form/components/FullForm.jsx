@@ -235,6 +235,7 @@ const GeneralTab = ({ chauffeurs, vehicules, control, isMobile }) => {
       </h3>
       
       <div className={clsx("gap-4", isMobile ? "space-y-4" : "grid grid-cols-1 md:grid-cols-2")}>
+        {/* Date */}
         <Controller
           name="header.date"
           control={control}
@@ -245,34 +246,33 @@ const GeneralTab = ({ chauffeurs, vehicules, control, isMobile }) => {
               size={isMobile ? "lg" : "md"}
               value={field.value ? new Date(field.value).toISOString().split('T')[0] : ''}
               onChange={(e) => field.onChange(new Date(e.target.value))}
-              className="w-full"
             />
           )}
         />
         
+        {/* Chauffeur */}
         <Controller
           name="header.chauffeur.id"
           control={control}
-          render={({ field, fieldState: { error } }) => (
+          render={({ field }) => (
             <Select
               label="Chauffeur"
               size={isMobile ? "lg" : "md"}
               options={chauffeurs.map(c => ({
                 value: c.id,
-                label: `${c.prenom} ${c.nom}`
+                label: `${c.prenom} ${c.nom} (${c.numero_badge})`
               }))}
               value={field.value}
               onChange={field.onChange}
-              error={error?.message}
-              className="w-full"
             />
           )}
         />
 
+        {/* Véhicule */}
         <Controller
           name="header.vehicule.id"
           control={control}
-          render={({ field, fieldState: { error } }) => (
+          render={({ field }) => (
             <Select
               label="Véhicule"
               size={isMobile ? "lg" : "md"}
@@ -287,63 +287,76 @@ const GeneralTab = ({ chauffeurs, vehicules, control, isMobile }) => {
                   control.setValue('header.vehicule', {
                     id: selected.id,
                     plaque_immatriculation: selected.plaque_immatriculation,
+                    numero_identification: selected.numero_identification,
                     marque: selected.marque,
-                    modele: selected.modele
+                    modele: selected.modele,
+                    type_vehicule: selected.type_vehicule
                   });
                 }
                 field.onChange(value);
               }}
-              error={error?.message}
-              className="w-full"
             />
           )}
         />
 
+        {/* Détails du véhicule */}
         {watchedVehicle?.id && (
-          <Card className="p-4 bg-gray-50 dark:bg-dark-700">
+          <Card className="p-4 bg-gray-50 dark:bg-dark-700 md:col-span-2">
             <h4 className="font-medium mb-3 text-gray-800 dark:text-dark-100">Détails du véhicule</h4>
-            <div className="grid grid-cols-2 gap-3 text-sm">
-              <div className="text-gray-600 dark:text-dark-300">Plaque:</div>
-              <div className="font-medium text-gray-800 dark:text-dark-100">{watchedVehicle.plaque_immatriculation}</div>
-              <div className="text-gray-600 dark:text-dark-300">Marque:</div>
-              <div className="font-medium text-gray-800 dark:text-dark-100">{watchedVehicle.marque}</div>
-              <div className="text-gray-600 dark:text-dark-300">Modèle:</div>
-              <div className="font-medium text-gray-800 dark:text-dark-100">{watchedVehicle.modele}</div>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+              <div>
+                <div className="text-gray-600 dark:text-dark-300">Plaque:</div>
+                <div className="font-medium">{watchedVehicle.plaque_immatriculation}</div>
+              </div>
+              <div>
+                <div className="text-gray-600 dark:text-dark-300">Marque:</div>
+                <div className="font-medium">{watchedVehicle.marque}</div>
+              </div>
+              <div>
+                <div className="text-gray-600 dark:text-dark-300">Modèle:</div>
+                <div className="font-medium">{watchedVehicle.modele}</div>
+              </div>
+              <div>
+                <div className="text-gray-600 dark:text-dark-300">Type:</div>
+                <div className="font-medium">
+                  <Badge variant="outlined" className="capitalize">
+                    {watchedVehicle.type_vehicule}
+                  </Badge>
+                </div>
+              </div>
             </div>
           </Card>
         )}
-      </div>
 
-      <h3 className="text-lg font-semibold text-gray-800 dark:text-dark-100 mt-6 mb-4">
-        Kilométrage
-      </h3>
-      
-      <div className={clsx("gap-4", isMobile ? "space-y-4" : "grid grid-cols-1 md:grid-cols-2")}>
+        {/* Kilométrage */}
+        <h4 className="text-md font-semibold text-gray-800 dark:text-dark-100 md:col-span-2">
+          Kilométrage
+        </h4>
+        
         <Controller
           name="kilometers.start"
           control={control}
-          render={({ field, fieldState: { error } }) => (
+          render={({ field }) => (
             <Input
               {...field}
-              label="Départ (km)"
+              label="Km de début"
               type="number"
+              min="0"
               size={isMobile ? "lg" : "md"}
-              error={error?.message}
-              className="w-full"
             />
           )}
         />
+        
         <Controller
           name="kilometers.end"
           control={control}
-          render={({ field, fieldState: { error } }) => (
+          render={({ field }) => (
             <Input
               {...field}
-              label="Fin (km)"
+              label="Km de fin"
               type="number"
+              min="0"
               size={isMobile ? "lg" : "md"}
-              error={error?.message}
-              className="w-full"
             />
           )}
         />
@@ -544,28 +557,32 @@ const ChargesTab = ({ control, isMobile }) => {
 
 // Composant ValidationTab optimisé
 const ValidationTab = ({ control, onSubmit, isMobile }) => {
-  const watchedValues = useWatch({ control });
+  const [signature, setSignature] = useState(null);
   
+  // Calcul des totaux sécurisé
   const calculateTotals = () => {
-  const courses = watchedValues.courses || [];
-  const charges = watchedValues.charges || [];
-  
-  const recettes = courses.reduce((sum, course) => {
-    const amount = course.somme_percue || course.prix || 0;
-    return sum + (typeof amount === 'number' ? amount : parseFloat(amount) || 0);
-  }, 0);
-  
-  const chargesTotal = charges.reduce((sum, charge) => {
-    const amount = charge.montant || 0;
-    return sum + (typeof amount === 'number' ? amount : parseFloat(amount) || 0);
-  }, 0);
-  
-  const base = Math.min(recettes, 180);
-  const surplus = Math.max(recettes - 180, 0);
-  const salaire = (base * 0.4) + (surplus * 0.3);
-  
-  return { recettes, charges: chargesTotal, salaire };
-};
+    try {
+      const values = control.getValues();
+      const courses = values.courses || [];
+      const charges = values.charges || [];
+      
+      const recettes = courses.reduce((sum, course) => sum + (course.somme_percue || 0), 0);
+      const chargesTotal = charges.reduce((sum, charge) => sum + (charge.montant || 0), 0);
+      
+      const base = Math.min(recettes, 180);
+      const surplus = Math.max(recettes - 180, 0);
+      const salaire = (base * 0.4) + (surplus * 0.3) - chargesTotal;
+      
+      return {
+        recettes,
+        charges: chargesTotal,
+        salaire: Math.max(salaire, 0)
+      };
+    } catch (error) {
+      console.error("Erreur de calcul des totaux:", error);
+      return { recettes: 0, charges: 0, salaire: 0 };
+    }
+  };
 
   const totals = calculateTotals();
 
@@ -579,14 +596,13 @@ const ValidationTab = ({ control, onSubmit, isMobile }) => {
         <Controller
           name="kilometers.end"
           control={control}
-          render={({ field, fieldState: { error } }) => (
+          render={({ field }) => (
             <Input
               {...field}
               label="Kilométrage final"
               type="number"
+              min="0"
               size={isMobile ? "lg" : "md"}
-              error={error?.message}
-              className="w-full"
             />
           )}
         />
@@ -594,61 +610,47 @@ const ValidationTab = ({ control, onSubmit, isMobile }) => {
         <Controller
           name="shift.end"
           control={control}
-          render={({ field, fieldState: { error } }) => (
+          render={({ field }) => (
             <Input
               {...field}
               label="Heure de fin"
               type="time"
               size={isMobile ? "lg" : "md"}
-              error={error?.message}
-              className="w-full"
-            />
-          )}
-        />
-        
-        <Controller
-          name="shift.interruptions"
-          control={control}
-          render={({ field, fieldState: { error } }) => (
-            <Input
-              {...field}
-              label="Interruptions (minutes)"
-              type="number"
-              size={isMobile ? "lg" : "md"}
-              error={error?.message}
-              className="w-full"
             />
           )}
         />
       </div>
-      
+
+      {/* Signature */}
       <div className="mt-6">
         <SignaturePanel 
-          onSave={(signature) => control.setValue('signature', signature)}
-          isMobile={isMobile}
+          onSave={(sig) => {
+            setSignature(sig);
+            control.setValue('validation.signature', sig);
+          }}
         />
       </div>
       
+      {/* Récapitulatif */}
       <SummaryCard 
         recettes={totals.recettes}
         charges={totals.charges}
         salaire={totals.salaire}
-        variant={isMobile ? 'compact' : 'default'}
         className="mt-6"
       />
       
-      {!isMobile && (
-        <div className="flex justify-end mt-6">
-          <Button 
-            color="primary"
-            onClick={() => onSubmit(control.getValues())}
-            size="lg"
-            className="px-8 py-3"
-          >
-            Valider le Shift
-          </Button>
-        </div>
-      )}
+      {/* Bouton de validation */}
+      <div className="flex justify-end mt-6">
+        <Button 
+          onClick={() => onSubmit(control.getValues())}
+          disabled={!signature}
+          color="primary"
+          size={isMobile ? "lg" : "md"}
+          className="w-full md:w-auto"
+        >
+          Valider le Shift
+        </Button>
+      </div>
     </div>
   );
 };

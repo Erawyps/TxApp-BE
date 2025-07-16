@@ -186,8 +186,8 @@ export const defaultData = {
     salaire: 0
   },
   validation: {
-    signature: "",
-    date_validation: null,
-    valide_par: null
-  }
+  signature: null, // Modifié de "" à null
+  date_validation: null,
+  valide_par: null
+}
 };
