@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, FormProvider } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import { schema, defaultData } from './schema';
 import { DriverMode } from './components/DriverMode';
@@ -11,16 +11,12 @@ import ErrorBoundary from './components/ErrorBoundary';
 export default function FeuilleRouteApp() {
   const [mode, setMode] = useState('driver');
   
-  const { 
-    control, 
-    handleSubmit, 
-    reset,
-    formState: { errors },
-    watch
-  } = useForm({
+  const methods = useForm({
     resolver: yupResolver(schema),
     defaultValues: defaultData
   });
+  const { reset } = methods;
+
 
   // Données simulées
   const currentDriver = {
@@ -69,33 +65,32 @@ export default function FeuilleRouteApp() {
   };
 
   // Affichage des erreurs en mode développement
-  if (import.meta.env.MODE === 'development' && Object.keys(errors).length > 0) {
-    console.log('Erreurs de validation:', errors);
+  if (import.meta.env.MODE === 'development' && Object.keys(methods.formState.errors).length > 0) {
+    console.log('Erreurs de validation:', methods.formState.errors);
   }
 
   return (
     <ErrorBoundary>
       <Page title="Feuille de Route">
-        <div className="px-4 pb-6">
-          {mode === 'driver' ? (
-            <DriverMode 
-              chauffeur={currentDriver}
-              vehicules={vehicules}
-              control={control}
-              onSubmit={handleSubmit(handleSubmitForm, handleError)}
-              onSwitchMode={() => setMode('full')}
-              watch={watch}
-            />
-          ) : (
-            <FullForm 
-              chauffeurs={[currentDriver]}
-              vehicules={vehicules}
-              control={control}
-              onSwitchMode={() => setMode('driver')}
-              onSubmit={handleSubmit(handleSubmitForm, handleError)}
-            />
-          )}
-        </div>
+        <FormProvider {...methods}>
+          <div className="px-4 pb-6">
+            {mode === 'driver' ? (
+              <DriverMode 
+                chauffeur={currentDriver}
+                vehicules={vehicules}
+                onSubmit={methods.handleSubmit(handleSubmitForm, handleError)}
+                onSwitchMode={() => setMode('full')}
+              />
+            ) : (
+              <FullForm 
+                chauffeurs={[currentDriver]}
+                vehicules={vehicules}
+                onSwitchMode={() => setMode('driver')}
+                onSubmit={methods.handleSubmit(handleSubmitForm, handleError)}
+              />
+            )}
+          </div>
+        </FormProvider>
       </Page>
     </ErrorBoundary>
   );
