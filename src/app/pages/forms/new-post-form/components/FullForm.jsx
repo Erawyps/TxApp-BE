@@ -742,47 +742,47 @@ const ValidationTab = ({ control, onSubmit }) => {
 
       <div className="grid gap-4 md:grid-cols-2">
         <Card className="p-4">
-          <h4 className="font-medium mb-3 text-gray-800 dark:text-dark-100">
-            Récapitulatif financier
-          </h4>
-          
-          <div className="space-y-2">
-            <div className="flex justify-between">
-              <span className="text-gray-600 dark:text-dark-300">Courses:</span>
-              <span className="font-medium text-gray-800 dark:text-dark-100">
-                {courseFields.length}
-              </span>
-            </div>
-            
-            <div className="flex justify-between">
-              <span className="text-gray-600 dark:text-dark-300">Dépenses:</span>
-              <span className="font-medium text-gray-800 dark:text-dark-100">
-                {chargeFields.length}
-              </span>
-            </div>
-            
-            <hr className="my-2" />
-            
-            <div className="flex justify-between">
-              <span className="text-gray-600 dark:text-dark-300">Total Recettes:</span>
-              <span className="font-medium text-gray-800 dark:text-dark-100">
-                {totals.recettes.toFixed(2)} €
-              </span>
-            </div>
-            
-            <div className="flex justify-between">
-              <span className="text-gray-600 dark:text-dark-300">Total Charges:</span>
-              <span className="font-medium text-gray-800 dark:text-dark-100">
-                {totals.charges.toFixed(2)} €
-              </span>
-            </div>
-            
-            <div className="flex justify-between text-primary-600 dark:text-primary-400">
-              <span className="font-medium">Salaire estimé:</span>
-              <span className="font-bold">{totals.salaire.toFixed(2)} €</span>
-            </div>
-          </div>
-        </Card>
+  <h4 className="font-medium mb-3 text-gray-800 dark:text-dark-100">
+    Récapitulatif financier
+  </h4>
+  
+  <div className="space-y-2">
+    <div className="flex justify-between">
+      <span className="text-gray-600 dark:text-dark-300">Courses:</span>
+      <span className="font-medium text-gray-800 dark:text-dark-100">
+        {courseFields.length}
+      </span>
+    </div>
+    
+    <div className="flex justify-between">
+      <span className="text-gray-600 dark:text-dark-300">Dépenses (Société):</span>
+      <span className="font-medium text-gray-800 dark:text-dark-100">
+        {chargeFields.length}
+      </span>
+    </div>
+    
+    <hr className="my-2" />
+    
+    <div className="flex justify-between">
+      <span className="text-gray-600 dark:text-dark-300">Total Recettes:</span>
+      <span className="font-medium text-gray-800 dark:text-dark-100">
+        {totals.recettes.toFixed(2)} €
+      </span>
+    </div>
+    
+    <div className="flex justify-between">
+      <span className="text-gray-600 dark:text-dark-300">Total Charges (Société):</span>
+      <span className="font-medium text-gray-800 dark:text-dark-100">
+        {totals.charges.toFixed(2)} €
+      </span>
+    </div>
+    
+    <div className="flex justify-between text-primary-600 dark:text-primary-400">
+      <span className="font-medium">Salaire chauffeur:</span>
+      <span className="font-bold">{totals.salaire.toFixed(2)} €</span>
+    </div>
+  </div>
+</Card>
 
         <Card className="p-4">
           <h4 className="font-medium mb-3 text-gray-800 dark:text-dark-100">
