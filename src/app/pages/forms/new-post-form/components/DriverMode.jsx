@@ -90,15 +90,18 @@ export function DriverMode({ chauffeur, vehicules, control, onSubmit, onSwitchMo
     const montant = charge.montant || 0;
     return sum + (typeof montant === 'number' ? montant : parseFloat(montant) || 0);
   }, 0);
+  // Calcul du salaire sans les charges
+  const salaire = Math.max(totalRecettes - totalCharges, 0);
 
-  const calculateSalary = (recettes, charges) => {
+
+  /**const calculateSalary = (recettes, charges) => {
     const base = Math.min(recettes, 180);
     const surplus = Math.max(recettes - 180, 0);
     const salaireBrut = (base * 0.4) + (surplus * 0.3);
     return Math.max(salaireBrut - charges, 0);
   };
 
-  const salaire = calculateSalary(totalRecettes, totalCharges);
+  const salaire = calculateSalary(totalRecettes, totalCharges);**/
 
   // Gestion des courses
   const handleAddCourse = (course) => {
