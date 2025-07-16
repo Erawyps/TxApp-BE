@@ -29,14 +29,26 @@ export function FullForm({ chauffeurs, vehicules, control, onSwitchMode, onSubmi
   const [visuallyActiveTab, setVisuallyActiveTab] = useState(null);
 
   const handleFormSubmit = (data) => {
-    try {
-      onSubmit(data);
-      toast.success('Feuille de route enregistrée');
-    } catch (error) {
-      console.error('Erreur lors de la soumission:', error);
-      toast.error("Erreur lors de l'enregistrement");
+  try {
+    // Validation manuelle supplémentaire
+    if (!data.validation?.signature) {
+      toast.error('Veuillez fournir une signature');
+      return;
     }
-  };
+    
+    if (!data.shift?.end) {
+      toast.error('Veuillez saisir une heure de fin');
+      return;
+    }
+    
+    console.log('Données validées:', data);
+    onSubmit(data);
+    toast.success('Feuille de route enregistrée');
+  } catch (error) {
+    console.error('Erreur lors de la soumission:', error);
+    toast.error("Erreur lors de l'enregistrement");
+  }
+};
 
   const tabs = [
     { 
