@@ -2,29 +2,29 @@ import { useState } from 'react';
 import { Card, Button, Input } from 'components/ui';
 import { Controller } from 'react-hook-form';
 import { ExpenseModal } from './ExpenseModal';
+import { SignaturePanel } from './SignaturePanel';
 
 export function ValidationStep({ onSubmit, control, totals }) {
-  const [signature, setSignature] = useState(null);
   const [isExpenseModalOpen, setIsExpenseModalOpen] = useState(false);
 
   const handleSubmit = () => {
-    if (!signature) {
+    const values = control.getValues();
+    
+    if (!values.validation?.signature) {
       alert('Veuillez signer pour valider');
       return;
     }
 
-    const data = control.getValues();
-    
     onSubmit({
-      ...data,
+      ...values,
       validation: {
-        signature,
+        signature: values.validation.signature,
         date_validation: new Date().toISOString(),
       },
       kilometers: {
-        ...data.kilometers,
-        prise_en_charge_fin: data.kilometers.prise_en_charge_fin || 0,
-        chutes_fin: data.kilometers.chutes_fin || 0
+        ...values.kilometers,
+        prise_en_charge_fin: values.kilometers.prise_en_charge_fin || 0,
+        chutes_fin: values.kilometers.chutes_fin || 0
       }
     });
   };
@@ -140,15 +140,10 @@ export function ValidationStep({ onSubmit, control, totals }) {
           <label className="block text-sm font-medium text-gray-700 dark:text-dark-300 mb-2">
             Signature
           </label>
-          <div className="border-2 border-dashed border-gray-300 dark:border-dark-500 rounded-lg h-40 bg-white dark:bg-dark-800 flex items-center justify-center">
-            <button 
-              type="button" 
-              className="text-gray-500 dark:text-dark-400"
-              onClick={() => setSignature('signature-data')}
-            >
-              Cliquez pour signer
-            </button>
-          </div>
+          <SignaturePanel 
+            control={control}
+            name="validation.signature"
+          />
         </div>
         
         <Button 
