@@ -30,53 +30,41 @@ export function FullForm({ chauffeurs, vehicules, control, onSwitchMode, onSubmi
 
 const handleFormSubmit = (data) => {
   try {
-    // Fonction d'accès sécurisé aux propriétés imbriquées
-    const getSafe = (obj, path, defaultValue = '') => {
-      return path.split('.').reduce((acc, key) => {
-        return (acc && acc[key] !== undefined) ? acc[key] : defaultValue;
-      }, obj);
+    // Vérification de la signature
+    if (!data.validation?.signature) {
+      toast.error('Une signature est requise pour valider');
+      return;
+    }
+
+    // Calcul des totaux
+    const recettes = data.courses.reduce((sum, c) => sum + (c.somme_percue || 0), 0);
+    const charges = data.charges.reduce((sum, c) => sum + (c.montant || 0), 0);
+    
+    // Calcul du salaire selon la règle standard
+    const base = Math.min(recettes, 180);
+    const surplus = Math.max(recettes - 180, 0);
+    const salaire = (base * 0.4) + (surplus * 0.3) - charges;
+
+    // Préparation des données finales
+    const finalData = {
+      ...data,
+      totals: {
+        recettes,
+        charges,
+        salaire: Math.max(salaire, 0)
+      },
+      validation: {
+        ...data.validation,
+        date_validation: new Date().toISOString()
+      }
     };
 
-    // Validation des champs requis
-    const requiredFields = [
-      'header.date',
-      'header.chauffeur.id',
-      'header.vehicule.id',
-      'shift.start',
-      'shift.end',
-      'kilometers.start',
-      'kilometers.end',
-      'validation.signature'
-    ];
-    
-    const missingFields = requiredFields.filter(field => {
-      const value = getSafe(data, field);
-      return value === null || value === undefined || value === '';
-    });
-    
-    if (missingFields.length > 0) {
-      toast.error(`Champs requis manquants: ${missingFields.join(', ')}`);
-      return;
-    }
-    
-    // Validation supplémentaire
-    if (data.kilometers?.end < data.kilometers?.start) {
-      toast.error('Le km de fin doit être supérieur au km de début');
-      return;
-    }
-    
-    if (data.shift?.end && data.shift?.start && 
-        new Date(`1970-01-01T${data.shift.end}`) < new Date(`1970-01-01T${data.shift.start}`)) {
-      toast.error('L\'heure de fin doit être après l\'heure de début');
-      return;
-    }
-    
-    console.log('Données validées:', data);
-    onSubmit(data);
-    toast.success('Feuille de route enregistrée');
+    console.log('Données validées:', finalData);
+    onSubmit(finalData);
+    toast.success('Feuille de route validée avec succès');
   } catch (error) {
-    console.error('Erreur lors de la soumission:', error);
-    toast.error("Erreur lors de l'enregistrement");
+    console.error('Erreur lors de la validation:', error);
+    toast.error("Erreur lors de la validation");
   }
 };
 
