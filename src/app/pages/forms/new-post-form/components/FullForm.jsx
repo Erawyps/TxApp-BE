@@ -651,61 +651,94 @@ const ChargesTab = ({ control, isMobile }) => {
 };
 
 // Composant ValidationTab optimisé
-const ValidationTab = ({ control, onSubmit, isMobile }) => {
-  // Remplacer le state local par useWatch pour la synchronisation avec react-hook-form
-  const signature = useWatch({ control, name: 'validation.signature' });
-
-  const handleSignatureSave = (sig) => {
-    control.setValue('validation.signature', sig, { shouldValidate: true });
-    control.setValue('validation.date_validation', new Date().toISOString());
-  };
-
-    const handleSubmit = () => {
-      // Vérification directement depuis react-hook-form
-      const values = control.getValues();
-      
-      if (!values.validation?.signature) {
-        toast.error('Veuillez fournir une signature');
-        return;
-      }
+const ValidationTab = ({ control, onSubmit }) => {
+  const { fields: chargeFields } = useFieldArray({ control, name: "charges" });
+  const { fields: courseFields } = useFieldArray({ control, name: "courses" });
   
-      // Calcul des totaux synchronisé
-      const totals = {
-        recettes: values.courses.reduce((sum, c) => sum + (c.somme_percue || 0), 0),
-        charges: values.charges.reduce((sum, c) => sum + (c.montant || 0), 0),
-        salaire: Math.max(
-          Math.min(values.courses.reduce((sum, c) => sum + (c.somme_percue || 0), 0), 180) * 0.4 +
-          Math.max(values.courses.reduce((sum, c) => sum + (c.somme_percue || 0), 0) - 180, 0) * 0.3 -
-          values.charges.reduce((sum, c) => sum + (c.montant || 0), 0),
-          0
-        )
-      };
-      
-      onSubmit({
-        ...values,
-        totals,
-        validation: {
-          ...values.validation,
-          date_validation: new Date().toISOString()
-        }
-      });
+  const calculateTotals = () => {
+    const values = control.getValues();
+    
+    const recettes = courseFields.reduce((sum, _, index) => {
+      const course = values.courses?.[index] || {};
+      return sum + (parseFloat(course.somme_percue) || 0);
+    }, 0);
+    
+    const charges = chargeFields.reduce((sum, _, index) => {
+      const charge = values.charges?.[index] || {};
+      return sum + (parseFloat(charge.montant) || 0);
+    }, 0);
+    
+    const base = Math.min(recettes, 180);
+    const surplus = Math.max(recettes - 180, 0);
+    const salaire = (base * 0.4) + (surplus * 0.3) - charges;
+    
+    return {
+      recettes,
+      charges,
+      salaire: Math.max(salaire, 0)
     };
-  
-    return (
-      <div className="space-y-4 p-4">
-        <SignaturePanel 
-          signature={signature}
-          onSave={handleSignatureSave}
-          compact={isMobile}
-        />
-        <Button 
-          color="primary"
-          onClick={handleSubmit}
-          size={isMobile ? "lg" : "md"}
-          className="w-full py-3"
-        >
-          Valider
-        </Button>
-      </div>
-    );
   };
+
+  const handleSubmit = () => {
+    const totals = calculateTotals();
+    const values = control.getValues();
+    
+    if (!values.validation?.signature) {
+      toast.error('Veuillez signer pour valider');
+      return;
+    }
+    
+    onSubmit({
+      ...values,
+      totals,
+      validation: {
+        ...values.validation,
+        date_validation: new Date().toISOString()
+      }
+    });
+  };
+
+  const totals = calculateTotals();
+
+  return (
+    <div className="space-y-4 p-4">
+      <h3 className="text-lg font-semibold">Validation finale</h3>
+      
+      <div className="grid gap-4 md:grid-cols-2">
+        <Card>
+          <h4 className="font-medium mb-3">Récapitulatif financier</h4>
+          <div className="space-y-2">
+            <div className="flex justify-between">
+              <span>Total Recettes:</span>
+              <span className="font-medium">{totals.recettes.toFixed(2)} €</span>
+            </div>
+            <div className="flex justify-between">
+              <span>Total Charges:</span>
+              <span className="font-medium">{totals.charges.toFixed(2)} €</span>
+            </div>
+            <div className="flex justify-between text-primary-600">
+              <span className="font-medium">Salaire estimé:</span>
+              <span className="font-bold">{totals.salaire.toFixed(2)} €</span>
+            </div>
+          </div>
+        </Card>
+        
+        <Card>
+          <h4 className="font-medium mb-3">Signature</h4>
+          <SignaturePanel 
+            control={control}
+            name="validation.signature"
+          />
+        </Card>
+      </div>
+      
+      <Button 
+        onClick={handleSubmit}
+        variant="primary"
+        className="w-full mt-4"
+      >
+        Valider la feuille de route
+      </Button>
+    </div>
+  );
+};
