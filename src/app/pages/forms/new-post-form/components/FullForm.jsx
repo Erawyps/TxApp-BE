@@ -652,9 +652,16 @@ const ChargesTab = ({ control, isMobile }) => {
 
 // Composant ValidationTab optimisé
 const ValidationTab = ({ control, onSubmit }) => {
-  const { fields: chargeFields } = useFieldArray({ control, name: "charges" });
-  const { fields: courseFields } = useFieldArray({ control, name: "courses" });
+  const { fields: chargeFields } = useFieldArray({ 
+    control, 
+    name: "charges" 
+  });
   
+  const { fields: courseFields } = useFieldArray({ 
+    control, 
+    name: "courses" 
+  });
+
   const calculateTotals = () => {
     const values = control.getValues();
     
@@ -670,68 +677,132 @@ const ValidationTab = ({ control, onSubmit }) => {
     
     const base = Math.min(recettes, 180);
     const surplus = Math.max(recettes - 180, 0);
-    const salaire = (base * 0.4) + (surplus * 0.3) - charges;
+    const salaire = Math.max((base * 0.4) + (surplus * 0.3) - charges, 0);
     
     return {
       recettes,
       charges,
-      salaire: Math.max(salaire, 0)
+      salaire
     };
   };
 
   const handleSubmit = () => {
-    const totals = calculateTotals();
-    const values = control.getValues();
-    
-    if (!values.validation?.signature) {
-      toast.error('Veuillez signer pour valider');
-      return;
-    }
-    
-    onSubmit({
-      ...values,
-      totals,
-      validation: {
-        ...values.validation,
-        date_validation: new Date().toISOString()
+    try {
+      const totals = calculateTotals();
+      const values = control.getValues();
+      
+      if (!values.validation?.signature) {
+        toast.error('Veuillez signer pour valider');
+        return;
       }
-    });
+      
+      const validatedData = {
+        ...values,
+        totals,
+        validation: {
+          ...values.validation,
+          date_validation: new Date().toISOString()
+        },
+        kilometers: {
+          ...values.kilometers,
+          end: values.kilometers.end || values.kilometers.start,
+          prise_en_charge_fin: values.kilometers.prise_en_charge_fin || 0,
+          chutes_fin: values.kilometers.chutes_fin || 0
+        },
+        shift: {
+          ...values.shift,
+          end: values.shift.end || new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+        }
+      };
+
+      onSubmit(validatedData);
+      toast.success('Feuille de route validée avec succès');
+    } catch (error) {
+      console.error('Erreur lors de la validation:', error);
+      toast.error('Une erreur est survenue lors de la validation');
+    }
   };
 
   const totals = calculateTotals();
 
   return (
     <div className="space-y-4 p-4">
-      <h3 className="text-lg font-semibold">Validation finale</h3>
-      
+      <h3 className="text-lg font-semibold text-gray-800 dark:text-dark-100 mb-4">
+        Validation finale
+      </h3>
+
       <div className="grid gap-4 md:grid-cols-2">
-        <Card>
-          <h4 className="font-medium mb-3">Récapitulatif financier</h4>
+        <Card className="p-4">
+          <h4 className="font-medium mb-3 text-gray-800 dark:text-dark-100">
+            Récapitulatif financier
+          </h4>
+          
           <div className="space-y-2">
             <div className="flex justify-between">
-              <span>Total Recettes:</span>
-              <span className="font-medium">{totals.recettes.toFixed(2)} €</span>
+              <span className="text-gray-600 dark:text-dark-300">Total Recettes:</span>
+              <span className="font-medium text-gray-800 dark:text-dark-100">
+                {totals.recettes.toFixed(2)} €
+              </span>
             </div>
+            
             <div className="flex justify-between">
-              <span>Total Charges:</span>
-              <span className="font-medium">{totals.charges.toFixed(2)} €</span>
+              <span className="text-gray-600 dark:text-dark-300">Total Charges:</span>
+              <span className="font-medium text-gray-800 dark:text-dark-100">
+                {totals.charges.toFixed(2)} €
+              </span>
             </div>
-            <div className="flex justify-between text-primary-600">
+            
+            <div className="flex justify-between text-primary-600 dark:text-primary-400">
               <span className="font-medium">Salaire estimé:</span>
               <span className="font-bold">{totals.salaire.toFixed(2)} €</span>
             </div>
           </div>
         </Card>
-        
-        <Card>
-          <h4 className="font-medium mb-3">Signature</h4>
+
+        <Card className="p-4">
+          <h4 className="font-medium mb-3 text-gray-800 dark:text-dark-100">
+            Signature
+          </h4>
+          
           <SignaturePanel 
             control={control}
             name="validation.signature"
           />
         </Card>
       </div>
-      
+
+      <div className="grid gap-4 md:grid-cols-2 mt-4">
+        <Controller
+          name="kilometers.end"
+          control={control}
+          render={({ field, fieldState: { error } }) => (
+            <Input
+              {...field}
+              label="Kilométrage final (km)"
+              type="number"
+              min="0"
+              step="1"
+              error={error?.message}
+              required
+            />
+          )}
+        />
+        
+        <Controller
+          name="shift.end"
+          control={control}
+          render={({ field, fieldState: { error } }) => (
+            <Input
+              {...field}
+              label="Heure de fin"
+              type="time"
+              error={error?.message}
+              required
+            />
+          )}
+        />
+      </div>
+
       <Button 
         onClick={handleSubmit}
         variant="primary"

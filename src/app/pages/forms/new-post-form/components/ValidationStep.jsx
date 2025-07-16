@@ -1,14 +1,16 @@
-import { useState } from 'react';
-import { Card, Button, Input } from 'components/ui';
-import { Controller } from 'react-hook-form';
-import { ExpenseModal } from './ExpenseModal';
+import { useFormContext } from 'react-hook-form';
 import { SignaturePanel } from './SignaturePanel';
+import { Card } from 'components/ui';
+import { Input } from 'components/ui';
+import { Controller } from 'react-hook-form';
+import { Button } from 'components/ui';
+import { ExpenseModal } from './ExpenseModal';
 
-export function ValidationStep({ onSubmit, control, totals }) {
-  const [isExpenseModalOpen, setIsExpenseModalOpen] = useState(false);
-
+export function ValidationStep({ onSubmit, totals }) {
+  const { control, getValues } = useFormContext(); // Utilisez useFormContext pour accéder à control
+  
   const handleSubmit = () => {
-    const values = control.getValues();
+    const values = getValues();
     
     if (!values.validation?.signature) {
       alert('Veuillez signer pour valider');
@@ -17,14 +19,10 @@ export function ValidationStep({ onSubmit, control, totals }) {
 
     onSubmit({
       ...values,
+      totals,
       validation: {
         signature: values.validation.signature,
         date_validation: new Date().toISOString(),
-      },
-      kilometers: {
-        ...values.kilometers,
-        prise_en_charge_fin: values.kilometers.prise_en_charge_fin || 0,
-        chutes_fin: values.kilometers.chutes_fin || 0
       }
     });
   };
@@ -110,7 +108,15 @@ export function ValidationStep({ onSubmit, control, totals }) {
             <Button 
               size="sm"
               variant="outlined"
-              onClick={() => setIsExpenseModalOpen(true)}
+              onClick={() => {
+                // Ouvrir le modal pour ajouter une dépense
+                ExpenseModal.open({
+                  onSubmit: (expense) => {
+                    // Logique pour ajouter la dépense
+                    console.log('Dépense ajoutée:', expense);
+                  }
+                });
+              }}
             >
               Ajouter dépense
             </Button>
@@ -137,32 +143,19 @@ export function ValidationStep({ onSubmit, control, totals }) {
         </div>
         
         <div className="mt-4">
-          <label className="block text-sm font-medium text-gray-700 dark:text-dark-300 mb-2">
-            Signature
-          </label>
-          <SignaturePanel 
-            control={control}
-            name="validation.signature"
-          />
-        </div>
-        
-        <Button 
-          onClick={handleSubmit}
-          variant="primary"
-          className="w-full mt-4"
-        >
-          Valider le Shift
-        </Button>
+        <label className="block text-sm font-medium mb-2">
+          Signature
+        </label>
+        <SignaturePanel 
+          control={control} // Passez correctement control
+          name="validation.signature"
+        />
       </div>
-
-      <ExpenseModal
-        isOpen={isExpenseModalOpen}
-        onClose={() => setIsExpenseModalOpen(false)}
-        onSave={(expense) => {
-          // Ajouter la dépense via appendCharge (à implémenter)
-          console.log('Nouvelle dépense:', expense);
-        }}
-      />
+      </div>
+      
+      <Button onClick={handleSubmit} className="w-full mt-4">
+        Valider le Shift
+      </Button>
     </Card>
   );
 }
