@@ -28,16 +28,46 @@ export function FullForm({ chauffeurs, vehicules, control, onSwitchMode, onSubmi
   const isMobile = useMediaQuery('(max-width: 768px)');
   const [visuallyActiveTab, setVisuallyActiveTab] = useState(null);
 
-  const handleFormSubmit = (data) => {
+const handleFormSubmit = (data) => {
   try {
-    // Validation manuelle supplémentaire
-    if (!data.validation?.signature) {
-      toast.error('Veuillez fournir une signature');
+    // Fonction d'accès sécurisé aux propriétés imbriquées
+    const getSafe = (obj, path, defaultValue = '') => {
+      return path.split('.').reduce((acc, key) => {
+        return (acc && acc[key] !== undefined) ? acc[key] : defaultValue;
+      }, obj);
+    };
+
+    // Validation des champs requis
+    const requiredFields = [
+      'header.date',
+      'header.chauffeur.id',
+      'header.vehicule.id',
+      'shift.start',
+      'shift.end',
+      'kilometers.start',
+      'kilometers.end',
+      'validation.signature'
+    ];
+    
+    const missingFields = requiredFields.filter(field => {
+      const value = getSafe(data, field);
+      return value === null || value === undefined || value === '';
+    });
+    
+    if (missingFields.length > 0) {
+      toast.error(`Champs requis manquants: ${missingFields.join(', ')}`);
       return;
     }
     
-    if (!data.shift?.end) {
-      toast.error('Veuillez saisir une heure de fin');
+    // Validation supplémentaire
+    if (data.kilometers?.end < data.kilometers?.start) {
+      toast.error('Le km de fin doit être supérieur au km de début');
+      return;
+    }
+    
+    if (data.shift?.end && data.shift?.start && 
+        new Date(`1970-01-01T${data.shift.end}`) < new Date(`1970-01-01T${data.shift.start}`)) {
+      toast.error('L\'heure de fin doit être après l\'heure de début');
       return;
     }
     
@@ -340,38 +370,107 @@ const GeneralTab = ({ chauffeurs, vehicules, control, isMobile }) => {
           </Card>
         )}
 
-        {/* Kilométrage */}
-        <h4 className="text-md font-semibold text-gray-800 dark:text-dark-100 md:col-span-2">
-          Kilométrage
-        </h4>
-        
-        <Controller
-          name="kilometers.start"
-          control={control}
-          render={({ field }) => (
-            <Input
-              {...field}
-              label="Km de début"
-              type="number"
-              min="0"
-              size={isMobile ? "lg" : "md"}
+        {/* Nouveaux champs pour le shift */}
+        <div className="md:col-span-2">
+          <h4 className="text-md font-semibold text-gray-800 dark:text-dark-100 mb-3">
+            Période de service
+          </h4>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <Controller
+              name="shift.start"
+              control={control}
+              render={({ field }) => (
+                <Input
+                  {...field}
+                  label="Heure de début"
+                  type="time"
+                  size={isMobile ? "lg" : "md"}
+                  required
+                />
+              )}
             />
-          )}
-        />
-        
-        <Controller
-          name="kilometers.end"
-          control={control}
-          render={({ field }) => (
-            <Input
-              {...field}
-              label="Km de fin"
-              type="number"
-              min="0"
-              size={isMobile ? "lg" : "md"}
+            
+            <Controller
+              name="shift.heure_fin_estimee"
+              control={control}
+              render={({ field }) => (
+                <Input
+                  {...field}
+                  label="Heure fin estimée"
+                  type="time"
+                  size={isMobile ? "lg" : "md"}
+                />
+              )}
             />
-          )}
-        />
+            
+            <Controller
+              name="shift.interruptions"
+              control={control}
+              render={({ field }) => (
+                <Input
+                  {...field}
+                  label="Interruptions (min)"
+                  type="number"
+                  min="0"
+                  size={isMobile ? "lg" : "md"}
+                />
+              )}
+            />
+          </div>
+        </div>
+
+        {/* Kilométrage amélioré */}
+        <div className="md:col-span-2">
+          <h4 className="text-md font-semibold text-gray-800 dark:text-dark-100 mb-3">
+            Kilométrage et compteur
+          </h4>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <Controller
+              name="kilometers.start"
+              control={control}
+              render={({ field }) => (
+                <Input
+                  {...field}
+                  label="Km début"
+                  type="number"
+                  min="0"
+                  size={isMobile ? "lg" : "md"}
+                  required
+                />
+              )}
+            />
+            
+            <Controller
+              name="kilometers.prise_en_charge_debut"
+              control={control}
+              render={({ field }) => (
+                <Input
+                  {...field}
+                  label="Prise en charge début (€)"
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  size={isMobile ? "lg" : "md"}
+                />
+              )}
+            />
+            
+            <Controller
+              name="kilometers.chutes_debut"
+              control={control}
+              render={({ field }) => (
+                <Input
+                  {...field}
+                  label="Chutes début (€)"
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  size={isMobile ? "lg" : "md"}
+                />
+              )}
+            />
+          </div>
+        </div>
       </div>
     </div>
   );
@@ -571,7 +670,6 @@ const ChargesTab = ({ control, isMobile }) => {
 const ValidationTab = ({ control, onSubmit, isMobile }) => {
   const [signature, setSignature] = useState(null);
   
-  // Calcul des totaux sécurisé
   const calculateTotals = () => {
     try {
       const values = control.getValues();
@@ -605,32 +703,89 @@ const ValidationTab = ({ control, onSubmit, isMobile }) => {
       </h3>
       
       <div className={clsx("gap-4", isMobile ? "space-y-4" : "grid grid-cols-1 md:grid-cols-2")}>
-        <Controller
-          name="kilometers.end"
-          control={control}
-          render={({ field }) => (
-            <Input
-              {...field}
-              label="Kilométrage final"
-              type="number"
-              min="0"
-              size={isMobile ? "lg" : "md"}
-            />
-          )}
-        />
-        
-        <Controller
-          name="shift.end"
-          control={control}
-          render={({ field }) => (
-            <Input
-              {...field}
-              label="Heure de fin"
-              type="time"
-              size={isMobile ? "lg" : "md"}
-            />
-          )}
-        />
+        {/* Section kilométrage de fin */}
+        <div className="space-y-4">
+          <h4 className="font-medium text-gray-800 dark:text-dark-100">
+            Kilométrage final
+          </h4>
+          <Controller
+            name="kilometers.end"
+            control={control}
+            render={({ field }) => (
+              <Input
+                {...field}
+                label="Km de fin"
+                type="number"
+                min="0"
+                size={isMobile ? "lg" : "md"}
+                required
+              />
+            )}
+          />
+          
+          <Controller
+            name="kilometers.prise_en_charge_fin"
+            control={control}
+            render={({ field }) => (
+              <Input
+                {...field}
+                label="Prise en charge fin (€)"
+                type="number"
+                step="0.01"
+                min="0"
+                size={isMobile ? "lg" : "md"}
+              />
+            )}
+          />
+          
+          <Controller
+            name="kilometers.chutes_fin"
+            control={control}
+            render={({ field }) => (
+              <Input
+                {...field}
+                label="Chutes fin (€)"
+                type="number"
+                step="0.01"
+                min="0"
+                size={isMobile ? "lg" : "md"}
+              />
+            )}
+          />
+        </div>
+
+        {/* Section horaires de fin */}
+        <div className="space-y-4">
+          <h4 className="font-medium text-gray-800 dark:text-dark-100">
+            Fin de service
+          </h4>
+          <Controller
+            name="shift.end"
+            control={control}
+            render={({ field }) => (
+              <Input
+                {...field}
+                label="Heure de fin réelle"
+                type="time"
+                size={isMobile ? "lg" : "md"}
+                required
+              />
+            )}
+          />
+          
+          <Controller
+            name="shift.duree_interruptions"
+            control={control}
+            render={({ field }) => (
+              <Input
+                {...field}
+                label="Durée interruptions (HH:MM)"
+                type="time"
+                size={isMobile ? "lg" : "md"}
+              />
+            )}
+          />
+        </div>
       </div>
 
       {/* Signature */}
@@ -639,6 +794,7 @@ const ValidationTab = ({ control, onSubmit, isMobile }) => {
           onSave={(sig) => {
             setSignature(sig);
             control.setValue('validation.signature', sig);
+            control.setValue('validation.date_validation', new Date());
           }}
         />
       </div>
@@ -654,8 +810,13 @@ const ValidationTab = ({ control, onSubmit, isMobile }) => {
       {/* Bouton de validation */}
       <div className="flex justify-end mt-6">
         <Button 
-          onClick={() => onSubmit(control.getValues())}
-          disabled={!signature}
+          onClick={() => {
+            if (!signature) {
+              toast.error('Une signature est requise');
+              return;
+            }
+            onSubmit(control.getValues());
+          }}
           color="primary"
           size={isMobile ? "lg" : "md"}
           className="w-full md:w-auto"
