@@ -19,7 +19,6 @@ import {
 import { useMediaQuery } from 'hooks/useMediaQuery';
 import clsx from 'clsx';
 import { SignaturePanel } from './SignaturePanel';
-import { SummaryCard } from './SummaryCard';
 import { QuickCourseForm } from './QuickCourseForm';
 import { ExpensesSection } from './ExpensesSection';
 
@@ -28,44 +27,41 @@ export function FullForm({ chauffeurs, vehicules, control, onSwitchMode, onSubmi
   const isMobile = useMediaQuery('(max-width: 768px)');
   const [visuallyActiveTab, setVisuallyActiveTab] = useState(null);
 
-const handleFormSubmit = (data) => {
+// Remplacer la fonction handleFormSubmit existante
+const handleFormSubmit = async (data) => {
   try {
-    // Vérification de la signature
+    // Validation supplémentaire
     if (!data.validation?.signature) {
-      toast.error('Une signature est requise pour valider');
+      toast.error('Signature manquante');
       return;
     }
 
-    // Calcul des totaux
-    const recettes = data.courses.reduce((sum, c) => sum + (c.somme_percue || 0), 0);
-    const charges = data.charges.reduce((sum, c) => sum + (c.montant || 0), 0);
-    
-    // Calcul du salaire selon la règle standard
-    const base = Math.min(recettes, 180);
-    const surplus = Math.max(recettes - 180, 0);
-    const salaire = (base * 0.4) + (surplus * 0.3) - charges;
-
-    // Préparation des données finales
+    // Calcul final des totaux
     const finalData = {
       ...data,
       totals: {
-        recettes,
-        charges,
-        salaire: Math.max(salaire, 0)
-      },
-      validation: {
-        ...data.validation,
-        date_validation: new Date().toISOString()
+        recettes: data.courses.reduce((sum, c) => sum + (c.somme_percue || 0), 0),
+        charges: data.charges.reduce((sum, c) => sum + (c.montant || 0), 0),
+        salaire: calculateSalary(data.courses, data.charges)
       }
     };
 
     console.log('Données validées:', finalData);
     onSubmit(finalData);
-    toast.success('Feuille de route validée avec succès');
   } catch (error) {
-    console.error('Erreur lors de la validation:', error);
+    console.error('Erreur validation:', error);
     toast.error("Erreur lors de la validation");
   }
+};
+
+// Fonction de calcul externe pour cohérence
+const calculateSalary = (courses, charges) => {
+  const recettes = courses.reduce((sum, c) => sum + (c.somme_percue || 0), 0);
+  const chargesTotal = charges.reduce((sum, c) => sum + (c.montant || 0), 0);
+  
+  const base = Math.min(recettes, 180);
+  const surplus = Math.max(recettes - 180, 0);
+  return Math.max((base * 0.4) + (surplus * 0.3) - chargesTotal, 0);
 };
 
   const tabs = [
@@ -656,162 +652,60 @@ const ChargesTab = ({ control, isMobile }) => {
 
 // Composant ValidationTab optimisé
 const ValidationTab = ({ control, onSubmit, isMobile }) => {
-  const [signature, setSignature] = useState(null);
-  
-  const calculateTotals = () => {
-    try {
-      const values = control.getValues();
-      const courses = values.courses || [];
-      const charges = values.charges || [];
-      
-      const recettes = courses.reduce((sum, course) => sum + (course.somme_percue || 0), 0);
-      const chargesTotal = charges.reduce((sum, charge) => sum + (charge.montant || 0), 0);
-      
-      const base = Math.min(recettes, 180);
-      const surplus = Math.max(recettes - 180, 0);
-      const salaire = (base * 0.4) + (surplus * 0.3) - chargesTotal;
-      
-      return {
-        recettes,
-        charges: chargesTotal,
-        salaire: Math.max(salaire, 0)
-      };
-    } catch (error) {
-      console.error("Erreur de calcul des totaux:", error);
-      return { recettes: 0, charges: 0, salaire: 0 };
-    }
+  // Remplacer le state local par useWatch pour la synchronisation avec react-hook-form
+  const signature = useWatch({ control, name: 'validation.signature' });
+
+  const handleSignatureSave = (sig) => {
+    control.setValue('validation.signature', sig, { shouldValidate: true });
+    control.setValue('validation.date_validation', new Date().toISOString());
   };
 
-  const totals = calculateTotals();
-
-  return (
-    <div className="space-y-4 p-4 pb-20">
-      <h3 className="text-lg font-semibold text-gray-800 dark:text-dark-100 mb-4">
-        Validation du Shift
-      </h3>
+    const handleSubmit = () => {
+      // Vérification directement depuis react-hook-form
+      const values = control.getValues();
       
-      <div className={clsx("gap-4", isMobile ? "space-y-4" : "grid grid-cols-1 md:grid-cols-2")}>
-        {/* Section kilométrage de fin */}
-        <div className="space-y-4">
-          <h4 className="font-medium text-gray-800 dark:text-dark-100">
-            Kilométrage final
-          </h4>
-          <Controller
-            name="kilometers.end"
-            control={control}
-            render={({ field }) => (
-              <Input
-                {...field}
-                label="Km de fin"
-                type="number"
-                min="0"
-                size={isMobile ? "lg" : "md"}
-                required
-              />
-            )}
-          />
-          
-          <Controller
-            name="kilometers.prise_en_charge_fin"
-            control={control}
-            render={({ field }) => (
-              <Input
-                {...field}
-                label="Prise en charge fin (€)"
-                type="number"
-                step="0.01"
-                min="0"
-                size={isMobile ? "lg" : "md"}
-              />
-            )}
-          />
-          
-          <Controller
-            name="kilometers.chutes_fin"
-            control={control}
-            render={({ field }) => (
-              <Input
-                {...field}
-                label="Chutes fin (€)"
-                type="number"
-                step="0.01"
-                min="0"
-                size={isMobile ? "lg" : "md"}
-              />
-            )}
-          />
-        </div>
-
-        {/* Section horaires de fin */}
-        <div className="space-y-4">
-          <h4 className="font-medium text-gray-800 dark:text-dark-100">
-            Fin de service
-          </h4>
-          <Controller
-            name="shift.end"
-            control={control}
-            render={({ field }) => (
-              <Input
-                {...field}
-                label="Heure de fin réelle"
-                type="time"
-                size={isMobile ? "lg" : "md"}
-                required
-              />
-            )}
-          />
-          
-          <Controller
-            name="shift.duree_interruptions"
-            control={control}
-            render={({ field }) => (
-              <Input
-                {...field}
-                label="Durée interruptions (HH:MM)"
-                type="time"
-                size={isMobile ? "lg" : "md"}
-              />
-            )}
-          />
-        </div>
-      </div>
-
-      {/* Signature */}
-      <div className="mt-6">
+      if (!values.validation?.signature) {
+        toast.error('Veuillez fournir une signature');
+        return;
+      }
+  
+      // Calcul des totaux synchronisé
+      const totals = {
+        recettes: values.courses.reduce((sum, c) => sum + (c.somme_percue || 0), 0),
+        charges: values.charges.reduce((sum, c) => sum + (c.montant || 0), 0),
+        salaire: Math.max(
+          Math.min(values.courses.reduce((sum, c) => sum + (c.somme_percue || 0), 0), 180) * 0.4 +
+          Math.max(values.courses.reduce((sum, c) => sum + (c.somme_percue || 0), 0) - 180, 0) * 0.3 -
+          values.charges.reduce((sum, c) => sum + (c.montant || 0), 0),
+          0
+        )
+      };
+      
+      onSubmit({
+        ...values,
+        totals,
+        validation: {
+          ...values.validation,
+          date_validation: new Date().toISOString()
+        }
+      });
+    };
+  
+    return (
+      <div className="space-y-4 p-4">
         <SignaturePanel 
-          onSave={(sig) => {
-            setSignature(sig);
-            control.setValue('validation.signature', sig);
-            control.setValue('validation.date_validation', new Date());
-          }}
+          signature={signature}
+          onSave={handleSignatureSave}
+          compact={isMobile}
         />
-      </div>
-      
-      {/* Récapitulatif */}
-      <SummaryCard 
-        recettes={totals.recettes}
-        charges={totals.charges}
-        salaire={totals.salaire}
-        className="mt-6"
-      />
-      
-      {/* Bouton de validation */}
-      <div className="flex justify-end mt-6">
         <Button 
-          onClick={() => {
-            if (!signature) {
-              toast.error('Une signature est requise');
-              return;
-            }
-            onSubmit(control.getValues());
-          }}
           color="primary"
+          onClick={handleSubmit}
           size={isMobile ? "lg" : "md"}
-          className="w-full md:w-auto"
+          className="w-full py-3"
         >
-          Valider le Shift
+          Valider
         </Button>
       </div>
-    </div>
-  );
-};
+    );
+  };

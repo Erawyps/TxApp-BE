@@ -143,10 +143,17 @@ export const schema = Yup.object().shape({
 
   // Validation finale
   validation: Yup.object().shape({
-    signature: Yup.string().required('Signature requise'),
-    date_validation: Yup.date().default(() => new Date()),
-    valide_par: Yup.string().nullable()
-  })
+  signature: Yup.string()
+    .required('Signature requise')
+    .test(
+      'is-valid-signature',
+      'Signature invalide',
+      value => value && value.startsWith('data:image/')
+    ),
+  date_validation: Yup.date()
+    .default(() => new Date())
+    .required('Date de validation requise')
+})
 });
 
 export const defaultData = {
