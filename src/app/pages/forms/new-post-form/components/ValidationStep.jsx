@@ -1,30 +1,52 @@
 import { useFormContext } from 'react-hook-form';
 import { SignaturePanel } from './SignaturePanel';
-import { Card } from 'components/ui';
-import { Input } from 'components/ui';
+import { Card, Input, Button } from 'components/ui';
 import { Controller } from 'react-hook-form';
-import { Button } from 'components/ui';
-import { ExpenseModal } from './ExpenseModal';
+import { toast } from 'sonner';
 
 export function ValidationStep({ onSubmit, totals }) {
-  const { control, getValues } = useFormContext(); // Utilisez useFormContext pour accéder à control
+  const { control, getValues } = useFormContext();
   
   const handleSubmit = () => {
-    const values = getValues();
-    
-    if (!values.validation?.signature) {
-      alert('Veuillez signer pour valider');
-      return;
-    }
-
-    onSubmit({
-      ...values,
-      totals,
-      validation: {
-        signature: values.validation.signature,
-        date_validation: new Date().toISOString(),
+    try {
+      const values = getValues();
+      
+      // Validation requise
+      if (!values.validation?.signature) {
+        toast.error('Veuillez signer pour valider');
+        return;
       }
-    });
+
+      // S'assurer que les valeurs finales sont remplies
+      const finalData = {
+        ...values,
+        totals: {
+          recettes: totals.recettes,
+          charges: totals.charges,
+          salaire: totals.salaire
+        },
+        validation: {
+          ...values.validation,
+          date_validation: new Date().toISOString()
+        },
+        kilometers: {
+          ...values.kilometers,
+          end: values.kilometers.end || values.kilometers.start,
+          prise_en_charge_fin: values.kilometers.prise_en_charge_fin || 0,
+          chutes_fin: values.kilometers.chutes_fin || 0
+        },
+        shift: {
+          ...values.shift,
+          end: values.shift.end || new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+        }
+      };
+
+      onSubmit(finalData);
+      toast.success('Feuille de route validée avec succès');
+    } catch (error) {
+      console.error('Erreur lors de la validation:', error);
+      toast.error('Une erreur est survenue lors de la validation');
+    }
   };
 
   return (
@@ -109,13 +131,10 @@ export function ValidationStep({ onSubmit, totals }) {
               size="sm"
               variant="outlined"
               onClick={() => {
-                // Ouvrir le modal pour ajouter une dépense
-                ExpenseModal.open({
-                  onSubmit: (expense) => {
-                    // Logique pour ajouter la dépense
-                    console.log('Dépense ajoutée:', expense);
-                  }
-                });
+                control._formValues.totals.recettes = 0;
+                control._formValues.totals.charges = 0;
+                control._formValues.totals.salaire = 0;
+                toast.info('Récapitulatif réinitialisé');
               }}
             >
               Ajouter dépense
@@ -143,14 +162,14 @@ export function ValidationStep({ onSubmit, totals }) {
         </div>
         
         <div className="mt-4">
-        <label className="block text-sm font-medium mb-2">
-          Signature
-        </label>
-        <SignaturePanel 
-          control={control} // Passez correctement control
-          name="validation.signature"
-        />
-      </div>
+          <label className="block text-sm font-medium mb-2">
+            Signature
+          </label>
+          <SignaturePanel 
+            control={control}
+            name="validation.signature"
+          />
+        </div>
       </div>
       
       <Button onClick={handleSubmit} className="w-full mt-4">

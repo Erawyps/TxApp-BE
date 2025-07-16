@@ -16,7 +16,7 @@ import {
 } from '@heroicons/react/24/outline';
 import { FormScrollContainer } from './FormScrollContainer';
 
-export function DriverMode({ chauffeur, vehicules, control, onSubmit, onSwitchMode }) {
+export function DriverMode({ chauffeur, vehicules, control, onSwitchMode }) {
   // Gestion des tableaux de courses et dépenses
   const { fields: courseFields, append: appendCourse, remove: removeCourse } = useFieldArray({
     control,
@@ -90,18 +90,17 @@ export function DriverMode({ chauffeur, vehicules, control, onSubmit, onSwitchMo
     const montant = charge.montant || 0;
     return sum + (typeof montant === 'number' ? montant : parseFloat(montant) || 0);
   }, 0);
-  // Calcul du salaire sans prendre en compte les charges
-  // Utilisation de Math.max pour éviter les salaires négatifs
-  // Le salaire est calculé comme suit :
-  // - Si le total des recettes est inférieur à 180, le salaire est 40% des recettes
-  // - Si le total des recettes est supérieur à 180, le salaire is 40% des 180 premiers euros plus 30% du surplus
-  // - Le salaire final est le maximum entre 0 et le total des recettes moins les charges 
-  const salaire = Math.max(
-    totalRecettes <= 180
-      ? totalRecettes * 0.4
-      : (180 * 0.4) + ((totalRecettes - 180) * 0.3),
-    0
-  ) - totalCharges;
+  const calculateSalary = (courses, charges) => {
+  const recettes = courses.reduce((sum, c) => sum + (c.somme_percue || c.prix || 0), 0);
+  const chargesTotal = charges.reduce((sum, c) => sum + (c.montant || 0), 0);
+  
+  const base = Math.min(recettes, 180);
+  const surplus = Math.max(recettes - 180, 0);
+  return Math.max((base * 0.4) + (surplus * 0.3) - chargesTotal, 0);
+};
+
+// Utilisation :
+const salaire = calculateSalary(watchedValues.courses || [], watchedValues.charges || []);
 
 
   /**const calculateSalary = (recettes, charges) => {
@@ -294,18 +293,38 @@ export function DriverMode({ chauffeur, vehicules, control, onSubmit, onSwitchMo
           )}
 
           {activeTab === 'validation' && (
-            <ValidationStep 
-              onSubmit={onSubmit}
-              control={control}
-              totals={{
-                recettes: totalRecettes,
-                charges: totalCharges,
-                salaire: salaire
-              }}
-              expenses={watchedValues.charges || []}
-              onRemoveExpense={removeCharge}
-              onAddExpense={handleAddExpense}
-            />
+            // Dans la partie où vous utilisez ValidationStep
+<ValidationStep 
+  onSubmit={(data) => {
+    // Calcul final des totaux
+    const finalData = {
+      ...data,
+      totals: {
+        recettes: totalRecettes,
+        charges: totalCharges,
+        salaire: salaire
+      },
+      validation: {
+        signature: data.validation?.signature || null,
+        date_validation: new Date()
+      }
+    };
+    const handleSubmit = (data) => {
+      console.log('Submitting data:', data);
+    };
+    
+    handleSubmit(finalData);
+  }}
+  control={control}
+  totals={{
+    recettes: totalRecettes,
+    charges: totalCharges,
+    salaire: salaire
+  }}
+  expenses={watchedValues.charges || []}
+  onRemoveExpense={removeCharge}
+  onAddExpense={handleAddExpense}
+/>
           )}
         </div>
       </div>
