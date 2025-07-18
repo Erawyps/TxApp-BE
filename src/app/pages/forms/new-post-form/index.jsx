@@ -2,6 +2,8 @@ import { useForm } from 'react-hook-form';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { ShiftForm } from './components/ShiftForm';
 import { schema, defaultData } from './schema';
+import { onSubmit } from './validation';
+import { yupResolver } from '@hookform/resolvers/yup';
 
 export default function FeuilleRouteApp() {
   const methods = useForm({
