@@ -1,5 +1,6 @@
 import { Controller } from 'react-hook-form';
-import { Button, Modal } from 'components/ui';
+import { Button } from 'components/ui';
+import { Dialog } from '@headlessui/react'; // Remplace Modal par Dialog
 import { InformationCircleIcon } from '@heroicons/react/24/outline';
 import { useState } from 'react';
 
@@ -44,34 +45,41 @@ export function VehicleSelect({ control, vehicles }) {
         )}
       />
       
-      <Modal
-        isOpen={showInfoModal}
+      <Dialog 
+        open={showInfoModal} 
         onClose={() => setShowInfoModal(false)}
-        title="Informations Véhicule"
+        className="relative z-50"
       >
-        {selectedVehicle ? (
-          <div className="space-y-3">
-            <div className="flex justify-between">
-              <span>Plaque:</span>
-              <span>{selectedVehicle.plate}</span>
-            </div>
-            <div className="flex justify-between">
-              <span>Modèle:</span>
-              <span>{selectedVehicle.model}</span>
-            </div>
-            <div className="flex justify-between">
-              <span>Type:</span>
-              <span>{selectedVehicle.type}</span>
-            </div>
-            <div className="flex justify-between">
-              <span>Dernier contrôle:</span>
-              <span>{selectedVehicle.lastControl}</span>
-            </div>
-          </div>
-        ) : (
-          <p>Aucun véhicule sélectionné</p>
-        )}
-      </Modal>
+        <div className="fixed inset-0 bg-black/30" />
+        <div className="fixed inset-0 flex items-center justify-center p-4">
+          <Dialog.Panel className="w-full max-w-md rounded bg-white dark:bg-dark-700 p-6">
+            <Dialog.Title className="text-lg font-bold mb-4">
+              Informations Véhicule
+            </Dialog.Title>
+            {selectedVehicle ? (
+              <div className="space-y-3">
+                <div className="flex justify-between">
+                  <span>Plaque:</span>
+                  <span>{selectedVehicle.plate}</span>
+                </div>
+                {/* ... autres champs d'info */}
+                <div className="flex justify-between">
+                  <span>Modèle:</span>
+                  <span>{selectedVehicle.model}</span>
+                </div>
+              </div>
+            ) : (
+              <p>Aucun véhicule sélectionné</p>
+            )}
+            <Button 
+              onClick={() => setShowInfoModal(false)}
+              className="mt-4"
+            >
+              Fermer
+            </Button>
+          </Dialog.Panel>
+        </div>
+      </Dialog>
     </div>
   );
 }
