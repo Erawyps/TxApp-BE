@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { Tab } from '@headlessui/react';
-import { ShiftStartForm, CourseList, ShiftEndForm } from '../components';
+import { ShiftStartForm} from './ShiftStartForm';
+import { CourseList } from './CourseList';
+import { ShiftEndForm } from './ShiftEndForm';
 
 export function DriverForm({ vehicles }) {
   const [activeTab, setActiveTab] = useState('start');
