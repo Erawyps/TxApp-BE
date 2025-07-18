@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useWatch } from 'react-hook-form';
 import { Button, Input } from 'components/ui';
 import { SignaturePanel } from '../SignaturePanel';
@@ -12,6 +13,23 @@ export function ShiftEndForm({ control, onSubmit }) {
     signature: '',
     fullName: ''
   });
+
+  const calculateDuration = (start, end) => {
+    if (!start || !end) return '00:00';
+    
+    try {
+      const startDate = new Date(`2000-01-01T${start}`);
+      const endDate = new Date(`2000-01-01T${end}`);
+      const diff = endDate - startDate;
+      
+      const hours = Math.floor(diff / (1000 * 60 * 60)).toString().padStart(2, '0');
+      const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60)).toString().padStart(2, '0');
+      
+      return `${hours}:${minutes}`;
+    } catch {
+      return '00:00';
+    }
+  };
 
   const handleSubmit = () => {
     const shiftData = {
@@ -81,9 +99,4 @@ export function ShiftEndForm({ control, onSubmit }) {
       </Button>
     </div>
   );
-}
-
-function calculateDuration(start, end) {
-  // Implémentez le calcul de durée
-  return "08:30"; // Exemple
 }
