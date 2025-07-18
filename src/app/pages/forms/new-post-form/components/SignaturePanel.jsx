@@ -1,85 +1,46 @@
-import { useRef, useEffect } from 'react';
-import { useController } from 'react-hook-form';
-import { toast } from 'sonner';
+import { useRef, useState } from 'react';
 import { Button } from 'components/ui';
 
-export function SignaturePanel({ control, name }) {
-  const { field } = useController({ name, control });
+export function SignaturePanel({ onSave }) {
   const canvasRef = useRef(null);
-  const isDrawing = useRef(false);
-
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    
-    const ctx = canvas.getContext('2d');
-    ctx.lineWidth = 2;
-    ctx.lineCap = 'round';
-    ctx.strokeStyle = '#000';
-    
-    // Initialiser le canvas
-    ctx.fillStyle = '#fff';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-  }, []);
+  const [isDrawing, setIsDrawing] = useState(false);
 
   const startDrawing = (e) => {
-    isDrawing.current = true;
     const canvas = canvasRef.current;
     const ctx = canvas.getContext('2d');
-    const { offsetX, offsetY } = getCoordinates(e);
-    
     ctx.beginPath();
-    ctx.moveTo(offsetX, offsetY);
+    ctx.moveTo(
+      e.nativeEvent.offsetX,
+      e.nativeEvent.offsetY
+    );
+    setIsDrawing(true);
   };
 
   const draw = (e) => {
-    if (!isDrawing.current) return;
-    
+    if (!isDrawing) return;
     const canvas = canvasRef.current;
     const ctx = canvas.getContext('2d');
-    const { offsetX, offsetY } = getCoordinates(e);
-    
-    ctx.lineTo(offsetX, offsetY);
+    ctx.lineTo(
+      e.nativeEvent.offsetX,
+      e.nativeEvent.offsetY
+    );
     ctx.stroke();
   };
 
-  const stopDrawing = () => {
-    isDrawing.current = false;
-  };
-
-  const getCoordinates = (e) => {
-    const canvas = canvasRef.current;
-    if (e.type.includes('touch')) {
-      const rect = canvas.getBoundingClientRect();
-      return {
-        offsetX: e.touches[0].clientX - rect.left,
-        offsetY: e.touches[0].clientY - rect.top
-      };
-    }
-    return {
-      offsetX: e.nativeEvent.offsetX,
-      offsetY: e.nativeEvent.offsetY
-    };
+  const endDrawing = () => {
+    setIsDrawing(false);
   };
 
   const handleSave = () => {
     const canvas = canvasRef.current;
-    if (!canvas) return;
-    
-    const signatureData = canvas.toDataURL();
-    field.onChange(signatureData);
-    toast.success('Signature enregistrée');
+    const dataUrl = canvas.toDataURL();
+    onSave(dataUrl);
   };
 
   const handleClear = () => {
     const canvas = canvasRef.current;
-    if (!canvas) return;
-    
     const ctx = canvas.getContext('2d');
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    ctx.fillStyle = '#fff';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-    field.onChange(null);
   };
 
   return (
@@ -91,12 +52,9 @@ export function SignaturePanel({ control, name }) {
           height={150}
           onMouseDown={startDrawing}
           onMouseMove={draw}
-          onMouseUp={stopDrawing}
-          onMouseOut={stopDrawing}
-          onTouchStart={startDrawing}
-          onTouchMove={draw}
-          onTouchEnd={stopDrawing}
-          className="w-full touch-none bg-white"
+          onMouseUp={endDrawing}
+          onMouseLeave={endDrawing}
+          className="w-full bg-white"
         />
       </div>
       
