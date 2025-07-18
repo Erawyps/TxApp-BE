@@ -4,7 +4,7 @@ import { CourseList } from './CourseList';
 import { ExpenseFormModal } from './ExpenseFormModal';
 import { FinancialSummaryModal } from './FinancialSummary';
 
-export function CourseForm({ control }) {
+export function CourseForm() {
   const [showExpenseModal, setShowExpenseModal] = useState(false);
   const [showSummaryModal, setShowSummaryModal] = useState(false);
   const [form, setForm] = useState({
