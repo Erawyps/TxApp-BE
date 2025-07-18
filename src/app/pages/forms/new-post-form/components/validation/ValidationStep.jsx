@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import { useWatch } from 'react-hook-form';
 import { Card, Button, Input } from 'components/ui';
-import { ExpenseList } from './ExpenseList';
-import { ExpenseModal } from './ExpenseModal';
-import { SummaryCard } from './SummaryCard';
+import { ExpenseList } from '../ExpenseList';
+import { ExpenseModal } from '../ExpenseModal';
+import { SummaryCard } from '../SummaryCard';
 import { 
   PlusIcon, 
   ClockIcon, 
