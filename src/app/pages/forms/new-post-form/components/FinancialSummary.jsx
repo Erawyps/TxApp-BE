@@ -28,7 +28,7 @@ const calculateSalary = (income, expenses, remunerationType) => {
   return baseSalary + surplusSalary - expenses;
 };
 
-export const FinancialSummary = ({ isOpen, onClose, courses, expenses, remunerationType }) => {
+export function FinancialSummaryContent({ courses, expenses, remunerationType }) {
   const [openSections, setOpenSections] = useState({
     income: true,
     expenses: false,
@@ -159,3 +159,20 @@ export const FinancialSummary = ({ isOpen, onClose, courses, expenses, remunerat
     </Dialog>
   );
 };
+
+// Version modale
+export function FinancialSummaryModal({ isOpen, onClose, ...props }) {
+  return (
+    <Dialog open={isOpen} onClose={onClose} className="relative z-50">
+      <div className="fixed inset-0 bg-black/30" />
+      <div className="fixed inset-0 flex items-center justify-center p-4">
+        <Dialog.Panel className="w-full max-w-md rounded bg-white dark:bg-dark-700 p-6 max-h-[90vh] overflow-y-auto">
+          <FinancialSummaryContent {...props} />
+          <Button onClick={onClose} className="w-full mt-4">
+            Fermer
+          </Button>
+        </Dialog.Panel>
+      </div>
+    </Dialog>
+  );
+}
