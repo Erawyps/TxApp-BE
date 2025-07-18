@@ -7,7 +7,7 @@ import {
   ChevronUpIcon 
 } from '@heroicons/react/24/outline';
 
-// Fonction de calcul externe pour éviter la redéclaration
+// Fonction de calcul externe
 const calculateSalary = (income, expenses, remunerationType) => {
   let base, surplus;
   
@@ -24,7 +24,13 @@ const calculateSalary = (income, expenses, remunerationType) => {
   }
 };
 
-export function FinancialSummary({ isOpen, onClose, courses, expenses, remunerationType }) {
+// Composant de contenu réutilisable
+export function FinancialSummaryContent({ 
+  courses, 
+  expenses, 
+  remunerationType,
+  onClose 
+}) {
   const [openSections, setOpenSections] = useState({
     income: true,
     expenses: false,
@@ -35,20 +41,16 @@ export function FinancialSummary({ isOpen, onClose, courses, expenses, remunerat
     setOpenSections(prev => ({ ...prev, [section]: !prev[section] }));
   };
 
-  // Calcul des totaux
   const totalIncome = courses.reduce((sum, course) => sum + (course.amountReceived || 0), 0);
   const totalExpenses = expenses.reduce((sum, exp) => sum + (exp.amount || 0), 0);
   const salary = Math.max(calculateSalary(totalIncome, totalExpenses, remunerationType), 0);
 
   return (
-    <Dialog open={isOpen} onClose={onClose} className="relative z-50">
-      <div className="fixed inset-0 bg-black/30" />
-      <div className="fixed inset-0 flex items-center justify-center p-4">
-        <Dialog.Panel className="w-full max-w-md rounded bg-white dark:bg-dark-700 p-6 max-h-[90vh] overflow-y-auto">
-          <Dialog.Title className="flex items-center gap-2 text-lg font-bold mb-4">
-            <CalculatorIcon className="h-5 w-5" />
-            Résumé Financier
-          </Dialog.Title>
+    <>
+      <Dialog.Title className="flex items-center gap-2 text-lg font-bold mb-4">
+        <CalculatorIcon className="h-5 w-5" />
+        Résumé Financier
+      </Dialog.Title>
           
           {/* Section Recettes */}
           <div className="mb-4 border rounded-lg overflow-hidden">
@@ -144,14 +146,28 @@ export function FinancialSummary({ isOpen, onClose, courses, expenses, remunerat
             )}
           </div>
           
-          <Button 
-            onClick={onClose}
-            className="w-full mt-4"
-          >
-            Fermer
-          </Button>
+          {onClose && (
+        <Button onClick={onClose} className="w-full mt-4">
+          Fermer
+        </Button>
+      )}
+    </>
+  );
+}
+
+// Version Modal
+export function FinancialSummaryModal({ isOpen, onClose, ...props }) {
+  return (
+    <Dialog open={isOpen} onClose={onClose} className="relative z-50">
+      <div className="fixed inset-0 bg-black/30" />
+      <div className="fixed inset-0 flex items-center justify-center p-4">
+        <Dialog.Panel className="w-full max-w-md rounded bg-white dark:bg-dark-700 p-6 max-h-[90vh] overflow-y-auto">
+          <FinancialSummaryContent {...props} onClose={onClose} />
         </Dialog.Panel>
       </div>
     </Dialog>
   );
 }
+
+// Version par défaut (alias pour compatibilité)
+export const FinancialSummary = FinancialSummaryModal;
