@@ -1,9 +1,10 @@
 import { useForm } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
-import { ErrorBoundary } from './components/ErrorBoundary';
+import ErrorBoundary from './components/ErrorBoundary'; // Changé pour importer le export default
 import { ShiftForm } from './components/ShiftForm';
 import { schema, defaultData } from './schema';
 import { toast } from 'sonner';
+
 export default function FeuilleRouteApp() {
   const methods = useForm({
     resolver: yupResolver(schema),
@@ -12,8 +13,6 @@ export default function FeuilleRouteApp() {
 
   const handleSubmit = (data) => {
     console.log('Données soumises:', data);
-    // Ici vous pourriez ajouter la logique pour sauvegarder les données
-    // Par exemple : enregistrement en base de données, génération PDF, etc.
     toast.success('Données enregistrées avec succès !');
   };
 
