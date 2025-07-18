@@ -1,10 +1,10 @@
 import { Controller } from 'react-hook-form';
 import { Button } from 'components/ui';
-import { Dialog } from '@headlessui/react'; // Remplace Modal par Dialog
+import { Dialog } from '@headlessui/react';
 import { InformationCircleIcon } from '@heroicons/react/24/outline';
 import { useState } from 'react';
 
-export function VehicleSelect({ control, vehicles }) {
+export function VehicleSelect({ control, vehicles = [] }) { // Valeur par défaut
   const [showInfoModal, setShowInfoModal] = useState(false);
   const [selectedVehicle, setSelectedVehicle] = useState(null);
 
@@ -62,7 +62,6 @@ export function VehicleSelect({ control, vehicles }) {
                   <span>Plaque:</span>
                   <span>{selectedVehicle.plate}</span>
                 </div>
-                {/* ... autres champs d'info */}
                 <div className="flex justify-between">
                   <span>Modèle:</span>
                   <span>{selectedVehicle.model}</span>

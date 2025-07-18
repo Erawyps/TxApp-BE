@@ -4,7 +4,7 @@ import { Controller } from 'react-hook-form';
 import { Input, Select } from 'components/ui';
 import { VehicleSelect } from './VehicleSelect';
 import { CourseForm } from './CourseForm';
-import { ShiftEndForm } from './validation/ShiftEndForm';
+// import { ShiftEndForm } from './validation/ShiftEndForm'; // Commenté si non disponible
 
 // Composant pour la section Date et Heure
 function DateAndTimeSection({ control }) {
@@ -151,15 +151,26 @@ function TaximeterSection({ control }) {
   );
 }
 
-export function ShiftForm({ control, onSubmit, vehicles }) {
-  const [activeTab, setActiveTab] = useState('start');
+export function ShiftForm({ control, onSubmit, vehicles = [] }) {
+  const [activeTab, setActiveTab] = useState(0); // Utiliser un nombre au lieu d'une string
+
+  const tabs = ['Début Shift', 'Courses', 'Fin Shift'];
 
   return (
     <div className="space-y-4">
       <Tab.Group selectedIndex={activeTab} onChange={setActiveTab}>
         <Tab.List className="flex border-b">
-          {['Début Shift', 'Courses', 'Fin Shift'].map((tab) => (
-            <Tab key={tab} className="flex-1 py-2 font-medium">
+          {tabs.map((tab, index) => (
+            <Tab 
+              key={tab} 
+              className={({ selected }) =>
+                `flex-1 py-2 font-medium ${
+                  selected 
+                    ? 'border-b-2 border-blue-500 text-blue-600' 
+                    : 'text-gray-500 hover:text-gray-700'
+                }`
+              }
+            >
               {tab}
             </Tab>
           ))}
@@ -177,11 +188,14 @@ export function ShiftForm({ control, onSubmit, vehicles }) {
           </Tab.Panel>
 
           <Tab.Panel>
-            <CourseForm control={control} />
+            <CourseForm />
           </Tab.Panel>
 
           <Tab.Panel>
-            <ShiftEndForm control={control} onSubmit={onSubmit} />
+            <div className="p-4">
+              <h3 className="text-lg font-semibold mb-4">Fin de Shift</h3>
+              <p className="text-gray-600">Section fin de shift à implémenter</p>
+            </div>
           </Tab.Panel>
         </Tab.Panels>
       </Tab.Group>
