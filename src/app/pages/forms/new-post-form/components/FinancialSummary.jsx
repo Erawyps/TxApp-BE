@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Dialog } from '@headlessui/react';
+import { Button } from 'components/ui';
 import { 
   CalculatorIcon,
   ChevronDownIcon,
@@ -7,11 +8,24 @@ import {
 } from '@heroicons/react/24/outline';
 
 // Déplacer la fonction calculateSalary en dehors du composant pour éviter la redéclaration
-const calculateSalary = (income, expenses, type) => {
+const calculateSalary = (income, expenses, remunerationType) => {
   // Implémentez la logique de calcul selon le type de rémunération
-  const base = Math.min(income, 180);
-  const surplus = Math.max(income - 180, 0);
-  return (base * 0.4) + (surplus * 0.3) - expenses;
+  if (remunerationType === '50') {
+    return income * 0.5 - expenses;
+  }
+  if (remunerationType === 'other') {
+    return income - expenses; // Logique par défaut pour 'other'
+  }
+  // Pour '40/30', on suppose que c'est un cas spécial
+  // où on calcule 40% jusqu'à 180€ puis 30% sur le surplus
+  if (income <= 180) {
+    return income * 0.4 - expenses;
+  }
+  // Si le revenu dépasse 180€, on applique 40% sur les premiers 180€ et 30% sur le surplus
+  const baseSalary = 180 * 0.4;
+  const surplus = income - 180;
+  const surplusSalary = surplus * 0.3;
+  return baseSalary + surplusSalary - expenses;
 };
 
 export const FinancialSummary = ({ isOpen, onClose, courses, expenses, remunerationType }) => {
