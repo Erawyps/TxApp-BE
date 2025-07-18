@@ -1,38 +1,10 @@
-import React, { useState } from 'react';
-import { Button, Card } from 'components/ui';
+import React from 'react';
+import { Card, Button } from 'components/ui';
 
-export function ErrorBoundary({ children }) {
-  const [hasError, setHasError] = useState(false);
-
-  const handleReload = () => {
-    window.location.reload();
-  };
-
-  return (
-    <>
-      {hasError ? (
-        <Card className="p-6 m-4 text-center">
-          <h2 className="text-xl font-bold text-red-600 mb-4">
-            Une erreur est survenue
-          </h2>
-          <p className="mb-6">Veuillez recharger l&apos;application</p>
-          <Button onClick={handleReload}>
-            Recharger
-          </Button>
-        </Card>
-      ) : (
-        <ErrorBoundaryInner onError={() => setHasError(true)}>
-          {children}
-        </ErrorBoundaryInner>
-      )}
-    </>
-  );
-}
-
-class ErrorBoundaryInner extends React.Component {
+class ErrorBoundary extends React.Component {
   constructor(props) {
     super(props);
-    this.state = { hasError: false };
+    this.state = { hasError: false, error: null, errorInfo: null };
   }
 
   static getDerivedStateFromError() {
@@ -41,10 +13,46 @@ class ErrorBoundaryInner extends React.Component {
 
   componentDidCatch(error, errorInfo) {
     console.error('Error caught by boundary:', error, errorInfo);
-    this.props.onError();
+    this.setState({
+      error: error,
+      errorInfo: errorInfo
+    });
   }
 
-  render() {
-    return this.state.hasError ? null : this.props.children;
+   render() {
+    if (this.state.hasError) {
+      return (
+        <Card className="p-6 m-4">
+          <div className="text-center">
+            <h2 className="text-xl font-bold text-red-600 mb-4">
+              Oops! Une erreur s&apos;est produite
+            </h2>
+            
+            <details className="text-left bg-gray-100 p-4 rounded mb-4">
+              <summary className="cursor-pointer font-medium">
+                Détails de l&apos;erreur
+              </summary>
+              <pre className="mt-2 text-sm text-red-600 whitespace-pre-wrap">
+                {this.state.error?.toString()}
+              </pre>
+              <pre className="mt-2 text-sm text-gray-600 whitespace-pre-wrap">
+                {this.state.errorInfo?.componentStack}
+              </pre>
+            </details>
+            
+            <Button 
+              onClick={() => window.location.reload()}
+              color="primary"
+            >
+              Recharger l&apos;application
+            </Button>
+          </div>
+        </Card>
+      );
+    }
+
+    return this.props.children;
   }
 }
+
+export default ErrorBoundary;
