@@ -1,6 +1,7 @@
 import { Controller } from 'react-hook-form';
 import { Button, Modal } from 'components/ui';
 import { InformationCircleIcon } from '@heroicons/react/24/outline';
+import { useState } from 'react';
 
 export function VehicleSelect({ control, vehicles }) {
   const [showInfoModal, setShowInfoModal] = useState(false);
