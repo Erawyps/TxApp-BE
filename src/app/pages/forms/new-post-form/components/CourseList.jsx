@@ -31,9 +31,10 @@ export function CourseList({ courses, onRemoveCourse }) {
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
                     <span className="font-medium text-gray-800 dark:text-dark-100 truncate">
-                      {course.lieu_embarquement} → {course.lieu_debarquement}
+                      {/* Corriger les noms des propriétés */}
+                      {course.startLocation} → {course.endLocation}
                     </span>
-                    {course.est_facture && (
+                    {course.paymentMethod?.startsWith('F-') && (
                       <Badge size="xs" className="bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400">
                         Facturé
                       </Badge>
@@ -42,17 +43,17 @@ export function CourseList({ courses, onRemoveCourse }) {
                   
                   <div className="mt-1 flex items-center gap-2">
                     <span className="text-sm font-semibold text-primary-600 dark:text-primary-400">
-                      {course.somme_percue?.toFixed(2)} €
+                      {course.amountReceived?.toFixed(2)} €
                     </span>
                     <span className="text-xs text-gray-500 dark:text-dark-400">
-                      (Prix taximétré: {course.prix_taximetre?.toFixed(2)} €)
+                      (Prix taximétré: {course.meterPrice?.toFixed(2)} €)
                     </span>
                   </div>
 
                   <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-gray-500 dark:text-dark-400">
-                    <span>E: {formatTime(course.heure_embarquement)}</span>
+                    <span>E: {formatTime(course.startTime)}</span>
                     <span>•</span>
-                    <span>D: {formatTime(course.heure_debarquement)}</span>
+                    <span>D: {formatTime(course.endTime)}</span>
                   </div>
 
                   {course.notes && (
