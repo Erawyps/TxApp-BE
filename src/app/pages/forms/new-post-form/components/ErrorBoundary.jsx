@@ -1,7 +1,7 @@
 import React from 'react';
 import { Card, Button } from 'components/ui';
 
-export class ErrorBoundary extends React.Component {
+class ErrorBoundary extends React.Component {
   constructor(props) {
     super(props);
     this.state = { hasError: false, error: null, errorInfo: null };
@@ -19,7 +19,7 @@ export class ErrorBoundary extends React.Component {
     });
   }
 
-  render() {
+   render() {
     if (this.state.hasError) {
       return (
         <Card className="p-6 m-4">
@@ -55,5 +55,4 @@ export class ErrorBoundary extends React.Component {
   }
 }
 
-// Export supplémentaire pour compatibilité
 export default ErrorBoundary;
