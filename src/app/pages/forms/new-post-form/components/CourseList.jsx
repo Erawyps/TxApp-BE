@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Button, Card, Badge } from 'components/ui';
-import { PlusIcon, CalculatorIcon, ReceiptIcon } from '@heroicons/react/24/outline';
+import { PlusIcon, CalculatorIcon, CurrencyEuroIcon } from '@heroicons/react/24/outline';
 import { CourseItem } from './CourseItem';
 import { CourseFormModal } from './CourseFormModal';
 import { ExpenseFormModal } from './ExpenseFormModal';
@@ -27,7 +27,7 @@ export function CourseList({ courses, expenses, onAddCourse, onAddExpense }) {
         </Button>
         <Button
           variant="outlined"
-          icon={<ReceiptIcon className="h-5 w-5" />}
+          icon={<CurrencyEuroIcon className="h-5 w-5" />}
           onClick={() => setShowExpenseModal(true)}
         >
           <span className="ml-1">Dépenses</span>
