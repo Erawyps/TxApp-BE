@@ -3,6 +3,7 @@ import { yupResolver } from '@hookform/resolvers/yup';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { ShiftForm } from './components/ShiftForm';
 import { schema, defaultData } from './schema';
+import { toast } from 'react-hot-toast';
 
 export default function FeuilleRouteApp() {
   const methods = useForm({
