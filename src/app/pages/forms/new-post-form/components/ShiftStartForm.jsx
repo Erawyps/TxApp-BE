@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { Input, Select, Button } from 'components/ui';
-import { InfoCircleIcon } from '@heroicons/react/24/outline';
+import { ExclamationCircleIcon } from '@heroicons/react/24/outline';
 import { VehicleInfoModal } from './VehicleInfoModal';
 
 export function ShiftStartForm({ vehicles, onSubmit }) {
@@ -49,7 +49,7 @@ export function ShiftStartForm({ vehicles, onSubmit }) {
         <Button
           type="button"
           variant="ghost"
-          icon={<InfoCircleIcon className="h-5 w-5" />}
+          icon={<ExclamationCircleIcon className="h-5 w-5" />}
           onClick={() => setShowVehicleInfo(true)}
           disabled={!selectedVehicle}
         />
