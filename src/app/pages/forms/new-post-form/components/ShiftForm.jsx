@@ -151,7 +151,7 @@ function TaximeterSection({ control }) {
   );
 }
 
-export function ShiftForm({ control, onSubmit, vehicles = [] }) {
+export function ShiftForm({ control, vehicles = [] }) {
   const [activeTab, setActiveTab] = useState(0); // Utiliser un nombre au lieu d'une string
 
   const tabs = ['Début Shift', 'Courses', 'Fin Shift'];
@@ -160,7 +160,7 @@ export function ShiftForm({ control, onSubmit, vehicles = [] }) {
     <div className="space-y-4">
       <Tab.Group selectedIndex={activeTab} onChange={setActiveTab}>
         <Tab.List className="flex border-b">
-          {tabs.map((tab, index) => (
+          {tabs.map((tab) => (
             <Tab 
               key={tab} 
               className={({ selected }) =>
