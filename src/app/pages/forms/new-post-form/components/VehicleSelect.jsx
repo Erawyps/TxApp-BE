@@ -1,5 +1,5 @@
 import { Controller } from 'react-hook-form';
-import { Button, Input, Modal } from 'components/ui';
+import { Button, Modal } from 'components/ui';
 import { InformationCircleIcon } from '@heroicons/react/24/outline';
 
 export function VehicleSelect({ control, vehicles }) {

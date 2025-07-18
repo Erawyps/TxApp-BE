@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Tab } from '@headlessui/react';
 import { Controller } from 'react-hook-form';
-import { Button, Input, Select } from 'components/ui';
+import { Input, Select } from 'components/ui';
 import { VehicleSelect } from './VehicleSelect';
 import { CourseForm } from './CourseForm';
 import { ShiftEndForm } from './validation/ShiftEndForm';
