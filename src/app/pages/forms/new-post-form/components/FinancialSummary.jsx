@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { Dialog } from '@headlessui/react';
 import { 
   CalculatorIcon,
-  CurrencyEuroIcon,
   ChevronDownIcon,
   ChevronUpIcon 
 } from '@heroicons/react/24/outline';
