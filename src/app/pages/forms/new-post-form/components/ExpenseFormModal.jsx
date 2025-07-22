@@ -1,5 +1,5 @@
 import { Modal } from 'components/ui';
-import { Button, Input, Select } from 'components/ui';
+import { Button, Input } from 'components/ui';
 import { useForm } from 'react-hook-form';
 
 const CHARGE_TYPES = ['Carburant', 'Péage', 'Entretien', 'Carwash', 'Divers'];
