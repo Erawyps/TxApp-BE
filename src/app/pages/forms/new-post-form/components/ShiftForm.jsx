@@ -10,10 +10,10 @@ export function ShiftForm({ control, vehicles = [], onStartShift }) {
 
   const handleVehicleInfoClick = () => {
     // Find selected vehicle from form data
-    const vehicleOptions = vehicles.map(v => ({
+    /*const vehicleOptions = vehicles.map(v => ({
       value: v.id,
       label: `${v.plaque_immatriculation}`
-    }));
+    }));**/
     setShowVehicleModal(true);
   };
 
