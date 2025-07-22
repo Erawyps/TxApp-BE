@@ -6,6 +6,10 @@ import {
   ClockIcon
 } from '@heroicons/react/24/outline';
 import { CourseItem } from './CourseItem';
+import { CourseFormModal } from './CourseFormModal';
+import { ExpenseFormModal } from './ExpenseFormModal';
+import { HistoricalSummaryModal } from './HistoricalSummaryModal';
+import { FinancialSummaryModal } from './FinancialSummaryModal';
 
 export function CourseList({ courses, onAddCourse, onRemoveCourse }) {
   return (
@@ -17,25 +21,33 @@ export function CourseList({ courses, onAddCourse, onRemoveCourse }) {
             variant="outlined" 
             size="sm"
             icon={<BanknotesIcon className="h-4 w-4" />}
-            onClick={() => {/* Ouvrir FinancialSummaryModal */}}
+            onClick={() => {/* Ouvrir FinancialSummaryModal */
+              <FinancialSummaryModal />
+            }}
           />
           <Button 
             variant="outlined" 
             size="sm"
             icon={<ClockIcon className="h-4 w-4" />}
-            onClick={() => {/* Ouvrir historique */}}
+            onClick={() => {/* Ouvrir historique */
+              <HistoricalSummaryModal />
+            }}
           />
           <Button 
             variant="outlined" 
             size="sm"
             icon={<ReceiptPercentIcon className="h-4 w-4" />}
-            onClick={() => {/* Ouvrir ExpenseFormModal */}}
+            onClick={() => {/* Ouvrir ExpenseFormModal */
+              <ExpenseFormModal />
+            }}
           />
           <Button 
             variant="primary" 
             size="sm"
             icon={<PlusIcon className="h-4 w-4" />}
-            onClick={() => {/* Ouvrir CourseFormModal */}}
+            onClick={() => {/* Ouvrir CourseFormModal */
+              <CourseFormModal onSubmit={onAddCourse} />
+            }}
           >
             Ajouter
           </Button>
