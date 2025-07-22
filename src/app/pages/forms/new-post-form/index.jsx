@@ -2,21 +2,19 @@ import { useState } from 'react';
 import { useForm, FormProvider } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import { schema, defaultData } from './schema';
-import { DriverMode } from './components/DriverMode';
-import { FullForm } from './components/FullForm';
+import { ShiftForm } from './components/ShiftForm';
+import { CourseList } from './components/CourseList';
+import { EndShiftSection } from './components/EndShiftSection';
 import { toast } from 'sonner';
 import { Page } from 'components/shared/Page';
 import ErrorBoundary from './components/ErrorBoundary';
 
 export default function FeuilleRouteApp() {
-  const [mode, setMode] = useState('driver');
-  
   const methods = useForm({
     resolver: yupResolver(schema),
     defaultValues: defaultData
   });
-  const { reset } = methods;
-
+  const { reset, control } = methods;
 
   // Données simulées
   const currentDriver = {
@@ -47,6 +45,8 @@ export default function FeuilleRouteApp() {
     }
   ];
 
+  const [activeTab, setActiveTab] = useState('shift');
+
   const handleSubmitForm = (data) => {
     try {
       console.log('Feuille de route validée:', data);
@@ -58,35 +58,52 @@ export default function FeuilleRouteApp() {
     }
   };
 
-  // Gestionnaire d'erreur pour éviter les crashes
-  const handleError = (errors) => {
-    console.error('Erreurs de validation:', errors);
-    toast.error('Veuillez corriger les erreurs dans le formulaire');
-  };
-
-  // Affichage des erreurs en mode développement
-  if (import.meta.env.MODE === 'development' && Object.keys(methods.formState.errors).length > 0) {
-    console.log('Erreurs de validation:', methods.formState.errors);
-  }
-
   return (
     <ErrorBoundary>
       <Page title="Feuille de Route">
         <FormProvider {...methods}>
           <div className="px-4 pb-6">
-            {mode === 'driver' ? (
-              <DriverMode 
-                chauffeur={currentDriver}
+            {/* Navigation simplifiée */}
+            <div className="flex border-b mb-4">
+              <button
+                onClick={() => setActiveTab('shift')}
+                className={`px-4 py-2 font-medium ${activeTab === 'shift' ? 'border-b-2 border-primary-500 text-primary-600' : 'text-gray-500'}`}
+              >
+                Début Shift
+              </button>
+              <button
+                onClick={() => setActiveTab('courses')}
+                className={`px-4 py-2 font-medium ${activeTab === 'courses' ? 'border-b-2 border-primary-500 text-primary-600' : 'text-gray-500'}`}
+              >
+                Courses
+              </button>
+              <button
+                onClick={() => setActiveTab('end')}
+                className={`px-4 py-2 font-medium ${activeTab === 'end' ? 'border-b-2 border-primary-500 text-primary-600' : 'text-gray-500'}`}
+              >
+                Fin Shift
+              </button>
+            </div>
+
+            {activeTab === 'shift' && (
+              <ShiftForm 
                 vehicules={vehicules}
-                onSubmit={methods.handleSubmit(handleSubmitForm, handleError)}
-                onSwitchMode={() => setMode('full')}
+                onStartShift={() => setActiveTab('courses')}
+                control={control}
               />
-            ) : (
-              <FullForm 
-                chauffeurs={[currentDriver]}
-                vehicules={vehicules}
-                onSwitchMode={() => setMode('driver')}
-                onSubmit={methods.handleSubmit(handleSubmitForm, handleError)}
+            )}
+
+            {activeTab === 'courses' && (
+              <CourseList 
+                control={control}
+                chauffeur={currentDriver}
+              />
+            )}
+
+            {activeTab === 'end' && (
+              <EndShiftSection 
+                onSubmit={methods.handleSubmit(handleSubmitForm)}
+                control={control}
               />
             )}
           </div>
