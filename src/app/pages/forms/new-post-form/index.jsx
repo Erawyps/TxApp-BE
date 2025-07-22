@@ -26,14 +26,16 @@ export default function FeuilleRouteApp() {
     currentLocation: 'Bruxelles, Belgique'
   };
 
-  const vehicules = [
+  const vehicles = [
     {
       id: 'VH001',
       plaque_immatriculation: 'TX-AA-171',
       numero_identification: '10',
       marque: 'Mercedes',
       modele: 'Classe E',
-      type_vehicule: 'Berline'
+      type_vehicule: 'Berline',
+      etat: 'En service',
+      carburant: 'diesel'
     },
     {
       id: 'VH002',
@@ -41,17 +43,40 @@ export default function FeuilleRouteApp() {
       numero_identification: '4',
       marque: 'Volkswagen',
       modele: 'Touran',
-      type_vehicule: 'Van'
+      type_vehicule: 'Van',
+      etat: 'En service',
+      carburant: 'essence'
     }
   ];
 
   const [activeTab, setActiveTab] = useState('shift');
+  const [courses, setCourses] = useState([]);
+
+  const handleAddCourse = (courseData) => {
+    const newCourse = {
+      ...courseData,
+      id: `course_${Date.now()}`,
+      order: courses.length + 1
+    };
+    setCourses([...courses, newCourse]);
+  };
+
+  const handleRemoveCourse = (index) => {
+    setCourses(courses.filter((_, i) => i !== index));
+  };
 
   const onSubmit = (data) => {
     try {
-      console.log('Feuille de route validée:', data);
+      // Add courses to form data
+      const finalData = {
+        ...data,
+        courses: courses
+      };
+      
+      console.log('Feuille de route validée:', finalData);
       toast.success('Feuille de route enregistrée avec succès');
       reset(defaultData);
+      setCourses([]);
     } catch (error) {
       console.error("Erreur lors de l'enregistrement:", error);
       toast.error("Une erreur est survenue lors de l'enregistrement");
@@ -98,7 +123,7 @@ export default function FeuilleRouteApp() {
             <div className="space-y-4">
               {activeTab === 'shift' && (
                 <ShiftForm 
-                  vehicules={vehicules}
+                  vehicles={vehicles}
                   onStartShift={() => setActiveTab('courses')}
                   control={control}
                 />
@@ -106,17 +131,27 @@ export default function FeuilleRouteApp() {
 
               {activeTab === 'courses' && (
                 <CourseList 
-                  control={control}
-                  chauffeur={currentDriver}
+                  courses={courses}
+                  onAddCourse={handleAddCourse}
+                  onRemoveCourse={handleRemoveCourse}
                 />
               )}
 
               {activeTab === 'end' && (
                 <EndShiftSection 
-                  onSubmit={handleSubmit(onSubmit)}
                   control={control}
                 />
               )}
+            </div>
+
+            {/* Submit button - always visible */}
+            <div className="fixed bottom-0 left-0 right-0 p-4 bg-white border-t md:relative md:bg-transparent md:border-t-0 md:mt-6">
+              <button
+                onClick={handleSubmit(onSubmit)}
+                className="w-full bg-primary-600 text-white py-3 rounded-lg font-medium hover:bg-primary-700 transition-colors"
+              >
+                Enregistrer la feuille de route
+              </button>
             </div>
           </div>
         </FormProvider>

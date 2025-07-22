@@ -1,9 +1,10 @@
+import { useEffect } from 'react';
 import { Modal } from 'components/ui';
 import { Button, Input, Select } from 'components/ui';
 import { useForm } from 'react-hook-form';
 
 export function CourseFormModal({ isOpen, onClose, onSubmit, defaultValues }) {
-  const { register, handleSubmit, reset } = useForm({
+  const { register, handleSubmit, reset, watch } = useForm({
     defaultValues: {
       order: '',
       departure_index: '',
@@ -21,14 +22,51 @@ export function CourseFormModal({ isOpen, onClose, onSubmit, defaultValues }) {
     }
   });
 
+  // Reset form when modal opens/closes or defaultValues change
+  useEffect(() => {
+    if (isOpen) {
+      reset({
+        order: '',
+        departure_index: '',
+        departure_place: '',
+        departure_time: '',
+        arrival_index: '',
+        arrival_place: '',
+        arrival_time: '',
+        price: '',
+        amount_received: '',
+        payment_method: 'CASH',
+        client: '',
+        notes: '',
+        ...defaultValues
+      });
+    }
+  }, [isOpen, defaultValues, reset]);
+
   const handleFormSubmit = (data) => {
-    onSubmit(data);
+    // Clean and format data
+    const formattedData = {
+      ...data,
+      departure_index: data.departure_index ? parseInt(data.departure_index) : 0,
+      arrival_index: data.arrival_index ? parseInt(data.arrival_index) : 0,
+      price: data.price ? parseFloat(data.price) : 0,
+      amount_received: data.amount_received ? parseFloat(data.amount_received) : 0,
+    };
+    
+    onSubmit(formattedData);
+    reset();
+  };
+
+  const handleClose = () => {
     reset();
     onClose();
   };
 
+  // Watch payment method to show/hide client field
+  const paymentMethod = watch('payment_method');
+
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="Nouvelle Course" size="lg">
+    <Modal isOpen={isOpen} onClose={handleClose} title={defaultValues ? "Modifier Course" : "Nouvelle Course"} size="lg">
       <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-4">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <Input
@@ -36,13 +74,10 @@ export function CourseFormModal({ isOpen, onClose, onSubmit, defaultValues }) {
             {...register('order')}
             disabled
             className="bg-gray-100"
+            placeholder="Auto-généré"
           />
           
-          <Input
-            label="Index départ (facultatif)"
-            {...register('departure_index')}
-            type="number"
-          />
+          <div></div>
         </div>
 
         <div className="bg-gray-50 p-4 rounded-lg">
@@ -50,19 +85,22 @@ export function CourseFormModal({ isOpen, onClose, onSubmit, defaultValues }) {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <Input
               label="Index"
-              {...register('departure_index')}
+              {...register('departure_index', { required: 'Index départ requis' })}
               type="number"
+              min="0"
+              step="1"
               required
             />
             <Input
               label="Lieu"
-              {...register('departure_place')}
+              {...register('departure_place', { required: 'Lieu départ requis' })}
               required
+              placeholder="ex: Place Eugène Flagey"
             />
             <Input
               label="Heure"
               type="time"
-              {...register('departure_time')}
+              {...register('departure_time', { required: 'Heure départ requise' })}
               required
             />
           </div>
@@ -73,14 +111,17 @@ export function CourseFormModal({ isOpen, onClose, onSubmit, defaultValues }) {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <Input
               label="Index"
-              {...register('arrival_index')}
+              {...register('arrival_index', { required: 'Index arrivée requis' })}
               type="number"
+              min="0"
+              step="1"
               required
             />
             <Input
               label="Lieu"
-              {...register('arrival_place')}
+              {...register('arrival_place', { required: 'Lieu arrivée requis' })}
               required
+              placeholder="ex: Gare Centrale"
             />
             <Input
               label="Heure"
@@ -96,31 +137,40 @@ export function CourseFormModal({ isOpen, onClose, onSubmit, defaultValues }) {
             <Input
               label="Prix taximètre (€)"
               type="number"
+              min="0"
               step="0.01"
-              {...register('price')}
+              {...register('price', { required: 'Prix taximètre requis' })}
               required
             />
             <Input
               label="Somme perçue (€)"
               type="number"
+              min="0"
               step="0.01"
-              {...register('amount_received')}
+              {...register('amount_received', { required: 'Somme perçue requise' })}
               required
             />
             <Select
               label="Mode paiement"
+              {...register('payment_method')}
               options={[
                 { value: 'CASH', label: 'Espèces' },
                 { value: 'BC', label: 'Bancontact' },
-                { value: 'F-TX', label: 'Facture Taxi' }
+                { value: 'F-TX', label: 'Facture Taxi' },
+                { value: 'F-SNCB', label: 'Facture SNCB' },
+                { value: 'F-WL', label: 'Facture Wallonie' }
               ]}
-              {...register('payment_method')}
             />
-            <Input
-              label="Client (si facture)"
-              {...register('client')}
-              className="md:col-span-2"
-            />
+            {(paymentMethod?.startsWith('F-') || paymentMethod === 'F-TX') && (
+              <Input
+                label="Client (requis pour facture)"
+                {...register('client', { 
+                  required: paymentMethod?.startsWith('F-') ? 'Client requis pour les factures' : false 
+                })}
+                placeholder="Nom du client à facturer"
+                required={paymentMethod?.startsWith('F-')}
+              />
+            )}
           </div>
         </div>
 
@@ -129,14 +179,15 @@ export function CourseFormModal({ isOpen, onClose, onSubmit, defaultValues }) {
           {...register('notes')}
           as="textarea"
           rows={2}
+          placeholder="Notes optionnelles sur la course..."
         />
 
         <div className="flex justify-end gap-3 pt-4">
-          <Button variant="outlined" onClick={onClose}>
+          <Button variant="outlined" type="button" onClick={handleClose}>
             Annuler
           </Button>
           <Button type="submit" variant="primary">
-            Enregistrer
+            {defaultValues ? 'Modifier' : 'Enregistrer'}
           </Button>
         </div>
       </form>

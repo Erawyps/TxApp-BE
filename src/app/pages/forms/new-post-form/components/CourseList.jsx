@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Card, Button, ScrollShadow } from 'components/ui';
 import { 
   PlusIcon, 
@@ -11,58 +12,139 @@ import { ExpenseFormModal } from './ExpenseFormModal';
 import { HistoricalSummaryModal } from './HistoricalSummaryModal';
 import { FinancialSummaryModal } from './FinancialSummaryModal';
 
-export function CourseList({ courses, onAddCourse, onRemoveCourse }) {
-  return (
-    <Card className="p-4">
-      <div className="flex justify-between mb-4">
-        <h3 className="text-lg font-semibold">Courses</h3>
-        <div className="flex gap-2">
-          <Button 
-            variant="outlined" 
-            size="sm"
-            icon={<BanknotesIcon className="h-4 w-4" />}
-            onClick={() => {/* Ouvrir FinancialSummaryModal */
-              <FinancialSummaryModal />
-            }}
-          />
-          <Button 
-            variant="outlined" 
-            size="sm"
-            icon={<ClockIcon className="h-4 w-4" />}
-            onClick={() => {/* Ouvrir historique */
-              <HistoricalSummaryModal />
-            }}
-          />
-          <Button 
-            variant="outlined" 
-            size="sm"
-            icon={<ReceiptPercentIcon className="h-4 w-4" />}
-            onClick={() => {/* Ouvrir ExpenseFormModal */
-              <ExpenseFormModal />
-            }}
-          />
-          <Button 
-            variant="primary" 
-            size="sm"
-            icon={<PlusIcon className="h-4 w-4" />}
-            onClick={() => {/* Ouvrir CourseFormModal */
-              <CourseFormModal onSubmit={onAddCourse} />
-            }}
-          >
-            Ajouter
-          </Button>
-        </div>
-      </div>
+export function CourseList({ courses = [], onAddCourse, onRemoveCourse }) {
+  const [showCourseModal, setShowCourseModal] = useState(false);
+  const [showExpenseModal, setShowExpenseModal] = useState(false);
+  const [showHistoryModal, setShowHistoryModal] = useState(false);
+  const [showFinancialModal, setShowFinancialModal] = useState(false);
+  const [editingCourse, setEditingCourse] = useState(null);
 
-      <ScrollShadow className="max-h-[60vh]">
-        {courses.map((course, index) => (
-          <CourseItem 
-            key={course.id} 
-            course={course}
-            onRemove={() => onRemoveCourse(index)}
-          />
-        ))}
-      </ScrollShadow>
-    </Card>
+  // Calculate totals
+  const totals = {
+    recettes: courses.reduce((sum, course) => sum + (parseFloat(course.amount_received) || 0), 0),
+    charges: 0, // Will be calculated when expenses are added
+    salaire: 0 // Will be calculated based on recettes
+  };
+
+  // Calculate driver salary (40% up to 180€, then 30% above)
+  totals.salaire = totals.recettes <= 180 
+    ? totals.recettes * 0.4 
+    : (180 * 0.4) + ((totals.recettes - 180) * 0.3);
+
+  const handleEditCourse = (course) => {
+    setEditingCourse(course);
+    setShowCourseModal(true);
+  };
+
+  const handleSubmitCourse = (courseData) => {
+    if (editingCourse) {
+      // Handle edit - you'll need to implement this in the parent
+      console.log('Editing course:', courseData);
+    } else {
+      onAddCourse(courseData);
+    }
+    setEditingCourse(null);
+    setShowCourseModal(false);
+  };
+
+  return (
+    <>
+      <Card className="p-4">
+        <div className="flex justify-between mb-4">
+          <h3 className="text-lg font-semibold">Courses ({courses.length})</h3>
+          <div className="flex gap-2">
+            <Button 
+              variant="outlined" 
+              size="sm"
+              icon={<BanknotesIcon className="h-4 w-4" />}
+              onClick={() => setShowFinancialModal(true)}
+            />
+            <Button 
+              variant="outlined" 
+              size="sm"
+              icon={<ClockIcon className="h-4 w-4" />}
+              onClick={() => setShowHistoryModal(true)}
+            />
+            <Button 
+              variant="outlined" 
+              size="sm"
+              icon={<ReceiptPercentIcon className="h-4 w-4" />}
+              onClick={() => setShowExpenseModal(true)}
+            />
+            <Button 
+              variant="primary" 
+              size="sm"
+              icon={<PlusIcon className="h-4 w-4" />}
+              onClick={() => {
+                setEditingCourse(null);
+                setShowCourseModal(true);
+              }}
+            >
+              Ajouter
+            </Button>
+          </div>
+        </div>
+
+        {/* Course summary */}
+        {courses.length > 0 && (
+          <div className="bg-primary-50 p-3 rounded-lg mb-4">
+            <div className="flex justify-between items-center text-sm">
+              <span>Total recettes: <strong>{totals.recettes.toFixed(2)} €</strong></span>
+              <span>Salaire estimé: <strong>{totals.salaire.toFixed(2)} €</strong></span>
+            </div>
+          </div>
+        )}
+
+        <ScrollShadow className="max-h-[60vh]">
+          {courses.length === 0 ? (
+            <div className="text-center py-8 text-gray-500">
+              <p>Aucune course enregistrée</p>
+              <p className="text-sm mt-1">Cliquez sur "Ajouter" pour commencer</p>
+            </div>
+          ) : (
+            courses.map((course, index) => (
+              <CourseItem 
+                key={course.id || index} 
+                course={course}
+                onEdit={handleEditCourse}
+                onRemove={() => onRemoveCourse(index)}
+              />
+            ))
+          )}
+        </ScrollShadow>
+      </Card>
+
+      {/* Modals */}
+      <CourseFormModal
+        isOpen={showCourseModal}
+        onClose={() => {
+          setShowCourseModal(false);
+          setEditingCourse(null);
+        }}
+        onSubmit={handleSubmitCourse}
+        defaultValues={editingCourse}
+      />
+
+      <ExpenseFormModal
+        isOpen={showExpenseModal}
+        onClose={() => setShowExpenseModal(false)}
+        onSubmit={(expenseData) => {
+          console.log('New expense:', expenseData);
+          // Handle expense submission
+          setShowExpenseModal(false);
+        }}
+      />
+
+      <HistoricalSummaryModal
+        isOpen={showHistoryModal}
+        onClose={() => setShowHistoryModal(false)}
+      />
+
+      <FinancialSummaryModal
+        isOpen={showFinancialModal}
+        onClose={() => setShowFinancialModal(false)}
+        totals={totals}
+      />
+    </>
   );
 }
