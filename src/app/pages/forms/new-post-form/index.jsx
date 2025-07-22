@@ -14,7 +14,7 @@ export default function FeuilleRouteApp() {
     resolver: yupResolver(schema),
     defaultValues: defaultData
   });
-  const { reset, control } = methods;
+  const { reset, control, handleSubmit } = methods;
 
   // Données simulées
   const currentDriver = {
@@ -47,7 +47,7 @@ export default function FeuilleRouteApp() {
 
   const [activeTab, setActiveTab] = useState('shift');
 
-  const handleSubmitForm = (data) => {
+  const onSubmit = (data) => {
     try {
       console.log('Feuille de route validée:', data);
       toast.success('Feuille de route enregistrée avec succès');
@@ -62,50 +62,62 @@ export default function FeuilleRouteApp() {
     <ErrorBoundary>
       <Page title="Feuille de Route">
         <FormProvider {...methods}>
-          <div className="px-4 pb-6">
-            {/* Navigation simplifiée */}
-            <div className="flex border-b mb-4">
-              <button
-                onClick={() => setActiveTab('shift')}
-                className={`px-4 py-2 font-medium ${activeTab === 'shift' ? 'border-b-2 border-primary-500 text-primary-600' : 'text-gray-500'}`}
-              >
-                Début Shift
-              </button>
-              <button
-                onClick={() => setActiveTab('courses')}
-                className={`px-4 py-2 font-medium ${activeTab === 'courses' ? 'border-b-2 border-primary-500 text-primary-600' : 'text-gray-500'}`}
-              >
-                Courses
-              </button>
-              <button
-                onClick={() => setActiveTab('end')}
-                className={`px-4 py-2 font-medium ${activeTab === 'end' ? 'border-b-2 border-primary-500 text-primary-600' : 'text-gray-500'}`}
-              >
-                Fin Shift
-              </button>
+          <div className="px-4 pb-20 md:pb-6">
+            {/* En-tête chauffeur */}
+            <div className="bg-gray-800 text-white p-4 rounded-lg mb-4">
+              <h1 className="text-xl font-bold">
+                {currentDriver.prenom} {currentDriver.nom}
+              </h1>
+              <p className="text-sm opacity-80">
+                Badge: {currentDriver.numero_badge} • {currentDriver.type_contrat}
+              </p>
             </div>
 
-            {activeTab === 'shift' && (
-              <ShiftForm 
-                vehicules={vehicules}
-                onStartShift={() => setActiveTab('courses')}
-                control={control}
-              />
-            )}
+            {/* Navigation par onglets */}
+            <div className="flex border-b mb-4 overflow-x-auto">
+              {['shift', 'courses', 'end'].map((tab) => (
+                <button
+                  key={tab}
+                  onClick={() => setActiveTab(tab)}
+                  className={`px-4 py-2 font-medium whitespace-nowrap ${
+                    activeTab === tab 
+                      ? 'border-b-2 border-primary-500 text-primary-600 dark:text-primary-400' 
+                      : 'text-gray-500 dark:text-gray-400'
+                  }`}
+                >
+                  {{
+                    shift: 'Début Shift',
+                    courses: 'Courses',
+                    end: 'Fin Shift'
+                  }[tab]}
+                </button>
+              ))}
+            </div>
 
-            {activeTab === 'courses' && (
-              <CourseList 
-                control={control}
-                chauffeur={currentDriver}
-              />
-            )}
+            {/* Contenu des onglets */}
+            <div className="space-y-4">
+              {activeTab === 'shift' && (
+                <ShiftForm 
+                  vehicules={vehicules}
+                  onStartShift={() => setActiveTab('courses')}
+                  control={control}
+                />
+              )}
 
-            {activeTab === 'end' && (
-              <EndShiftSection 
-                onSubmit={methods.handleSubmit(handleSubmitForm)}
-                control={control}
-              />
-            )}
+              {activeTab === 'courses' && (
+                <CourseList 
+                  control={control}
+                  chauffeur={currentDriver}
+                />
+              )}
+
+              {activeTab === 'end' && (
+                <EndShiftSection 
+                  onSubmit={handleSubmit(onSubmit)}
+                  control={control}
+                />
+              )}
+            </div>
           </div>
         </FormProvider>
       </Page>

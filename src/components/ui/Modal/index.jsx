@@ -2,7 +2,7 @@ import PropTypes from "prop-types";
 import { forwardRef } from "react";
 import clsx from 'clsx';
 import { XMarkIcon } from "@heroicons/react/24/outline";
-import { Button } from "./Button";
+import { Button } from "../Button";
 
 const Modal = forwardRef(({
   isOpen,
