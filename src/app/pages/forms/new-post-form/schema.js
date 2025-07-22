@@ -34,28 +34,12 @@ export const schema = Yup.object().shape({
 
   // Période de service
   shift: Yup.object().shape({
-  start: Yup.string()
-    .required('Heure de début requise')
-    .matches(/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/, 'Format HH:MM invalide'),
-  end: Yup.string()
-    .matches(/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/, 'Format HH:MM invalide')
-    .test(
-      'heure-superieure',
-      'L\'heure de fin doit être après l\'heure de début',
-      function(value) {
-        return !this.parent.start || !value || value > this.parent.start;
-      }
-    ),
-  interruptions: Yup.number()
-    .min(0, 'Doit être positif')
-    .default(0),
-  duree_interruptions: Yup.string()
-    .nullable()
-    .matches(/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/, 'Format HH:MM invalide'),
-  heure_fin_estimee: Yup.string()
-    .matches(/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/, 'Format HH:MM invalide')
-    .nullable()
-}),
+    start: Yup.string().required(),
+    end: Yup.string().required(),
+    estimated_end: Yup.string().required(),
+    interruptions: Yup.string().required(), // Changé en string pour le format time
+    duration: Yup.string() // Calculé automatiquement
+  }),
 
   // Kilométrage et mesures
   kilometers: Yup.object().shape({
