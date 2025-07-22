@@ -1,5 +1,5 @@
 import { Controller } from 'react-hook-form';
-import { Card, Input, Select, Button, Badge } from 'components/ui';
+import { Card, Input, Select, Button } from 'components/ui';
 import { InfoCircleIcon } from '@heroicons/react/24/outline';
 
 export function ShiftForm({ control, vehicles, onStartShift }) {
