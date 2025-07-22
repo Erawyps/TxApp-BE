@@ -1,4 +1,4 @@
-import { Card, Input, Button } from 'components/ui';
+import { Card, Input } from 'components/ui';
 import { useWatch } from 'react-hook-form';
 
 export function EndShiftSection({ control }) {
@@ -31,6 +31,18 @@ export function EndShiftSection({ control }) {
           control={control}
         />
         {/* ... autres champs ... */}
+        <Input
+          label="Prise en charge fin (€)"
+          type="number"
+          name="kilometers.prise_en_charge_fin"
+          control={control}
+        />
+        <Input
+          label="Index compteur fin"
+          type="number"
+          name="kilometers.index_compteur_fin"
+          control={control}
+        />
       </div>
     </Card>
   );
