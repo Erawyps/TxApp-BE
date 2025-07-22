@@ -99,7 +99,7 @@ export function CourseList({ courses = [], onAddCourse, onRemoveCourse }) {
           {courses.length === 0 ? (
             <div className="text-center py-8 text-gray-500">
               <p>Aucune course enregistrée</p>
-              <p className="text-sm mt-1">Cliquez sur "Ajouter" pour commencer</p>
+              <p className="text-sm mt-1">Cliquez sur &quot;Ajouter&quot; pour commencer</p>
             </div>
           ) : (
             courses.map((course, index) => (
