@@ -1,6 +1,7 @@
 import { Modal } from 'components/ui';
 import { Button, Table } from 'components/ui';
 import { ArrowDownTrayIcon } from '@heroicons/react/24/outline';
+import { Input } from 'components/ui';
 
 export function HistoricalSummaryModal({ isOpen, onClose, historicalData }) {
   // Données de démonstration - à remplacer par vos données réelles
