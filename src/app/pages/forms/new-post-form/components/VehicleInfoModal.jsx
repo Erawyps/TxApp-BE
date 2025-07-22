@@ -1,5 +1,4 @@
-import { Modal } from 'components/ui';
-import { Button, Badge } from 'components/ui';
+import { Button, Badge, Modal } from 'components/ui';
 
 export function VehicleInfoModal({ 
   isOpen, 
