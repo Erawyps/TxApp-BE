@@ -1,6 +1,7 @@
 import { Controller } from 'react-hook-form';
 import { Card, Input, Select, Button } from 'components/ui';
-import { InfoCircleIcon } from '@heroicons/react/24/outline';
+import { InformationCircleIcon } from '@heroicons/react/24/outline';
+import { VehicleInfoModal } from './VehicleInfoModal';
 
 export function ShiftForm({ control, vehicles, onStartShift }) {
   return (
@@ -42,8 +43,10 @@ export function ShiftForm({ control, vehicles, onStartShift }) {
           <Button 
             variant="ghost" 
             size="icon"
-            icon={<InfoCircleIcon className="h-5 w-5" />}
-            onClick={() => {/* Ouvrir modal info véhicule */}}
+            icon={<InformationCircleIcon className="h-5 w-5" />}
+            onClick={() => {/* Ouvrir modal info véhicule */
+              <VehicleInfoModal />
+            }}
           />
         </div>
       </div>
