@@ -27,7 +27,7 @@
     "@react-pdf-viewer/core": "^3.12.0",
     "@react-pdf-viewer/default-layout": "^3.12.0",
     "@react-pdf/renderer": "^4.3.0",
-    "@supabase/supabase-js": "^2.51.0",
+    "@supabase/supabase-js": "^2.53.0",
     "@tailwindcss/vite": "^4.0.15",
     "@tanem/react-nprogress": "^5.0.55",
     "@tanstack/match-sorter-utils": "^8.19.4",
