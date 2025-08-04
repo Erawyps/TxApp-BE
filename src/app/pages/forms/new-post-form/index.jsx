@@ -6,8 +6,9 @@ import { ShiftForm } from './components/ShiftForm';
 import { CourseList } from './components/CourseList';
 import { EndShiftSection } from './components/EndShiftSection';
 import { toast } from 'sonner';
-import { Page } from 'components/shared/Page';
 import ErrorBoundary from './components/ErrorBoundary';
+import { UserIcon, ClockIcon, TruckIcon, CheckIcon } from '@heroicons/react/24/outline';
+import { Button } from 'components/ui';
 
 export default function FeuilleRouteApp() {
   const methods = useForm({
@@ -15,39 +16,6 @@ export default function FeuilleRouteApp() {
     defaultValues: defaultData
   });
   const { reset, control, handleSubmit } = methods;
-
-  // Données simulées
-  const currentDriver = {
-    id: 'CH001',
-    nom: 'Tehou',
-    prenom: 'Hasler',
-    numero_badge: 'TX-2023-001',
-    type_contrat: 'Indépendant',
-    currentLocation: 'Bruxelles, Belgique'
-  };
-
-  const vehicles = [
-    {
-      id: 'VH001',
-      plaque_immatriculation: 'TX-AA-171',
-      numero_identification: '10',
-      marque: 'Mercedes',
-      modele: 'Classe E',
-      type_vehicule: 'Berline',
-      etat: 'En service',
-      carburant: 'diesel'
-    },
-    {
-      id: 'VH002',
-      plaque_immatriculation: 'TX-AB-751',
-      numero_identification: '4',
-      marque: 'Volkswagen',
-      modele: 'Touran',
-      type_vehicule: 'Van',
-      etat: 'En service',
-      carburant: 'essence'
-    }
-  ];
 
   const [activeTab, setActiveTab] = useState('shift');
   const [courses, setCourses] = useState([]);
@@ -67,7 +35,6 @@ export default function FeuilleRouteApp() {
 
   const onSubmit = (data) => {
     try {
-      // Add courses to form data
       const finalData = {
         ...data,
         courses: courses
@@ -85,77 +52,84 @@ export default function FeuilleRouteApp() {
 
   return (
     <ErrorBoundary>
-      <Page title="Feuille de Route">
-        <FormProvider {...methods}>
-          <div className="px-4 pb-20 md:pb-6">
-            {/* En-tête chauffeur */}
-            <div className="bg-gray-800 text-white p-4 rounded-lg mb-4">
-              <h1 className="text-xl font-bold">
-                {currentDriver.prenom} {currentDriver.nom}
-              </h1>
-              <p className="text-sm opacity-80">
-                Badge: {currentDriver.numero_badge} • {currentDriver.type_contrat}
-              </p>
-            </div>
-
-            {/* Navigation par onglets */}
-            <div className="flex border-b mb-4 overflow-x-auto">
-              {['shift', 'courses', 'end'].map((tab) => (
-                <button
-                  key={tab}
-                  onClick={() => setActiveTab(tab)}
-                  className={`px-4 py-2 font-medium whitespace-nowrap ${
-                    activeTab === tab 
-                      ? 'border-b-2 border-primary-500 text-primary-600 dark:text-primary-400' 
-                      : 'text-gray-500 dark:text-gray-400'
-                  }`}
-                >
-                  {{
-                    shift: 'Début Shift',
-                    courses: 'Courses',
-                    end: 'Fin Shift'
-                  }[tab]}
-                </button>
-              ))}
-            </div>
-
-            {/* Contenu des onglets */}
-            <div className="space-y-4">
-              {activeTab === 'shift' && (
-                <ShiftForm 
-                  vehicles={vehicles}
-                  onStartShift={() => setActiveTab('courses')}
-                  control={control}
-                />
-              )}
-
-              {activeTab === 'courses' && (
-                <CourseList 
-                  courses={courses}
-                  onAddCourse={handleAddCourse}
-                  onRemoveCourse={handleRemoveCourse}
-                />
-              )}
-
-              {activeTab === 'end' && (
-                <EndShiftSection 
-                  control={control}
-                />
-              )}
-            </div>
-
-            {/* Submit button - always visible */}
-            <div className="fixed bottom-0 left-0 right-0 p-4 bg-white border-t md:relative md:bg-transparent md:border-t-0 md:mt-6">
-              <button
-                onClick={handleSubmit(onSubmit)}
-                className="w-full bg-primary-600 text-white py-3 rounded-lg font-medium hover:bg-primary-700 transition-colors"
-              >
-                Enregistrer la feuille de route
-              </button>
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+        <nav className="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex justify-between h-16">
+              <div className="flex items-center">
+                <h1 className="text-xl font-bold text-gray-900 dark:text-white">TxApp-BE</h1>
+              </div>
+              <div className="flex items-center space-x-4">
+                <Button variant="outlined" size="sm">
+                  <UserIcon className="h-4 w-4 mr-2" />
+                  Profil
+                </Button>
+              </div>
             </div>
           </div>
-        </FormProvider>
-      </Page>
+        </nav>
+
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+          <div className="mb-6">
+            <div className="border-b border-gray-200 dark:border-gray-700">
+              <nav className="flex justify-center">
+                <div className="flex space-x-8 md:space-x-16">
+                  {[
+                    { key: 'shift', label: 'Début Shift', icon: ClockIcon },
+                    { key: 'courses', label: 'Courses', icon: TruckIcon },
+                    { key: 'end', label: 'Fin Shift', icon: CheckIcon }
+                  ].map(tab => (
+                    <button
+                      key={tab.key}
+                      onClick={() => setActiveTab(tab.key)}
+                      className={`flex items-center gap-2 py-2 px-1 border-b-2 font-medium text-sm whitespace-nowrap ${
+                        activeTab === tab.key
+                          ? 'border-blue-500 text-blue-600 dark:text-blue-400'
+                          : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'
+                      }`}
+                    >
+                      <tab.icon className="h-5 w-5" />
+                      {tab.label}
+                    </button>
+                  ))}
+                </div>
+              </nav>
+            </div>
+          </div>
+
+          <FormProvider {...methods}>
+            {activeTab === 'shift' && (
+              <ShiftForm 
+                onStartShift={() => setActiveTab('courses')}
+                control={control}
+              />
+            )}
+
+            {activeTab === 'courses' && (
+              <CourseList 
+                courses={courses}
+                onAddCourse={handleAddCourse}
+                onRemoveCourse={handleRemoveCourse}
+              />
+            )}
+
+            {activeTab === 'end' && (
+              <EndShiftSection 
+                control={control}
+              />
+            )}
+          </FormProvider>
+
+          <div className="fixed bottom-0 left-0 right-0 p-4 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 md:relative md:bg-transparent md:border-t-0 md:mt-6">
+            <button
+              onClick={handleSubmit(onSubmit)}
+              className="w-full bg-primary-600 text-white py-3 rounded-lg font-medium hover:bg-primary-700 transition-colors"
+            >
+              Enregistrer la feuille de route
+            </button>
+          </div>
+        </div>
+      </div>
     </ErrorBoundary>
   );
 }

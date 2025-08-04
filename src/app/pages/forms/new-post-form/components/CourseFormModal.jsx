@@ -22,7 +22,6 @@ export function CourseFormModal({ isOpen, onClose, onSubmit, defaultValues }) {
     }
   });
 
-  // Reset form when modal opens/closes or defaultValues change
   useEffect(() => {
     if (isOpen) {
       reset({
@@ -44,7 +43,6 @@ export function CourseFormModal({ isOpen, onClose, onSubmit, defaultValues }) {
   }, [isOpen, defaultValues, reset]);
 
   const handleFormSubmit = (data) => {
-    // Clean and format data
     const formattedData = {
       ...data,
       departure_index: data.departure_index ? parseInt(data.departure_index) : 0,
@@ -62,7 +60,6 @@ export function CourseFormModal({ isOpen, onClose, onSubmit, defaultValues }) {
     onClose();
   };
 
-  // Watch payment method to show/hide client field
   const paymentMethod = watch('payment_method');
 
   return (
@@ -80,8 +77,8 @@ export function CourseFormModal({ isOpen, onClose, onSubmit, defaultValues }) {
           <div></div>
         </div>
 
-        <div className="bg-gray-50 p-4 rounded-lg">
-          <h4 className="font-medium mb-3">Embarquement</h4>
+        <div className="bg-blue-50 p-4 rounded-lg">
+          <h4 className="font-medium mb-3 text-blue-800">Embarquement</h4>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <Input
               label="Index"
@@ -106,8 +103,8 @@ export function CourseFormModal({ isOpen, onClose, onSubmit, defaultValues }) {
           </div>
         </div>
 
-        <div className="bg-gray-50 p-4 rounded-lg">
-          <h4 className="font-medium mb-3">Débarquement</h4>
+        <div className="bg-green-50 p-4 rounded-lg">
+          <h4 className="font-medium mb-3 text-green-800">Débarquement</h4>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <Input
               label="Index"
@@ -131,8 +128,8 @@ export function CourseFormModal({ isOpen, onClose, onSubmit, defaultValues }) {
           </div>
         </div>
 
-        <div className="bg-gray-50 p-4 rounded-lg">
-          <h4 className="font-medium mb-3">Tarification</h4>
+        <div className="bg-yellow-50 p-4 rounded-lg">
+          <h4 className="font-medium mb-3 text-yellow-800">Tarification</h4>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <Input
               label="Prix taximètre (€)"

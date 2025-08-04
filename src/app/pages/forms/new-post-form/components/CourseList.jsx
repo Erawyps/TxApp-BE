@@ -19,17 +19,14 @@ export function CourseList({ courses = [], onAddCourse, onRemoveCourse }) {
   const [showFinancialModal, setShowFinancialModal] = useState(false);
   const [editingCourse, setEditingCourse] = useState(null);
 
-  // Calculate totals
   const totals = {
     recettes: courses.reduce((sum, course) => sum + (parseFloat(course.amount_received) || 0), 0),
-    charges: 0, // Will be calculated when expenses are added
-    salaire: 0 // Will be calculated based on recettes
+    charges: 0,
+    salaire: courses.reduce((sum, course) => {
+      const amount = parseFloat(course.amount_received) || 0;
+      return sum + (amount <= 180 ? amount * 0.4 : (180 * 0.4) + ((amount - 180) * 0.3));
+    }, 0)
   };
-
-  // Calculate driver salary (40% up to 180€, then 30% above)
-  totals.salaire = totals.recettes <= 180 
-    ? totals.recettes * 0.4 
-    : (180 * 0.4) + ((totals.recettes - 180) * 0.3);
 
   const handleEditCourse = (course) => {
     setEditingCourse(course);
@@ -38,7 +35,7 @@ export function CourseList({ courses = [], onAddCourse, onRemoveCourse }) {
 
   const handleSubmitCourse = (courseData) => {
     if (editingCourse) {
-      // Handle edit - you'll need to implement this in the parent
+      // Handle edit
       console.log('Editing course:', courseData);
     } else {
       onAddCourse(courseData);
@@ -85,7 +82,6 @@ export function CourseList({ courses = [], onAddCourse, onRemoveCourse }) {
           </div>
         </div>
 
-        {/* Course summary */}
         {courses.length > 0 && (
           <div className="bg-primary-50 p-3 rounded-lg mb-4">
             <div className="flex justify-between items-center text-sm">
@@ -114,7 +110,6 @@ export function CourseList({ courses = [], onAddCourse, onRemoveCourse }) {
         </ScrollShadow>
       </Card>
 
-      {/* Modals */}
       <CourseFormModal
         isOpen={showCourseModal}
         onClose={() => {
@@ -130,7 +125,6 @@ export function CourseList({ courses = [], onAddCourse, onRemoveCourse }) {
         onClose={() => setShowExpenseModal(false)}
         onSubmit={(expenseData) => {
           console.log('New expense:', expenseData);
-          // Handle expense submission
           setShowExpenseModal(false);
         }}
       />
