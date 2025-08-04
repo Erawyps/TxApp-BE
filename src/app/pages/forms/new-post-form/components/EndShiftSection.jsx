@@ -24,7 +24,6 @@ export function EndShiftSection({ control }) {
         )}
       </div>
 
-      {/* Champs taximètre fin */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <Input
           label="Km tableau de bord fin"

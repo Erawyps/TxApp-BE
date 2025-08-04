@@ -9,11 +9,6 @@ export function ShiftForm({ control, vehicles = [], onStartShift }) {
   const [selectedVehicle, setSelectedVehicle] = useState(null);
 
   const handleVehicleInfoClick = () => {
-    // Find selected vehicle from form data
-    /*const vehicleOptions = vehicles.map(v => ({
-      value: v.id,
-      label: `${v.plaque_immatriculation}`
-    }));**/
     setShowVehicleModal(true);
   };
 
@@ -21,7 +16,6 @@ export function ShiftForm({ control, vehicles = [], onStartShift }) {
     <>
       <Card className="p-5 space-y-4">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {/* Date */}
           <Controller
             name="header.date"
             control={control}
@@ -35,7 +29,6 @@ export function ShiftForm({ control, vehicles = [], onStartShift }) {
             )}
           />
 
-          {/* Véhicule avec bouton info */}
           <div className="flex items-end gap-2">
             <div className="flex-1">
               <Controller
@@ -51,7 +44,6 @@ export function ShiftForm({ control, vehicles = [], onStartShift }) {
                     value={field.value}
                     onChange={(value) => {
                       field.onChange(value);
-                      // Find and set selected vehicle for modal
                       const vehicle = vehicles.find(v => v.id === value);
                       setSelectedVehicle(vehicle);
                     }}
@@ -68,7 +60,6 @@ export function ShiftForm({ control, vehicles = [], onStartShift }) {
           </div>
         </div>
 
-        {/* Heures */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <Controller
             name="shift.start"
@@ -107,7 +98,6 @@ export function ShiftForm({ control, vehicles = [], onStartShift }) {
           />
         </div>
 
-        {/* Taximètre début */}
         <div className="bg-gray-50 p-4 rounded-lg">
           <h4 className="font-medium mb-3">Taximètre - Début de service</h4>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -171,7 +161,6 @@ export function ShiftForm({ control, vehicles = [], onStartShift }) {
         </Button>
       </Card>
 
-      {/* Vehicle Info Modal */}
       <VehicleInfoModal
         isOpen={showVehicleModal}
         onClose={() => setShowVehicleModal(false)}

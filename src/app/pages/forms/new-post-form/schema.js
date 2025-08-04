@@ -43,25 +43,25 @@ export const schema = Yup.object().shape({
 
   // Kilométrage et mesures
   kilometers: Yup.object().shape({
-  start: Yup.number()
-    .required('Km de début requis')
-    .min(0, 'Doit être positif'),
-  end: Yup.number()
-    .min(Yup.ref('start'), 'Doit être supérieur au km de départ')
-    .nullable(),
-  prise_en_charge_debut: Yup.number()
-    .min(0, 'Doit être positif')
-    .nullable(),
-  prise_en_charge_fin: Yup.number()
-    .min(0, 'Doit être positif')
-    .nullable(),
-  chutes_debut: Yup.number()
-    .min(0, 'Doit être positif')
-    .nullable(),
-  chutes_fin: Yup.number()
-    .min(0, 'Doit être positif')
-    .nullable()
-}),
+    start: Yup.number()
+      .required('Km de début requis')
+      .min(0, 'Doit être positif'),
+    end: Yup.number()
+      .min(Yup.ref('start'), 'Doit être supérieur au km de départ')
+      .nullable(),
+    prise_en_charge_debut: Yup.number()
+      .min(0, 'Doit être positif')
+      .nullable(),
+    prise_en_charge_fin: Yup.number()
+      .min(0, 'Doit être positif')
+      .nullable(),
+    chutes_debut: Yup.number()
+      .min(0, 'Doit être positif')
+      .nullable(),
+    chutes_fin: Yup.number()
+      .min(0, 'Doit être positif')
+      .nullable()
+  }),
 
   // Liste des courses
   courses: Yup.array().of(
@@ -127,15 +127,15 @@ export const schema = Yup.object().shape({
 
   // Validation finale
   validation: Yup.object().shape({
-  signature: Yup.string()
-    .required('La signature est obligatoire')
-    .test('is-data-url', 'Format de signature invalide', value => 
-      value && value.startsWith('data:image/')
-    ),
-  date_validation: Yup.date()
-    .default(() => new Date())
-    .required('Date de validation requise')
-}).required('Section validation requise')
+    signature: Yup.string()
+      .required('La signature est obligatoire')
+      .test('is-data-url', 'Format de signature invalide', value => 
+        value && value.startsWith('data:image/')
+      ),
+    date_validation: Yup.date()
+      .default(() => new Date())
+      .required('Date de validation requise')
+  }).required('Section validation requise')
 });
 
 export const defaultData = {
@@ -159,20 +159,20 @@ export const defaultData = {
     }
   },
   shift: {
-  start: "",
-  end: "",
-  interruptions: 0,
-  duree_interruptions: null,
-  heure_fin_estimee: null
-},
+    start: "",
+    end: "",
+    interruptions: 0,
+    duree_interruptions: null,
+    heure_fin_estimee: null
+  },
   kilometers: {
-  start: null,
-  end: null,
-  prise_en_charge_debut: null,
-  prise_en_charge_fin: null,
-  chutes_debut: null,
-  chutes_fin: null
-},
+    start: null,
+    end: null,
+    prise_en_charge_debut: null,
+    prise_en_charge_fin: null,
+    chutes_debut: null,
+    chutes_fin: null
+  },
   courses: [],
   charges: [],
   totals: {
@@ -181,8 +181,8 @@ export const defaultData = {
     salaire: 0
   },
   validation: {
-  signature: null, // Modifié de "" à null
-  date_validation: null,
-  valide_par: null
-}
+    signature: null,
+    date_validation: null,
+    valide_par: null
+  }
 };

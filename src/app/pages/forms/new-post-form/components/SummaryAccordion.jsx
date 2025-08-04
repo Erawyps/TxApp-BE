@@ -42,7 +42,6 @@ export function SummaryAccordion({ recettes, charges, salaire }) {
                   <span>Carburant</span>
                   <span>0.00 €</span>
                 </div>
-                {/* Liste dynamique des charges */}
               </div>
             </Disclosure.Panel>
           </>

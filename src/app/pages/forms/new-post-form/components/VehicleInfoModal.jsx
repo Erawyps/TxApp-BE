@@ -1,10 +1,6 @@
 import { Button, Badge, Modal } from 'components/ui';
 
-export function VehicleInfoModal({ 
-  isOpen, 
-  onClose, 
-  vehicle 
-}) {
+export function VehicleInfoModal({ isOpen, onClose, vehicle }) {
   if (!vehicle) return null;
 
   return (
@@ -15,21 +11,16 @@ export function VehicleInfoModal({
       size="md"
     >
       <div className="space-y-4">
-        {/* En-tête avec plaque et badge */}
         <div className="flex justify-between items-start">
           <div>
             <h3 className="text-lg font-bold">{vehicle.plaque_immatriculation}</h3>
             <p className="text-sm text-gray-500">ID: {vehicle.numero_identification}</p>
           </div>
-          <Badge 
-            variant="outlined" 
-            className="capitalize"
-          >
+          <Badge variant="outlined" className="capitalize">
             {vehicle.type_vehicule || 'Non spécifié'}
           </Badge>
         </div>
 
-        {/* Détails principaux */}
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-1">
             <p className="text-sm text-gray-500">Marque</p>
@@ -49,7 +40,6 @@ export function VehicleInfoModal({
           </div>
         </div>
 
-        {/* Section état et contrôles */}
         <div className="border-t pt-4 mt-4">
           <h4 className="font-medium mb-2">État et maintenance</h4>
           <div className="grid grid-cols-2 gap-4">
@@ -84,7 +74,6 @@ export function VehicleInfoModal({
           </div>
         </div>
 
-        {/* Notes */}
         {vehicle.notes && (
           <div className="border-t pt-4 mt-4">
             <h4 className="font-medium mb-2">Notes</h4>
@@ -92,13 +81,8 @@ export function VehicleInfoModal({
           </div>
         )}
 
-        {/* Bouton de fermeture */}
         <div className="pt-4 mt-4 border-t">
-          <Button 
-            onClick={onClose}
-            className="w-full"
-            variant="primary"
-          >
+          <Button onClick={onClose} className="w-full" variant="primary">
             Fermer
           </Button>
         </div>
