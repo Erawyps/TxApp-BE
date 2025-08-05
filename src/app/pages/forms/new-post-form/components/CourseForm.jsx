@@ -6,7 +6,7 @@ import {
   CurrencyEuroIcon,
   TrashIcon,
   PencilIcon,
-    UserIcon
+  UserIcon
 } from "@heroicons/react/24/outline";
 import { useFieldArray } from "react-hook-form";
 import { useState } from "react";
