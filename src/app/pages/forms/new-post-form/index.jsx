@@ -1,3 +1,4 @@
+// index.jsx
 import { useState } from 'react';
 import { useForm, FormProvider } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
@@ -7,8 +8,7 @@ import { CourseList } from './components/CourseList';
 import { EndShiftSection } from './components/EndShiftSection';
 import { toast } from 'sonner';
 import ErrorBoundary from './components/ErrorBoundary';
-import { UserIcon, ClockIcon, TruckIcon, CheckIcon } from '@heroicons/react/24/outline';
-import { Button } from 'components/ui';
+import { ClockIcon, TruckIcon, CheckIcon } from '@heroicons/react/24/outline';
 
 export default function FeuilleRouteApp() {
   const methods = useForm({
@@ -24,13 +24,18 @@ export default function FeuilleRouteApp() {
     const newCourse = {
       ...courseData,
       id: `course_${Date.now()}`,
-      order: courses.length + 1
+      order: courses.length + 1,
+      status: 'completed'
     };
     setCourses([...courses, newCourse]);
   };
 
   const handleRemoveCourse = (index) => {
     setCourses(courses.filter((_, i) => i !== index));
+  };
+
+  const handleEditCourse = (updatedCourse) => {
+    setCourses(courses.map(c => c.id === updatedCourse.id ? updatedCourse : c));
   };
 
   const onSubmit = (data) => {
@@ -50,20 +55,26 @@ export default function FeuilleRouteApp() {
     }
   };
 
+  // Données simulées pour le véhicule
+  const vehicles = [
+    {
+      id: "VH001",
+      plaque_immatriculation: "TX-AA-171",
+      numero_identification: "10",
+      marque: "Mercedes",
+      modele: "Classe E",
+      type_vehicule: "Berline"
+    }
+  ];
+
   return (
     <ErrorBoundary>
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-        <nav className="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700">
+      <div className="min-h-screen bg-gray-50">
+        <nav className="bg-white shadow-sm border-b border-gray-200">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex justify-between h-16">
               <div className="flex items-center">
-                <h1 className="text-xl font-bold text-gray-900 dark:text-white">TxApp-BE</h1>
-              </div>
-              <div className="flex items-center space-x-4">
-                <Button variant="outlined" size="sm">
-                  <UserIcon className="h-4 w-4 mr-2" />
-                  Profil
-                </Button>
+                <h1 className="text-xl font-bold text-gray-900">TxApp-BE</h1>
               </div>
             </div>
           </div>
@@ -71,7 +82,7 @@ export default function FeuilleRouteApp() {
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="mb-6">
-            <div className="border-b border-gray-200 dark:border-gray-700">
+            <div className="border-b border-gray-200">
               <nav className="flex justify-center">
                 <div className="flex space-x-8 md:space-x-16">
                   {[
@@ -84,8 +95,8 @@ export default function FeuilleRouteApp() {
                       onClick={() => setActiveTab(tab.key)}
                       className={`flex items-center gap-2 py-2 px-1 border-b-2 font-medium text-sm whitespace-nowrap ${
                         activeTab === tab.key
-                          ? 'border-blue-500 text-blue-600 dark:text-blue-400'
-                          : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'
+                          ? 'border-blue-500 text-blue-600'
+                          : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                       }`}
                     >
                       <tab.icon className="h-5 w-5" />
@@ -102,6 +113,7 @@ export default function FeuilleRouteApp() {
               <ShiftForm 
                 onStartShift={() => setActiveTab('courses')}
                 control={control}
+                vehicles={vehicles}
               />
             )}
 
@@ -110,6 +122,7 @@ export default function FeuilleRouteApp() {
                 courses={courses}
                 onAddCourse={handleAddCourse}
                 onRemoveCourse={handleRemoveCourse}
+                onEditCourse={handleEditCourse}
               />
             )}
 
@@ -120,10 +133,10 @@ export default function FeuilleRouteApp() {
             )}
           </FormProvider>
 
-          <div className="fixed bottom-0 left-0 right-0 p-4 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 md:relative md:bg-transparent md:border-t-0 md:mt-6">
+          <div className="fixed bottom-0 left-0 right-0 p-4 bg-white border-t border-gray-200 md:relative md:bg-transparent md:border-t-0 md:mt-6">
             <button
               onClick={handleSubmit(onSubmit)}
-              className="w-full bg-primary-600 text-white py-3 rounded-lg font-medium hover:bg-primary-700 transition-colors"
+              className="w-full bg-blue-600 text-white py-3 rounded-lg font-medium hover:bg-blue-700 transition-colors"
             >
               Enregistrer la feuille de route
             </button>

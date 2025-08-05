@@ -1,23 +1,26 @@
+// components/CourseList.jsx
 import { useState } from 'react';
-import { Card, Button, ScrollShadow } from 'components/ui';
+import { Card, Button } from 'components/ui';
+import { MagnifyingGlassIcon } from '@heroicons/react/24/outline';
+import { Input, Select } from 'components/ui';
+
 import { 
   PlusIcon, 
-  ReceiptPercentIcon,
   BanknotesIcon,
-  ClockIcon
+  ClockIcon,
+  ChartBarIcon,
+  TruckIcon
 } from '@heroicons/react/24/outline';
 import { CourseItem } from './CourseItem';
 import { CourseFormModal } from './CourseFormModal';
-import { ExpenseFormModal } from './ExpenseFormModal';
-import { HistoricalSummaryModal } from './HistoricalSummaryModal';
 import { FinancialSummaryModal } from './FinancialSummaryModal';
 
-export function CourseList({ courses = [], onAddCourse, onRemoveCourse }) {
+export function CourseList({ courses = [], onAddCourse, onRemoveCourse, onEditCourse }) {
   const [showCourseModal, setShowCourseModal] = useState(false);
-  const [showExpenseModal, setShowExpenseModal] = useState(false);
-  const [showHistoryModal, setShowHistoryModal] = useState(false);
   const [showFinancialModal, setShowFinancialModal] = useState(false);
   const [editingCourse, setEditingCourse] = useState(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
 
   const totals = {
     recettes: courses.reduce((sum, course) => sum + (parseFloat(course.amount_received) || 0), 0),
@@ -25,7 +28,9 @@ export function CourseList({ courses = [], onAddCourse, onRemoveCourse }) {
     salaire: courses.reduce((sum, course) => {
       const amount = parseFloat(course.amount_received) || 0;
       return sum + (amount <= 180 ? amount * 0.4 : (180 * 0.4) + ((amount - 180) * 0.3));
-    }, 0)
+    }, 0),
+    coursesCount: courses.length,
+    averagePerCourse: courses.length > 0 ? totals.recettes / courses.length : 0
   };
 
   const handleEditCourse = (course) => {
@@ -33,82 +38,137 @@ export function CourseList({ courses = [], onAddCourse, onRemoveCourse }) {
     setShowCourseModal(true);
   };
 
-  const handleSubmitCourse = (courseData) => {
-    if (editingCourse) {
-      // Handle edit
-      console.log('Editing course:', courseData);
-    } else {
-      onAddCourse(courseData);
-    }
-    setEditingCourse(null);
-    setShowCourseModal(false);
-  };
+  const filteredCourses = courses.filter(course => {
+    const matchesSearch = course.departure_place.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         course.arrival_place.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         course.order.toString().includes(searchTerm);
+    const matchesStatus = statusFilter === 'all' || course.status === statusFilter;
+    return matchesSearch && matchesStatus;
+  });
 
   return (
     <>
       <Card className="p-4">
-        <div className="flex justify-between mb-4">
-          <h3 className="text-lg font-semibold">Courses ({courses.length})</h3>
-          <div className="flex gap-2">
-            <Button 
-              variant="outlined" 
+        <div className="flex flex-col gap-4">
+          <div className="flex items-center justify-between">
+            <h2 className="text-xl font-semibold text-gray-900">
+              Courses ({filteredCourses.length})
+            </h2>
+          </div>
+          
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+            <Button
+              variant="outlined"
               size="sm"
-              icon={<BanknotesIcon className="h-4 w-4" />}
+              icon={<ChartBarIcon className="h-4 w-4" />}
               onClick={() => setShowFinancialModal(true)}
-            />
-            <Button 
-              variant="outlined" 
+            >
+              Résumé financier
+            </Button>
+            <Button
+              variant="outlined"
               size="sm"
               icon={<ClockIcon className="h-4 w-4" />}
-              onClick={() => setShowHistoryModal(true)}
-            />
-            <Button 
-              variant="outlined" 
-              size="sm"
-              icon={<ReceiptPercentIcon className="h-4 w-4" />}
-              onClick={() => setShowExpenseModal(true)}
-            />
-            <Button 
-              variant="primary" 
-              size="sm"
-              icon={<PlusIcon className="h-4 w-4" />}
-              onClick={() => {
-                setEditingCourse(null);
-                setShowCourseModal(true);
-              }}
             >
-              Ajouter
+              Historique
+            </Button>
+            <Button
+              variant="outlined"
+              size="sm"
+              icon={<BanknotesIcon className="h-4 w-4" />}
+            >
+              Ajouter dépense
+            </Button>
+            <Button
+              variant="outlined"
+              size="sm"
+              icon={<TruckIcon className="h-4 w-4" />}
+            >
+              Course externe
             </Button>
           </div>
+
+          <Button
+            icon={<PlusIcon className="h-4 w-4" />}
+            onClick={() => {
+              setEditingCourse(null);
+              setShowCourseModal(true);
+            }}
+            className="w-full"
+          >
+            Ajouter une course
+          </Button>
         </div>
 
-        {courses.length > 0 && (
-          <div className="bg-primary-50 p-3 rounded-lg mb-4">
-            <div className="flex justify-between items-center text-sm">
-              <span>Total recettes: <strong>{totals.recettes.toFixed(2)} €</strong></span>
-              <span>Salaire estimé: <strong>{totals.salaire.toFixed(2)} €</strong></span>
-            </div>
-          </div>
-        )}
+        <div className="mt-4 flex flex-col sm:flex-row gap-4">
+          <Input
+            placeholder="Rechercher par lieu, numéro..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            icon={<MagnifyingGlassIcon className="h-4 w-4" />}
+            className="flex-1"
+          />
+          
+          <Select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            options={[
+              { value: 'all', label: 'Tous les statuts' },
+              { value: 'completed', label: 'Terminées' },
+              { value: 'in-progress', label: 'En cours' }
+            ]}
+            className="w-full sm:w-48"
+          />
+        </div>
 
-        <ScrollShadow className="max-h-[60vh]">
-          {courses.length === 0 ? (
-            <div className="text-center py-8 text-gray-500">
-              <p>Aucune course enregistrée</p>
-              <p className="text-sm mt-1">Cliquez sur &quot;Ajouter&quot; pour commencer</p>
-            </div>
-          ) : (
-            courses.map((course, index) => (
-              <CourseItem 
-                key={course.id || index} 
-                course={course}
-                onEdit={handleEditCourse}
-                onRemove={() => onRemoveCourse(index)}
-              />
-            ))
-          )}
-        </ScrollShadow>
+        <div className="mt-4 border-b border-gray-200">
+          <div className="flex gap-4">
+            {[
+              { key: 'all', label: 'Toutes', count: courses.length },
+              { key: 'completed', label: 'Terminées', count: courses.filter(c => c.status === 'completed').length },
+              { key: 'in-progress', label: 'En cours', count: courses.filter(c => c.status === 'in-progress').length }
+            ].map(tab => (
+              <button
+                key={tab.key}
+                onClick={() => setStatusFilter(tab.key)}
+                className={`flex items-center gap-2 px-3 py-2 border-b-2 font-medium ${
+                  statusFilter === tab.key
+                    ? 'border-blue-500 text-blue-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700'
+                }`}
+              >
+                {tab.label}
+                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                  statusFilter === tab.key ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-800'
+                }`}>
+                  {tab.count}
+                </span>
+              </button>
+            ))}
+          </div>
+        </div>
       </Card>
+
+      <div className="space-y-3 mt-4">
+        {filteredCourses.length === 0 ? (
+          <Card className="p-8 text-center">
+            <TruckIcon className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+            <p className="text-gray-500">Aucune course trouvée</p>
+            <p className="text-sm text-gray-400 mt-1">
+              {searchTerm ? 'Essayez de modifier vos critères de recherche' : 'Commencez par ajouter une nouvelle course'}
+            </p>
+          </Card>
+        ) : (
+          filteredCourses.map((course, index) => (
+            <CourseItem 
+              key={course.id || index} 
+              course={course}
+              onEdit={handleEditCourse}
+              onRemove={() => onRemoveCourse(index)}
+            />
+          ))
+        )}
+      </div>
 
       <CourseFormModal
         isOpen={showCourseModal}
@@ -116,22 +176,15 @@ export function CourseList({ courses = [], onAddCourse, onRemoveCourse }) {
           setShowCourseModal(false);
           setEditingCourse(null);
         }}
-        onSubmit={handleSubmitCourse}
-        defaultValues={editingCourse}
-      />
-
-      <ExpenseFormModal
-        isOpen={showExpenseModal}
-        onClose={() => setShowExpenseModal(false)}
-        onSubmit={(expenseData) => {
-          console.log('New expense:', expenseData);
-          setShowExpenseModal(false);
+        onSubmit={(data) => {
+          if (editingCourse) {
+            onEditCourse(data);
+          } else {
+            onAddCourse(data);
+          }
+          setShowCourseModal(false);
         }}
-      />
-
-      <HistoricalSummaryModal
-        isOpen={showHistoryModal}
-        onClose={() => setShowHistoryModal(false)}
+        defaultValues={editingCourse}
       />
 
       <FinancialSummaryModal
