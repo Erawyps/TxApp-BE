@@ -15,7 +15,7 @@ import {
   IndexReadings,
   CourseForm,
   Summary
-} from "./components";
+} from "../new-post-form/components";
 
 // ----------------------------------------------------------------------
 
