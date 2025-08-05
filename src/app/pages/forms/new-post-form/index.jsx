@@ -8,14 +8,13 @@ import { toast } from "sonner";
 import { shiftSchema } from "./schema";
 import { Page } from "components/shared/Page";
 import { Button } from "components/ui";
-import {
-  DriverInfo,
-  VehicleInfo,
-  ServiceHours,
-  IndexReadings,
-  CourseForm,
-  Summary
-} from "./components";
+import { DriverInfo } from "./components/DriverInfo";
+import { VehicleInfo } from "./components/VehicleInfo";
+import { ServiceHours } from "./components/ServiceHours";
+import { IndexReadings } from "./components/IndexReadings";
+import { CourseForm } from "./components/CourseForm";
+import { Summary } from "./components/Summary";
+
 
 
 // ----------------------------------------------------------------------
