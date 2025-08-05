@@ -8,7 +8,7 @@ import { Input, Card } from "components/ui";
 
 // ----------------------------------------------------------------------
 
-const VehicleInfo = forwardRef(({ register, errors, className = "" }, ref) => {
+const VehiculeInfo = forwardRef(({ register, errors, className = "" }, ref) => {
   return (
     <Card className={`p-4 sm:px-5 ${className}`}>
       <div className="flex items-center gap-2 mb-4">
@@ -42,12 +42,12 @@ const VehicleInfo = forwardRef(({ register, errors, className = "" }, ref) => {
   );
 });
 
-VehicleInfo.displayName = "VehicleInfo";
+VehiculeInfo.displayName = "VehiculeInfo";
 
-VehicleInfo.propTypes = {
+VehiculeInfo.propTypes = {
   register: PropTypes.func.isRequired,
   errors: PropTypes.object,
   className: PropTypes.string,
 };
 
-export { VehicleInfo };
+export { VehiculeInfo };
