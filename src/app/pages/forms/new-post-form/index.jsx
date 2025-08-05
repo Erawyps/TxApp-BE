@@ -9,7 +9,7 @@ import { shiftSchema } from "./schema";
 import { Page } from "components/shared/Page";
 import { Button } from "components/ui";
 import { DriverInfo } from "./components/DriverInfo";
-import { VehicleInfo } from "./components/VehiculeInfo";
+import { VehiculeInfo } from "./components/VehiculeInfo";
 import { ServiceHours } from "./components/ServiceHours";
 import { IndexReadings } from "./components/IndexReadings";
 import { CourseForm } from "./components/CourseForm";
@@ -232,7 +232,7 @@ const TxAppFeuilleRoute = () => {
                   register={register}
                   errors={errors}
                 />
-                <VehicleInfo 
+                <VehiculeInfo 
                   register={register}
                   errors={errors}
                 />
