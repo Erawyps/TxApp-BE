@@ -8,14 +8,15 @@ import { toast } from "sonner";
 import { shiftSchema } from "./schema";
 import { Page } from "components/shared/Page";
 import { Button } from "components/ui";
-import { 
+import {
   DriverInfo,
-  VehicleInfo, 
+  VehicleInfo,
   ServiceHours,
   IndexReadings,
   CourseForm,
   Summary
-} from "../new-post-form/components";
+} from "./components";
+
 
 // ----------------------------------------------------------------------
 
