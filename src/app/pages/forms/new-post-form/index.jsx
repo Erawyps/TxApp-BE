@@ -4,11 +4,12 @@ import {
   ChartBarIcon, 
   ClockIcon, 
   TruckIcon, 
-  CheckIcon 
+  CheckIcon,
 } from "@heroicons/react/24/outline";
 import { Fragment } from "react";
 import { Dialog, Transition, TransitionChild, DialogPanel, DialogTitle } from "@headlessui/react";
 import { XMarkIcon } from "@heroicons/react/24/outline";
+// Removed unused import for 'useReactToPrint'
 
 // Local Imports
 import { Page } from "components/shared/Page";
@@ -19,6 +20,10 @@ import { CoursesList } from "./components/CoursesList";
 import { CourseForm } from "./components/CourseForm";
 import { EndShiftForm } from "./components/EndShiftForm";
 import { VehicleModal } from "./components/VehicleModal";
+// Removed unused import for 'FinancialSummary'
+// Removed unused import for 'ExpenseForm'
+// Removed duplicate import
+// Removed duplicate imports
 import { mockData } from "./data";
 
 // ----------------------------------------------------------------------
