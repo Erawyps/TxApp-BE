@@ -22,7 +22,11 @@ export function Toolbar({
   statusFilter, 
   onStatusFilterChange,
   courses,
-  onNewCourse 
+  onNewCourse,
+  onShowFinancialSummary,
+  onShowHistory,
+  onShowExpenseForm,
+  onShowExternalCourseForm
 }) {
   const filteredCounts = [
     { 
@@ -46,35 +50,39 @@ export function Toolbar({
     {
       label: "Résumé financier",
       icon: ChartBarIcon,
-      onClick: () => console.log("Show financial summary")
+      onClick: onShowFinancialSummary,
+      color: "text-green-600"
     },
     {
       label: "Historique",
       icon: ClockIcon,
-      onClick: () => console.log("Show history")
+      onClick: onShowHistory,
+      color: "text-blue-600"
     },
     {
       label: "Ajouter dépense",
       icon: BanknotesIcon,
-      onClick: () => console.log("Add expense")
+      onClick: onShowExpenseForm,
+      color: "text-red-600"
     },
     {
       label: "Course externe",
       icon: TruckIcon,
-      onClick: () => console.log("External course")
+      onClick: onShowExternalCourseForm,
+      color: "text-orange-600"
     }
   ];
 
   return (
     <div className="space-y-4">
-      {/* Header with title and main action */}
-      <div className="flex items-center justify-between">
+      {/* Header with title */}
+      <div className="text-center">
         <h2 className="text-xl font-semibold text-gray-800 dark:text-dark-100">
           Courses ({courses.length})
         </h2>
       </div>
       
-      {/* Quick actions */}
+      {/* Quick actions - 4 boutons en haut */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
         {quickActions.map((action, index) => {
           const Icon = action.icon;
@@ -82,11 +90,13 @@ export function Toolbar({
             <Button
               key={index}
               variant="outlined"
-              className="h-10 space-x-2"
+              className={`h-12 flex-col space-y-1 ${action.color}`}
               onClick={action.onClick}
             >
-              <Icon className="h-4 w-4" />
-              <span className="hidden sm:inline">{action.label}</span>
+              <Icon className="h-5 w-5" />
+              <span className="text-xs text-center leading-tight">
+                {action.label}
+              </span>
             </Button>
           );
         })}
@@ -95,9 +105,10 @@ export function Toolbar({
       {/* Add new course button */}
       <Button
         onClick={onNewCourse}
-        className="w-full space-x-2"
+        className="w-full h-12 space-x-2"
+        size="lg"
       >
-        <PlusIcon className="h-4 w-4" />
+        <PlusIcon className="h-5 w-5" />
         <span>Ajouter une course</span>
       </Button>
 
@@ -154,5 +165,9 @@ Toolbar.propTypes = {
   statusFilter: PropTypes.string.isRequired,
   onStatusFilterChange: PropTypes.func.isRequired,
   courses: PropTypes.array.isRequired,
-  onNewCourse: PropTypes.func.isRequired
+  onNewCourse: PropTypes.func.isRequired,
+  onShowFinancialSummary: PropTypes.func.isRequired,
+  onShowHistory: PropTypes.func.isRequired,
+  onShowExpenseForm: PropTypes.func.isRequired,
+  onShowExternalCourseForm: PropTypes.func.isRequired
 };
