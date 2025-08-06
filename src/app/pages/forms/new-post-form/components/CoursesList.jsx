@@ -19,7 +19,11 @@ export function CoursesList({
   onNewCourse,
   onEditCourse, 
   onDeleteCourse,
-  onViewCourse 
+  onViewCourse,
+  onShowFinancialSummary,
+  onShowHistory,
+  onShowExpenseForm,
+  onShowExternalCourseForm
 }) {
   return (
     <div className="space-y-4">
@@ -31,6 +35,10 @@ export function CoursesList({
           onStatusFilterChange={onStatusFilterChange}
           courses={courses}
           onNewCourse={onNewCourse}
+          onShowFinancialSummary={onShowFinancialSummary}
+          onShowHistory={onShowHistory}
+          onShowExpenseForm={onShowExpenseForm}
+          onShowExternalCourseForm={onShowExternalCourseForm}
         />
       </Card>
 
@@ -69,5 +77,9 @@ CoursesList.propTypes = {
   onNewCourse: PropTypes.func.isRequired,
   onEditCourse: PropTypes.func.isRequired,
   onDeleteCourse: PropTypes.func.isRequired,
-  onViewCourse: PropTypes.func
+  onViewCourse: PropTypes.func,
+  onShowFinancialSummary: PropTypes.func.isRequired,
+  onShowHistory: PropTypes.func.isRequired,
+  onShowExpenseForm: PropTypes.func.isRequired,
+  onShowExternalCourseForm: PropTypes.func.isRequired
 };

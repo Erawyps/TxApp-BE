@@ -1,14 +1,20 @@
 // Import Dependencies
+import { 
+  PlusIcon, 
+  PrinterIcon, 
+  ArrowUpTrayIcon, 
+  CalendarIcon 
+} from "@heroicons/react/24/outline";
 import PropTypes from "prop-types";
 
 // Local Imports
 import { Card } from "components/ui";
+import { Button } from "components/ui";
 import { StatsCards } from "./StatsCards";
-import { QuickActions } from "./QuickActions";
 
 // ----------------------------------------------------------------------
 
-export function Dashboard({ driver, vehicle, totals, onNewCourse }) {
+export function Dashboard({ driver, vehicle, totals, onNewCourse, onShowHistory, onPrintReport }) {
   return (
     <div className="space-y-6">
       {/* Driver Info Card */}
@@ -32,8 +38,54 @@ export function Dashboard({ driver, vehicle, totals, onNewCourse }) {
       {/* Statistics Cards */}
       <StatsCards totals={totals} />
 
-      {/* Quick Actions */}
-      <QuickActions onNewCourse={onNewCourse} />
+      {/* Quick Actions - Modifié pour inclure historique et impression */}
+      <Card className="p-4">
+        <h3 className="text-lg font-semibold mb-4 text-gray-800 dark:text-dark-100">
+          Actions rapides
+        </h3>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <Button
+            variant="primary"
+            className="h-20 flex-col space-x-0 space-y-1"
+            onClick={onNewCourse}
+          >
+            <PlusIcon className="h-6 w-6" />
+            <span className="text-xs text-center leading-tight">
+              Nouvelle course
+            </span>
+          </Button>
+          <Button
+            variant="outlined"
+            className="h-20 flex-col space-x-0 space-y-1"
+            onClick={onShowHistory}
+          >
+            <CalendarIcon className="h-6 w-6" />
+            <span className="text-xs text-center leading-tight">
+              Historique
+            </span>
+          </Button>
+          <Button
+            variant="outlined"
+            className="h-20 flex-col space-x-0 space-y-1"
+            onClick={onPrintReport}
+          >
+            <PrinterIcon className="h-6 w-6" />
+            <span className="text-xs text-center leading-tight">
+              Imprimer rapport
+            </span>
+          </Button>
+          <Button
+            variant="outlined"
+            className="h-20 flex-col space-x-0 space-y-1"
+            onClick={() => console.log("Export data")}
+          >
+            <ArrowUpTrayIcon className="h-6 w-6" />
+            <span className="text-xs text-center leading-tight">
+              Exporter données
+            </span>
+          </Button>
+        </div>
+      </Card>
     </div>
   );
 }
@@ -53,5 +105,7 @@ Dashboard.propTypes = {
     coursesCount: PropTypes.number.isRequired,
     averagePerCourse: PropTypes.number.isRequired
   }).isRequired,
-  onNewCourse: PropTypes.func.isRequired
+  onNewCourse: PropTypes.func.isRequired,
+  onShowHistory: PropTypes.func.isRequired,
+  onPrintReport: PropTypes.func.isRequired
 };
