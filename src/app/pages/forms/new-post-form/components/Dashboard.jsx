@@ -8,8 +8,7 @@ import {
 import PropTypes from "prop-types";
 
 // Local Imports
-import { Card } from "components/ui";
-import { Button } from "components/ui";
+import { Card, Button } from "components/ui";
 import { StatsCards } from "./StatsCards";
 
 // ----------------------------------------------------------------------
