@@ -56,22 +56,64 @@ export default function TxApp() {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
 
-  // Print functionality
-  const printComponentRef = useRef();
-  const handlePrint = useReactToPrint({
-    content: () => printComponentRef.current,
-    documentTitle: `Feuille_de_route_${new Date().toLocaleDateString('fr-FR').replace(/\//g, '-')}`,
-    pageStyle: `
-      @page {
-        size: A4;
-        margin: 0.5in;
+  // Dans votre fichier index.jsx, remplacez la configuration handlePrint par ceci :
+
+// Print functionality
+const printComponentRef = useRef();
+const handlePrint = useReactToPrint({
+  content: () => printComponentRef.current,
+  documentTitle: `Feuille_de_route_${new Date().toLocaleDateString('fr-FR').replace(/\//g, '-')}`,
+  pageStyle: `
+    @page {
+      size: A4;
+      margin: 15mm;
+    }
+    
+    @media print {
+      * {
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
       }
-      @media print {
-        body { -webkit-print-color-adjust: exact; }
-        .page-break-before { page-break-before: always; }
+      
+      body {
+        margin: 0 !important;
+        padding: 0 !important;
+        font-size: 12px !important;
       }
-    `
-  });
+      
+      .print-container {
+        background: white !important;
+        color: black !important;
+        width: 100% !important;
+        max-width: none !important;
+        margin: 0 !important;
+        padding: 0 !important;
+      }
+      
+      table {
+        border-collapse: collapse !important;
+        width: 100% !important;
+      }
+      
+      th, td {
+        border: 1px solid black !important;
+        padding: 2px !important;
+        font-size: 10px !important;
+      }
+      
+      .page-break-before {
+        page-break-before: always !important;
+      }
+    }
+  `,
+  onBeforeGetContent: () => {
+    // Optionnel: préparer les données avant impression
+    console.log('Préparation de l\'impression...');
+  },
+  onAfterPrint: () => {
+    console.log('Impression terminée');
+  }
+});
 
   // Calculs des totaux - Seules les courses directes comptent pour le chauffeur
   const totals = useMemo(() => ({
