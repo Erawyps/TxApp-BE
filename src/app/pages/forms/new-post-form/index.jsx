@@ -1,5 +1,5 @@
 // Import Dependencies
-import { useState, useMemo, useRef } from "react";
+import { useState, useMemo } from "react";
 import { 
   ChartBarIcon, 
   ClockIcon, 
@@ -10,7 +10,9 @@ import {
 import { Fragment } from "react";
 import { Dialog, Transition, TransitionChild, DialogPanel, DialogTitle } from "@headlessui/react";
 import { XMarkIcon } from "@heroicons/react/24/outline";
-// Removed unused useReactToPrint import
+import { toast } from "sonner";
+import { generateAndDownloadReport } from "./utils/printUtils"; // Créez ce fichier
+
 
 // Local Imports
 import { Page } from "components/shared/Page";
@@ -25,7 +27,6 @@ import { FinancialSummary } from "./components/FinancialSummary";
 import { ExpenseForm } from "./components/ExpenseForm";
 import { ExternalCourseForm } from "./components/ExternalCourseForm";
 import { HistoryModal } from "./components/HistoryModal";
-import { PrintReport } from "./components/PrintReport";
 import { mockData } from "./data";
 
 // ----------------------------------------------------------------------
@@ -56,62 +57,20 @@ export default function TxApp() {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
 
-  // Dans votre fichier index.jsx, remplacez la configuration handlePrint par ceci :
 
-// Print functionality
-const printComponentRef = useRef();
-const handlePrintDirect = () => {
-  const printContent = printComponentRef.current?.innerHTML;
-  if (!printContent) {
-    console.error('Aucun contenu à imprimer');
-    return;
+const handleDownloadReport = () => {
+  try {
+    const fileName = generateAndDownloadReport(
+      shiftData, 
+      courses, 
+      mockData.driver, 
+      mockData.vehicles[0]
+    );
+    toast.success(`Feuille de route téléchargée : ${fileName}`);
+  } catch (error) {
+    console.error('Erreur lors du téléchargement:', error);
+    toast.error('Erreur lors du téléchargement de la feuille de route');
   }
-
-  const printWindow = window.open('', '_blank');
-  printWindow.document.write(`
-    <!DOCTYPE html>
-    <html>
-    <head>
-        <title>Feuille de Route</title>
-        <style>
-          body {
-            font-family: 'Times New Roman', serif;
-            font-size: 12px;
-            margin: 0;
-            padding: 20px;
-            background: white;
-            color: black;
-          }
-          
-          table {
-            border-collapse: collapse;
-            width: 100%;
-          }
-          
-          th, td {
-            border: 1px solid black;
-            padding: 4px;
-            font-size: 10px;
-          }
-          
-          .page-break-before {
-            page-break-before: always;
-          }
-          
-          @media print {
-            body { margin: 0; }
-            .page-break-before { page-break-before: always; }
-          }
-        </style>
-    </head>
-    <body>
-        ${printContent}
-    </body>
-    </html>
-  `);
-  printWindow.document.close();
-  printWindow.print();
-  printWindow.close();
 };
 
   // Calculs des totaux - Seules les courses directes comptent pour le chauffeur
@@ -234,7 +193,7 @@ const handlePrintDirect = () => {
                 totals={totals}
                 onNewCourse={handleNewCourse}
                 onShowHistory={() => setShowHistoryModal(true)}
-                onPrintReport={handlePrintDirect}
+                onPrintReport={handleDownloadReport}
               />
             )}
 
@@ -269,7 +228,7 @@ const handlePrintDirect = () => {
                 onEndShift={handleEndShift}
                 shiftData={shiftData}
                 driver={mockData.driver}
-                onPrintReport={handlePrintDirect}
+                onPrintReport={handleDownloadReport}
               />
             )}
           </div>
@@ -499,21 +458,10 @@ const handlePrintDirect = () => {
           vehicle={mockData.vehicles[0]}
         />
 
-        {/* Hidden Print Component */}
-        <div style={{ display: 'none' }}>
-          <PrintReport
-            ref={printComponentRef}
-            shiftData={shiftData}
-            courses={courses}
-            driver={mockData.driver}
-            vehicle={mockData.vehicles[0]}
-          />
-        </div>
-
         {/* Mobile Bottom Action */}
         <div className="fixed bottom-0 left-0 right-0 p-4 bg-white dark:bg-dark-700 border-t border-gray-200 dark:border-dark-500 md:hidden">
           <Button
-            onClick={handlePrintDirect}
+            onClick={handleDownloadReport}
             className="w-full space-x-2"
             variant="outlined"
           >
