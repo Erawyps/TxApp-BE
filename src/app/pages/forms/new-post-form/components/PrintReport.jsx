@@ -25,6 +25,13 @@ export const PrintReport = forwardRef(({ shiftData, courses, driver, vehicle }, 
   const safeDriver = driver || { prenom: '', nom: '' };
   const safeVehicle = vehicle || { plaque_immatriculation: '', numero_identification: '' };
 
+  // Fonction pour calculer les différences de mesures
+  const calculateDifference = (end, start) => {
+    const endVal = Number(end) || 0;
+    const startVal = Number(start) || 0;
+    return endVal - startVal;
+  };
+
   return (
     <div ref={ref} className="print-container">
       <style>{`
@@ -36,14 +43,15 @@ export const PrintReport = forwardRef(({ shiftData, courses, driver, vehicle }, 
           padding: 32px;
           max-width: 210mm;
           margin: 0 auto;
+          line-height: 1.4;
         }
         
         @media print {
           .print-container {
-            padding: 20px;
-            margin: 0;
-            max-width: none;
-            width: 100%;
+            padding: 15mm !important;
+            margin: 0 !important;
+            max-width: none !important;
+            width: 100% !important;
           }
           
           * {
@@ -52,15 +60,22 @@ export const PrintReport = forwardRef(({ shiftData, courses, driver, vehicle }, 
           }
           
           .page-break-before {
-            page-break-before: always;
+            page-break-before: always !important;
           }
           
           table {
-            border-collapse: collapse;
+            border-collapse: collapse !important;
+            width: 100% !important;
           }
           
           th, td {
             border: 1px solid black !important;
+            padding: 2px !important;
+            font-size: 10px !important;
+          }
+          
+          .no-break {
+            page-break-inside: avoid !important;
           }
         }
         
@@ -72,13 +87,20 @@ export const PrintReport = forwardRef(({ shiftData, courses, driver, vehicle }, 
         .header h1 {
           font-size: 20px;
           font-weight: bold;
-          margin-bottom: 8px;
+          margin: 0 0 8px 0;
+          text-transform: uppercase;
+        }
+        
+        .header-subtitle {
+          font-size: 14px;
+          margin-bottom: 16px;
         }
         
         .info-row {
           display: flex;
           justify-content: space-between;
           margin-bottom: 16px;
+          align-items: center;
         }
         
         .bordered-field {
@@ -86,22 +108,24 @@ export const PrintReport = forwardRef(({ shiftData, courses, driver, vehicle }, 
           display: inline-block;
           text-align: center;
           min-width: 120px;
-          padding-bottom: 2px;
+          padding: 2px 4px;
+          font-weight: normal;
         }
         
         .section-title {
           font-weight: bold;
           margin-bottom: 8px;
+          font-size: 14px;
         }
         
         .table-container {
-          margin-bottom: 16px;
+          margin-bottom: 20px;
         }
         
         table {
           width: 100%;
           border-collapse: collapse;
-          border: 1px solid black;
+          border: 2px solid black;
         }
         
         th, td {
@@ -109,6 +133,16 @@ export const PrintReport = forwardRef(({ shiftData, courses, driver, vehicle }, 
           padding: 4px;
           font-size: 10px;
           text-align: center;
+          vertical-align: middle;
+        }
+        
+        th {
+          background-color: #f0f0f0;
+          font-weight: bold;
+        }
+        
+        .text-left {
+          text-align: left !important;
         }
         
         .signature-section {
@@ -119,20 +153,26 @@ export const PrintReport = forwardRef(({ shiftData, courses, driver, vehicle }, 
         }
         
         .signature-box {
-          border-bottom: 1px solid black;
+          border-bottom: 2px solid black;
           width: 200px;
           height: 48px;
           display: flex;
           align-items: end;
           justify-content: center;
           padding-bottom: 4px;
+          font-weight: bold;
+        }
+        
+        .footer-note {
+          font-size: 10px;
+          font-style: italic;
         }
       `}</style>
 
       {/* En-tête */}
       <div className="header">
         <h1>FEUILLE DE ROUTE</h1>
-        <div style={{ fontSize: '14px' }}>(Identité de l&apos;exploitant)</div>
+        <div className="header-subtitle">(Identité de l&#39;exploitant)</div>
       </div>
 
       {/* Informations générales */}
@@ -152,11 +192,11 @@ export const PrintReport = forwardRef(({ shiftData, courses, driver, vehicle }, 
       </div>
 
       {/* Véhicule */}
-      <div style={{ marginBottom: '16px' }}>
+      <div style={{ marginBottom: '20px' }}>
         <div className="section-title">Véhicule</div>
         <div className="info-row">
           <div>
-            <span>n° plaque d&apos;immatriculation : </span>
+            <span>n° plaque d&#39;immatriculation : </span>
             <span className="bordered-field">
               {safeVehicle.plaque_immatriculation}
             </span>
@@ -164,62 +204,70 @@ export const PrintReport = forwardRef(({ shiftData, courses, driver, vehicle }, 
           <div>
             <span>n° identification : </span>
             <span className="bordered-field">
-              {safeVehicle.numero_identification}
+              {safeVehicle.numero_identification || 'N/A'}
             </span>
           </div>
         </div>
       </div>
 
       {/* Service - Table */}
-      <div className="table-container">
+      <div className="table-container no-break">
         <div className="section-title">Service</div>
         <table>
           <thead>
             <tr>
-              <th rowSpan="2">Heures des prestations</th>
-              <th rowSpan="2">Index km</th>
-              <th colSpan="2">Tableau de bord</th>
-              <th colSpan="5">Taximètre</th>
+              <th rowSpan="2" style={{ width: '12%' }}>Heures des prestations</th>
+              <th rowSpan="2" style={{ width: '8%' }}>Index km</th>
+              <th colSpan="2" style={{ width: '16%' }}>Tableau de bord</th>
+              <th colSpan="5" style={{ width: '64%' }}>Taximètre</th>
             </tr>
             <tr>
-              <th>Début</th>
-              <th>Fin</th>
-              <th>Prise en charge</th>
-              <th>Index Km (Km totaux)</th>
-              <th>Km en charge</th>
-              <th>Chutes (€)</th>
-              <th>Recettes</th>
+              <th style={{ width: '8%' }}>Début</th>
+              <th style={{ width: '8%' }}>Fin</th>
+              <th style={{ width: '12%' }}>Prise en charge</th>
+              <th style={{ width: '12%' }}>Index Km (Km totaux)</th>
+              <th style={{ width: '12%' }}>Km en charge</th>
+              <th style={{ width: '14%' }}>Chutes (€)</th>
+              <th style={{ width: '14%' }}>Recettes</th>
             </tr>
           </thead>
           <tbody>
             <tr>
-              <td>Début</td>
+              <td style={{ fontWeight: 'bold' }}>Début</td>
               <td>{formatTime(safeShiftData.heure_debut)}</td>
               <td>{formatNumber(safeShiftData.km_tableau_bord_debut)}</td>
-              <td></td>
+              <td>-</td>
               <td>{formatCurrency(safeShiftData.taximetre_prise_charge_debut)}</td>
               <td>{formatNumber(safeShiftData.taximetre_index_km_debut)}</td>
               <td>{formatNumber(safeShiftData.taximetre_km_charge_debut)}</td>
               <td>{formatCurrency(safeShiftData.taximetre_chutes_debut)}</td>
-              <td></td>
+              <td>-</td>
             </tr>
             <tr>
-              <td>Fin</td>
+              <td style={{ fontWeight: 'bold' }}>Fin</td>
               <td>{formatTime(safeShiftData.heure_fin)}</td>
+              <td>-</td>
               <td>{formatNumber(safeShiftData.km_tableau_bord_fin)}</td>
-              <td></td>
               <td>{formatCurrency(safeShiftData.taximetre_prise_charge_fin)}</td>
               <td>{formatNumber(safeShiftData.taximetre_index_km_fin)}</td>
               <td>{formatNumber(safeShiftData.taximetre_km_charge_fin)}</td>
               <td>{formatCurrency(safeShiftData.taximetre_chutes_fin)}</td>
-              <td></td>
+              <td>-</td>
             </tr>
-            <tr>
-              <td>Interruptions</td>
+            <tr style={{ backgroundColor: '#f8f9fa' }}>
+              <td style={{ fontWeight: 'bold' }}>Interruptions</td>
               <td>{formatTime(safeShiftData.interruptions)}</td>
-              <td colSpan="2">Total</td>
-              <td colSpan="4">Total</td>
-              <td style={{ fontWeight: 'bold' }}>{formatCurrency(totalRecettes)}</td>
+              <td colSpan="2" style={{ fontWeight: 'bold' }}>Total KM: {
+                calculateDifference(safeShiftData.km_tableau_bord_fin, safeShiftData.km_tableau_bord_debut)
+              }</td>
+              <td colSpan="4" style={{ fontWeight: 'bold' }}>
+                Différence Chutes: {formatCurrency(
+                  calculateDifference(safeShiftData.taximetre_chutes_fin, safeShiftData.taximetre_chutes_debut)
+                )} €
+              </td>
+              <td style={{ fontWeight: 'bold', backgroundColor: '#e8f5e8' }}>
+                {formatCurrency(totalRecettes)} €
+              </td>
             </tr>
           </tbody>
         </table>
@@ -231,40 +279,60 @@ export const PrintReport = forwardRef(({ shiftData, courses, driver, vehicle }, 
         <table>
           <thead>
             <tr>
-              <th rowSpan="2">N° ordre</th>
-              <th rowSpan="2">Index départ</th>
-              <th colSpan="3">Embarquement</th>
-              <th colSpan="3">Débarquement</th>
-              <th rowSpan="2">Prix taximètre</th>
-              <th rowSpan="2">Sommes perçues *</th>
+              <th rowSpan="2" style={{ width: '6%' }}>N° ordre</th>
+              <th rowSpan="2" style={{ width: '8%' }}>Index départ</th>
+              <th colSpan="3" style={{ width: '38%' }}>Embarquement</th>
+              <th colSpan="3" style={{ width: '38%' }}>Débarquement</th>
+              <th rowSpan="2" style={{ width: '10%' }}>Prix taximètre</th>
+              <th rowSpan="2" style={{ width: '10%' }}>Sommes perçues *</th>
             </tr>
             <tr>
-              <th>Index</th>
-              <th>Lieu</th>
-              <th>Heure</th>
-              <th>Index</th>
-              <th>Lieu</th>
-              <th>Heure</th>
+              <th style={{ width: '8%' }}>Index</th>
+              <th style={{ width: '20%' }}>Lieu</th>
+              <th style={{ width: '10%' }}>Heure</th>
+              <th style={{ width: '8%' }}>Index</th>
+              <th style={{ width: '20%' }}>Lieu</th>
+              <th style={{ width: '10%' }}>Heure</th>
             </tr>
           </thead>
           <tbody>
-            {Array.from({ length: Math.max(12, courses?.length || 0) }, (_, i) => {
+            {Array.from({ length: Math.max(15, courses?.length || 0) }, (_, i) => {
               const course = courses?.[i];
               return (
-                <tr key={i}>
-                  <td>{course?.numero_ordre ? String(course.numero_ordre).padStart(3, '0') : String(i + 1).padStart(3, '0')}</td>
+                <tr key={i} style={{ minHeight: '24px' }}>
+                  <td style={{ fontWeight: course ? 'bold' : 'normal' }}>
+                    {course?.numero_ordre ? String(course.numero_ordre).padStart(3, '0') : String(i + 1).padStart(3, '0')}
+                  </td>
                   <td>{formatNumber(course?.index_depart)}</td>
                   <td>{formatNumber(course?.index_embarquement)}</td>
-                  <td style={{ textAlign: 'left', fontSize: '9px' }}>{course?.lieu_embarquement || ''}</td>
+                  <td className="text-left" style={{ fontSize: '9px', padding: '2px' }}>
+                    {course?.lieu_embarquement ? course.lieu_embarquement.substring(0, 25) + (course.lieu_embarquement.length > 25 ? '...' : '') : ''}
+                  </td>
                   <td>{formatTime(course?.heure_embarquement)}</td>
                   <td>{formatNumber(course?.index_debarquement)}</td>
-                  <td style={{ textAlign: 'left', fontSize: '9px' }}>{course?.lieu_debarquement || ''}</td>
+                  <td className="text-left" style={{ fontSize: '9px', padding: '2px' }}>
+                    {course?.lieu_debarquement ? course.lieu_debarquement.substring(0, 25) + (course.lieu_debarquement.length > 25 ? '...' : '') : ''}
+                  </td>
                   <td>{formatTime(course?.heure_debarquement)}</td>
                   <td>{course ? formatCurrency(course.prix_taximetre) : ''}</td>
-                  <td>{course ? formatCurrency(course.sommes_percues) : ''}</td>
+                  <td style={{ fontWeight: course ? 'bold' : 'normal' }}>
+                    {course ? formatCurrency(course.sommes_percues) : ''}
+                  </td>
                 </tr>
               );
             })}
+            {/* Ligne de total */}
+            <tr style={{ backgroundColor: '#f0f0f0', borderTop: '2px solid black' }}>
+              <td colSpan="8" style={{ textAlign: 'right', fontWeight: 'bold', padding: '6px' }}>
+                TOTAL DES RECETTES :
+              </td>
+              <td style={{ fontWeight: 'bold', fontSize: '12px' }}>
+                {formatCurrency(totalRecettes)} €
+              </td>
+              <td style={{ fontWeight: 'bold', fontSize: '12px', backgroundColor: '#e8f5e8' }}>
+                {courses?.length || 0} courses
+              </td>
+            </tr>
           </tbody>
         </table>
       </div>
@@ -272,22 +340,27 @@ export const PrintReport = forwardRef(({ shiftData, courses, driver, vehicle }, 
       {/* Signature */}
       <div className="signature-section">
         <div>
-          <div style={{ fontSize: '10px' }}>* Après déduction d&apos;une remise commerciale éventuelle.</div>
+          <div className="footer-note">* Après déduction d&#39;une remise commerciale éventuelle.</div>
+          <div className="footer-note" style={{ marginTop: '8px' }}>
+            Feuille générée le {new Date().toLocaleDateString('fr-FR')} à {new Date().toLocaleTimeString('fr-FR')}
+          </div>
         </div>
         <div style={{ textAlign: 'right' }}>
-          <div style={{ fontSize: '10px', marginBottom: '8px' }}>Signature du chauffeur :</div>
+          <div style={{ fontSize: '12px', marginBottom: '8px', fontWeight: 'bold' }}>
+            Signature du chauffeur :
+          </div>
           <div className="signature-box">
             {safeDriver.prenom} {safeDriver.nom}
           </div>
         </div>
       </div>
 
-      {/* Page 2 si plus de 12 courses */}
-      {courses && courses.length > 12 && (
+      {/* Page 2 si plus de 15 courses */}
+      {courses && courses.length > 15 && (
         <div className="page-break-before">
           <div className="header">
             <h1>FEUILLE DE ROUTE (suite)</h1>
-            <div style={{ fontSize: '14px' }}>(Identité de l&apos;exploitant)</div>
+            <div className="header-subtitle">(Identité de l&#39;exploitant)</div>
           </div>
 
           <div className="info-row">
@@ -309,7 +382,7 @@ export const PrintReport = forwardRef(({ shiftData, courses, driver, vehicle }, 
             <div className="section-title">Véhicule</div>
             <div className="info-row">
               <div>
-                <span>n° plaque d&apos;immatriculation : </span>
+                <span>n° plaque d&#39;immatriculation : </span>
                 <span className="bordered-field">
                   {safeVehicle.plaque_immatriculation}
                 </span>
@@ -317,12 +390,13 @@ export const PrintReport = forwardRef(({ shiftData, courses, driver, vehicle }, 
               <div>
                 <span>n° identification : </span>
                 <span className="bordered-field">
-                  {safeVehicle.numero_identification}
+                  {safeVehicle.numero_identification || 'N/A'}
                 </span>
               </div>
             </div>
           </div>
 
+          <div className="section-title">Courses (suite)</div>
           <table>
             <thead>
               <tr>
@@ -343,21 +417,29 @@ export const PrintReport = forwardRef(({ shiftData, courses, driver, vehicle }, 
               </tr>
             </thead>
             <tbody>
-              {Array.from({ length: 16 }, (_, i) => {
-                const courseIndex = i + 12;
+              {Array.from({ length: 20 }, (_, i) => {
+                const courseIndex = i + 15;
                 const course = courses[courseIndex];
                 return (
                   <tr key={courseIndex}>
-                    <td>{courseIndex + 1}</td>
+                    <td style={{ fontWeight: course ? 'bold' : 'normal' }}>
+                      {course?.numero_ordre ? String(course.numero_ordre).padStart(3, '0') : String(courseIndex + 1).padStart(3, '0')}
+                    </td>
                     <td>{formatNumber(course?.index_depart)}</td>
                     <td>{formatNumber(course?.index_embarquement)}</td>
-                    <td style={{ textAlign: 'left', fontSize: '9px' }}>{course?.lieu_embarquement || ''}</td>
+                    <td className="text-left" style={{ fontSize: '9px' }}>
+                      {course?.lieu_embarquement ? course.lieu_embarquement.substring(0, 25) + (course.lieu_embarquement.length > 25 ? '...' : '') : ''}
+                    </td>
                     <td>{formatTime(course?.heure_embarquement)}</td>
                     <td>{formatNumber(course?.index_debarquement)}</td>
-                    <td style={{ textAlign: 'left', fontSize: '9px' }}>{course?.lieu_debarquement || ''}</td>
+                    <td className="text-left" style={{ fontSize: '9px' }}>
+                      {course?.lieu_debarquement ? course.lieu_debarquement.substring(0, 25) + (course.lieu_debarquement.length > 25 ? '...' : '') : ''}
+                    </td>
                     <td>{formatTime(course?.heure_debarquement)}</td>
                     <td>{course ? formatCurrency(course.prix_taximetre) : ''}</td>
-                    <td>{course ? formatCurrency(course.sommes_percues) : ''}</td>
+                    <td style={{ fontWeight: course ? 'bold' : 'normal' }}>
+                      {course ? formatCurrency(course.sommes_percues) : ''}
+                    </td>
                   </tr>
                 );
               })}
@@ -366,10 +448,12 @@ export const PrintReport = forwardRef(({ shiftData, courses, driver, vehicle }, 
 
           <div className="signature-section">
             <div>
-              <div style={{ fontSize: '10px' }}>† Après déduction d&apos;une remise commerciale éventuelle.</div>
+              <div className="footer-note">† Après déduction d&#39;une remise commerciale éventuelle.</div>
             </div>
             <div style={{ textAlign: 'right' }}>
-              <div style={{ fontSize: '10px', marginBottom: '8px' }}>Signature du chauffeur :</div>
+              <div style={{ fontSize: '12px', marginBottom: '8px', fontWeight: 'bold' }}>
+                Signature du chauffeur :
+              </div>
               <div className="signature-box">
                 {safeDriver.prenom} {safeDriver.nom}
               </div>
