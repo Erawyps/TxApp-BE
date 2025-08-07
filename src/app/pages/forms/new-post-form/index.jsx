@@ -21,69 +21,12 @@ import { CoursesList } from "./components/CoursesList";
 import { CourseForm } from "./components/CourseForm";
 import { EndShiftForm } from "./components/EndShiftForm";
 import { VehicleModal } from "./components/VehicleModal";
+import { FinancialSummary } from "./components/FinancialSummary";
 import { ExpenseForm } from "./components/ExpenseForm";
 import { ExternalCourseForm } from "./components/ExternalCourseForm";
+import { HistoryModal } from "./components/HistoryModal";
 import { PrintReport } from "./components/PrintReport";
 import { mockData } from "./data";
-
-// Composants temporaires pour éviter les erreurs
-const FinancialSummary = ({ courses, expenses, externalCourses }) => (
-  <div className="p-4">
-    <h3 className="text-lg font-semibold mb-4">Résumé Financier</h3>
-    <div className="space-y-2">
-      <p>Courses: {courses.length}</p>
-      <p>Total recettes: {courses.reduce((sum, c) => sum + (c.sommes_percues || 0), 0).toFixed(2)} €</p>
-      <p>Dépenses: {expenses.length}</p>
-      <p>Courses externes: {externalCourses.length}</p>
-    </div>
-  </div>
-);
-
-const HistoryModal = ({ isOpen, onClose }) => (
-  <Transition show={isOpen} as={Fragment}>
-    <Dialog as="div" className="relative z-50" onClose={onClose}>
-      <TransitionChild
-        as={Fragment}
-        enter="ease-out duration-300"
-        enterFrom="opacity-0"
-        enterTo="opacity-100"
-        leave="ease-in duration-200"
-        leaveFrom="opacity-100"
-        leaveTo="opacity-0"
-      >
-        <div className="fixed inset-0 bg-black/50" />
-      </TransitionChild>
-
-      <div className="fixed inset-0 overflow-y-auto">
-        <div className="flex min-h-full items-center justify-center p-4">
-          <TransitionChild
-            as={Fragment}
-            enter="ease-out duration-300"
-            enterFrom="opacity-0 scale-95"
-            enterTo="opacity-100 scale-100"
-            leave="ease-in duration-200"
-            leaveFrom="opacity-100 scale-100"
-            leaveTo="opacity-0 scale-95"
-          >
-            <DialogPanel className="w-full max-w-2xl transform overflow-hidden rounded-lg bg-white dark:bg-dark-700 shadow-xl transition-all">
-              <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-dark-500">
-                <DialogTitle className="text-lg font-semibold text-gray-800 dark:text-dark-100">
-                  📅 Historique
-                </DialogTitle>
-                <Button variant="ghost" className="h-8 w-8 p-0" onClick={onClose}>
-                  <XMarkIcon className="h-5 w-5" />
-                </Button>
-              </div>
-              <div className="p-6">
-                <p>Historique des courses précédentes...</p>
-              </div>
-            </DialogPanel>
-          </TransitionChild>
-        </div>
-      </div>
-    </Dialog>
-  </Transition>
-);
 
 // ----------------------------------------------------------------------
 
@@ -113,182 +56,66 @@ export default function TxApp() {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
 
-  // Print functionality - Configuration corrigée
-  const printComponentRef = useRef();
-  
-  const handlePrint = useReactToPrint({
-    content: () => printComponentRef.current,
-    documentTitle: `Feuille_de_route_${new Date().toLocaleDateString('fr-FR').replace(/\//g, '-')}`,
-    onBeforeGetContent: () => {
-      console.log('Préparation de l\'impression...');
-      return Promise.resolve();
-    },
-    onAfterPrint: () => {
-      console.log('Impression terminée');
-    },
-    removeAfterPrint: true,
-    pageStyle: `
-      @page {
-        size: A4;
-        margin: 15mm;
-      }
-      
-      @media print {
-        * {
-          -webkit-print-color-adjust: exact !important;
-          print-color-adjust: exact !important;
-        }
-        
-        body {
-          margin: 0 !important;
-          padding: 0 !important;
-          font-size: 12px !important;
-        }
-        
-        .print-container {
-          background: white !important;
-          color: black !important;
-          width: 100% !important;
-          max-width: none !important;
-          margin: 0 !important;
-          padding: 0 !important;
-        }
-        
-        table {
-          border-collapse: collapse !important;
-          width: 100% !important;
-        }
-        
-        th, td {
-          border: 1px solid black !important;
-          padding: 2px !important;
-          font-size: 10px !important;
-        }
-        
-        .page-break-before {
-          page-break-before: always !important;
-        }
-      }
-    `
-  });
+  // Dans votre fichier index.jsx, remplacez la configuration handlePrint par ceci :
 
-  // Alternative: Fonction de téléchargement PDF si l'impression ne fonctionne pas
-  const handleDownloadPDF = () => {
-    if (typeof window !== 'undefined' && window.print) {
-      // Créer une nouvelle fenêtre pour l'impression
-      const printWindow = window.open('', '_blank', 'width=800,height=600');
+// Print functionality
+const printComponentRef = useRef();
+const handlePrint = useReactToPrint({
+  content: () => printComponentRef.current,
+  documentTitle: `Feuille_de_route_${new Date().toLocaleDateString('fr-FR').replace(/\//g, '-')}`,
+  pageStyle: `
+    @page {
+      size: A4;
+      margin: 15mm;
+    }
+    
+    @media print {
+      * {
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+      }
       
-      if (printWindow && printComponentRef.current) {
-        const printContent = printComponentRef.current.innerHTML;
-        
-        printWindow.document.write(`
-          <!DOCTYPE html>
-          <html>
-            <head>
-              <title>Feuille de route</title>
-              <style>
-                body { 
-                  margin: 0; 
-                  padding: 20px; 
-                  font-family: 'Times New Roman', serif; 
-                  font-size: 12px;
-                  background: white;
-                  color: black;
-                }
-                
-                .print-container {
-                  background: white !important;
-                  color: black !important;
-                  font-family: 'Times New Roman', serif;
-                  font-size: 12px;
-                  padding: 32px;
-                  max-width: 210mm;
-                  margin: 0 auto;
-                }
-                
-                table {
-                  width: 100%;
-                  border-collapse: collapse;
-                  border: 1px solid black;
-                }
-                
-                th, td {
-                  border: 1px solid black;
-                  padding: 4px;
-                  font-size: 10px;
-                  text-align: center;
-                }
-                
-                .header {
-                  text-align: center;
-                  margin-bottom: 24px;
-                }
-                
-                .header h1 {
-                  font-size: 20px;
-                  font-weight: bold;
-                  margin-bottom: 8px;
-                }
-                
-                .info-row {
-                  display: flex;
-                  justify-content: space-between;
-                  margin-bottom: 16px;
-                }
-                
-                .bordered-field {
-                  border-bottom: 1px solid black;
-                  display: inline-block;
-                  text-align: center;
-                  min-width: 120px;
-                  padding-bottom: 2px;
-                }
-                
-                .section-title {
-                  font-weight: bold;
-                  margin-bottom: 8px;
-                }
-                
-                .signature-section {
-                  display: flex;
-                  justify-content: space-between;
-                  align-items: end;
-                  margin-top: 32px;
-                }
-                
-                .signature-box {
-                  border-bottom: 1px solid black;
-                  width: 200px;
-                  height: 48px;
-                  display: flex;
-                  align-items: end;
-                  justify-content: center;
-                  padding-bottom: 4px;
-                }
-                
-                @media print {
-                  body { margin: 0; padding: 0; }
-                  .print-container { padding: 20px; max-width: none; }
-                }
-              </style>
-            </head>
-            <body>
-              ${printContent}
-            </body>
-          </html>
-        `);
-        
-        printWindow.document.close();
-        
-        setTimeout(() => {
-          printWindow.print();
-          printWindow.close();
-        }, 250);
+      body {
+        margin: 0 !important;
+        padding: 0 !important;
+        font-size: 12px !important;
+      }
+      
+      .print-container {
+        background: white !important;
+        color: black !important;
+        width: 100% !important;
+        max-width: none !important;
+        margin: 0 !important;
+        padding: 0 !important;
+      }
+      
+      table {
+        border-collapse: collapse !important;
+        width: 100% !important;
+      }
+      
+      th, td {
+        border: 1px solid black !important;
+        padding: 2px !important;
+        font-size: 10px !important;
+      }
+      
+      .page-break-before {
+        page-break-before: always !important;
       }
     }
-  };
+  `,
+  onBeforeGetContent: () => {
+    // Optionnel: préparer les données avant impression
+    console.log('Préparation de l\'impression...');
+  },
+  onAfterPrint: () => {
+    console.log('Impression terminée');
+  }
+});
 
-  // Calculs des totaux
+  // Calculs des totaux - Seules les courses directes comptent pour le chauffeur
   const totals = useMemo(() => ({
     recettes: courses.reduce((sum, course) => sum + (course.sommes_percues || 0), 0),
     coursesCount: courses.length,
@@ -349,7 +176,9 @@ export default function TxApp() {
       ...endData
     };
     console.log('Complete shift data:', completeShiftData);
+    // Mettre à jour shiftData avec les informations de fin
     setShiftData(completeShiftData);
+    // Optionnel: afficher un message de succès ou rediriger
   };
 
   const handleShowVehicleInfo = () => {
@@ -682,26 +511,16 @@ export default function TxApp() {
           />
         </div>
 
-        {/* Mobile Bottom Action with two options */}
+        {/* Mobile Bottom Action */}
         <div className="fixed bottom-0 left-0 right-0 p-4 bg-white dark:bg-dark-700 border-t border-gray-200 dark:border-dark-500 md:hidden">
-          <div className="flex gap-2">
-            <Button
-              onClick={handlePrint}
-              className="flex-1 space-x-2"
-              variant="outlined"
-            >
-              <PrinterIcon className="h-5 w-5" />
-              <span>🖨️ Imprimer</span>
-            </Button>
-            <Button
-              onClick={handleDownloadPDF}
-              className="flex-1 space-x-2"
-              variant="primary"
-            >
-              <PrinterIcon className="h-5 w-5" />
-              <span>📄 PDF</span>
-            </Button>
-          </div>
+          <Button
+            onClick={handlePrint}
+            className="w-full space-x-2"
+            variant="outlined"
+          >
+            <PrinterIcon className="h-5 w-5" />
+            <span>🖨️ Imprimer feuille de route</span>
+          </Button>
         </div>
       </div>
     </Page>
