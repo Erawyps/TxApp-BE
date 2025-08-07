@@ -11,8 +11,7 @@ import { Fragment } from "react";
 import { Dialog, Transition, TransitionChild, DialogPanel, DialogTitle } from "@headlessui/react";
 import { XMarkIcon } from "@heroicons/react/24/outline";
 import { toast } from "sonner";
-import { generateAndDownloadReport } from "./utils/printUtils"; // Créez ce fichier
-
+import { generateAndDownloadReport } from "./utils/printUtils";
 
 // Local Imports
 import { Page } from "components/shared/Page";

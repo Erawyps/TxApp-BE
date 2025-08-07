@@ -2,7 +2,9 @@
 import jsPDF from 'jspdf';
 
 export const generateAndDownloadReport = (shiftData, courses, driver, vehicle) => {
-  const doc = new jsPDF('p', 'mm', 'a4');
+  try {
+    // Créer un nouveau document PDF
+    const doc = new jsPDF('p', 'mm', 'a4');
 
   // Données sécurisées
   const safeShiftData = shiftData || {};
@@ -359,10 +361,14 @@ export const generateAndDownloadReport = (shiftData, courses, driver, vehicle) =
     }
 
   // Télécharger le PDF
-  const fileName = `Feuille_de_Route_${safeDriver.prenom}_${safeDriver.nom}_${
-    safeShiftData?.date ? safeShiftData.date.replace(/-/g, '') : new Date().toISOString().split('T')[0].replace(/-/g, '')
-  }.pdf`;
-  
-  doc.save(fileName);
-  return fileName;
+    const fileName = `Feuille_de_Route_${driver.prenom}_${driver.nom}_${
+      shiftData?.date ? shiftData.date.replace(/-/g, '') : new Date().toISOString().split('T')[0].replace(/-/g, '')
+    }.pdf`;
+    
+    doc.save(fileName);
+    return fileName;
+  } catch (error) {
+    console.error('Erreur lors de la génération du PDF:', error);
+    throw error;
+  }
 };
