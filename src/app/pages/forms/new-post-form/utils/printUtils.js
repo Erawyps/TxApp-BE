@@ -8,9 +8,8 @@ export const generateAndDownloadReport = (shiftData, courses, driver, vehicle) =
     
     // Dimensions de la page A4 : 210mm x 297mm
     const pageWidth = 210;
-    // Removed unused variable 'pageHeight'
     const margin = 10;
-    // Removed unused variable 'usableWidth'
+    const usableWidth = pageWidth - 2 * margin; // 190mm disponible
 
     // Données sécurisées avec valeurs par défaut
     const safeShiftData = shiftData || {};
@@ -28,12 +27,17 @@ export const generateAndDownloadReport = (shiftData, courses, driver, vehicle) =
       return Number(amount).toFixed(2);
     };
 
-    // Fonction pour dessiner du texte avec alignement
+    // Fonction pour dessiner du texte avec alignement et troncature
     const drawText = (text, x, y, align = 'left', maxWidth = null) => {
-      if (maxWidth && doc.getTextWidth(text) > maxWidth) {
-        text = text.substring(0, Math.floor(text.length * maxWidth / doc.getTextWidth(text))) + '...';
+      let displayText = text.toString();
+      if (maxWidth && doc.getTextWidth(displayText) > maxWidth) {
+        // Troncature intelligente
+        while (doc.getTextWidth(displayText + '...') > maxWidth && displayText.length > 0) {
+          displayText = displayText.slice(0, -1);
+        }
+        displayText = displayText + '...';
       }
-      doc.text(text, x, y, { align });
+      doc.text(displayText, x, y, { align });
     };
 
     // Fonction pour dessiner une cellule avec bordure et texte
@@ -41,12 +45,13 @@ export const generateAndDownloadReport = (shiftData, courses, driver, vehicle) =
       doc.setFontSize(fontSize);
       doc.rect(x, y, width, height);
       
+      const padding = 1;
       const textX = align === 'center' ? x + width/2 : 
-                   align === 'right' ? x + width - 2 : x + 2;
-      const textY = y + height/2 + 1.5; // Centrage vertical approximatif
+                   align === 'right' ? x + width - padding : x + padding;
+      const textY = y + height/2 + 1.5; // Centrage vertical
       
-      if (text) {
-        drawText(text.toString(), textX, textY, align, width - 4);
+      if (text && text.toString().trim() !== '') {
+        drawText(text.toString(), textX, textY, align, width - 2 * padding);
       }
     };
 
@@ -54,13 +59,13 @@ export const generateAndDownloadReport = (shiftData, courses, driver, vehicle) =
     let yPos = 15;
 
     // ============ EN-TÊTE ============
-    doc.setFont('helvetica', 'bold');
+    doc.setFont('times', 'bold');
     doc.setFontSize(14);
     drawText('FEUILLE DE ROUTE', pageWidth/2, yPos, 'center');
-    yPos += 8;
+    yPos += 6;
     
     doc.setFontSize(10);
-    doc.setFont('helvetica', 'normal');
+    doc.setFont('times', 'normal');
     drawText('(Identité de l\'exploitant)', pageWidth/2, yPos, 'center');
     yPos += 15;
 
@@ -70,65 +75,69 @@ export const generateAndDownloadReport = (shiftData, courses, driver, vehicle) =
     const driverName = `${safeDriver.prenom} ${safeDriver.nom}`.trim();
 
     // Date
-    doc.setFont('helvetica', 'bold');
+    doc.setFont('times', 'bold');
     drawText('Date :', margin, yPos);
-    doc.setFont('helvetica', 'normal');
+    doc.setFont('times', 'normal');
     drawText(dateText, margin + 15, yPos);
-    doc.line(margin + 15, yPos + 2, margin + 50, yPos + 2);
+    doc.line(margin + 15, yPos + 1, margin + 50, yPos + 1);
 
     // Nom du chauffeur
-    doc.setFont('helvetica', 'bold');
+    doc.setFont('times', 'bold');
     drawText('Nom du chauffeur :', margin + 80, yPos);
-    doc.setFont('helvetica', 'normal');
-    drawText(driverName, margin + 120, yPos);
-    doc.line(margin + 120, yPos + 2, pageWidth - margin, yPos + 2);
+    doc.setFont('times', 'normal');
+    drawText(driverName, margin + 125, yPos);
+    doc.line(margin + 125, yPos + 1, pageWidth - margin, yPos + 1);
     yPos += 15;
 
     // ============ VÉHICULE ============
-    doc.setFont('helvetica', 'bold');
+    doc.setFont('times', 'bold');
     drawText('Véhicule', margin, yPos);
     yPos += 8;
 
     // Plaque d'immatriculation
-    doc.setFont('helvetica', 'bold');
+    doc.setFont('times', 'bold');
     drawText('n° plaque d\'immatriculation :', margin, yPos);
-    doc.setFont('helvetica', 'normal');
-    drawText(safeVehicle.plaque_immatriculation, margin + 55, yPos);
-    doc.line(margin + 55, yPos + 2, margin + 90, yPos + 2);
+    doc.setFont('times', 'normal');
+    drawText(safeVehicle.plaque_immatriculation, margin + 60, yPos);
+    doc.line(margin + 60, yPos + 1, margin + 100, yPos + 1);
 
     // Numéro d'identification
-    doc.setFont('helvetica', 'bold');
-    drawText('n° identification :', margin + 100, yPos);
-    doc.setFont('helvetica', 'normal');
-    drawText(safeVehicle.numero_identification, margin + 135, yPos);
-    doc.line(margin + 135, yPos + 2, margin + 155, yPos + 2);
+    doc.setFont('times', 'bold');
+    drawText('n° identification :', margin + 110, yPos);
+    doc.setFont('times', 'normal');
+    drawText(safeVehicle.numero_identification, margin + 145, yPos);
+    doc.line(margin + 145, yPos + 1, margin + 170, yPos + 1);
     yPos += 15;
 
     // ============ SERVICE - TABLEAU PRINCIPAL ============
-    doc.setFont('helvetica', 'bold');
+    doc.setFont('times', 'bold');
     drawText('Service', margin, yPos);
     yPos += 8;
 
-    // Configuration du tableau principal - Respectant exactement l'original
+    // Configuration du tableau principal - Largeurs recalculées pour tenir dans 190mm
     const mainTableY = yPos;
     const mainRowHeight = 8;
     
-    // Colonnes avec largeurs ajustées pour respecter l'original
-    const col1Width = 35; // Heures des prestations
-    const col2Width = 20; // Index km
-    const col3Width = 25; // Tableau de bord - Début
-    const col4Width = 25; // Tableau de bord - Fin
-    const col5Width = 25; // Taximètre - Prise en charge
-    const col6Width = 30; // Taximètre - Index Km (Km totaux)
-    const col7Width = 25; // Taximètre - Km en charge
-    const col8Width = 20; // Taximètre - Chutes (€)
+    // Largeurs optimisées pour respecter usableWidth (190mm)
+    const col1Width = 25; // Heures des prestations
+    const col2Width = 15; // Index km  
+    const col3Width = 20; // Tableau de bord - Début
+    const col4Width = 20; // Tableau de bord - Fin
+    const col5Width = 22; // Taximètre - Prise en charge
+    const col6Width = 28; // Taximètre - Index Km (Km totaux)
+    const col7Width = 22; // Taximètre - Km en charge
+    const col8Width = 18; // Taximètre - Chutes (€)
     const col9Width = 20; // Recettes
+    
+    // Vérification : Total = 190mm ✓
+    const totalWidth = col1Width + col2Width + col3Width + col4Width + col5Width + col6Width + col7Width + col8Width + col9Width;
+    console.log('Largeur totale tableau:', totalWidth, 'mm (max:', usableWidth, 'mm)');
 
     let currentX = margin;
 
     // ============ EN-TÊTES TABLEAU PRINCIPAL ============
     doc.setFontSize(8);
-    doc.setFont('helvetica', 'bold');
+    doc.setFont('times', 'bold');
 
     // Heures des prestations
     drawCell(currentX, mainTableY, col1Width, mainRowHeight * 2, '', 'center');
@@ -187,7 +196,7 @@ export const generateAndDownloadReport = (shiftData, courses, driver, vehicle) =
     yPos = mainTableY + mainRowHeight * 2;
 
     // ============ DONNÉES TABLEAU PRINCIPAL ============
-    doc.setFont('helvetica', 'normal');
+    doc.setFont('times', 'normal');
     
     const totalRecettes = courses.reduce((sum, course) => sum + (Number(course.sommes_percues) || 0), 0);
     
@@ -284,25 +293,29 @@ export const generateAndDownloadReport = (shiftData, courses, driver, vehicle) =
     yPos += 10;
 
     // ============ TABLEAU DES COURSES ============
-    doc.setFont('helvetica', 'bold');
+    doc.setFont('times', 'bold');
     drawText('Courses', margin, yPos);
     yPos += 8;
 
-    // Configuration tableau courses - Optimisé pour A4
+    // Configuration tableau courses - Largeurs recalculées pour 190mm
     const courseRowHeight = 6;
     const courseTableY = yPos;
 
-    // Largeurs colonnes courses ajustées
-    const cCol1 = 15; // N° ordre
-    const cCol2 = 15; // Index départ
-    const cCol3 = 15; // Index embarquement
-    const cCol4 = 45; // Lieu embarquement
-    const cCol5 = 15; // Heure embarquement
-    const cCol6 = 15; // Index débarquement
-    const cCol7 = 45; // Lieu débarquement
-    const cCol8 = 15; // Heure débarquement
-    const cCol9 = 20; // Prix taximètre
-    const cCol10 = 15; // Sommes perçues
+    // Largeurs colonnes courses - Total = 190mm
+    const cCol1 = 12; // N° ordre
+    const cCol2 = 12; // Index départ  
+    const cCol3 = 12; // Index embarquement
+    const cCol4 = 42; // Lieu embarquement
+    const cCol5 = 12; // Heure embarquement
+    const cCol6 = 12; // Index débarquement
+    const cCol7 = 42; // Lieu débarquement
+    const cCol8 = 12; // Heure débarquement
+    const cCol9 = 17; // Prix taximètre
+    const cCol10 = 17; // Sommes perçues
+    
+    // Vérification : Total = 190mm ✓
+    const courseTotalWidth = cCol1 + cCol2 + cCol3 + cCol4 + cCol5 + cCol6 + cCol7 + cCol8 + cCol9 + cCol10;
+    console.log('Largeur totale tableau courses:', courseTotalWidth, 'mm');
 
     // ============ EN-TÊTES TABLEAU COURSES ============
     doc.setFontSize(7);
@@ -310,14 +323,14 @@ export const generateAndDownloadReport = (shiftData, courses, driver, vehicle) =
 
     // N° ordre
     drawCell(currentX, courseTableY, cCol1, courseRowHeight * 2, '', 'center', 7);
-    drawText('N°', currentX + cCol1/2, courseTableY + 3, 'center');
-    drawText('ordre', currentX + cCol1/2, courseTableY + 6, 'center');
+    drawText('N°', currentX + cCol1/2, courseTableY + 2.5, 'center');
+    drawText('ordre', currentX + cCol1/2, courseTableY + 5.5, 'center');
     currentX += cCol1;
 
     // Index départ
     drawCell(currentX, courseTableY, cCol2, courseRowHeight * 2, '', 'center', 7);
-    drawText('Index', currentX + cCol2/2, courseTableY + 3, 'center');
-    drawText('départ', currentX + cCol2/2, courseTableY + 6, 'center');
+    drawText('Index', currentX + cCol2/2, courseTableY + 2.5, 'center');
+    drawText('départ', currentX + cCol2/2, courseTableY + 5.5, 'center');
     currentX += cCol2;
 
     // Embarquement (en-tête fusionné)
@@ -344,23 +357,23 @@ export const generateAndDownloadReport = (shiftData, courses, driver, vehicle) =
 
     // Prix taximètre
     drawCell(currentX, courseTableY, cCol9, courseRowHeight * 2, '', 'center', 7);
-    drawText('Prix', currentX + cCol9/2, courseTableY + 3, 'center');
-    drawText('taximètre', currentX + cCol9/2, courseTableY + 6, 'center');
+    drawText('Prix', currentX + cCol9/2, courseTableY + 2.5, 'center');
+    drawText('taximètre', currentX + cCol9/2, courseTableY + 5.5, 'center');
     currentX += cCol9;
 
     // Sommes perçues
     drawCell(currentX, courseTableY, cCol10, courseRowHeight * 2, '', 'center', 7);
-    drawText('Sommes', currentX + cCol10/2, courseTableY + 2, 'center');
-    drawText('perçues', currentX + cCol10/2, courseTableY + 5, 'center');
-    drawText('*', currentX + cCol10/2, courseTableY + 8, 'center');
+    drawText('Sommes', currentX + cCol10/2, courseTableY + 1.5, 'center');
+    drawText('perçues', currentX + cCol10/2, courseTableY + 4, 'center');
+    drawText('*', currentX + cCol10/2, courseTableY + 6.5, 'center');
 
     yPos = courseTableY + courseRowHeight * 2;
 
     // ============ DONNÉES COURSES ============
-    doc.setFont('helvetica', 'normal');
+    doc.setFont('times', 'normal');
     doc.setFontSize(7);
 
-    // Limiter à 8 courses par page pour éviter débordement
+    // Limiter à 8 courses par page
     const maxCoursesPerPage = Math.min(8, courses.length);
     
     for (let i = 0; i < maxCoursesPerPage; i++) {
@@ -371,10 +384,10 @@ export const generateAndDownloadReport = (shiftData, courses, driver, vehicle) =
         course ? String(course.numero_ordre).padStart(3, '0') : String(i + 1).padStart(3, '0'),
         course ? formatNumber(course.index_depart) : '',
         course ? formatNumber(course.index_embarquement) : '',
-        course ? course.lieu_embarquement.substring(0, 20) : '', // Limiter la longueur
+        course ? course.lieu_embarquement : '',
         course ? formatTime(course.heure_embarquement) : '',
         course ? formatNumber(course.index_debarquement) : '',
-        course ? course.lieu_debarquement.substring(0, 20) : '', // Limiter la longueur
+        course ? course.lieu_debarquement : '',
         course ? formatTime(course.heure_debarquement) : '',
         course ? formatCurrency(course.prix_taximetre) : '',
         course ? formatCurrency(course.sommes_percues) : ''
@@ -384,7 +397,7 @@ export const generateAndDownloadReport = (shiftData, courses, driver, vehicle) =
 
       courseData.forEach((cellData, colIndex) => {
         const width = courseColWidths[colIndex];
-        const align = (colIndex === 3 || colIndex === 6) ? 'left' : 'center'; // Lieux à gauche
+        const align = (colIndex === 3 || colIndex === 6) ? 'left' : 'center';
         drawCell(currentX, yPos, width, courseRowHeight, cellData, align, 7);
         currentX += width;
       });
@@ -408,7 +421,7 @@ export const generateAndDownloadReport = (shiftData, courses, driver, vehicle) =
     // ============ SIGNATURE ============
     yPos += 10;
     doc.setFontSize(8);
-    doc.setFont('helvetica', 'normal');
+    doc.setFont('times', 'normal');
     
     drawText('* Après déduction d\'une remise commerciale éventuelle.', margin, yPos);
     
@@ -417,7 +430,7 @@ export const generateAndDownloadReport = (shiftData, courses, driver, vehicle) =
     doc.line(pageWidth - 80, yPos + 15, pageWidth - margin, yPos + 15);
     
     if (driverName) {
-      doc.setFont('helvetica', 'italic');
+      doc.setFont('times', 'italic');
       drawText(driverName, pageWidth - 75, yPos + 12);
     }
 
@@ -427,61 +440,60 @@ export const generateAndDownloadReport = (shiftData, courses, driver, vehicle) =
       yPos = 15;
       
       // En-tête page 2
-      doc.setFont('helvetica', 'bold');
+      doc.setFont('times', 'bold');
       doc.setFontSize(14);
       drawText('FEUILLE DE ROUTE (suite)', pageWidth/2, yPos, 'center');
-      yPos += 8;
+      yPos += 6;
       
       doc.setFontSize(10);
-      doc.setFont('helvetica', 'normal');
+      doc.setFont('times', 'normal');
       drawText('(Identité de l\'exploitant)', pageWidth/2, yPos, 'center');
       yPos += 15;
 
       // Date et chauffeur page 2
       doc.setFontSize(10);
-      doc.setFont('helvetica', 'bold');
+      doc.setFont('times', 'bold');
       drawText('Date :', margin, yPos);
-      doc.setFont('helvetica', 'normal');
+      doc.setFont('times', 'normal');
       drawText(dateText, margin + 15, yPos);
       
-      doc.setFont('helvetica', 'bold');
+      doc.setFont('times', 'bold');
       drawText('Nom du chauffeur :', margin + 80, yPos);
-      doc.setFont('helvetica', 'normal');
-      drawText(driverName, margin + 120, yPos);
+      doc.setFont('times', 'normal');
+      drawText(driverName, margin + 125, yPos);
       yPos += 15;
 
       // Véhicule page 2
-      doc.setFont('helvetica', 'bold');
+      doc.setFont('times', 'bold');
       drawText('Véhicule', margin, yPos);
       yPos += 8;
       
       drawText('n° plaque d\'immatriculation :', margin, yPos);
-      doc.setFont('helvetica', 'normal');
-      drawText(safeVehicle.plaque_immatriculation, margin + 55, yPos);
+      doc.setFont('times', 'normal');
+      drawText(safeVehicle.plaque_immatriculation, margin + 60, yPos);
       
-      doc.setFont('helvetica', 'bold');
-      drawText('n° identification :', margin + 100, yPos);
-      doc.setFont('helvetica', 'normal');
-      drawText(safeVehicle.numero_identification, margin + 135, yPos);
+      doc.setFont('times', 'bold');
+      drawText('n° identification :', margin + 110, yPos);
+      doc.setFont('times', 'normal');
+      drawText(safeVehicle.numero_identification, margin + 145, yPos);
       yPos += 15;
 
-      // Tableau courses suite
+      // Tableau courses suite (répétition des en-têtes avec même largeurs)
       const courseTableY2 = yPos;
       
-      // Répéter les en-têtes
-      doc.setFont('helvetica', 'bold');
+      doc.setFont('times', 'bold');
       doc.setFontSize(7);
       currentX = margin;
 
-      // En-têtes identiques à la page 1
+      // Répéter exactement les mêmes en-têtes
       drawCell(currentX, courseTableY2, cCol1, courseRowHeight * 2, '', 'center', 7);
-      drawText('N°', currentX + cCol1/2, courseTableY2 + 3, 'center');
-      drawText('ordre', currentX + cCol1/2, courseTableY2 + 6, 'center');
+      drawText('N°', currentX + cCol1/2, courseTableY2 + 2.5, 'center');
+      drawText('ordre', currentX + cCol1/2, courseTableY2 + 5.5, 'center');
       currentX += cCol1;
 
       drawCell(currentX, courseTableY2, cCol2, courseRowHeight * 2, '', 'center', 7);
-      drawText('Index', currentX + cCol2/2, courseTableY2 + 3, 'center');
-      drawText('départ', currentX + cCol2/2, courseTableY2 + 6, 'center');
+      drawText('Index', currentX + cCol2/2, courseTableY2 + 2.5, 'center');
+      drawText('départ', currentX + cCol2/2, courseTableY2 + 5.5, 'center');
       currentX += cCol2;
 
       const embWidth2 = cCol3 + cCol4 + cCol5;
@@ -503,19 +515,19 @@ export const generateAndDownloadReport = (shiftData, courses, driver, vehicle) =
       currentX += cCol8;
 
       drawCell(currentX, courseTableY2, cCol9, courseRowHeight * 2, '', 'center', 7);
-      drawText('Prix', currentX + cCol9/2, courseTableY2 + 3, 'center');
-      drawText('taximètre', currentX + cCol9/2, courseTableY2 + 6, 'center');
+      drawText('Prix', currentX + cCol9/2, courseTableY2 + 2.5, 'center');
+      drawText('taximètre', currentX + cCol9/2, courseTableY2 + 5.5, 'center');
       currentX += cCol9;
 
       drawCell(currentX, courseTableY2, cCol10, courseRowHeight * 2, '', 'center', 7);
-      drawText('Sommes', currentX + cCol10/2, courseTableY2 + 2, 'center');
-      drawText('perçues', currentX + cCol10/2, courseTableY2 + 5, 'center');
-      drawText('†', currentX + cCol10/2, courseTableY2 + 8, 'center');
+      drawText('Sommes', currentX + cCol10/2, courseTableY2 + 1.5, 'center');
+      drawText('perçues', currentX + cCol10/2, courseTableY2 + 4, 'center');
+      drawText('†', currentX + cCol10/2, courseTableY2 + 6.5, 'center');
 
       yPos = courseTableY2 + courseRowHeight * 2;
 
       // Courses restantes (9 à fin)
-      doc.setFont('helvetica', 'normal');
+      doc.setFont('times', 'normal');
       doc.setFontSize(7);
 
       for (let i = 8; i < courses.length && i < 24; i++) { // Limite à 24 au total
@@ -526,10 +538,10 @@ export const generateAndDownloadReport = (shiftData, courses, driver, vehicle) =
           course ? String(course.numero_ordre).padStart(3, '0') : String(i + 1).padStart(3, '0'),
           course ? formatNumber(course.index_depart) : '',
           course ? formatNumber(course.index_embarquement) : '',
-          course ? course.lieu_embarquement.substring(0, 20) : '',
+          course ? course.lieu_embarquement : '',
           course ? formatTime(course.heure_embarquement) : '',
           course ? formatNumber(course.index_debarquement) : '',
-          course ? course.lieu_debarquement.substring(0, 20) : '',
+          course ? course.lieu_debarquement : '',
           course ? formatTime(course.heure_debarquement) : '',
           course ? formatCurrency(course.prix_taximetre) : '',
           course ? formatCurrency(course.sommes_percues) : ''
@@ -564,7 +576,7 @@ export const generateAndDownloadReport = (shiftData, courses, driver, vehicle) =
       // Signature page 2
       yPos += 10;
       doc.setFontSize(8);
-      doc.setFont('helvetica', 'normal');
+      doc.setFont('times', 'normal');
       
       drawText('† Après déduction d\'une remise commerciale éventuelle.', margin, yPos);
       
@@ -572,7 +584,7 @@ export const generateAndDownloadReport = (shiftData, courses, driver, vehicle) =
       doc.line(pageWidth - 80, yPos + 15, pageWidth - margin, yPos + 15);
       
       if (driverName) {
-        doc.setFont('helvetica', 'italic');
+        doc.setFont('times', 'italic');
         drawText(driverName, pageWidth - 75, yPos + 12);
       }
     }
@@ -623,5 +635,40 @@ export const validateDataForPDF = (shiftData, courses, driver, vehicle) => {
   return {
     isValid: errors.length === 0,
     errors
+  };
+};
+
+// Fonction pour prévisualiser les dimensions du tableau
+export const previewTableDimensions = () => {
+  return {
+    mainTable: {
+      totalWidth: 190, // 25+15+20+20+22+28+22+18+20
+      columns: [
+        { name: 'Heures prestations', width: 25 },
+        { name: 'Index km', width: 15 },
+        { name: 'Tableau début', width: 20 },
+        { name: 'Tableau fin', width: 20 },
+        { name: 'Prise en charge', width: 22 },
+        { name: 'Index Km totaux', width: 28 },
+        { name: 'Km en charge', width: 22 },
+        { name: 'Chutes', width: 18 },
+        { name: 'Recettes', width: 20 }
+      ]
+    },
+    courseTable: {
+      totalWidth: 190, // 12+12+12+42+12+12+42+12+17+17
+      columns: [
+        { name: 'N° ordre', width: 12 },
+        { name: 'Index départ', width: 12 },
+        { name: 'Index embarquement', width: 12 },
+        { name: 'Lieu embarquement', width: 42 },
+        { name: 'Heure embarquement', width: 12 },
+        { name: 'Index débarquement', width: 12 },
+        { name: 'Lieu débarquement', width: 42 },
+        { name: 'Heure débarquement', width: 12 },
+        { name: 'Prix taximètre', width: 17 },
+        { name: 'Sommes perçues', width: 17 }
+      ]
+    }
   };
 };
