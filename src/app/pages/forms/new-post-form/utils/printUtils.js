@@ -1,5 +1,16 @@
-// Fonction simplifiée pour générer et télécharger la feuille de route
+// Import jsPDF
+import jsPDF from 'jspdf';
+
 export const generateAndDownloadReport = (shiftData, courses, driver, vehicle) => {
+  try {
+    // Créer un nouveau document PDF
+    const doc = new jsPDF('p', 'mm', 'a4');
+
+  // Données sécurisées
+  const safeShiftData = shiftData || {};
+  const safeDriver = driver || { prenom: '', nom: '' };
+  const safeVehicle = vehicle || { plaque_immatriculation: '', numero_identification: '' };
+
   // Utilitaires de formatage
   const formatTime = (time) => time || '';
   const formatNumber = (num) => {
@@ -11,361 +22,353 @@ export const generateAndDownloadReport = (shiftData, courses, driver, vehicle) =
     return Number(amount).toFixed(2);
   };
 
-  // Calcul des totaux
-  const totalRecettes = courses.reduce((sum, course) => {
-    return sum + (Number(course.sommes_percues) || 0);
-  }, 0);
-
-  // Données sécurisées
-  const safeShiftData = shiftData || {};
-  const safeDriver = driver || { prenom: '', nom: '' };
-  const safeVehicle = vehicle || { plaque_immatriculation: '', numero_identification: '' };
-
-  // Génération du contenu HTML
-  const htmlContent = `
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="utf-8">
-    <title>Feuille de Route - ${safeDriver.prenom} ${safeDriver.nom}</title>
-    <style>
-        body {
-            font-family: 'Times New Roman', serif;
-            font-size: 12px;
-            margin: 20px;
-            background: white;
-            color: black;
-        }
-        
-        .header {
-            text-align: center;
-            margin-bottom: 24px;
-        }
-        
-        .header h1 {
-            font-size: 20px;
-            font-weight: bold;
-            margin-bottom: 8px;
-        }
-        
-        .info-row {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 16px;
-        }
-        
-        .bordered-field {
-            border-bottom: 1px solid black;
-            display: inline-block;
-            text-align: center;
-            min-width: 120px;
-            padding-bottom: 2px;
-        }
-        
-        .section-title {
-            font-weight: bold;
-            margin-bottom: 8px;
-            margin-top: 16px;
-        }
-        
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            border: 1px solid black;
-            margin-bottom: 16px;
-        }
-        
-        th, td {
-            border: 1px solid black;
-            padding: 4px;
-            font-size: 10px;
-            text-align: center;
-        }
-        
-        .signature-section {
-            display: flex;
-            justify-content: space-between;
-            align-items: end;
-            margin-top: 32px;
-        }
-        
-        .signature-box {
-            border-bottom: 1px solid black;
-            width: 200px;
-            height: 48px;
-            display: flex;
-            align-items: end;
-            justify-content: center;
-            padding-bottom: 4px;
-        }
-        
-        @media print {
-            body { margin: 15mm; }
-            .page-break { page-break-before: always; }
-        }
-    </style>
-</head>
-<body>
-    <!-- En-tête -->
-    <div class="header">
-        <h1>FEUILLE DE ROUTE</h1>
-        <div style="font-size: 14px;">(Identité de l'exploitant)</div>
-    </div>
-
-    <!-- Informations générales -->
-    <div class="info-row">
-        <div>
-            <span style="font-weight: bold;">Date : </span>
-            <span class="bordered-field">
-                ${safeShiftData?.date ? new Date(safeShiftData.date).toLocaleDateString('fr-FR') : new Date().toLocaleDateString('fr-FR')}
-            </span>
-        </div>
-        <div>
-            <span style="font-weight: bold;">Nom du chauffeur : </span>
-            <span class="bordered-field" style="min-width: 200px;">
-                ${safeDriver.prenom} ${safeDriver.nom}
-            </span>
-        </div>
-    </div>
-
-    <!-- Véhicule -->
-    <div class="section-title">Véhicule</div>
-    <div class="info-row">
-        <div>
-            <span>n° plaque d'immatriculation : </span>
-            <span class="bordered-field">
-                ${safeVehicle.plaque_immatriculation}
-            </span>
-        </div>
-        <div>
-            <span>n° identification : </span>
-            <span class="bordered-field">
-                ${safeVehicle.numero_identification}
-            </span>
-        </div>
-    </div>
-
-    <!-- Service -->
-    <div class="section-title">Service</div>
-    <table>
-        <thead>
-            <tr>
-                <th rowspan="2">Heures des prestations</th>
-                <th rowspan="2">Index km</th>
-                <th colspan="2">Tableau de bord</th>
-                <th colspan="5">Taximètre</th>
-            </tr>
-            <tr>
-                <th>Début</th>
-                <th>Fin</th>
-                <th>Prise en charge</th>
-                <th>Index Km (Km totaux)</th>
-                <th>Km en charge</th>
-                <th>Chutes (€)</th>
-                <th>Recettes</th>
-            </tr>
-        </thead>
-        <tbody>
-            <tr>
-                <td>Début</td>
-                <td>${formatTime(safeShiftData.heure_debut)}</td>
-                <td>${formatNumber(safeShiftData.km_tableau_bord_debut)}</td>
-                <td></td>
-                <td>${formatCurrency(safeShiftData.taximetre_prise_charge_debut)}</td>
-                <td>${formatNumber(safeShiftData.taximetre_index_km_debut)}</td>
-                <td>${formatNumber(safeShiftData.taximetre_km_charge_debut)}</td>
-                <td>${formatCurrency(safeShiftData.taximetre_chutes_debut)}</td>
-                <td></td>
-            </tr>
-            <tr>
-                <td>Fin</td>
-                <td>${formatTime(safeShiftData.heure_fin)}</td>
-                <td>${formatNumber(safeShiftData.km_tableau_bord_fin)}</td>
-                <td></td>
-                <td>${formatCurrency(safeShiftData.taximetre_prise_charge_fin)}</td>
-                <td>${formatNumber(safeShiftData.taximetre_index_km_fin)}</td>
-                <td>${formatNumber(safeShiftData.taximetre_km_charge_fin)}</td>
-                <td>${formatCurrency(safeShiftData.taximetre_chutes_fin)}</td>
-                <td></td>
-            </tr>
-            <tr>
-                <td>Interruptions</td>
-                <td>${formatTime(safeShiftData.interruptions)}</td>
-                <td colspan="2">Total</td>
-                <td colspan="4">Total</td>
-                <td style="font-weight: bold;">${formatCurrency(totalRecettes)}</td>
-            </tr>
-        </tbody>
-    </table>
-
-    <!-- Courses -->
-    <div class="section-title">Courses</div>
-    <table>
-        <thead>
-            <tr>
-                <th rowspan="2">N° ordre</th>
-                <th rowspan="2">Index départ</th>
-                <th colspan="3">Embarquement</th>
-                <th colspan="3">Débarquement</th>
-                <th rowspan="2">Prix taximètre</th>
-                <th rowspan="2">Sommes perçues *</th>
-            </tr>
-            <tr>
-                <th>Index</th>
-                <th>Lieu</th>
-                <th>Heure</th>
-                <th>Index</th>
-                <th>Lieu</th>
-                <th>Heure</th>
-            </tr>
-        </thead>
-        <tbody>
-            ${Array.from({ length: Math.max(12, courses?.length || 0) }, (_, i) => {
-              const course = courses?.[i];
-              return `
-                <tr>
-                    <td>${course?.numero_ordre ? String(course.numero_ordre).padStart(3, '0') : String(i + 1).padStart(3, '0')}</td>
-                    <td>${formatNumber(course?.index_depart)}</td>
-                    <td>${formatNumber(course?.index_embarquement)}</td>
-                    <td style="text-align: left; font-size: 9px;">${course?.lieu_embarquement || ''}</td>
-                    <td>${formatTime(course?.heure_embarquement)}</td>
-                    <td>${formatNumber(course?.index_debarquement)}</td>
-                    <td style="text-align: left; font-size: 9px;">${course?.lieu_debarquement || ''}</td>
-                    <td>${formatTime(course?.heure_debarquement)}</td>
-                    <td>${course ? formatCurrency(course.prix_taximetre) : ''}</td>
-                    <td>${course ? formatCurrency(course.sommes_percues) : ''}</td>
-                </tr>
-              `;
-            }).join('')}
-        </tbody>
-    </table>
-
-    <!-- Signature -->
-    <div class="signature-section">
-        <div>
-            <div style="font-size: 10px;">* Après déduction d'une remise commerciale éventuelle.</div>
-        </div>
-        <div style="text-align: right;">
-            <div style="font-size: 10px; margin-bottom: 8px;">Signature du chauffeur :</div>
-            <div class="signature-box">
-                ${safeDriver.prenom} ${safeDriver.nom}
-            </div>
-        </div>
-    </div>
-
-    ${courses && courses.length > 12 ? `
-    <!-- Page 2 si plus de 12 courses -->
-    <div class="page-break">
-        <div class="header">
-            <h1>FEUILLE DE ROUTE (suite)</h1>
-            <div style="font-size: 14px;">(Identité de l'exploitant)</div>
-        </div>
-
-        <div class="info-row">
-            <div>
-                <span style="font-weight: bold;">Date : </span>
-                <span class="bordered-field">
-                    ${safeShiftData?.date ? new Date(safeShiftData.date).toLocaleDateString('fr-FR') : new Date().toLocaleDateString('fr-FR')}
-                </span>
-            </div>
-            <div>
-                <span style="font-weight: bold;">Nom du chauffeur : </span>
-                <span class="bordered-field" style="min-width: 200px;">
-                    ${safeDriver.prenom} ${safeDriver.nom}
-                </span>
-            </div>
-        </div>
-
-        <div class="section-title">Véhicule</div>
-        <div class="info-row">
-            <div>
-                <span>n° plaque d'immatriculation : </span>
-                <span class="bordered-field">
-                    ${safeVehicle.plaque_immatriculation}
-                </span>
-            </div>
-            <div>
-                <span>n° identification : </span>
-                <span class="bordered-field">
-                    ${safeVehicle.numero_identification}
-                </span>
-            </div>
-        </div>
-
-        <table>
-            <thead>
-                <tr>
-                    <th rowspan="2">N° ordre</th>
-                    <th rowspan="2">Index départ</th>
-                    <th colspan="3">Embarquement</th>
-                    <th colspan="3">Débarquement</th>
-                    <th rowspan="2">Prix taximètre</th>
-                    <th rowspan="2">Sommes perçues †</th>
-                </tr>
-                <tr>
-                    <th>Index</th>
-                    <th>Lieu</th>
-                    <th>Heure</th>
-                    <th>Index</th>
-                    <th>Lieu</th>
-                    <th>Heure</th>
-                </tr>
-            </thead>
-            <tbody>
-                ${Array.from({ length: 16 }, (_, i) => {
-                  const courseIndex = i + 12;
-                  const course = courses[courseIndex];
-                  return `
-                    <tr>
-                        <td>${courseIndex + 1}</td>
-                        <td>${formatNumber(course?.index_depart)}</td>
-                        <td>${formatNumber(course?.index_embarquement)}</td>
-                        <td style="text-align: left; font-size: 9px;">${course?.lieu_embarquement || ''}</td>
-                        <td>${formatTime(course?.heure_embarquement)}</td>
-                        <td>${formatNumber(course?.index_debarquement)}</td>
-                        <td style="text-align: left; font-size: 9px;">${course?.lieu_debarquement || ''}</td>
-                        <td>${formatTime(course?.heure_debarquement)}</td>
-                        <td>${course ? formatCurrency(course.prix_taximetre) : ''}</td>
-                        <td>${course ? formatCurrency(course.sommes_percues) : ''}</td>
-                    </tr>
-                  `;
-                }).join('')}
-            </tbody>
-        </table>
-
-        <div class="signature-section">
-            <div>
-                <div style="font-size: 10px;">† Après déduction d'une remise commerciale éventuelle.</div>
-            </div>
-            <div style="text-align: right;">
-                <div style="font-size: 10px; margin-bottom: 8px;">Signature du chauffeur :</div>
-                <div class="signature-box">
-                    ${safeDriver.prenom} ${safeDriver.nom}
-                </div>
-            </div>
-        </div>
-    </div>
-    ` : ''}
-</body>
-</html>
-  `;
-
-  // Créer et télécharger le fichier
-  const blob = new Blob([htmlContent], { type: 'text/html;charset=utf-8' });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement('a');
+  // Configuration des polices et tailles
+  doc.setFont('times', 'normal');
   
-  // Nom du fichier avec date
-  const fileName = `Feuille_de_Route_${safeDriver.prenom}_${safeDriver.nom}_${
-    safeShiftData?.date ? safeShiftData.date.replace(/-/g, '') : new Date().toISOString().split('T')[0].replace(/-/g, '')
-  }.html`;
+  let yPos = 20;
+
+  // EN-TÊTE
+  doc.setFontSize(14);
+  doc.setFont('times', 'bold');
+  doc.text('FEUILLE DE ROUTE', 105, yPos, { align: 'center' });
+  yPos += 6;
   
-  link.href = url;
-  link.download = fileName;
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-  URL.revokeObjectURL(url);
+  doc.setFontSize(10);
+  doc.setFont('times', 'normal');
+  doc.text('(Identité de l\'exploitant)', 105, yPos, { align: 'center' });
+  yPos += 15;
+
+  // DATE ET NOM DU CHAUFFEUR
+  doc.setFontSize(10);
+  doc.setFont('times', 'bold');
+  doc.text('Date : ', 20, yPos);
+  doc.setFont('times', 'normal');
+  const dateText = safeShiftData?.date ? new Date(safeShiftData.date).toLocaleDateString('fr-FR') : new Date().toLocaleDateString('fr-FR');
+  doc.text(dateText, 35, yPos);
+  doc.line(32, yPos + 1, 70, yPos + 1); // Ligne sous la date
+
+  doc.setFont('times', 'bold');
+  doc.text('Nom du chauffeur : ', 120, yPos);
+  doc.setFont('times', 'normal');
+  const driverName = `${safeDriver.prenom} ${safeDriver.nom}`;
+  doc.text(driverName, 155, yPos);
+  doc.line(152, yPos + 1, 200, yPos + 1); // Ligne sous le nom
+  yPos += 15;
+
+  // VÉHICULE
+  doc.setFont('times', 'bold');
+  doc.text('Véhicule', 20, yPos);
+  yPos += 8;
+
+  doc.text('n° plaque d\'immatriculation : ', 20, yPos);
+  doc.setFont('times', 'normal');
+  doc.text(safeVehicle.plaque_immatriculation, 70, yPos);
+  doc.line(67, yPos + 1, 105, yPos + 1);
+
+  doc.setFont('times', 'bold');
+  doc.text('n° identification : ', 120, yPos);
+  doc.setFont('times', 'normal');
+  doc.text(safeVehicle.numero_identification, 155, yPos);
+  doc.line(152, yPos + 1, 180, yPos + 1);
+  yPos += 15;
+
+  // SERVICE - Tableau principal
+  doc.setFont('times', 'bold');
+  doc.text('Service', 20, yPos);
+  yPos += 8;
+
+  // Tableau des heures et mesures
+  // Removed unused variable tableStartY
+  const colWidths = [25, 15, 15, 15, 20, 25, 20, 18, 18];
+  const rowHeight = 8;
+
+  // En-têtes du tableau
+  doc.setFontSize(8);
+  doc.rect(20, yPos, colWidths[0], rowHeight * 2); // Heures des prestations
+  doc.text('Heures des', 22, yPos + 4);
+  doc.text('prestations', 22, yPos + 7);
+
+  doc.rect(20 + colWidths[0], yPos, colWidths[1], rowHeight * 2); // Index km
+  doc.text('Index', 22 + colWidths[0], yPos + 4);
+  doc.text('km', 24 + colWidths[0], yPos + 7);
+
+  // Tableau de bord
+  let xPos = 20 + colWidths[0] + colWidths[1];
+  doc.rect(xPos, yPos, colWidths[2] + colWidths[3], rowHeight);
+  doc.text('Tableau de bord', xPos + 10, yPos + 5);
   
-  return fileName;
+  doc.rect(xPos, yPos + rowHeight, colWidths[2], rowHeight);
+  doc.text('Début', xPos + 5, yPos + rowHeight + 5);
+  doc.rect(xPos + colWidths[2], yPos + rowHeight, colWidths[3], rowHeight);
+  doc.text('Fin', xPos + colWidths[2] + 5, yPos + rowHeight + 5);
+
+  // Taximètre
+  xPos += colWidths[2] + colWidths[3];
+  const taximeterWidth = colWidths[4] + colWidths[5] + colWidths[6] + colWidths[7] + colWidths[8];
+  doc.rect(xPos, yPos, taximeterWidth, rowHeight);
+  doc.text('Taximètre', xPos + taximeterWidth/2 - 10, yPos + 5);
+
+  // Sous-colonnes taximètre
+  doc.rect(xPos, yPos + rowHeight, colWidths[4], rowHeight);
+  doc.text('Prise en', xPos + 2, yPos + rowHeight + 3);
+  doc.text('charge', xPos + 2, yPos + rowHeight + 6);
+
+  xPos += colWidths[4];
+  doc.rect(xPos, yPos + rowHeight, colWidths[5], rowHeight);
+  doc.text('Index Km', xPos + 2, yPos + rowHeight + 3);
+  doc.text('(Km totaux)', xPos + 1, yPos + rowHeight + 6);
+
+  xPos += colWidths[5];
+  doc.rect(xPos, yPos + rowHeight, colWidths[6], rowHeight);
+  doc.text('Km en', xPos + 4, yPos + rowHeight + 3);
+  doc.text('charge', xPos + 3, yPos + rowHeight + 6);
+
+  xPos += colWidths[6];
+  doc.rect(xPos, yPos + rowHeight, colWidths[7], rowHeight);
+  doc.text('Chutes', xPos + 3, yPos + rowHeight + 3);
+  doc.text('(€)', xPos + 5, yPos + rowHeight + 6);
+
+  xPos += colWidths[7];
+  doc.rect(xPos, yPos + rowHeight, colWidths[8], rowHeight);
+  doc.text('Recettes', xPos + 2, yPos + rowHeight + 5);
+
+  yPos += rowHeight * 2;
+
+  // Lignes de données
+  const rows = [
+    ['Début', formatTime(safeShiftData.heure_debut), formatNumber(safeShiftData.km_tableau_bord_debut), '', 
+     formatCurrency(safeShiftData.taximetre_prise_charge_debut), formatNumber(safeShiftData.taximetre_index_km_debut),
+     formatNumber(safeShiftData.taximetre_km_charge_debut), formatCurrency(safeShiftData.taximetre_chutes_debut), ''],
+    ['Fin', formatTime(safeShiftData.heure_fin), formatNumber(safeShiftData.km_tableau_bord_fin), '',
+     formatCurrency(safeShiftData.taximetre_prise_charge_fin), formatNumber(safeShiftData.taximetre_index_km_fin),
+     formatNumber(safeShiftData.taximetre_km_charge_fin), formatCurrency(safeShiftData.taximetre_chutes_fin), ''],
+    ['Interruptions', formatTime(safeShiftData.interruptions), 'Total', '', 'Total', '', '', '', 
+     formatCurrency(courses.reduce((sum, course) => sum + (Number(course.sommes_percues) || 0), 0))]
+  ];
+
+  rows.forEach(row => {
+    xPos = 20;
+    row.forEach((cell, colIndex) => {
+      const width = colWidths[colIndex] || 15;
+      doc.rect(xPos, yPos, width, rowHeight);
+      if (colIndex === 2 && row[0] === 'Interruptions') {
+        // Fusionner les cellules Total
+        doc.rect(xPos, yPos, colWidths[2] + colWidths[3], rowHeight);
+        doc.text(cell, xPos + 10, yPos + 5);
+        xPos += colWidths[2] + colWidths[3];
+      } else if (colIndex === 4 && row[0] === 'Interruptions') {
+        // Fusionner les cellules Total taximètre
+        doc.rect(xPos, yPos, colWidths[4] + colWidths[5] + colWidths[6] + colWidths[7], rowHeight);
+        doc.text(cell, xPos + 30, yPos + 5);
+        xPos += colWidths[4] + colWidths[5] + colWidths[6] + colWidths[7];
+      } else if (colIndex < 2 || (colIndex >= 3 && row[0] !== 'Interruptions')) {
+        doc.text(cell, xPos + 2, yPos + 5);
+        xPos += width;
+      }
+    });
+    yPos += rowHeight;
+  });
+
+  yPos += 10;
+
+  // TABLEAU DES COURSES
+  doc.setFont('times', 'bold');
+  doc.text('Courses', 20, yPos);
+  yPos += 8;
+
+  // En-têtes courses
+  const courseColWidths = [15, 15, 15, 45, 15, 15, 45, 15, 20, 20];
+  
+  doc.setFontSize(8);
+  doc.rect(20, yPos, courseColWidths[0], rowHeight * 2);
+  doc.text('N°', 22, yPos + 4);
+  doc.text('ordre', 21, yPos + 7);
+
+  xPos = 20 + courseColWidths[0];
+  doc.rect(xPos, yPos, courseColWidths[1], rowHeight * 2);
+  doc.text('Index', xPos + 2, yPos + 4);
+  doc.text('départ', xPos + 1, yPos + 7);
+
+  // Embarquement
+  xPos += courseColWidths[1];
+  const embWidth = courseColWidths[2] + courseColWidths[3] + courseColWidths[4];
+  doc.rect(xPos, yPos, embWidth, rowHeight);
+  doc.text('Embarquement', xPos + embWidth/2 - 12, yPos + 5);
+
+  doc.rect(xPos, yPos + rowHeight, courseColWidths[2], rowHeight);
+  doc.text('Index', xPos + 2, yPos + rowHeight + 5);
+
+  doc.rect(xPos + courseColWidths[2], yPos + rowHeight, courseColWidths[3], rowHeight);
+  doc.text('Lieu', xPos + courseColWidths[2] + 18, yPos + rowHeight + 5);
+
+  doc.rect(xPos + courseColWidths[2] + courseColWidths[3], yPos + rowHeight, courseColWidths[4], rowHeight);
+  doc.text('Heure', xPos + courseColWidths[2] + courseColWidths[3] + 3, yPos + rowHeight + 5);
+
+  // Débarquement
+  xPos += embWidth;
+  const debWidth = courseColWidths[5] + courseColWidths[6] + courseColWidths[7];
+  doc.rect(xPos, yPos, debWidth, rowHeight);
+  doc.text('Débarquement', xPos + debWidth/2 - 12, yPos + 5);
+
+  doc.rect(xPos, yPos + rowHeight, courseColWidths[5], rowHeight);
+  doc.text('Index', xPos + 2, yPos + rowHeight + 5);
+
+  doc.rect(xPos + courseColWidths[5], yPos + rowHeight, courseColWidths[6], rowHeight);
+  doc.text('Lieu', xPos + courseColWidths[5] + 18, yPos + rowHeight + 5);
+
+  doc.rect(xPos + courseColWidths[5] + courseColWidths[6], yPos + rowHeight, courseColWidths[7], rowHeight);
+  doc.text('Heure', xPos + courseColWidths[5] + courseColWidths[6] + 3, yPos + rowHeight + 5);
+
+  // Prix et sommes
+  xPos += debWidth;
+  doc.rect(xPos, yPos, courseColWidths[8], rowHeight * 2);
+  doc.text('Prix', xPos + 5, yPos + 4);
+  doc.text('taximètre', xPos + 1, yPos + 7);
+
+  doc.rect(xPos + courseColWidths[8], yPos, courseColWidths[9], rowHeight * 2);
+  doc.text('Sommes', xPos + courseColWidths[8] + 2, yPos + 4);
+  doc.text('perçues *', xPos + courseColWidths[8] + 1, yPos + 7);
+
+  yPos += rowHeight * 2;
+
+  // Lignes des courses (maximum 8 pour la première page)
+  const maxCoursesPage1 = 8;
+  for (let i = 0; i < maxCoursesPage1; i++) {
+    const course = courses[i];
+    xPos = 20;
+    
+    const courseData = [
+      course ? String(course.numero_ordre).padStart(3, '0') : String(i + 1).padStart(3, '0'),
+      course ? formatNumber(course.index_depart) : '',
+      course ? formatNumber(course.index_embarquement) : '',
+      course ? course.lieu_embarquement : '',
+      course ? formatTime(course.heure_embarquement) : '',
+      course ? formatNumber(course.index_debarquement) : '',
+      course ? course.lieu_debarquement : '',
+      course ? formatTime(course.heure_debarquement) : '',
+      course ? formatCurrency(course.prix_taximetre) : '',
+      course ? formatCurrency(course.sommes_percues) : ''
+    ];
+
+    courseData.forEach((cell, colIndex) => {
+      const width = courseColWidths[colIndex];
+      doc.rect(xPos, yPos, width, rowHeight);
+      if (colIndex === 3 || colIndex === 6) { // Lieux - texte aligné à gauche
+        doc.text(cell.substring(0, 25), xPos + 1, yPos + 5); // Limite la longueur
+      } else {
+        doc.text(cell, xPos + 2, yPos + 5);
+      }
+      xPos += width;
+    });
+    yPos += rowHeight;
+  }
+
+  // Signature
+  yPos += 15;
+  doc.setFontSize(8);
+  doc.text('* Après déduction d\'une remise commerciale éventuelle.', 20, yPos);
+  
+  doc.text('Signature du chauffeur :', 150, yPos);
+  doc.line(150, yPos + 15, 200, yPos + 15);
+  doc.text(`${safeDriver.prenom} ${safeDriver.nom}`, 155, yPos + 12);
+
+  // Page 2 si plus de 8 courses
+  if (courses.length > maxCoursesPage1) {
+    doc.addPage();
+    // Répéter l'en-tête et le tableau pour les courses restantes
+    // ... (code similaire pour la page 2)
+    yPos = 20;
+    doc.setFontSize(14);
+    doc.text('FEUILLE DE ROUTE - Suite', 105, yPos, { align: 'center' });
+    yPos += 10;
+    doc.setFontSize(10);
+    doc.text(`Date : ${dateText}`, 20, yPos);
+    doc.text(`Chauffeur : ${driverName}`, 120, yPos);
+    yPos += 10;
+    doc.setFont('times', 'bold');
+    doc.text('Courses (suite)', 20, yPos);
+    yPos += 8;
+    // Répéter les en-têtes de tableau
+    doc.setFontSize(8);
+    doc.rect(20, yPos, courseColWidths[0], rowHeight * 2);
+    doc.text('N°', 22, yPos + 4);
+    doc.text('ordre', 21, yPos + 7);
+    xPos = 20 + courseColWidths[0];
+    doc.rect(xPos, yPos, courseColWidths[1], rowHeight * 2);
+    doc.text('Index', xPos + 2, yPos + 4);
+    doc.text('départ', xPos + 1, yPos + 7);
+    // Embarquement
+    xPos += courseColWidths[1];
+    const embWidth = courseColWidths[2] + courseColWidths[3] + courseColWidths[4];
+    doc.rect(xPos, yPos, embWidth, rowHeight);
+    doc.text('Embarquement', xPos + embWidth/2 - 12, yPos + 5);
+    doc.rect(xPos, yPos + rowHeight, courseColWidths[2], rowHeight);
+    doc.text('Index', xPos + 2, yPos + rowHeight + 5);
+    doc.rect(xPos + courseColWidths[2], yPos + rowHeight, courseColWidths[3], rowHeight);
+    doc.text('Lieu', xPos + courseColWidths[2] + 18, yPos + rowHeight + 5);
+    doc.rect(xPos + courseColWidths[2] + courseColWidths[3], yPos + rowHeight, courseColWidths[4], rowHeight);
+    doc.text('Heure', xPos + courseColWidths[2] + courseColWidths[3] + 3, yPos + rowHeight + 5);
+    // Débarquement
+    xPos += embWidth;
+    const debWidth = courseColWidths[5] + courseColWidths[6] + courseColWidths[7];
+    doc.rect(xPos, yPos, debWidth, rowHeight);
+    doc.text('Débarquement', xPos + debWidth/2 - 12, yPos + 5);
+    doc.rect(xPos, yPos + rowHeight, courseColWidths[5], rowHeight);
+    doc.text('Index', xPos + 2, yPos + rowHeight + 5);
+    doc.rect(xPos + courseColWidths[5], yPos + rowHeight, courseColWidths[6], rowHeight);
+    doc.text('Lieu', xPos + courseColWidths[5] + 18, yPos + rowHeight + 5);
+    doc.rect(xPos + courseColWidths[5] + courseColWidths[6], yPos + rowHeight, courseColWidths[7], rowHeight);
+    doc.text('Heure', xPos + courseColWidths[5] + courseColWidths[6] + 3, yPos + rowHeight + 5);
+    // Prix et sommes
+    xPos += debWidth;
+    doc.rect(xPos, yPos, courseColWidths[8], rowHeight * 2);
+    doc.text('Prix', xPos + 5, yPos + 4);
+    doc.text('taximètre', xPos + 1, yPos + 7);
+    doc.rect(xPos + courseColWidths[8], yPos, courseColWidths[9], rowHeight * 2);
+    doc.text('Sommes', xPos + courseColWidths[8] + 2, yPos + 4);
+    doc.text('perçues *', xPos + courseColWidths[8] + 1, yPos + 7);
+    yPos += rowHeight * 2;
+    // Lignes des courses restantes
+    for (let i = maxCoursesPage1; i < courses.length; i++) {
+        const course = courses[i];
+        xPos = 20;
+        
+        const courseData = [
+            course ? String(course.numero_ordre).padStart(3, '0') : String(i + 1).padStart(3, '0'),
+            course ? formatNumber(course.index_depart) : '',
+            course ? formatNumber(course.index_embarquement) : '',
+            course ? course.lieu_embarquement : '',
+            course ? formatTime(course.heure_embarquement) : '',
+            course ? formatNumber(course.index_debarquement) : '',
+            course ? course.lieu_debarquement : '',
+            course ? formatTime(course.heure_debarquement) : '',
+            course ? formatCurrency(course.prix_taximetre) : '',
+            course ? formatCurrency(course.sommes_percues) : ''
+        ];
+    
+        courseData.forEach((cell, colIndex) => {
+            const width = courseColWidths[colIndex];
+            doc.rect(xPos, yPos, width, rowHeight);
+            if (colIndex === 3 || colIndex === 6) { // Lieux - texte aligné à gauche
+            doc.text(cell.substring(0, 25), xPos + 1, yPos + 5); // Limite la longueur
+            } else {
+            doc.text(cell, xPos + 2, yPos + 5);
+            }
+            xPos += width;
+        });
+        yPos += rowHeight;
+        }
+    }
+
+  // Télécharger le PDF
+    const fileName = `Feuille_de_Route_${driver.prenom}_${driver.nom}_${
+      shiftData?.date ? shiftData.date.replace(/-/g, '') : new Date().toISOString().split('T')[0].replace(/-/g, '')
+    }.pdf`;
+    
+    doc.save(fileName);
+    return fileName;
+  } catch (error) {
+    console.error('Erreur lors de la génération du PDF:', error);
+    throw error;
+  }
 };
