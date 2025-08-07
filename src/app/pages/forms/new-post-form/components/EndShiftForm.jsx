@@ -2,6 +2,7 @@
 import { useForm } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import { toast } from "sonner";
+import { PrinterIcon } from "@heroicons/react/24/outline";
 import PropTypes from "prop-types";
 
 // Local Imports
@@ -17,10 +18,11 @@ const initialEndShiftData = {
   taximetre_index_km_fin: '',
   taximetre_km_charge_fin: '',
   taximetre_chutes_fin: '',
-  observations: ''
+  observations: '',
+  signature_chauffeur: ''
 };
 
-export function EndShiftForm({ onEndShift, shiftData }) {
+export function EndShiftForm({ onEndShift, shiftData, driver, onPrintReport }) {
   const {
     register,
     handleSubmit,
@@ -28,7 +30,10 @@ export function EndShiftForm({ onEndShift, shiftData }) {
     formState: { errors }
   } = useForm({
     resolver: yupResolver(endShiftSchema),
-    defaultValues: initialEndShiftData
+    defaultValues: {
+      ...initialEndShiftData,
+      signature_chauffeur: `${driver.prenom} ${driver.nom}`
+    }
   });
 
   const watchedData = watch();
@@ -193,13 +198,40 @@ export function EndShiftForm({ onEndShift, shiftData }) {
             rows={4}
           />
 
-          <div className="flex justify-end gap-3 pt-4">
-            <Button variant="outlined" type="button">
-              💾 Sauvegarder en brouillon
+          {/* Signature */}
+          <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg">
+            <h4 className="font-medium mb-4 text-blue-800 dark:text-blue-200">
+              ✍️ Signature du chauffeur
+            </h4>
+            <Input
+              label="Nom et prénom pour signature"
+              {...register("signature_chauffeur")}
+              error={errors?.signature_chauffeur?.message}
+              placeholder="Nom et prénom du chauffeur"
+            />
+            <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">
+              Cette signature apparaîtra sur la feuille de route imprimée
+            </p>
+          </div>
+
+          <div className="flex justify-between gap-3 pt-4">
+            <Button 
+              variant="outlined" 
+              type="button"
+              onClick={onPrintReport}
+              className="flex items-center gap-2"
+            >
+              <PrinterIcon className="h-4 w-4" />
+              Imprimer feuille de route
             </Button>
-            <Button type="submit" color="success" size="lg">
-              ✅ Terminer le shift
-            </Button>
+            <div className="flex gap-3">
+              <Button variant="outlined" type="button">
+                💾 Sauvegarder en brouillon
+              </Button>
+              <Button type="submit" color="success" size="lg">
+                ✅ Terminer le shift
+              </Button>
+            </div>
           </div>
         </form>
       </Card>
@@ -208,5 +240,8 @@ export function EndShiftForm({ onEndShift, shiftData }) {
 }
 
 EndShiftForm.propTypes = {
-  onEndShift: PropTypes.func.isRequired
+  onEndShift: PropTypes.func.isRequired,
+  shiftData: PropTypes.object,
+  driver: PropTypes.object.isRequired,
+  onPrintReport: PropTypes.func.isRequired
 };

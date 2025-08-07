@@ -60,10 +60,20 @@ export default function TxApp() {
   const printComponentRef = useRef();
   const handlePrint = useReactToPrint({
     content: () => printComponentRef.current,
-    documentTitle: `Feuille_de_route_${new Date().toLocaleDateString('fr-FR').replace(/\//g, '-')}`
+    documentTitle: `Feuille_de_route_${new Date().toLocaleDateString('fr-FR').replace(/\//g, '-')}`,
+    pageStyle: `
+      @page {
+        size: A4;
+        margin: 0.5in;
+      }
+      @media print {
+        body { -webkit-print-color-adjust: exact; }
+        .page-break-before { page-break-before: always; }
+      }
+    `
   });
 
-  // Calculs des totaux
+  // Calculs des totaux - Seules les courses directes comptent pour le chauffeur
   const totals = useMemo(() => ({
     recettes: courses.reduce((sum, course) => sum + (course.sommes_percues || 0), 0),
     coursesCount: courses.length,
@@ -124,7 +134,9 @@ export default function TxApp() {
       ...endData
     };
     console.log('Complete shift data:', completeShiftData);
-    // Logic to save complete shift data and generate report
+    // Mettre à jour shiftData avec les informations de fin
+    setShiftData(completeShiftData);
+    // Optionnel: afficher un message de succès ou rediriger
   };
 
   const handleShowVehicleInfo = () => {
@@ -215,6 +227,8 @@ export default function TxApp() {
               <EndShiftForm 
                 onEndShift={handleEndShift}
                 shiftData={shiftData}
+                driver={mockData.driver}
+                onPrintReport={handlePrint}
               />
             )}
           </div>
@@ -452,7 +466,6 @@ export default function TxApp() {
             courses={courses}
             driver={mockData.driver}
             vehicle={mockData.vehicles[0]}
-            totals={totals}
           />
         </div>
 
@@ -464,7 +477,7 @@ export default function TxApp() {
             variant="outlined"
           >
             <PrinterIcon className="h-5 w-5" />
-            <span>💾 Sauvegarder la feuille de route</span>
+            <span>🖨️ Imprimer feuille de route</span>
           </Button>
         </div>
       </div>
