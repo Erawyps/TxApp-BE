@@ -10,6 +10,7 @@ import {
 import { Fragment } from "react";
 import { Dialog, Transition, TransitionChild, DialogPanel, DialogTitle } from "@headlessui/react";
 import { XMarkIcon } from "@heroicons/react/24/outline";
+import { useReactToPrint } from 'react-to-print';
 
 // Local Imports
 import { Page } from "components/shared/Page";
@@ -59,60 +60,60 @@ export default function TxApp() {
 
 // Print functionality
 const printComponentRef = useRef();
-// Fonction alternative pour l'impression directe dans le navigateur
-const handlePrintDirect = () => {
-  const printContent = printComponentRef.current?.innerHTML;
-  if (!printContent) {
-    console.error('Aucun contenu à imprimer');
-    return;
+const handlePrint = useReactToPrint({
+  content: () => printComponentRef.current,
+  documentTitle: `Feuille_de_route_${new Date().toLocaleDateString('fr-FR').replace(/\//g, '-')}`,
+  pageStyle: `
+    @page {
+      size: A4;
+      margin: 15mm;
+    }
+    
+    @media print {
+      * {
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+      }
+      
+      body {
+        margin: 0 !important;
+        padding: 0 !important;
+        font-size: 12px !important;
+      }
+      
+      .print-container {
+        background: white !important;
+        color: black !important;
+        width: 100% !important;
+        max-width: none !important;
+        margin: 0 !important;
+        padding: 0 !important;
+      }
+      
+      table {
+        border-collapse: collapse !important;
+        width: 100% !important;
+      }
+      
+      th, td {
+        border: 1px solid black !important;
+        padding: 2px !important;
+        font-size: 10px !important;
+      }
+      
+      .page-break-before {
+        page-break-before: always !important;
+      }
+    }
+  `,
+  onBeforeGetContent: () => {
+    // Optionnel: préparer les données avant impression
+    console.log('Préparation de l\'impression...');
+  },
+  onAfterPrint: () => {
+    console.log('Impression terminée');
   }
-
-  const printWindow = window.open('', '_blank');
-  printWindow.document.write(`
-    <!DOCTYPE html>
-    <html>
-    <head>
-        <title>Feuille de Route</title>
-        <style>
-          body {
-            font-family: 'Times New Roman', serif;
-            font-size: 12px;
-            margin: 0;
-            padding: 20px;
-            background: white;
-            color: black;
-          }
-          
-          table {
-            border-collapse: collapse;
-            width: 100%;
-          }
-          
-          th, td {
-            border: 1px solid black;
-            padding: 4px;
-            font-size: 10px;
-          }
-          
-          .page-break-before {
-            page-break-before: always;
-          }
-          
-          @media print {
-            body { margin: 0; }
-            .page-break-before { page-break-before: always; }
-          }
-        </style>
-    </head>
-    <body>
-        ${printContent}
-    </body>
-    </html>
-  `);
-  printWindow.document.close();
-  printWindow.print();
-  printWindow.close();
-};
+});
 
   // Calculs des totaux - Seules les courses directes comptent pour le chauffeur
   const totals = useMemo(() => ({
@@ -234,7 +235,7 @@ const handlePrintDirect = () => {
                 totals={totals}
                 onNewCourse={handleNewCourse}
                 onShowHistory={() => setShowHistoryModal(true)}
-                onPrintReport={handlePrintDirect}
+                onPrintReport={handlePrint}
               />
             )}
 
@@ -269,7 +270,7 @@ const handlePrintDirect = () => {
                 onEndShift={handleEndShift}
                 shiftData={shiftData}
                 driver={mockData.driver}
-                onPrintReport={handlePrintDirect}
+                onPrintReport={handlePrint}
               />
             )}
           </div>
@@ -513,7 +514,7 @@ const handlePrintDirect = () => {
         {/* Mobile Bottom Action */}
         <div className="fixed bottom-0 left-0 right-0 p-4 bg-white dark:bg-dark-700 border-t border-gray-200 dark:border-dark-500 md:hidden">
           <Button
-            onClick={handlePrintDirect}
+            onClick={handlePrint}
             className="w-full space-x-2"
             variant="outlined"
           >
