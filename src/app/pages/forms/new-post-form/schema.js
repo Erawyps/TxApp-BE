@@ -4,7 +4,7 @@ import * as Yup from 'yup';
 // ----------------------------------------------------------------------
 
 export const shiftSchema = Yup.object().shape({
-  date: Yup.date()
+  date: Yup.string() // Changé de Yup.date() à Yup.string()
     .required('Date requise'),
   heure_debut: Yup.string()
     .required('Heure de début requise'),
@@ -17,16 +17,35 @@ export const shiftSchema = Yup.object().shape({
   vehicule_id: Yup.string()
     .required('Véhicule requis'),
   km_tableau_bord_debut: Yup.number()
+    .transform((value, originalValue) => {
+      return originalValue === '' ? undefined : value;
+    })
     .min(0, 'Les kilomètres doivent être positifs')
     .required('Kilomètres tableau de bord requis'),
   taximetre_prise_charge_debut: Yup.number()
-    .min(0, 'La valeur doit être positive'),
+    .transform((value, originalValue) => {
+      return originalValue === '' ? 0 : value;
+    })
+    .min(0, 'La valeur doit être positive')
+    .nullable(),
   taximetre_index_km_debut: Yup.number()
-    .min(0, 'L\'index km doit être positif'),
+    .transform((value, originalValue) => {
+      return originalValue === '' ? 0 : value;
+    })
+    .min(0, 'L\'index km doit être positif')
+    .nullable(),
   taximetre_km_charge_debut: Yup.number()
-    .min(0, 'Les km en charge doivent être positifs'),
+    .transform((value, originalValue) => {
+      return originalValue === '' ? 0 : value;
+    })
+    .min(0, 'Les km en charge doivent être positifs')
+    .nullable(),
   taximetre_chutes_debut: Yup.number()
+    .transform((value, originalValue) => {
+      return originalValue === '' ? 0 : value;
+    })
     .min(0, 'Les chutes doivent être positives')
+    .nullable()
 });
 
 export const courseSchema = Yup.object().shape({

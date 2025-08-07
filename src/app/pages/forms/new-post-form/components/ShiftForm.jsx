@@ -13,19 +13,6 @@ import { contractTypes } from "../data";
 
 // ----------------------------------------------------------------------
 
-const initialShiftData = {
-  date: new Date().toISOString().split('T')[0],
-  heure_debut: '',
-  heure_fin_estimee: '',
-  interruptions: '00:00',
-  type_remuneration: 'Indépendant',
-  vehicule_id: '',
-  km_tableau_bord_debut: '',
-  taximetre_prise_charge_debut: '',
-  taximetre_index_km_debut: '',
-  taximetre_km_charge_debut: '',
-  taximetre_chutes_debut: ''
-};
 
 export function ShiftForm({ vehicles, onStartShift, onShowVehicleInfo }) {
   const {
@@ -36,7 +23,19 @@ export function ShiftForm({ vehicles, onStartShift, onShowVehicleInfo }) {
     formState: { errors }
   } = useForm({
     resolver: yupResolver(shiftSchema),
-    defaultValues: initialShiftData
+    defaultValues: {
+      date: new Date().toISOString().split('T')[0],
+      heure_debut: '',
+      heure_fin_estimee: '',
+      interruptions: '00:00',
+      type_remuneration: 'Indépendant',
+      vehicule_id: '',
+      km_tableau_bord_debut: '',
+      taximetre_prise_charge_debut: '0',
+      taximetre_index_km_debut: '0',
+      taximetre_km_charge_debut: '0',
+      taximetre_chutes_debut: '0'
+    }
   });
 
   const watchedData = watch();
@@ -47,7 +46,6 @@ export function ShiftForm({ vehicles, onStartShift, onShowVehicleInfo }) {
       const end = new Date(`2000-01-01T${watchedData.heure_fin_estimee}`);
       const diff = end - start;
       
-      // Soustraire les interruptions
       if (watchedData.interruptions) {
         const [intHours, intMinutes] = watchedData.interruptions.split(':').map(Number);
         const interruptionsMs = (intHours * 60 + intMinutes) * 60 * 1000;
@@ -66,16 +64,20 @@ export function ShiftForm({ vehicles, onStartShift, onShowVehicleInfo }) {
   };
 
   const onSubmit = (data) => {
-    console.log('Shift data:', data);
+    // Conversion des valeurs string vers number pour les champs numériques
+    const processedData = {
+      ...data,
+      km_tableau_bord_debut: Number(data.km_tableau_bord_debut) || 0,
+      taximetre_prise_charge_debut: Number(data.taximetre_prise_charge_debut) || 0,
+      taximetre_index_km_debut: Number(data.taximetre_index_km_debut) || 0,
+      taximetre_km_charge_debut: Number(data.taximetre_km_charge_debut) || 0,
+      taximetre_chutes_debut: Number(data.taximetre_chutes_debut) || 0
+    };
+    
+    console.log('Processed shift data:', processedData);
     toast.success("Shift démarré avec succès!");
-    onStartShift(data);
+    onStartShift(processedData);
   };
-
-  const vehicleOptions = vehicles.map(v => ({
-    id: v.id,
-    label: `${v.plaque_immatriculation} - ${v.marque} ${v.modele}`,
-    value: v.id
-  }));
 
   return (
     <div className="space-y-6">
@@ -156,16 +158,23 @@ export function ShiftForm({ vehicles, onStartShift, onShowVehicleInfo }) {
             <Controller
               name="vehicule_id"
               control={control}
-              render={({ field }) => (
-                <Listbox
-                  data={vehicleOptions}
-                  value={vehicleOptions.find(v => v.value === field.value) || null}
-                  onChange={(val) => field.onChange(val?.value)}
-                  placeholder="Sélectionner un véhicule"
-                  displayField="label"
-                  error={errors?.vehicule_id?.message}
-                />
-              )}
+              render={({ field }) => {
+                // Map vehicles prop to Listbox options
+                const vehicleOptions = vehicles.map(v => ({
+                  value: v.id,
+                  label: `${v.plaque_immatriculation} - ${v.marque} ${v.modele}`
+                }));
+                return (
+                  <Listbox
+                    data={vehicleOptions}
+                    value={vehicleOptions.find(v => v.value === field.value) || null}
+                    onChange={(val) => field.onChange(val?.value)}
+                    placeholder="Sélectionner un véhicule"
+                    displayField="label"
+                    error={errors?.vehicule_id?.message}
+                  />
+                );
+              }}
             />
           </div>
 
