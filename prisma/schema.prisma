@@ -1,0 +1,347 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model alerte {
+  id               Int            @id @default(autoincrement())
+  feuille_route_id Int?
+  course_id        Int?
+  type_alerte      String         @db.VarChar(50)
+  severite         String         @db.VarChar(20)
+  message          String
+  resolu           Boolean?       @default(false)
+  date_alerte      DateTime?      @default(now()) @db.Timestamp(6)
+  date_resolution  DateTime?      @db.Timestamp(6)
+  resolu_par       Int?
+  created_at       DateTime?      @default(now()) @db.Timestamp(6)
+  updated_at       DateTime?      @default(now()) @db.Timestamp(6)
+  course           course?        @relation(fields: [course_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  feuille_route    feuille_route? @relation(fields: [feuille_route_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  utilisateur      utilisateur?   @relation(fields: [resolu_par], references: [id], onUpdate: NoAction)
+
+  @@index([feuille_route_id], map: "idx_alerte_feuille")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model charge {
+  id               Int            @id @default(autoincrement())
+  feuille_route_id Int?
+  type_charge      String         @db.VarChar(50)
+  description      String?
+  montant          Decimal        @db.Decimal(12, 2)
+  date             DateTime?      @default(dbgenerated("CURRENT_DATE")) @db.Date
+  mode_paiement_id Int?
+  justificatif     String?        @db.VarChar(255)
+  notes            String?
+  created_at       DateTime?      @default(now()) @db.Timestamp(6)
+  updated_at       DateTime?      @default(now()) @db.Timestamp(6)
+  feuille_route    feuille_route? @relation(fields: [feuille_route_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  mode_paiement    mode_paiement? @relation(fields: [mode_paiement_id], references: [id], onUpdate: NoAction)
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model chauffeur {
+  id                    Int                     @id @default(autoincrement())
+  utilisateur_id        Int?                    @unique
+  regle_salaire_id      Int?
+  numero_badge          String                  @unique @db.VarChar(50)
+  date_embauche         DateTime                @db.Date
+  date_fin_contrat      DateTime?               @db.Date
+  type_contrat          String?                 @db.VarChar(50)
+  compte_bancaire       String?                 @db.VarChar(50)
+  taux_commission       Decimal?                @default(0.00) @db.Decimal(5, 2)
+  salaire_base          Decimal?                @default(0.00) @db.Decimal(10, 2)
+  notes                 String?
+  actif                 Boolean?                @default(true)
+  created_at            DateTime?               @default(now()) @db.Timestamp(6)
+  updated_at            DateTime?               @default(now()) @db.Timestamp(6)
+  regle_salaire         regle_salaire?          @relation(fields: [regle_salaire_id], references: [id], onUpdate: NoAction)
+  utilisateur           utilisateur?            @relation(fields: [utilisateur_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  feuille_route         feuille_route[]
+  paiement_salaire      paiement_salaire[]
+  performance_chauffeur performance_chauffeur[]
+
+  @@index([numero_badge], map: "idx_chauffeur_badge")
+  @@index([utilisateur_id], map: "idx_chauffeur_utilisateur")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model client {
+  id                       Int       @id @default(autoincrement())
+  type_client              String    @db.VarChar(20)
+  nom                      String    @db.VarChar(100)
+  prenom                   String?   @db.VarChar(100)
+  telephone                String    @db.VarChar(20)
+  email                    String?   @db.VarChar(100)
+  adresse                  String?
+  ville                    String?   @db.VarChar(100)
+  code_postal              String?   @db.VarChar(20)
+  pays                     String?   @default("Belgique") @db.VarChar(50)
+  num_tva                  String?   @db.VarChar(20)
+  periode_facturation      String?   @default("Mensuelle") @db.VarChar(50)
+  mode_facturation         String?   @default("Simple") @db.VarChar(50)
+  procedure_envoi          String?
+  adresse_facturation_diff Boolean?  @default(false)
+  adresse_facturation      String?
+  notes                    String?
+  date_creation            DateTime? @default(now()) @db.Timestamp(6)
+  actif                    Boolean?  @default(true)
+  created_at               DateTime? @default(now()) @db.Timestamp(6)
+  updated_at               DateTime? @default(now()) @db.Timestamp(6)
+  course                   course[]
+  facture                  facture[]
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model course {
+  id                 Int              @id @default(autoincrement())
+  feuille_route_id   Int
+  client_id          Int?
+  mode_paiement_id   Int?
+  numero_ordre       Int?
+  index_depart       Int
+  lieu_embarquement  String
+  heure_embarquement DateTime         @db.Timestamp(6)
+  index_arrivee      Int
+  lieu_debarquement  String
+  heure_debarquement DateTime?        @db.Timestamp(6)
+  prix_taximetre     Decimal          @db.Decimal(10, 2)
+  somme_percue       Decimal          @db.Decimal(10, 2)
+  distance_km        Int?             @default(dbgenerated("(index_arrivee - index_depart)"))
+  duree_minutes      Int?             @default(dbgenerated("\nCASE\n    WHEN (heure_debarquement IS NULL) THEN NULL::numeric\n    ELSE (EXTRACT(epoch FROM (heure_debarquement - heure_embarquement)) / (60)::numeric)\nEND"))
+  ratio_euro_km      Decimal?         @default(dbgenerated("\nCASE\n    WHEN ((index_arrivee - index_depart) = 0) THEN NULL::numeric\n    ELSE (somme_percue / ((index_arrivee - index_depart))::numeric)\nEND")) @db.Decimal(10, 2)
+  hors_creneau       Boolean?         @default(false)
+  notes              String?
+  created_at         DateTime?        @default(now()) @db.Timestamp(6)
+  updated_at         DateTime?        @default(now()) @db.Timestamp(6)
+  alerte             alerte[]
+  client             client?          @relation(fields: [client_id], references: [id], onUpdate: NoAction)
+  feuille_route      feuille_route    @relation(fields: [feuille_route_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  mode_paiement      mode_paiement?   @relation(fields: [mode_paiement_id], references: [id], onUpdate: NoAction)
+  facture_course     facture_course[]
+
+  @@index([client_id], map: "idx_course_client")
+  @@index([feuille_route_id], map: "idx_course_feuille")
+  @@index([heure_embarquement], map: "idx_course_statut")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model facture {
+  id             Int              @id @default(autoincrement())
+  numero_facture String           @unique @db.VarChar(40)
+  client_id      Int
+  date_emission  DateTime?        @default(dbgenerated("CURRENT_DATE")) @db.Date
+  date_echeance  DateTime?        @default(dbgenerated("(date_emission + '30 days'::interval)")) @db.Date
+  montant_ht     Decimal          @db.Decimal(12, 2)
+  tva_percent    Decimal?         @default(21.00) @db.Decimal(5, 2)
+  montant_tva    Decimal?         @default(dbgenerated("((montant_ht * tva_percent) / (100)::numeric)")) @db.Decimal(12, 2)
+  montant_total  Decimal?         @default(dbgenerated("(montant_ht + ((montant_ht * tva_percent) / (100)::numeric))")) @db.Decimal(12, 2)
+  statut         String?          @default("En attente") @db.VarChar(20)
+  mode_paiement  String?          @db.VarChar(20)
+  date_paiement  DateTime?        @db.Date
+  notes          String?
+  created_at     DateTime?        @default(now()) @db.Timestamp(6)
+  updated_at     DateTime?        @default(now()) @db.Timestamp(6)
+  client         client           @relation(fields: [client_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  facture_course facture_course[]
+
+  @@index([client_id], map: "idx_facture_client")
+  @@index([statut], map: "idx_facture_statut")
+}
+
+model facture_course {
+  facture_id   Int
+  course_id    Int
+  numero_bon   String?   @db.VarChar(50)
+  raison       String?
+  prix_facture Decimal   @db.Decimal(10, 2)
+  created_at   DateTime? @default(now()) @db.Timestamp(6)
+  course       course    @relation(fields: [course_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  facture      facture   @relation(fields: [facture_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@id([facture_id, course_id])
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model feuille_route {
+  id                    Int                      @id @default(autoincrement())
+  chauffeur_id          Int
+  vehicule_id           Int
+  date                  DateTime                 @db.Date
+  heure_debut           DateTime                 @db.Time(6)
+  heure_fin             DateTime?                @db.Time(6)
+  interruptions         Unsupported("interval")?
+  total_heures          Unsupported("interval")? @default(dbgenerated("\nCASE\n    WHEN (heure_fin IS NULL) THEN NULL::interval\n    ELSE ((heure_fin - heure_debut) - COALESCE(interruptions, '00:00:00'::interval))\nEND"))
+  km_debut              Int
+  km_fin                Int?
+  km_parcourus          Int?                     @default(dbgenerated("\nCASE\n    WHEN (km_fin IS NULL) THEN NULL::integer\n    ELSE (km_fin - km_debut)\nEND"))
+  prise_en_charge_debut Decimal?                 @db.Decimal(10, 2)
+  prise_en_charge_fin   Decimal?                 @db.Decimal(10, 2)
+  chutes_debut          Decimal?                 @db.Decimal(10, 2)
+  chutes_fin            Decimal?                 @db.Decimal(10, 2)
+  statut                String?                  @default("En cours") @db.VarChar(20)
+  saisie_mode           String?                  @default("chauffeur") @db.VarChar(20)
+  notes                 String?
+  created_at            DateTime?                @default(now()) @db.Timestamp(6)
+  updated_at            DateTime?                @default(now()) @db.Timestamp(6)
+  valide_par            Int?
+  date_validation       DateTime?                @db.Timestamp(6)
+  alerte                alerte[]
+  charge                charge[]
+  course                course[]
+  chauffeur             chauffeur                @relation(fields: [chauffeur_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  utilisateur           utilisateur?             @relation(fields: [valide_par], references: [id], onUpdate: NoAction)
+  vehicule              vehicule                 @relation(fields: [vehicule_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  paiement_salaire      paiement_salaire[]
+
+  @@index([chauffeur_id], map: "idx_feuille_route_chauffeur")
+  @@index([date], map: "idx_feuille_route_date")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model mode_paiement {
+  id                  Int                @id @default(autoincrement())
+  code                String             @unique @db.VarChar(10)
+  libelle             String             @db.VarChar(50)
+  type_paiement       String             @db.VarChar(20)
+  facturation_requise Boolean?           @default(false)
+  tva_applicable      Boolean?           @default(true)
+  actif               Boolean?           @default(true)
+  created_at          DateTime?          @default(now()) @db.Timestamp(6)
+  updated_at          DateTime?          @default(now()) @db.Timestamp(6)
+  charge              charge[]
+  course              course[]
+  paiement_salaire    paiement_salaire[]
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model paiement_salaire {
+  id               Int            @id @default(autoincrement())
+  chauffeur_id     Int
+  feuille_route_id Int?
+  periode_debut    DateTime       @db.Date
+  periode_fin      DateTime       @db.Date
+  montant_total    Decimal        @db.Decimal(12, 2)
+  montant_fixe     Decimal?       @default(0.00) @db.Decimal(12, 2)
+  montant_variable Decimal?       @default(0.00) @db.Decimal(12, 2)
+  montant_paye     Decimal        @db.Decimal(12, 2)
+  mode_paiement_id Int?
+  date_paiement    DateTime?      @default(dbgenerated("CURRENT_DATE")) @db.Date
+  statut           String?        @default("Payé") @db.VarChar(20)
+  notes            String?
+  created_at       DateTime?      @default(now()) @db.Timestamp(6)
+  updated_at       DateTime?      @default(now()) @db.Timestamp(6)
+  chauffeur        chauffeur      @relation(fields: [chauffeur_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  feuille_route    feuille_route? @relation(fields: [feuille_route_id], references: [id], onUpdate: NoAction)
+  mode_paiement    mode_paiement? @relation(fields: [mode_paiement_id], references: [id], onUpdate: NoAction)
+}
+
+model parametres_systeme {
+  id          Int       @id @default(autoincrement())
+  cle         String    @unique @db.VarChar(50)
+  valeur      String?
+  description String?
+  categorie   String?   @default("general") @db.VarChar(50)
+  modifiable  Boolean?  @default(true)
+  created_at  DateTime? @default(now()) @db.Timestamp(6)
+  updated_at  DateTime? @default(now()) @db.Timestamp(6)
+}
+
+model performance_chauffeur {
+  id             Int       @id @default(autoincrement())
+  chauffeur_id   Int
+  date_debut     DateTime  @db.Date
+  date_fin       DateTime  @db.Date
+  nombre_courses Int       @default(0)
+  km_parcourus   Int       @default(0)
+  recette_totale Decimal   @default(0.00) @db.Decimal(12, 2)
+  ratio_euro_km  Decimal?  @default(dbgenerated("\nCASE\n    WHEN (km_parcourus = 0) THEN NULL::numeric\n    ELSE (recette_totale / (km_parcourus)::numeric)\nEND")) @db.Decimal(10, 2)
+  salaire_total  Decimal   @default(0.00) @db.Decimal(12, 2)
+  charges_total  Decimal   @default(0.00) @db.Decimal(12, 2)
+  created_at     DateTime? @default(now()) @db.Timestamp(6)
+  updated_at     DateTime? @default(now()) @db.Timestamp(6)
+  chauffeur      chauffeur @relation(fields: [chauffeur_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([chauffeur_id, date_debut, date_fin])
+  @@index([chauffeur_id, date_debut], map: "idx_performance_chauffeur")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model regle_salaire {
+  id            Int         @id @default(autoincrement())
+  nom           String      @db.VarChar(100)
+  description   String?
+  type_regle    String      @db.VarChar(50)
+  taux_fixe     Decimal?    @db.Decimal(10, 2)
+  taux_variable Decimal?    @db.Decimal(10, 2)
+  seuil         Decimal?    @db.Decimal(10, 2)
+  heure_debut   DateTime?   @db.Time(6)
+  heure_fin     DateTime?   @db.Time(6)
+  jours_semaine String?     @default("1,2,3,4,5") @db.VarChar(20)
+  actif         Boolean?    @default(true)
+  created_at    DateTime?   @default(now()) @db.Timestamp(6)
+  updated_at    DateTime?   @default(now()) @db.Timestamp(6)
+  chauffeur     chauffeur[]
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model utilisateur {
+  id                  Int             @id @default(autoincrement())
+  type_utilisateur    String          @db.VarChar(20)
+  nom                 String          @db.VarChar(100)
+  prenom              String?         @db.VarChar(100)
+  telephone           String          @db.VarChar(20)
+  email               String          @unique @db.VarChar(100)
+  mot_de_passe        String          @db.VarChar(255)
+  adresse             String?
+  ville               String?         @db.VarChar(100)
+  code_postal         String?         @db.VarChar(20)
+  pays                String?         @default("Belgique") @db.VarChar(50)
+  num_bce             String?         @db.VarChar(20)
+  num_tva             String?         @db.VarChar(20)
+  tva_applicable      Boolean?        @default(true)
+  tva_percent         Decimal?        @default(21.00) @db.Decimal(5, 2)
+  date_creation       DateTime?       @default(now()) @db.Timestamp(6)
+  actif               Boolean?        @default(true)
+  last_login          DateTime?       @db.Timestamp(6)
+  reset_token         String?         @db.VarChar(255)
+  reset_token_expires DateTime?       @db.Timestamp(6)
+  created_at          DateTime?       @default(now()) @db.Timestamp(6)
+  updated_at          DateTime?       @default(now()) @db.Timestamp(6)
+  alerte              alerte[]
+  chauffeur           chauffeur?
+  feuille_route       feuille_route[]
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model vehicule {
+  id                     Int             @id @default(autoincrement())
+  plaque_immatriculation String          @unique @db.VarChar(20)
+  numero_identification  String          @unique @db.VarChar(50)
+  marque                 String          @db.VarChar(50)
+  modele                 String          @db.VarChar(50)
+  annee                  Int
+  type_vehicule          String?         @db.VarChar(50)
+  couleur                String?         @db.VarChar(30)
+  date_mise_circulation  DateTime        @db.Date
+  date_dernier_controle  DateTime?       @db.Date
+  date_prochain_controle DateTime?       @default(dbgenerated("(date_dernier_controle + '6 mons'::interval)")) @db.Date
+  capacite               Int?            @default(4)
+  carburant              String?         @db.VarChar(20)
+  consommation           Decimal?        @db.Decimal(5, 2)
+  etat                   String?         @default("Disponible") @db.VarChar(20)
+  notes                  String?
+  created_at             DateTime?       @default(now()) @db.Timestamp(6)
+  updated_at             DateTime?       @default(now()) @db.Timestamp(6)
+  feuille_route          feuille_route[]
+
+  @@index([plaque_immatriculation], map: "idx_vehicule_plaque")
+}
