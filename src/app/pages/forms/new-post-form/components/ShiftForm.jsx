@@ -145,7 +145,7 @@ export function ShiftForm({ vehicles, onStartShift, onShowVehicleInfo }) {
           {/* Sélection du véhicule */}
           <div className="bg-gray-50 dark:bg-dark-600/50 p-4 rounded-lg">
             <div className="flex items-center gap-2 mb-3">
-              <h4 className="font-medium text-gray-800 dark:text-dark-100">🚗 Véhicule</h4>
+              <h4 className="font-medium text-gray-800 dark:text-dark-100">Véhicule</h4>
               <button 
                 type="button"
                 onClick={onShowVehicleInfo}
