@@ -58,7 +58,6 @@
     "jwt-decode": "^4.0.0",
     "lint-staged": "^15.5.0",
     "pdf-lib": "^1.17.1",
-    "postgres-client": "^1.0.1",
     "prisma": "^6.13.0",
     "quill": "^2.0.3",
     "quill-magic-url": "^4.2.0",
