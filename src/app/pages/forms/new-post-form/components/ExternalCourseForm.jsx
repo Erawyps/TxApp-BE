@@ -110,7 +110,7 @@ export function ExternalCourseForm({ onSubmit, onCancel }) {
 
       <div className="bg-yellow-50 dark:bg-yellow-900/20 p-4 rounded-lg">
         <h4 className="font-medium mb-3 text-yellow-800 dark:text-yellow-200">
-          💰 Détails financiers
+          Détails financiers
         </h4>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <Input

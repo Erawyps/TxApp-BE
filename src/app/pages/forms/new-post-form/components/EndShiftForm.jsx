@@ -112,7 +112,7 @@ export function EndShiftForm({ onEndShift, shiftData, driver, onPrintReport }) {
           {/* Informations de fin */}
           <div className="bg-red-50 dark:bg-red-900/20 p-4 rounded-lg">
             <h4 className="font-medium mb-4 text-red-800 dark:text-red-200">
-              ⏰ Fin du shift
+              Fin du shift
             </h4>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <Input
@@ -150,7 +150,7 @@ export function EndShiftForm({ onEndShift, shiftData, driver, onPrintReport }) {
           {/* Mesures de fin */}
           <div className="bg-green-50 dark:bg-green-900/20 p-4 rounded-lg">
             <h4 className="font-medium mb-4 text-green-800 dark:text-green-200">
-              📊 Mesures de fin de shift
+              Mesures de fin de shift
             </h4>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               <Input
@@ -201,7 +201,7 @@ export function EndShiftForm({ onEndShift, shiftData, driver, onPrintReport }) {
           {/* Signature */}
           <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg">
             <h4 className="font-medium mb-4 text-blue-800 dark:text-blue-200">
-              ✍️ Signature du chauffeur
+              Signature du chauffeur
             </h4>
             <Input
               label="Nom et prénom pour signature"
@@ -226,10 +226,10 @@ export function EndShiftForm({ onEndShift, shiftData, driver, onPrintReport }) {
             </Button>
             <div className="flex gap-3">
               <Button variant="outlined" type="button">
-                💾 Sauvegarder en brouillon
+                Sauvegarder en brouillon
               </Button>
               <Button type="submit" color="success" size="lg">
-                ✅ Terminer le shift
+                Terminer le shift
               </Button>
             </div>
           </div>
