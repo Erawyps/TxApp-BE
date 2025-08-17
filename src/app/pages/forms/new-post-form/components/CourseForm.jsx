@@ -72,7 +72,7 @@ export function CourseForm({
       {/* Embarquement Section */}
       <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg">
         <h4 className="font-medium mb-3 text-blue-800 dark:text-blue-200">
-          📍 Embarquement
+          Embarquement
         </h4>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <Input
@@ -109,7 +109,7 @@ export function CourseForm({
       {/* Débarquement Section */}
       <div className="bg-green-50 dark:bg-green-900/20 p-4 rounded-lg">
         <h4 className="font-medium mb-3 text-green-800 dark:text-green-200">
-          🏁 Débarquement
+          Débarquement
         </h4>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <Input
@@ -139,7 +139,7 @@ export function CourseForm({
       {/* Tarification Section */}
       <div className="bg-yellow-50 dark:bg-yellow-900/20 p-4 rounded-lg">
         <h4 className="font-medium mb-3 text-yellow-800 dark:text-yellow-200">
-          💰 Tarification
+          Tarification
         </h4>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <Input

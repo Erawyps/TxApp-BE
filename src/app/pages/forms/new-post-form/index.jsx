@@ -316,7 +316,7 @@ const handleDownloadReport = () => {
                   <DialogPanel className="w-full max-w-4xl transform overflow-hidden rounded-lg bg-white dark:bg-dark-700 shadow-xl transition-all">
                     <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-dark-500">
                       <DialogTitle className="text-lg font-semibold text-gray-800 dark:text-dark-100">
-                        💰 Résumé Financier
+                        Résumé Financier
                       </DialogTitle>
                       <Button
                         variant="ghost"
@@ -369,7 +369,7 @@ const handleDownloadReport = () => {
                   <DialogPanel className="w-full max-w-md transform overflow-hidden rounded-lg bg-white dark:bg-dark-700 shadow-xl transition-all">
                     <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-dark-500">
                       <DialogTitle className="text-lg font-semibold text-gray-800 dark:text-dark-100">
-                        💸 Ajouter une dépense
+                        Ajouter une dépense
                       </DialogTitle>
                       <Button
                         variant="ghost"
@@ -421,7 +421,7 @@ const handleDownloadReport = () => {
                   <DialogPanel className="w-full max-w-lg transform overflow-hidden rounded-lg bg-white dark:bg-dark-700 shadow-xl transition-all">
                     <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-dark-500">
                       <DialogTitle className="text-lg font-semibold text-gray-800 dark:text-dark-100">
-                        🚖 Course externe
+                        Course externe
                       </DialogTitle>
                       <Button
                         variant="ghost"
@@ -465,7 +465,7 @@ const handleDownloadReport = () => {
             variant="outlined"
           >
             <PrinterIcon className="h-5 w-5" />
-            <span>🖨️ Imprimer feuille de route</span>
+            <span>Imprimer feuille de route</span>
           </Button>
         </div>
       </div>

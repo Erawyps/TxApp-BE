@@ -193,7 +193,7 @@ const EnhancedPrintComponent = ({
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
         <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
           <h3 className="font-semibold text-gray-900 dark:text-white mb-3">
-            📋 Informations Shift
+            Informations Shift
           </h3>
           <div className="space-y-2 text-sm">
             <div className="flex justify-between">
@@ -219,7 +219,7 @@ const EnhancedPrintComponent = ({
 
         <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
           <h3 className="font-semibold text-gray-900 dark:text-white mb-3">
-            🚖 Résumé Courses
+            Résumé Courses
           </h3>
           <div className="space-y-2 text-sm">
             <div className="flex justify-between">
@@ -298,7 +298,7 @@ const EnhancedPrintComponent = ({
       {/* Format Information */}
       <div className="mt-6 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
         <h4 className="font-medium text-gray-900 dark:text-white mb-2">
-          📋 Détails du format généré
+          Détails du format généré
         </h4>
         <ul className="text-sm text-gray-600 dark:text-gray-400 space-y-1">
           <li>• Format A4 (210x297mm) respectant la feuille de route officielle</li>

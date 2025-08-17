@@ -90,7 +90,7 @@ export function ShiftForm({ vehicles, onStartShift, onShowVehicleInfo }) {
           {/* Informations générales du shift */}
           <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg">
             <h4 className="font-medium mb-4 text-blue-800 dark:text-blue-200">
-              📅 Informations du shift
+              Informations du shift
             </h4>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               <Input
@@ -181,7 +181,7 @@ export function ShiftForm({ vehicles, onStartShift, onShowVehicleInfo }) {
           {/* Mesures de début */}
           <div className="bg-green-50 dark:bg-green-900/20 p-4 rounded-lg">
             <h4 className="font-medium mb-4 text-green-800 dark:text-green-200">
-              📊 Mesures de début de shift
+              Mesures de début de shift
             </h4>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               <Input
@@ -230,7 +230,7 @@ export function ShiftForm({ vehicles, onStartShift, onShowVehicleInfo }) {
 
           <div className="flex justify-end pt-4">
             <Button type="submit" className="min-w-[10rem]" size="lg">
-              🚀 Démarrer le shift
+              Démarrer le shift
             </Button>
           </div>
         </form>
