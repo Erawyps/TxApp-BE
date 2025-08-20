@@ -52,10 +52,9 @@ export function CourseForm({
   const handleFormSubmit = (data) => {
     const courseData = {
       ...data,
-      id: editingCourse?.id || Date.now(),
       status: 'completed'
     };
-    
+
     onSubmit(courseData);
     toast.success(editingCourse ? "Course modifiée avec succès!" : "Course ajoutée avec succès!");
   };

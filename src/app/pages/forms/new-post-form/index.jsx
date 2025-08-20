@@ -1,5 +1,5 @@
 // Import Dependencies
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { 
   ChartBarIcon, 
   ClockIcon, 
@@ -27,6 +27,7 @@ import { ExpenseForm } from "./components/ExpenseForm";
 import { ExternalCourseForm } from "./components/ExternalCourseForm";
 import { HistoryModal } from "./components/HistoryModal";
 import { mockData } from "./data";
+import { fetchCourses, upsertCourse, deleteCourse as removeCourse } from "services/courses";
 
 // ----------------------------------------------------------------------
 
@@ -39,7 +40,7 @@ const tabs = [
 
 export default function TxApp() {
   const [activeTab, setActiveTab] = useState('dashboard');
-  const [courses, setCourses] = useState(mockData.courses);
+  const [courses, setCourses] = useState([]);
   const [expenses, setExpenses] = useState([]);
   const [externalCourses, setExternalCourses] = useState([]);
   const [shiftData, setShiftData] = useState(null);
@@ -92,6 +93,24 @@ const handleDownloadReport = () => {
     });
   }, [courses, searchTerm, statusFilter]);
 
+  useEffect(() => {
+    // Charger les courses depuis la base (Supabase) ou localStorage fallback
+    (async () => {
+      try {
+        const list = await fetchCourses();
+        if (list && list.length) {
+          setCourses(list);
+        } else {
+          // Fallback initial avec données mock si aucune donnée
+          setCourses(mockData.courses);
+        }
+      } catch (e) {
+        console.error("Erreur chargement courses:", e);
+        setCourses(mockData.courses);
+      }
+    })();
+  }, []);
+
   // Handlers
   const handleNewCourse = () => {
     setEditingCourse(null);
@@ -103,18 +122,32 @@ const handleDownloadReport = () => {
     setShowCourseModal(true);
   };
 
-  const handleDeleteCourse = (courseId) => {
-    setCourses(courses.filter(c => c.id !== courseId));
+  const handleDeleteCourse = async (courseId) => {
+    try {
+      await removeCourse(courseId);
+      setCourses(courses.filter(c => c.id !== courseId));
+      toast.success("Course supprimée");
+    } catch (e) {
+      console.error(e);
+      toast.error("Erreur lors de la suppression");
+    }
   };
 
-  const handleSubmitCourse = (courseData) => {
-    if (editingCourse) {
-      setCourses(courses.map(c => c.id === editingCourse.id ? courseData : c));
-    } else {
-      setCourses([...courses, courseData]);
+  const handleSubmitCourse = async (courseData) => {
+    try {
+      // Persist to DB (Supabase) or localStorage fallback
+      const saved = await upsertCourse({ ...courseData, id: editingCourse?.id });
+      if (editingCourse) {
+        setCourses(courses.map(c => c.id === editingCourse.id ? saved : c));
+      } else {
+        setCourses([...courses, saved]);
+      }
+      setShowCourseModal(false);
+      setEditingCourse(null);
+    } catch (e) {
+      console.error(e);
+      toast.error("Erreur lors de l'enregistrement de la course");
     }
-    setShowCourseModal(false);
-    setEditingCourse(null);
   };
 
   const handleCancelCourse = () => {
