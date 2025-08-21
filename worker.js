@@ -1,6 +1,5 @@
 import { Hono } from 'hono'
 import { cors } from 'hono/cors'
-import { serveStatic } from 'hono/cloudflare-assets'
 import { createClient } from '@supabase/supabase-js'
 
 // Create Hono app for API routes and static assets
@@ -31,10 +30,7 @@ app.get('/api/profile', async (c) => {
   return c.json({ data })
 })
 
-// Serve static assets from Wrangler's ASSETS binding
-app.get('*', serveStatic())
-
-// SPA fallback to index.html for unknown routes
-app.notFound((c) => serveStatic({ path: '/index.html' })(c))
+// Static assets and SPA fallback are served automatically by Wrangler's assets binding
+// (see wrangler.jsonc: assets.not_found_handling = "single-page-application").
 
 export default app

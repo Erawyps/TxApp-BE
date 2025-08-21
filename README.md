@@ -3,8 +3,8 @@
 Stack: React (Vite) + Hono + Cloudflare Workers + Supabase
 
 Overview
-- Frontend: React built with Vite. Build output is served as static assets via Wrangler assets binding, handled directly by Hono using hono/cloudflare-assets.
-- Backend: Hono-based API + static handling in a single Worker (see worker.js). Example routes: GET /api/health, GET /api/profile.
+- Frontend: React built with Vite. Build output is served automatically via Wrangler assets binding (with SPA fallback configured).
+- Backend: Hono-based API in a single Worker (see worker.js). Static assets are served by Wrangler assets routing. Example routes: GET /api/health, GET /api/profile.
 - Database: Supabase (Postgres). Use @supabase/supabase-js from the Worker for server-side calls, or from React for client-side.
 
 Prisma vs Supabase on Workers
