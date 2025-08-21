@@ -11,6 +11,10 @@
       "binding": "ASSETS",
       "not_found_handling": "single-page-application"
     },
+    "vars": {
+      "SUPABASE_URL": "",
+      "SUPABASE_ANON_KEY": ""
+    },
     "hyperdrive": [
       {
         "binding": "HYPERDRIVE",
