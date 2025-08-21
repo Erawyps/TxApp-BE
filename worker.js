@@ -1,6 +1,7 @@
 import { Hono } from 'hono'
 import { cors } from 'hono/cors'
 import { createClient } from '@supabase/supabase-js'
+import { verifyToken } from '@clerk/backend'
 
 // Create Hono app for API routes and static assets
 const app = new Hono()
@@ -28,6 +29,21 @@ app.get('/api/profile', async (c) => {
   const { data, error } = await supabase.from('profiles').select('*').limit(1)
   if (error) return c.json({ error: error.message }, 500)
   return c.json({ data })
+})
+
+// Verify Clerk session (optional) - expects Authorization: Bearer <token>
+app.get('/api/me', async (c) => {
+  const authHeader = c.req.header('Authorization')
+  const token = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : null
+  const secret = c.env.CLERK_SECRET_KEY
+  if (!token) return c.json({ error: 'Missing bearer token' }, 401)
+  if (!secret) return c.json({ error: 'Clerk not configured' }, 501)
+  try {
+    const payload = await verifyToken(token, { secretKey: secret })
+    return c.json({ sub: payload.sub, sid: payload.sid })
+  } catch {
+    return c.json({ error: 'Invalid token' }, 401)
+  }
 })
 
 // Static assets and SPA fallback are served automatically by Wrangler's assets binding

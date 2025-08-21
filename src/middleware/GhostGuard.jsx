@@ -1,5 +1,6 @@
 // Import Dependencies
 import { Navigate, useOutlet } from "react-router";
+import { useAuth } from "@clerk/clerk-react";
 
 // Local Imports
 import { useAuthContext } from "app/contexts/auth/context";
@@ -11,17 +12,18 @@ import { HOME_PATH, REDIRECT_URL_KEY } from "constants/app.constant";
 export default function GhostGuard() {
   const outlet = useOutlet();
   const { isAuthenticated } = useAuthContext();
+  const { isSignedIn } = useAuth();
 
   const url = `${new URLSearchParams(window.location.search).get(
     REDIRECT_URL_KEY,
   )}`;
 
-  if (isAuthenticated) {
+  if (isSignedIn || isAuthenticated) {
     if (url && url !== "") {
       return <Navigate to={url} />;
     }
     return <Navigate to={HOME_PATH} />;
   }
 
-  return <>{outlet}</>;
+  return <>{outlet}</>; 
 }

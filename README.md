@@ -1,6 +1,6 @@
 # TxApp-BE
 
-Stack: React (Vite) + Hono + Cloudflare Workers + Supabase
+Stack: React (Vite) + Hono + Cloudflare Workers + Supabase + Clerk Auth
 
 Overview
 - Frontend: React built with Vite. Build output is served automatically via Wrangler assets binding (with SPA fallback configured).
@@ -23,7 +23,8 @@ Environment variables (Wrangler)
 Set these as Wrangler secrets or vars:
 - SUPABASE_URL
 - SUPABASE_ANON_KEY (or SERVICE_ROLE_KEY if you need elevated access)
-Note: Do not expose SERVICE_ROLE_KEY to the browser. Keep it only in the Worker environment if needed.
+- CLERK_SECRET_KEY (server-side token verification for /api/me)
+Note: Do not expose SERVICE_ROLE_KEY or CLERK_SECRET_KEY to the browser. Keep them only in the Worker environment.
 
 CORS
 - Default CORS is permissive (*) in worker.js for /api/* during development. In production, set origin to your real frontend domain(s).
