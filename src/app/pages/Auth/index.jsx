@@ -9,6 +9,11 @@ export default function ClerkAuth() {
   const clerkPubKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
   const hasClerk = !!clerkPubKey;
 
+  // read redirect target from query string, default to HOME_PATH
+  const params = new URLSearchParams(location.search);
+  const redirectParam = params.get("redirect");
+  const redirectTarget = redirectParam ? decodeURIComponent(redirectParam) : HOME_PATH;
+
   if (!hasClerk) {
     return (
       <Page title={isSignUp ? "Sign Up" : "Login"}>
@@ -26,16 +31,21 @@ export default function ClerkAuth() {
     );
   }
 
+  // Preserve redirect between SignIn/SignUp URLs
+  const redirectQS = redirectParam ? `?redirect=${encodeURIComponent(redirectTarget)}` : "";
+  const signInUrl = `/login${redirectQS}`;
+  const signUpUrl = `/sign-up${redirectQS}`;
+
   return (
     <Page title={isSignUp ? "Sign Up" : "Login"}>
       <main className="min-h-100vh grid w-full grow grid-cols-1 place-items-center p-4">
         <SignedIn>
-          <Navigate to={HOME_PATH} />
+          <Navigate to={redirectTarget || HOME_PATH} />
         </SignedIn>
         {isSignUp ? (
-          <SignUp routing="path" signInUrl="/login" />
+          <SignUp routing="path" signInUrl={signInUrl} afterSignUpUrl={redirectTarget} />
         ) : (
-          <SignIn routing="path" signUpUrl="/sign-up" />
+          <SignIn routing="path" signUpUrl={signUpUrl} afterSignInUrl={redirectTarget} />
         )}
       </main>
     </Page>
