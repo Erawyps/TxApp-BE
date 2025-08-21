@@ -1,5 +1,6 @@
 // Import Dependencies
 import { RouterProvider } from "react-router";
+import { ClerkProvider } from "@clerk/clerk-react";
 
 // Local Imports
 import { AuthProvider } from "app/contexts/auth/Provider";
@@ -8,13 +9,14 @@ import { LocaleProvider } from "app/contexts/locale/Provider";
 import { SidebarProvider } from "app/contexts/sidebar/Provider";
 import { ThemeProvider } from "app/contexts/theme/Provider";
 import router from "app/router/router";
-// Dans votre fichier principal (ex: App.js)
-import 'react-toastify/dist/ReactToastify.css';
 
 // ----------------------------------------------------------------------
 
 function App() {
-  return (
+  const clerkPubKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
+
+  // Si Clerk n'est pas configuré, on continue sans
+  const AppContent = (
     <AuthProvider>
       <ThemeProvider>
         <LocaleProvider>
@@ -27,6 +29,17 @@ function App() {
       </ThemeProvider>
     </AuthProvider>
   );
+
+  // Envelopper avec ClerkProvider si configuré
+  if (clerkPubKey) {
+    return (
+      <ClerkProvider publishableKey={clerkPubKey}>
+        {AppContent}
+      </ClerkProvider>
+    );
+  }
+
+  return AppContent;
 }
 
 export default App;
