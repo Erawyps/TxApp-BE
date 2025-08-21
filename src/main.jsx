@@ -8,8 +8,14 @@ import "simplebar-react/dist/simplebar.min.css";
 
 import "styles/index.css";
 
+import { ClerkProvider } from "@clerk/clerk-react";
+
+const clerkPubKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
+
 ReactDOM.createRoot(document.getElementById("root")).render(
   <React.StrictMode>
-    <App />
+    <ClerkProvider publishableKey={clerkPubKey} afterSignOutUrl="/login">
+      <App />
+    </ClerkProvider>
   </React.StrictMode>,
 );
