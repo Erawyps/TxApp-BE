@@ -16,9 +16,11 @@ export default function AuthGuard() {
   const location = useLocation();
 
   if (!isSignedIn && !isAuthenticated) {
+    const fullPath = `${location.pathname}${location.search || ""}${location.hash || ""}`;
+    const encoded = encodeURIComponent(fullPath || "/");
     return (
       <Navigate
-        to={`${GHOST_ENTRY_PATH}?${REDIRECT_URL_KEY}=${location.pathname}`}
+        to={`${GHOST_ENTRY_PATH}?${REDIRECT_URL_KEY}=${encoded}`}
         replace
       />
     );
