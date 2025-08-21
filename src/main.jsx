@@ -12,10 +12,16 @@ import { ClerkProvider } from "@clerk/clerk-react";
 
 const clerkPubKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
 
+const RootTree = clerkPubKey ? (
+  <ClerkProvider publishableKey={clerkPubKey} afterSignOutUrl="/login">
+    <App />
+  </ClerkProvider>
+) : (
+  <App />
+);
+
 ReactDOM.createRoot(document.getElementById("root")).render(
   <React.StrictMode>
-    <ClerkProvider publishableKey={clerkPubKey} afterSignOutUrl="/login">
-      <App />
-    </ClerkProvider>
+    {RootTree}
   </React.StrictMode>,
 );

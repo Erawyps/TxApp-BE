@@ -6,6 +6,25 @@ import { HOME_PATH } from "constants/app.constant";
 export default function ClerkAuth() {
   const location = useLocation();
   const isSignUp = location.pathname.includes("sign-up");
+  const clerkPubKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
+  const hasClerk = !!clerkPubKey;
+
+  if (!hasClerk) {
+    return (
+      <Page title={isSignUp ? "Sign Up" : "Login"}>
+        <main className="min-h-100vh grid w-full grow grid-cols-1 place-items-center p-4">
+          <div className="max-w-xl text-center space-y-3">
+            <h2 className="text-xl font-semibold">Authentification non configurée</h2>
+            <p className="text-gray-600 dark:text-gray-300">
+              Configurez Clerk pour activer la connexion. Ajoutez VITE_CLERK_PUBLISHABLE_KEY dans votre fichier .env côté Vite,
+              puis relancez le serveur. En attendant, l&apos;application reste accessible sans authentification Clerk.
+            </p>
+            <a className="text-blue-600 hover:underline" href="/">Retour à l&apos;accueil</a>
+          </div>
+        </main>
+      </Page>
+    );
+  }
 
   return (
     <Page title={isSignUp ? "Sign Up" : "Login"}>
