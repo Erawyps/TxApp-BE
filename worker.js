@@ -46,6 +46,76 @@ app.get('/api/me', async (c) => {
   }
 })
 
+// Users: sync Clerk identity into Supabase using a configurable table (default: utilisateur)
+app.post('/api/users/sync', async (c) => {
+  const authHeader = c.req.header('Authorization')
+  const token = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : null
+  const secret = c.env.CLERK_SECRET_KEY
+  if (!token) return c.json({ error: 'Missing bearer token' }, 401)
+  if (!secret) return c.json({ error: 'Clerk not configured' }, 501)
+
+  const { SUPABASE_URL, SUPABASE_ANON_KEY, USERS_TABLE } = c.env
+  if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
+    return c.json({ error: 'Supabase env not configured' }, 500)
+  }
+  const table = USERS_TABLE || 'utilisateur'
+
+  let payload
+  try {
+    payload = await c.req.json()
+  } catch {
+    payload = {}
+  }
+
+  const { email, prenom = '', nom = '', role = 'user', telephone = '' } = payload || {}
+  if (!email) return c.json({ error: 'email is required' }, 400)
+
+  const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, { auth: { persistSession: false } })
+
+  // Build a minimal row compatible with prisma utilisateur schema (best effort)
+  const now = new Date().toISOString()
+  const row = {
+    email,
+    prenom,
+    nom,
+    type_utilisateur: role,
+    telephone: telephone || '',
+    mot_de_passe: 'CLERK',
+    actif: true,
+    created_at: now,
+    updated_at: now,
+  }
+
+  // Try upsert by unique email if possible
+  const { data, error } = await supabase.from(table)
+    .upsert(row, { onConflict: 'email' })
+    .select()
+    .maybeSingle()
+
+  if (error) {
+    return c.json({
+      error: 'Upsert failed',
+      details: error.message,
+      hint: `Ensure table "${table}" exists and allows insert/update for anon key, and required columns (email, mot_de_passe, type_utilisateur, telephone, nom) accept provided defaults or have defaults. You can change table via USERS_TABLE env.`,
+    }, 501)
+  }
+  return c.json({ ok: true, user: data })
+})
+
+app.get('/api/users/me', async (c) => {
+  const { SUPABASE_URL, SUPABASE_ANON_KEY, USERS_TABLE } = c.env
+  const table = USERS_TABLE || 'utilisateur'
+  const email = c.req.query('email')
+  if (!email) return c.json({ error: 'email query param is required' }, 400)
+  if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
+    return c.json({ error: 'Supabase env not configured' }, 500)
+  }
+  const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, { auth: { persistSession: false } })
+  const { data, error } = await supabase.from(table).select('*').eq('email', email).maybeSingle()
+  if (error) return c.json({ error: error.message }, 500)
+  return c.json({ user: data })
+})
+
 // Static assets and SPA fallback are served automatically by Wrangler's assets binding
 // (see wrangler.jsonc: assets.not_found_handling = "single-page-application").
 
