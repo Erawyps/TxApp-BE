@@ -105,6 +105,17 @@ const protectedRoutes = {
             },
           ],
         },
+        {
+          path: "account",
+          children: [
+            {
+              path: "profile",
+              lazy: async () => ({
+                Component: (await import("app/pages/Account/Profile")).default,
+              }),
+            },
+          ],
+        },
       ],
     },
   ],
