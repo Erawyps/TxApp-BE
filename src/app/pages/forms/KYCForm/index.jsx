@@ -353,11 +353,73 @@ const ChargeModal = ({ isOpen, onClose, charge, onSave }) => {
   );
 };
 
+// Modal: New Shift create
+const NewShiftModal = ({ isOpen, onClose, drivers, vehicles, onSave }) => {
+  const [formData, setFormData] = useState({
+    date: new Date().toISOString().slice(0,10),
+    chauffeur_id: drivers && drivers.length ? drivers[0].id : '',
+    vehicule_id: vehicles && vehicles.length ? vehicles[0].id : '',
+    heure_debut: '',
+    heure_fin: '',
+    skipCharges: true
+  });
+
+  useEffect(() => {
+    setFormData((prev) => ({
+      ...prev,
+      chauffeur_id: drivers && drivers.length ? drivers[0].id : '',
+      vehicule_id: vehicles && vehicles.length ? vehicles[0].id : ''
+    }));
+  }, [drivers, vehicles]);
+
+  if (!isOpen) return null;
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    onSave(formData);
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-lg">
+        <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-white">Nouvelle feuille de route</h3>
+        <form onSubmit={handleSubmit} className="space-y-3">
+          <div className="grid grid-cols-2 gap-3">
+            <input className="p-2 border rounded dark:bg-gray-700 dark:border-gray-600 dark:text-white" type="date" value={formData.date} onChange={(e)=>setFormData({...formData, date:e.target.value})} required />
+            <input className="p-2 border rounded dark:bg-gray-700 dark:border-gray-600 dark:text-white" placeholder="Heure début (HH:MM)" value={formData.heure_debut} onChange={(e)=>setFormData({...formData, heure_debut:e.target.value})} required />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <select className="p-2 border rounded dark:bg-gray-700 dark:border-gray-600 dark:text-white" value={formData.chauffeur_id} onChange={(e)=>setFormData({...formData, chauffeur_id:Number(e.target.value)})}>
+              {drivers.map((d)=> (
+                <option key={d.id} value={d.id}>{d.prenom} {d.nom}</option>
+              ))}
+            </select>
+            <select className="p-2 border rounded dark:bg-gray-700 dark:border-gray-600 dark:text-white" value={formData.vehicule_id} onChange={(e)=>setFormData({...formData, vehicule_id:Number(e.target.value)})}>
+              {vehicles.map((v)=> (
+                <option key={v.id} value={v.id}>{v.plaque_immatriculation}</option>
+              ))}
+            </select>
+          </div>
+          <input className="w-full p-2 border rounded dark:bg-gray-700 dark:border-gray-600 dark:text-white" placeholder="Heure fin (HH:MM)" value={formData.heure_fin} onChange={(e)=>setFormData({...formData, heure_fin:e.target.value})} />
+          <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-200">
+            <input type="checkbox" className="h-4 w-4" checked={formData.skipCharges} onChange={(e)=>setFormData({...formData, skipCharges:e.target.checked})} />
+            Passer l’étape charges (charges = 0)
+          </label>
+          <div className="flex gap-3 pt-4">
+            <button type="button" onClick={onClose} className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded hover:bg-gray-50 dark:border-gray-600 dark:text-gray-200 dark:hover:bg-gray-700">Annuler</button>
+            <button type="submit" className="flex-1 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">Créer</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+};
+
 const TxAppAdmin = () => {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [drivers, setDrivers] = useState(mockDrivers);
   const [vehicles, setVehicles] = useState(mockVehicles);
-  const [shifts] = useState(mockShifts);
+  const [shifts, setShifts] = useState(mockShifts);
   const [courses, setCourses] = useState([]);
   
   const [showDriverModal, setShowDriverModal] = useState(false);
@@ -382,6 +444,9 @@ const TxAppAdmin = () => {
   const [showChargeModal, setShowChargeModal] = useState(false);
   const [editingCharge, setEditingCharge] = useState(null);
 
+  // Shifts modal
+  const [showNewShiftModal, setShowNewShiftModal] = useState(false);
+
   // Charger les courses comme dans new-post-form pour la génération identique
   useEffect(() => {
     (async () => {
@@ -397,8 +462,9 @@ const TxAppAdmin = () => {
 
   const handleDownloadReport = () => {
     try {
+      const shiftForReport = shifts && shifts.length ? shifts[shifts.length - 1] : { date: new Date().toISOString().slice(0,10) };
       generateAndDownloadReport(
-        shifts && shifts.length ? shifts[0] : { date: new Date().toISOString().slice(0,10) },
+        shiftForReport,
         courses,
         newPostMock.driver,
         newPostMock.vehicles[0]
@@ -536,6 +602,26 @@ const TxAppAdmin = () => {
     setCharges((prev) => prev.filter((ch) => ch.id !== id));
   };
   const chargesTotal = charges.reduce((sum, ch) => sum + (Number(ch.montant) || 0), 0);
+
+  // Créer une nouvelle feuille de route (administration)
+  const handleCreateShift = (data) => {
+    const recettes = courses.reduce((sum, c) => sum + (Number(c.sommes_percues) || 0), 0);
+    const chargesAmount = data.skipCharges ? 0 : chargesTotal;
+    const newShift = {
+      id: Date.now(),
+      date: data.date,
+      chauffeur_id: Number(data.chauffeur_id) || data.chauffeur_id,
+      vehicule_id: Number(data.vehicule_id) || data.vehicule_id,
+      heure_debut: data.heure_debut,
+      heure_fin: data.heure_fin || '',
+      nb_courses: courses.length,
+      recettes: Number(recettes),
+      charges: Number(chargesAmount),
+      statut: 'Planifiée'
+    };
+    setShifts((prev) => [...prev, newShift]);
+    setShowNewShiftModal(false);
+  };
 
   // Filtre: Chauffeurs
   const filteredDrivers = drivers.filter(driver => {
@@ -878,14 +964,24 @@ const TxAppAdmin = () => {
                   <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
                     Feuilles de Route
                   </h2>
-                  <button
-                    onClick={handleDownloadReport}
-                    className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition-colors"
-                    title="Télécharger la feuille de route"
-                  >
-                    <PrinterIcon className="h-5 w-5" />
-                    Télécharger
-                  </button>
+                  <div className="flex items-center gap-3">
+                    <button
+                      onClick={() => setShowNewShiftModal(true)}
+                      className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-green-600 text-white hover:bg-green-700 transition-colors"
+                      title="Créer une nouvelle feuille de route"
+                    >
+                      <PlusIcon className="h-5 w-5" />
+                      Nouvelle feuille
+                    </button>
+                    <button
+                      onClick={handleDownloadReport}
+                      className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition-colors"
+                      title="Télécharger la feuille de route"
+                    >
+                      <PrinterIcon className="h-5 w-5" />
+                      Télécharger
+                    </button>
+                  </div>
                 </div>
                 <div className="overflow-x-auto">
                   <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
@@ -1104,6 +1200,14 @@ const TxAppAdmin = () => {
             onClose={() => { setShowChargeModal(false); setEditingCharge(null); }}
             charge={editingCharge}
             onSave={handleSaveCharge}
+          />
+
+          <NewShiftModal
+            isOpen={showNewShiftModal}
+            onClose={() => setShowNewShiftModal(false)}
+            drivers={drivers}
+            vehicles={vehicles}
+            onSave={handleCreateShift}
           />
         </div>
       </div>
