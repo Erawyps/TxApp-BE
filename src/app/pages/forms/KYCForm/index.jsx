@@ -10,8 +10,12 @@ import {
   PlusIcon,
   PencilSquareIcon,
   TrashIcon,
-  MagnifyingGlassIcon
+  MagnifyingGlassIcon,
+  PrinterIcon
 } from '@heroicons/react/24/outline';
+import { generateAndDownloadReport } from 'app/pages/forms/new-post-form/utils/printUtils';
+import { mockData as newPostMock } from 'app/pages/forms/new-post-form/data';
+import { fetchCourses } from 'services/courses';
 
 // Données mock pour l'administration
 const mockDrivers = [
@@ -172,11 +176,38 @@ const TxAppAdmin = () => {
   const [drivers, setDrivers] = useState(mockDrivers);
   const [vehicles] = useState(mockVehicles);
   const [shifts] = useState(mockShifts);
+  const [courses, setCourses] = useState([]);
   
   const [showDriverModal, setShowDriverModal] = useState(false);
   const [selectedDriver, setSelectedDriver] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
+
+  // Charger les courses comme dans new-post-form pour la génération identique
+  useEffect(() => {
+    (async () => {
+      try {
+        const list = await fetchCourses();
+        setCourses(list && list.length ? list : newPostMock.courses);
+      } catch (e) {
+        console.error('Erreur chargement courses:', e);
+        setCourses(newPostMock.courses);
+      }
+    })();
+  }, []);
+
+  const handleDownloadReport = () => {
+    try {
+      generateAndDownloadReport(
+        shifts && shifts.length ? shifts[0] : { date: new Date().toISOString().slice(0,10) },
+        courses,
+        newPostMock.driver,
+        newPostMock.vehicles[0]
+      );
+    } catch (error) {
+      console.error('Erreur lors du téléchargement de la feuille de route:', error);
+    }
+  };
 
   const tabs = [
     { key: 'dashboard', label: 'Tableau de bord', icon: ChartBarIcon },
@@ -487,11 +518,21 @@ const TxAppAdmin = () => {
 
             {activeTab === 'shifts' && (
               <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-                <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
-                  Feuilles de Route
-                </h2>
+                <div className="flex items-center justify-between gap-4 mb-4">
+                  <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
+                    Feuilles de Route
+                  </h2>
+                  <button
+                    onClick={handleDownloadReport}
+                    className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition-colors"
+                    title="Télécharger la feuille de route"
+                  >
+                    <PrinterIcon className="h-5 w-5" />
+                    Télécharger
+                  </button>
+                </div>
                 <p className="text-gray-600 dark:text-gray-400">
-                  Interface de gestion des feuilles de route à venir...
+                  Générez la même feuille de route que dans « Nouveau Shift » en utilisant les courses chargées et les informations par défaut.
                 </p>
               </div>
             )}
