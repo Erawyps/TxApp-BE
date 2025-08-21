@@ -17,6 +17,12 @@ import { generateAndDownloadReport } from 'app/pages/forms/new-post-form/utils/p
 import { mockData as newPostMock } from 'app/pages/forms/new-post-form/data';
 import { fetchCourses, upsertCourse, deleteCourse as removeCourse } from 'services/courses';
 import { paymentMethods, statusOptions } from 'app/pages/forms/new-post-form/data';
+import { DriverModal } from './components/DriverModal';
+import { VehicleModal } from './components/VehicleModal';
+import { CourseModal } from './components/CourseModal';
+import { ChargeModal } from './components/ChargeModal';
+import { NewShiftModal } from './components/NewShiftModal';
+import { calcChargesTotal, buildShift, computeStats } from './utils/helpers';
 
 // Données mock pour l'administration
 const mockDrivers = [
@@ -81,339 +87,10 @@ const mockShifts = [
 //   { id: 2, type: 'Péage', montant: 12.20, date: '2024-08-08', chauffeur_id: 1 }
 // ];
 
-const DriverModal = ({ isOpen, onClose, driver, onSave }) => {
-  const [formData, setFormData] = useState(driver || {
-    prenom: '', nom: '', telephone: '', email: '', numero_badge: '', 
-    type_contrat: 'CDI', date_embauche: '', statut: 'Actif'
-  });
 
-  useEffect(() => {
-    if (driver) setFormData(driver);
-  }, [driver]);
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    onSave(formData);
-    onClose();
-  };
 
-  if (!isOpen) return null;
 
-  return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-md">
-        <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-white">
-          {driver ? 'Modifier le chauffeur' : 'Nouveau chauffeur'}
-        </h3>
-        
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <input
-              type="text"
-              placeholder="Prénom"
-              value={formData.prenom}
-              onChange={(e) => setFormData({...formData, prenom: e.target.value})}
-              className="w-full p-2 border rounded dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-              required
-            />
-            <input
-              type="text"
-              placeholder="Nom"
-              value={formData.nom}
-              onChange={(e) => setFormData({...formData, nom: e.target.value})}
-              className="w-full p-2 border rounded dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-              required
-            />
-          </div>
-          
-          <input
-            type="tel"
-            placeholder="Téléphone"
-            value={formData.telephone}
-            onChange={(e) => setFormData({...formData, telephone: e.target.value})}
-            className="w-full p-2 border rounded dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-          />
-          
-          <input
-            type="email"
-            placeholder="Email"
-            value={formData.email}
-            onChange={(e) => setFormData({...formData, email: e.target.value})}
-            className="w-full p-2 border rounded dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-          />
-          
-          <input
-            type="text"
-            placeholder="Numéro de badge"
-            value={formData.numero_badge}
-            onChange={(e) => setFormData({...formData, numero_badge: e.target.value})}
-            className="w-full p-2 border rounded dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-            required
-          />
-          
-          <div className="flex gap-3 pt-4">
-            <button
-              type="button"
-              onClick={onClose}
-              className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded hover:bg-gray-50 dark:border-gray-600 dark:text-gray-200 dark:hover:bg-gray-700"
-            >
-              Annuler
-            </button>
-            <button
-              type="submit"
-              className="flex-1 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-            >
-              {driver ? 'Modifier' : 'Créer'}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
-  );
-};
-
-// Modal: Vehicle create/update
-const VehicleModal = ({ isOpen, onClose, vehicle, onSave }) => {
-  const [formData, setFormData] = useState(
-    vehicle || {
-      plaque_immatriculation: '',
-      numero_identification: '',
-      marque: '',
-      modele: '',
-      type_vehicule: 'Berline',
-      annee: '',
-      couleur: '',
-      statut: 'En service',
-      kilometrage: '',
-      derniere_revision: '',
-      assurance_expiration: ''
-    }
-  );
-
-  useEffect(() => {
-    if (vehicle) setFormData(vehicle);
-  }, [vehicle]);
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    onSave(formData);
-    onClose();
-  };
-
-  if (!isOpen) return null;
-  return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-lg">
-        <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-white">
-          {vehicle ? 'Modifier le véhicule' : 'Nouveau véhicule'}
-        </h3>
-        <form onSubmit={handleSubmit} className="space-y-3">
-          <div className="grid grid-cols-2 gap-3">
-            <input className="p-2 border rounded dark:bg-gray-700 dark:border-gray-600 dark:text-white" placeholder="Plaque" value={formData.plaque_immatriculation} onChange={(e)=>setFormData({...formData, plaque_immatriculation:e.target.value})} required />
-            <input className="p-2 border rounded dark:bg-gray-700 dark:border-gray-600 dark:text-white" placeholder="n° identification" value={formData.numero_identification} onChange={(e)=>setFormData({...formData, numero_identification:e.target.value})} required />
-            <input className="p-2 border rounded dark:bg-gray-700 dark:border-gray-600 dark:text-white" placeholder="Marque" value={formData.marque} onChange={(e)=>setFormData({...formData, marque:e.target.value})} />
-            <input className="p-2 border rounded dark:bg-gray-700 dark:border-gray-600 dark:text-white" placeholder="Modèle" value={formData.modele} onChange={(e)=>setFormData({...formData, modele:e.target.value})} />
-            <input className="p-2 border rounded dark:bg-gray-700 dark:border-gray-600 dark:text-white" placeholder="Année" type="number" value={formData.annee} onChange={(e)=>setFormData({...formData, annee:e.target.value})} />
-            <input className="p-2 border rounded dark:bg-gray-700 dark:border-gray-600 dark:text-white" placeholder="Couleur" value={formData.couleur} onChange={(e)=>setFormData({...formData, couleur:e.target.value})} />
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            <select className="p-2 border rounded dark:bg-gray-700 dark:border-gray-600 dark:text-white" value={formData.statut} onChange={(e)=>setFormData({...formData, statut:e.target.value})}>
-              <option>En service</option>
-              <option>Maintenance</option>
-              <option>Hors service</option>
-            </select>
-            <input className="p-2 border rounded dark:bg-gray-700 dark:border-gray-600 dark:text-white" placeholder="Kilométrage" type="number" value={formData.kilometrage} onChange={(e)=>setFormData({...formData, kilometrage:e.target.value})} />
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            <input className="p-2 border rounded dark:bg-gray-700 dark:border-gray-600 dark:text-white" placeholder="Dernière révision (YYYY-MM-DD)" value={formData.derniere_revision} onChange={(e)=>setFormData({...formData, derniere_revision:e.target.value})} />
-            <input className="p-2 border rounded dark:bg-gray-700 dark:border-gray-600 dark:text-white" placeholder="Assurance expiration (YYYY-MM-DD)" value={formData.assurance_expiration} onChange={(e)=>setFormData({...formData, assurance_expiration:e.target.value})} />
-          </div>
-          <div className="flex gap-3 pt-4">
-            <button type="button" onClick={onClose} className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded hover:bg-gray-50 dark:border-gray-600 dark:text-gray-200 dark:hover:bg-gray-700">Annuler</button>
-            <button type="submit" className="flex-1 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">{vehicle ? 'Modifier' : 'Créer'}</button>
-          </div>
-        </form>
-      </div>
-    </div>
-  );
-};
-
-// Modal: Course create/update
-const CourseModal = ({ isOpen, onClose, course, onSave, saving, paymentMethods }) => {
-  const [formData, setFormData] = useState(
-    course || {
-      numero_ordre: '',
-      index_embarquement: '',
-      lieu_embarquement: '',
-      heure_embarquement: '',
-      index_debarquement: '',
-      lieu_debarquement: '',
-      heure_debarquement: '',
-      prix_taximetre: '',
-      sommes_percues: '',
-      mode_paiement: 'CASH',
-      notes: '',
-      status: 'completed'
-    }
-  );
-
-  useEffect(() => {
-    if (course) setFormData(course);
-  }, [course]);
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    onSave(formData);
-  };
-
-  if (!isOpen) return null;
-  return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-2xl">
-        <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-white">{course ? 'Modifier la course' : 'Nouvelle course'}</h3>
-        <form onSubmit={handleSubmit} className="space-y-3">
-          <div className="grid grid-cols-3 gap-3">
-            <input className="p-2 border rounded dark:bg-gray-700 dark:border-gray-600 dark:text-white" type="number" placeholder="# ordre" value={formData.numero_ordre} onChange={(e)=>setFormData({...formData, numero_ordre:Number(e.target.value)})} required />
-            <input className="p-2 border rounded dark:bg-gray-700 dark:border-gray-600 dark:text-white" type="number" placeholder="Index départ" value={formData.index_embarquement} onChange={(e)=>setFormData({...formData, index_embarquement:Number(e.target.value)})} />
-            <input className="p-2 border rounded dark:bg-gray-700 dark:border-gray-600 dark:text-white" type="number" placeholder="Index arrivée" value={formData.index_debarquement} onChange={(e)=>setFormData({...formData, index_debarquement:Number(e.target.value)})} />
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            <input className="p-2 border rounded dark:bg-gray-700 dark:border-gray-600 dark:text-white" placeholder="Lieu embarquement" value={formData.lieu_embarquement} onChange={(e)=>setFormData({...formData, lieu_embarquement:e.target.value})} />
-            <input className="p-2 border rounded dark:bg-gray-700 dark:border-gray-600 dark:text-white" placeholder="Lieu débarquement" value={formData.lieu_debarquement} onChange={(e)=>setFormData({...formData, lieu_debarquement:e.target.value})} />
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            <input className="p-2 border rounded dark:bg-gray-700 dark:border-gray-600 dark:text-white" placeholder="Heure embarquement (HH:MM)" value={formData.heure_embarquement} onChange={(e)=>setFormData({...formData, heure_embarquement:e.target.value})} />
-            <input className="p-2 border rounded dark:bg-gray-700 dark:border-gray-600 dark:text-white" placeholder="Heure débarquement (HH:MM)" value={formData.heure_debarquement} onChange={(e)=>setFormData({...formData, heure_debarquement:e.target.value})} />
-          </div>
-          <div className="grid grid-cols-3 gap-3">
-            <input className="p-2 border rounded dark:bg-gray-700 dark:border-gray-600 dark:text-white" type="number" step="0.01" placeholder="Prix taximètre" value={formData.prix_taximetre} onChange={(e)=>setFormData({...formData, prix_taximetre:Number(e.target.value)})} required />
-            <input className="p-2 border rounded dark:bg-gray-700 dark:border-gray-600 dark:text-white" type="number" step="0.01" placeholder="Somme perçue" value={formData.sommes_percues} onChange={(e)=>setFormData({...formData, sommes_percues:Number(e.target.value)})} required />
-            <select className="p-2 border rounded dark:bg-gray-700 dark:border-gray-600 dark:text-white" value={formData.mode_paiement} onChange={(e)=>setFormData({...formData, mode_paiement:e.target.value})}>
-              {paymentMethods.map(pm => (
-                <option key={pm.value} value={pm.value}>{pm.label || pm.value}</option>
-              ))}
-            </select>
-          </div>
-          <textarea className="w-full p-2 border rounded dark:bg-gray-700 dark:border-gray-600 dark:text-white" placeholder="Notes" value={formData.notes} onChange={(e)=>setFormData({...formData, notes:e.target.value})} />
-          <div className="flex gap-3 pt-4">
-            <button type="button" onClick={onClose} className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded hover:bg-gray-50 dark:border-gray-600 dark:text-gray-200 dark:hover:bg-gray-700">Annuler</button>
-            <button type="submit" disabled={!!saving} className="flex-1 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">{saving ? 'Enregistrement...' : (course ? 'Modifier' : 'Créer')}</button>
-          </div>
-        </form>
-      </div>
-    </div>
-  );
-};
-
-// Modal: Charge create/update (local only)
-const ChargeModal = ({ isOpen, onClose, charge, onSave }) => {
-  const [formData, setFormData] = useState(
-    charge || {
-      type: '',
-      description: '',
-      montant: '',
-      mode_paiement: 'cash',
-      date: new Date().toISOString().slice(0,10)
-    }
-  );
-
-  useEffect(() => {
-    if (charge) setFormData(charge);
-  }, [charge]);
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    onSave({ ...formData, montant: Number(formData.montant) });
-    onClose();
-  };
-
-  if (!isOpen) return null;
-  return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-md">
-        <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-white">{charge ? 'Modifier la charge' : 'Nouvelle charge'}</h3>
-        <form onSubmit={handleSubmit} className="space-y-3">
-          <input className="w-full p-2 border rounded dark:bg-gray-700 dark:border-gray-600 dark:text-white" placeholder="Type" value={formData.type} onChange={(e)=>setFormData({...formData, type:e.target.value})} required />
-          <textarea className="w-full p-2 border rounded dark:bg-gray-700 dark:border-gray-600 dark:text-white" placeholder="Description" value={formData.description} onChange={(e)=>setFormData({...formData, description:e.target.value})} />
-          <div className="grid grid-cols-2 gap-3">
-            <input className="p-2 border rounded dark:bg-gray-700 dark:border-gray-600 dark:text-white" type="number" step="0.01" placeholder="Montant" value={formData.montant} onChange={(e)=>setFormData({...formData, montant:e.target.value})} required />
-            <select className="p-2 border rounded dark:bg-gray-700 dark:border-gray-600 dark:text-white" value={formData.mode_paiement} onChange={(e)=>setFormData({...formData, mode_paiement:e.target.value})}>
-              <option value="cash">Cash</option>
-              <option value="bancontact">Bancontact</option>
-            </select>
-          </div>
-          <input className="w-full p-2 border rounded dark:bg-gray-700 dark:border-gray-600 dark:text-white" type="date" value={formData.date} onChange={(e)=>setFormData({...formData, date:e.target.value})} />
-          <div className="flex gap-3 pt-4">
-            <button type="button" onClick={onClose} className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded hover:bg-gray-50 dark:border-gray-600 dark:text-gray-200 dark:hover:bg-gray-700">Annuler</button>
-            <button type="submit" className="flex-1 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">{charge ? 'Modifier' : 'Créer'}</button>
-          </div>
-        </form>
-      </div>
-    </div>
-  );
-};
-
-// Modal: New Shift create
-const NewShiftModal = ({ isOpen, onClose, drivers, vehicles, onSave }) => {
-  const [formData, setFormData] = useState({
-    date: new Date().toISOString().slice(0,10),
-    chauffeur_id: drivers && drivers.length ? drivers[0].id : '',
-    vehicule_id: vehicles && vehicles.length ? vehicles[0].id : '',
-    heure_debut: '',
-    heure_fin: '',
-    skipCharges: true
-  });
-
-  useEffect(() => {
-    setFormData((prev) => ({
-      ...prev,
-      chauffeur_id: drivers && drivers.length ? drivers[0].id : '',
-      vehicule_id: vehicles && vehicles.length ? vehicles[0].id : ''
-    }));
-  }, [drivers, vehicles]);
-
-  if (!isOpen) return null;
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    onSave(formData);
-  };
-
-  return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-lg">
-        <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-white">Nouvelle feuille de route</h3>
-        <form onSubmit={handleSubmit} className="space-y-3">
-          <div className="grid grid-cols-2 gap-3">
-            <input className="p-2 border rounded dark:bg-gray-700 dark:border-gray-600 dark:text-white" type="date" value={formData.date} onChange={(e)=>setFormData({...formData, date:e.target.value})} required />
-            <input className="p-2 border rounded dark:bg-gray-700 dark:border-gray-600 dark:text-white" placeholder="Heure début (HH:MM)" value={formData.heure_debut} onChange={(e)=>setFormData({...formData, heure_debut:e.target.value})} required />
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            <select className="p-2 border rounded dark:bg-gray-700 dark:border-gray-600 dark:text-white" value={formData.chauffeur_id} onChange={(e)=>setFormData({...formData, chauffeur_id:Number(e.target.value)})}>
-              {drivers.map((d)=> (
-                <option key={d.id} value={d.id}>{d.prenom} {d.nom}</option>
-              ))}
-            </select>
-            <select className="p-2 border rounded dark:bg-gray-700 dark:border-gray-600 dark:text-white" value={formData.vehicule_id} onChange={(e)=>setFormData({...formData, vehicule_id:Number(e.target.value)})}>
-              {vehicles.map((v)=> (
-                <option key={v.id} value={v.id}>{v.plaque_immatriculation}</option>
-              ))}
-            </select>
-          </div>
-          <input className="w-full p-2 border rounded dark:bg-gray-700 dark:border-gray-600 dark:text-white" placeholder="Heure fin (HH:MM)" value={formData.heure_fin} onChange={(e)=>setFormData({...formData, heure_fin:e.target.value})} />
-          <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-200">
-            <input type="checkbox" className="h-4 w-4" checked={formData.skipCharges} onChange={(e)=>setFormData({...formData, skipCharges:e.target.checked})} />
-            Passer l’étape charges (charges = 0)
-          </label>
-          <div className="flex gap-3 pt-4">
-            <button type="button" onClick={onClose} className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded hover:bg-gray-50 dark:border-gray-600 dark:text-gray-200 dark:hover:bg-gray-700">Annuler</button>
-            <button type="submit" className="flex-1 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">Créer</button>
-          </div>
-        </form>
-      </div>
-    </div>
-  );
-};
 
 const TxAppAdmin = () => {
   const [activeTab, setActiveTab] = useState('dashboard');
@@ -601,24 +278,11 @@ const TxAppAdmin = () => {
     if (!window.confirm('Supprimer cette charge ?')) return;
     setCharges((prev) => prev.filter((ch) => ch.id !== id));
   };
-  const chargesTotal = charges.reduce((sum, ch) => sum + (Number(ch.montant) || 0), 0);
+  const chargesTotal = calcChargesTotal(charges);
 
   // Créer une nouvelle feuille de route (administration)
   const handleCreateShift = (data) => {
-    const recettes = courses.reduce((sum, c) => sum + (Number(c.sommes_percues) || 0), 0);
-    const chargesAmount = data.skipCharges ? 0 : chargesTotal;
-    const newShift = {
-      id: Date.now(),
-      date: data.date,
-      chauffeur_id: Number(data.chauffeur_id) || data.chauffeur_id,
-      vehicule_id: Number(data.vehicule_id) || data.vehicule_id,
-      heure_debut: data.heure_debut,
-      heure_fin: data.heure_fin || '',
-      nb_courses: courses.length,
-      recettes: Number(recettes),
-      charges: Number(chargesAmount),
-      statut: 'Planifiée'
-    };
+    const newShift = buildShift(data, courses, chargesTotal);
     setShifts((prev) => [...prev, newShift]);
     setShowNewShiftModal(false);
   };
@@ -631,13 +295,7 @@ const TxAppAdmin = () => {
     return matchesSearch && matchesStatus;
   });
 
-  const stats = {
-    totalDrivers: drivers.length,
-    activeDrivers: drivers.filter(d => d.statut === 'Actif').length,
-    totalVehicles: vehicles.length,
-    activeVehicles: vehicles.filter(v => v.statut === 'En service').length,
-    todayRevenue: shifts.reduce((sum, s) => sum + s.recettes, 0)
-  };
+  const stats = computeStats(drivers, vehicles, shifts);
 
   return (
     <Page title="TxApp - Administration">
