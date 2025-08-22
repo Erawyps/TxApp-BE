@@ -49,30 +49,11 @@ export const generateAndDownloadReport = (shiftData, courses, driver, vehicle) =
     drawText('FEUILLE DE ROUTE', pageWidth/2, yPos, 'center');
     yPos += 8;
 
-    doc.setFontSize(10);
-    doc.setFont('times', 'normal');
-    drawText('(Identité de l\'exploitant)', pageWidth/2, yPos, 'center');
-    yPos += 15;
 
     // ============ DATE ET CHAUFFEUR ============
     doc.setFontSize(10);
     const formattedDate = safeShiftData?.date ? new Date(safeShiftData.date).toLocaleDateString('fr-FR') : new Date().toLocaleDateString('fr-FR');
     const driverFullName = `${safeDriver.prenom} ${safeDriver.nom}`.trim();
-
-    // Date à gauche
-    doc.setFont('times', 'bold');
-    drawText('Date :', margin, yPos);
-    doc.setFont('times', 'normal');
-    drawText(formattedDate, margin + 15, yPos);
-    doc.line(margin + 15, yPos + 1, margin + 60, yPos + 1);
-
-    // Nom du chauffeur à droite
-    doc.setFont('times', 'bold');
-    drawText('Nom du chauffeur :', margin + 80, yPos);
-    doc.setFont('times', 'normal');
-    drawText(driverFullName, margin + 125, yPos);
-    doc.line(margin + 125, yPos + 1, pageWidth - margin, yPos + 1);
-    yPos += 15;
 
     // ============ VÉHICULE ============
     doc.setFont('times', 'bold');
