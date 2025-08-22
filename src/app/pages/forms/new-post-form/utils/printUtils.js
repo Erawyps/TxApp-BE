@@ -9,6 +9,7 @@ export const generateAndDownloadReport = (shiftData, courses, driver, vehicle) =
     // Dimensions de la page A4 : 210mm x 297mm
     const pageWidth = 210;
     const margin = 10;
+    const usableWidth = pageWidth - 2 * margin; // 190mm disponible
 
     // Données sécurisées avec valeurs par défaut
     const safeShiftData = shiftData || {};
@@ -94,146 +95,176 @@ export const generateAndDownloadReport = (shiftData, courses, driver, vehicle) =
     yPos += 15;
 
     // ============ SERVICE - TABLEAU PRINCIPAL ============
+    // Encadrement général du service
+    const serviceBoxY = yPos;
+    doc.rect(margin, serviceBoxY, usableWidth, 10); // Boîte "Service"
     doc.setFont('times', 'bold');
-    drawText('Service', margin, yPos);
-    yPos += 8;
+    doc.setFontSize(10);
+    drawText('Service', pageWidth/2, serviceBoxY + 7, 'center');
 
-    // Configuration du tableau principal selon le modèle original
+    yPos = serviceBoxY + 10;
+
+    // Configuration du tableau principal selon l'image exacte
     const mainTableY = yPos;
-    const mainRowHeight = 10;
-
-    // Structure exacte du tableau original
+    const mainRowHeight = 8;
     let currentX = margin;
 
-    // ============ TABLEAU PRINCIPAL - STRUCTURE COMPLEXE ============
+    // ============ STRUCTURE EXACTE SELON L'IMAGE ============
     doc.setFontSize(8);
     doc.setFont('times', 'bold');
 
-    // Ligne 1 : En-têtes principaux
-    // "Heures des prestations" (2 lignes)
-    doc.rect(currentX, mainTableY, 35, mainRowHeight * 2);
-    drawText('Heures des prestations', currentX + 17.5, mainTableY + 8, 'center');
+    // PREMIÈRE PARTIE DU TABLEAU (gauche)
+    // Colonne "Heures des prestations" (hauteur totale du tableau gauche)
+    const leftTableHeight = mainRowHeight * 4;
+    doc.rect(currentX, mainTableY, 50, leftTableHeight);
+    drawText('Heures des prestations', currentX + 25, mainTableY + leftTableHeight/2, 'center');
 
-    // "Index km" (2 lignes)
-    doc.rect(currentX + 35, mainTableY, 20, mainRowHeight * 2);
-    drawText('Index', currentX + 45, mainTableY + 6, 'center');
-    drawText('km', currentX + 45, mainTableY + 12, 'center');
+    // Colonne "Index km" avec ses subdivisions
+    const indexKmX = currentX + 50;
+    const indexKmWidth = 30;
 
-    // "Tableau de bord" (1 ligne, puis "Début" et "Fin")
-    doc.rect(currentX + 55, mainTableY, 45, mainRowHeight);
-    drawText('Tableau de bord', currentX + 77.5, mainTableY + 6, 'center');
+    // En-tête "Index km"
+    doc.rect(indexKmX, mainTableY, indexKmWidth, mainRowHeight);
+    drawText('Index', indexKmX + indexKmWidth/2, mainTableY + 4, 'center');
+    drawText('km', indexKmX + indexKmWidth/2, mainTableY + 7, 'center');
 
-    // "Taximètre" (1 ligne large)
-    doc.rect(currentX + 100, mainTableY, 90, mainRowHeight);
-    drawText('Taximètre', currentX + 145, mainTableY + 6, 'center');
+    // Subdivisions Index km
+    doc.rect(indexKmX, mainTableY + mainRowHeight, indexKmWidth, mainRowHeight);
+    drawText('Fin', indexKmX + indexKmWidth/2, mainTableY + mainRowHeight + 5, 'center');
 
-    // Ligne 2 : Sous-en-têtes
-    // "Début"
-    doc.rect(currentX + 55, mainTableY + mainRowHeight, 20, mainRowHeight);
-    drawText('Début', currentX + 65, mainTableY + mainRowHeight + 6, 'center');
+    doc.rect(indexKmX, mainTableY + mainRowHeight * 2, indexKmWidth, mainRowHeight);
+    drawText('Début', indexKmX + indexKmWidth/2, mainTableY + mainRowHeight * 2 + 5, 'center');
 
-    // "Fin"
-    doc.rect(currentX + 75, mainTableY + mainRowHeight, 25, mainRowHeight);
-    drawText('Fin', currentX + 87.5, mainTableY + mainRowHeight + 6, 'center');
+    doc.rect(indexKmX, mainTableY + mainRowHeight * 3, indexKmWidth, mainRowHeight);
+    drawText('Total', indexKmX + indexKmWidth/2, mainTableY + mainRowHeight * 3 + 5, 'center');
 
-    // Sous-colonnes Taximètre
-    doc.rect(currentX + 100, mainTableY + mainRowHeight, 20, mainRowHeight);
-    drawText('Prise en', currentX + 110, mainTableY + mainRowHeight + 3, 'center');
-    drawText('charge', currentX + 110, mainTableY + mainRowHeight + 8, 'center');
+    // Colonne "Tableau de bord"
+    const tableauBordX = indexKmX + indexKmWidth;
+    const tableauBordWidth = 60;
 
-    doc.rect(currentX + 120, mainTableY + mainRowHeight, 25, mainRowHeight);
-    drawText('Index Km', currentX + 132.5, mainTableY + mainRowHeight + 3, 'center');
-    drawText('(Km totaux)', currentX + 132.5, mainTableY + mainRowHeight + 8, 'center');
+    // En-tête "Tableau de bord"
+    doc.rect(tableauBordX, mainTableY, tableauBordWidth, mainRowHeight);
+    drawText('Tableau de bord', tableauBordX + tableauBordWidth/2, mainTableY + 5, 'center');
 
-    doc.rect(currentX + 145, mainTableY + mainRowHeight, 20, mainRowHeight);
-    drawText('Km en', currentX + 155, mainTableY + mainRowHeight + 3, 'center');
-    drawText('charge', currentX + 155, mainTableY + mainRowHeight + 8, 'center');
+    // Lignes tableau de bord
+    doc.rect(tableauBordX, mainTableY + mainRowHeight, tableauBordWidth, mainRowHeight);
+    doc.rect(tableauBordX, mainTableY + mainRowHeight * 2, tableauBordWidth, mainRowHeight);
+    doc.rect(tableauBordX, mainTableY + mainRowHeight * 3, tableauBordWidth, mainRowHeight);
 
-    doc.rect(currentX + 165, mainTableY + mainRowHeight, 25, mainRowHeight);
-    drawText('Chutes (€)', currentX + 177.5, mainTableY + mainRowHeight + 6, 'center');
+    // Colonne "Taximètre"
+    const taximeterX = tableauBordX + tableauBordWidth;
+    const taximeterWidth = 50;
 
-    // "Recettes" (2 lignes)
-    doc.rect(currentX + 190, mainTableY, pageWidth - margin - (currentX + 190), mainRowHeight * 2);
-    drawText('Recettes', currentX + 190 + ((pageWidth - margin - (currentX + 190))/2), mainTableY + 8, 'center');
+    // En-tête "Taximètre"
+    doc.rect(taximeterX, mainTableY, taximeterWidth, mainRowHeight);
+    drawText('Taximètre', taximeterX + taximeterWidth/2, mainTableY + 5, 'center');
 
-    yPos = mainTableY + mainRowHeight * 2;
+    // Lignes taximètre
+    doc.rect(taximeterX, mainTableY + mainRowHeight, taximeterWidth, mainRowHeight);
+    doc.rect(taximeterX, mainTableY + mainRowHeight * 2, taximeterWidth, mainRowHeight);
+    doc.rect(taximeterX, mainTableY + mainRowHeight * 3, taximeterWidth, mainRowHeight);
+
+    yPos = mainTableY + leftTableHeight + 5;
+
+    // DEUXIÈME PARTIE DU TABLEAU (bas) - Structure horizontale
+    const bottomTableY = yPos;
+    currentX = margin;
+
+    // Colonnes étiquettes (gauche)
+    doc.rect(currentX, bottomTableY, 50, mainRowHeight);
+    doc.rect(currentX, bottomTableY + mainRowHeight, 50, mainRowHeight);
+    doc.rect(currentX, bottomTableY + mainRowHeight * 2, 50, mainRowHeight);
+
+    doc.setFont('times', 'normal');
+    drawText('Fin', currentX + 5, bottomTableY + 5);
+    drawText('Début', currentX + 5, bottomTableY + mainRowHeight + 5);
+    drawText('Total', currentX + 5, bottomTableY + mainRowHeight * 2 + 5);
+
+    // Colonnes données taximètre
+    doc.setFont('times', 'bold');
+    const col1X = currentX + 50;
+    const col1Width = 28;
+    doc.rect(col1X, bottomTableY - mainRowHeight, col1Width, mainRowHeight);
+    drawText('Prise en charge', col1X + col1Width/2, bottomTableY - mainRowHeight + 5, 'center');
+
+    const col2X = col1X + col1Width;
+    const col2Width = 32;
+    doc.rect(col2X, bottomTableY - mainRowHeight, col2Width, mainRowHeight);
+    drawText('Index Km', col2X + col2Width/2, bottomTableY - mainRowHeight + 3, 'center');
+    drawText('(Km totaux)', col2X + col2Width/2, bottomTableY - mainRowHeight + 7, 'center');
+
+    const col3X = col2X + col2Width;
+    const col3Width = 28;
+    doc.rect(col3X, bottomTableY - mainRowHeight, col3Width, mainRowHeight);
+    drawText('Km en charge', col3X + col3Width/2, bottomTableY - mainRowHeight + 5, 'center');
+
+    const col4X = col3X + col3Width;
+    const col4Width = 25;
+    doc.rect(col4X, bottomTableY - mainRowHeight, col4Width, mainRowHeight);
+    drawText('Chutes (€)', col4X + col4Width/2, bottomTableY - mainRowHeight + 5, 'center');
+
+    const col5X = col4X + col4Width;
+    const col5Width = pageWidth - margin - col5X;
+    doc.rect(col5X, bottomTableY - mainRowHeight, col5Width, mainRowHeight * 4);
+    drawText('Recettes', col5X + col5Width/2, bottomTableY + mainRowHeight, 'center');
+
+    // Cellules de données
+    for (let i = 0; i < 3; i++) {
+      doc.rect(col1X, bottomTableY + i * mainRowHeight, col1Width, mainRowHeight);
+      doc.rect(col2X, bottomTableY + i * mainRowHeight, col2Width, mainRowHeight);
+      doc.rect(col3X, bottomTableY + i * mainRowHeight, col3Width, mainRowHeight);
+      doc.rect(col4X, bottomTableY + i * mainRowHeight, col4Width, mainRowHeight);
+    }
 
     // ============ DONNÉES TABLEAU PRINCIPAL ============
     doc.setFont('times', 'normal');
-
     const totalRecettes = courses.reduce((sum, course) => sum + (Number(course.sommes_percues) || 0), 0);
 
-    // Ligne "Début"
-    currentX = margin;
-    doc.rect(currentX, yPos, 35, mainRowHeight);
-    drawText('Début', currentX + 3, yPos + 6);
+    // Données partie gauche
+    drawText('Début', margin + 5, mainTableY + mainRowHeight + 5);
+    drawText('Fin', margin + 5, mainTableY + mainRowHeight * 2 + 5);
+    drawText('Interruptions', margin + 5, mainTableY + mainRowHeight * 3 + 3);
+    drawText('Total', margin + 5, mainTableY + mainRowHeight * 4 + 5);
 
-    doc.rect(currentX + 35, yPos, 20, mainRowHeight);
+    // Données tableau de bord
+    if (safeShiftData.km_tableau_bord_debut) {
+      drawText(formatNumber(safeShiftData.km_tableau_bord_debut), tableauBordX + tableauBordWidth/2, mainTableY + mainRowHeight * 2 + 5, 'center');
+    }
+    if (safeShiftData.km_tableau_bord_fin) {
+      drawText(formatNumber(safeShiftData.km_tableau_bord_fin), tableauBordX + tableauBordWidth/2, mainTableY + mainRowHeight + 5, 'center');
+    }
 
-    doc.rect(currentX + 55, yPos, 20, mainRowHeight);
-    drawText(formatNumber(safeShiftData.km_tableau_bord_debut), currentX + 65, yPos + 6, 'center');
-
-    doc.rect(currentX + 75, yPos, 25, mainRowHeight);
-
-    doc.rect(currentX + 100, yPos, 20, mainRowHeight);
-    drawText(formatCurrency(safeShiftData.taximetre_prise_charge_debut), currentX + 110, yPos + 6, 'center');
-
-    doc.rect(currentX + 120, yPos, 25, mainRowHeight);
-    drawText(formatNumber(safeShiftData.taximetre_index_km_debut), currentX + 132.5, yPos + 6, 'center');
-
-    doc.rect(currentX + 145, yPos, 20, mainRowHeight);
-    drawText(formatNumber(safeShiftData.taximetre_km_charge_debut), currentX + 155, yPos + 6, 'center');
-
-    doc.rect(currentX + 165, yPos, 25, mainRowHeight);
-    drawText(formatCurrency(safeShiftData.taximetre_chutes_debut), currentX + 177.5, yPos + 6, 'center');
-
-    doc.rect(currentX + 190, yPos, pageWidth - margin - (currentX + 190), mainRowHeight);
-
-    yPos += mainRowHeight;
-
+    // Données taximètre partie bas
     // Ligne "Fin"
-    currentX = margin;
-    doc.rect(currentX, yPos, 35, mainRowHeight);
-    drawText('Fin', currentX + 3, yPos + 6);
+    if (safeShiftData.taximetre_prise_charge_fin) {
+      drawText(formatCurrency(safeShiftData.taximetre_prise_charge_fin), col1X + col1Width/2, bottomTableY + 5, 'center');
+    }
+    if (safeShiftData.taximetre_index_km_fin) {
+      drawText(formatNumber(safeShiftData.taximetre_index_km_fin), col2X + col2Width/2, bottomTableY + 5, 'center');
+    }
+    if (safeShiftData.taximetre_km_charge_fin) {
+      drawText(formatNumber(safeShiftData.taximetre_km_charge_fin), col3X + col3Width/2, bottomTableY + 5, 'center');
+    }
+    if (safeShiftData.taximetre_chutes_fin) {
+      drawText(formatCurrency(safeShiftData.taximetre_chutes_fin), col4X + col4Width/2, bottomTableY + 5, 'center');
+    }
 
-    doc.rect(currentX + 35, yPos, 20, mainRowHeight);
+    // Ligne "Début"
+    if (safeShiftData.taximetre_prise_charge_debut) {
+      drawText(formatCurrency(safeShiftData.taximetre_prise_charge_debut), col1X + col1Width/2, bottomTableY + mainRowHeight + 5, 'center');
+    }
+    if (safeShiftData.taximetre_index_km_debut) {
+      drawText(formatNumber(safeShiftData.taximetre_index_km_debut), col2X + col2Width/2, bottomTableY + mainRowHeight + 5, 'center');
+    }
+    if (safeShiftData.taximetre_km_charge_debut) {
+      drawText(formatNumber(safeShiftData.taximetre_km_charge_debut), col3X + col3Width/2, bottomTableY + mainRowHeight + 5, 'center');
+    }
+    if (safeShiftData.taximetre_chutes_debut) {
+      drawText(formatCurrency(safeShiftData.taximetre_chutes_debut), col4X + col4Width/2, bottomTableY + mainRowHeight + 5, 'center');
+    }
 
-    doc.rect(currentX + 55, yPos, 20, mainRowHeight);
-
-    doc.rect(currentX + 75, yPos, 25, mainRowHeight);
-    drawText(formatNumber(safeShiftData.km_tableau_bord_fin), currentX + 87.5, yPos + 6, 'center');
-
-    doc.rect(currentX + 100, yPos, 20, mainRowHeight);
-    drawText(formatCurrency(safeShiftData.taximetre_prise_charge_fin), currentX + 110, yPos + 6, 'center');
-
-    doc.rect(currentX + 120, yPos, 25, mainRowHeight);
-    drawText(formatNumber(safeShiftData.taximetre_index_km_fin), currentX + 132.5, yPos + 6, 'center');
-
-    doc.rect(currentX + 145, yPos, 20, mainRowHeight);
-    drawText(formatNumber(safeShiftData.taximetre_km_charge_fin), currentX + 155, yPos + 6, 'center');
-
-    doc.rect(currentX + 165, yPos, 25, mainRowHeight);
-    drawText(formatCurrency(safeShiftData.taximetre_chutes_fin), currentX + 177.5, yPos + 6, 'center');
-
-    doc.rect(currentX + 190, yPos, pageWidth - margin - (currentX + 190), mainRowHeight);
-
-    yPos += mainRowHeight;
-
-    // Ligne "Interruptions" et "Total"
-    currentX = margin;
-    doc.rect(currentX, yPos, 35, mainRowHeight);
-    drawText('Interruptions', currentX + 3, yPos + 6);
-
-    doc.rect(currentX + 35, yPos, 20, mainRowHeight);
-
-    doc.rect(currentX + 55, yPos, 45, mainRowHeight);
-    drawText('Total', currentX + 77.5, yPos + 6, 'center');
-
-    doc.rect(currentX + 100, yPos, 90, mainRowHeight);
-    drawText('Total', currentX + 145, yPos + 6, 'center');
-
-    doc.rect(currentX + 190, yPos, pageWidth - margin - (currentX + 190), mainRowHeight);
-    drawText(formatCurrency(totalRecettes), currentX + 190 + ((pageWidth - margin - (currentX + 190))/2), yPos + 6, 'center');
+    // Total recettes
+    drawText(formatCurrency(totalRecettes), col5X + col5Width/2, bottomTableY + mainRowHeight * 2 + 5, 'center');
 
     yPos += mainRowHeight + 15;
 
