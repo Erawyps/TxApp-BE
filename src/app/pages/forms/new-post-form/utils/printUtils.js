@@ -137,7 +137,7 @@ export const generateAndDownloadReport = (shiftData, courses, driver, vehicle) =
       doc.rect(currentX, mainTableY + rowHeight + i * rowHeight, col1Width, rowHeight);
     }
 
-    // Labels des lignes
+    // Labels à l'intérieur de la colonne "Heures des prestations"
     doc.setFont('times', 'normal');
     drawText('Début', currentX + 2, mainTableY + rowHeight + 7);
     drawText('Fin', currentX + 2, mainTableY + 2 * rowHeight + 7);
@@ -145,6 +145,22 @@ export const generateAndDownloadReport = (shiftData, courses, driver, vehicle) =
     drawText('Total', currentX + 2, mainTableY + 4 * rowHeight + 7);
 
     currentX += col1Width;
+
+    // Colonne pour les labels à gauche
+
+    doc.rect(currentX, mainTableY, 10, rowHeight * 5);
+    // Labels à l'intérieur de cette colonne
+    drawText('H', currentX + 5, mainTableY + rowHeight + 7, 'center');
+    drawText('H', currentX + 5, mainTableY + 2 * rowHeight + 7, 'center');
+    drawText('H', currentX + 5, mainTableY + 3 * rowHeight + 7, 'center');
+    drawText('H', currentX + 5, mainTableY + 4 * rowHeight + 7, 'center');
+    currentX += 10;
+
+
+    // Colonne vide entre "Heures des prestations" et "Index km"
+    doc.rect(currentX, mainTableY, 5, rowHeight * 5);
+    currentX += 5;
+
 
     // Colonne "Index km"
     doc.setFont('times', 'bold');
@@ -288,11 +304,6 @@ export const generateAndDownloadReport = (shiftData, courses, driver, vehicle) =
     doc.setFont('times', 'bold');
     doc.setFontSize(10);
     drawText('Courses', pageWidth/2, yPos + 5.5, 'center');
-
-    let mainRowHeight = 8;
-    let tableStartY = yPos + 8;// 10 lignes de données
-    doc.rect(margin, tableStartY, usableWidth, mainRowHeight * 10 + mainRowHeight); // +1 pour l'en-tête
-    yPos += mainRowHeight + 15;
 
     // Configuration tableau courses selon le modèle original
     const courseRowHeight = 8;
