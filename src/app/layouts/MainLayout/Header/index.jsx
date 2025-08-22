@@ -1,6 +1,7 @@
 // Import Dependencies
 import clsx from "clsx";
 import { SignedIn, SignedOut, UserButton, SignInButton } from "@clerk/clerk-react";
+import { useHasClerkProvider } from "auth/clerkSafe";
 
 // Local Imports
 import { SidebarToggleBtn } from "components/shared/SidebarToggleBtn";
@@ -12,6 +13,7 @@ import { useThemeContext } from "app/contexts/theme/context";
 export function Header() {
   const { cardSkin } = useThemeContext();
   const hasClerk = !!import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
+  const hasProvider = useHasClerkProvider();
 
   return (
     <header
@@ -24,7 +26,7 @@ export function Header() {
 
       <div className="flex items-center gap-2 ltr:-mr-1.5 rtl:-ml-1.5">
         <LanguageSelector />
-        {hasClerk && (
+        {hasClerk && hasProvider && (
           <>
             <SignedIn>
               <UserButton />
