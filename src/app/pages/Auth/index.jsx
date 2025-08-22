@@ -1,118 +1,127 @@
+import { Link } from "react-router";
+import { EnvelopeIcon, LockClosedIcon } from "@heroicons/react/24/outline";
+import { yupResolver } from "@hookform/resolvers/yup";
+import { useForm } from "react-hook-form";
+
+import Logo from "assets/appLogo.svg?react";
+import { Button, Card, Checkbox, Input, InputErrorMsg } from "components/ui";
+import { useAuthContext } from "app/contexts/auth/context";
+import { schema } from "./schema";
 import { Page } from "components/shared/Page";
-import { SignIn, SignUp } from "@clerk/clerk-react";
-import { Navigate, useLocation } from "react-router";
-import { HOME_PATH } from "constants/app.constant";
-import { useSafeClerkAuth, useHasClerkProvider } from "auth/clerkSafe";
 
-export default function ClerkAuth() {
-  const location = useLocation();
-  const isSignUp = location.pathname.includes("sign-up");
-  const clerkPubKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
-  const hasClerk = !!clerkPubKey;
-  const hasProvider = useHasClerkProvider();
-  const { isSignedIn } = useSafeClerkAuth();
+export default function SignIn() {
+  const { login, errorMessage, isLoading } = useAuthContext();
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm({
+    resolver: yupResolver(schema),
+    defaultValues: {
+      username: "admin@taxi.be",
+      password: "password123",
+    },
+  });
 
-  // Debug logs
-  console.log("ClerkAuth - hasClerk:", hasClerk);
-  console.log("ClerkAuth - hasProvider:", hasProvider);
-  console.log("ClerkAuth - isSignedIn:", isSignedIn);
-  console.log("ClerkAuth - Current path:", location.pathname);
-  console.log("ClerkAuth - Clerk Public Key:", clerkPubKey ? "Présente" : "Manquante");
-
-  // Lecture de la destination de redirection depuis les paramètres d'URL
-  const params = new URLSearchParams(location.search);
-  const redirectParam = params.get("redirect");
-  const redirectTarget = redirectParam ? decodeURIComponent(redirectParam) : HOME_PATH;
-
-  // Cas 1: Clerk n'est pas configuré (clé manquante)
-  if (!hasClerk) {
-    return (
-      <Page title={isSignUp ? "Sign Up" : "Login"}>
-        <main className="min-h-screen grid w-full grow grid-cols-1 place-items-center p-4">
-          <div className="max-w-xl text-center space-y-3">
-            <h2 className="text-xl font-semibold">Authentification non configurée</h2>
-            <p className="text-gray-600 dark:text-gray-300">
-              Configurez Clerk pour activer la connexion. Ajoutez VITE_CLERK_PUBLISHABLE_KEY
-              dans votre fichier .env côté Vite, puis relancez le serveur.
-            </p>
-            <div className="mt-4 p-3 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg text-left">
-              <p className="text-sm">Valeur actuelle: {clerkPubKey || "Non définie"}</p>
-            </div>
-            <a className="inline-block mt-4 text-blue-600 hover:underline" href="/">
-              Retour à l&apos;accueil
-            </a>
-          </div>
-        </main>
-      </Page>
-    );
-  }
-
-  // Cas 2: Clerk configuré mais provider non initialisé
-  if (hasClerk && !hasProvider) {
-    return (
-      <Page title={isSignUp ? "Sign Up" : "Login"}>
-        <main className="min-h-screen grid w-full grow grid-cols-1 place-items-center p-4">
-          <div className="max-w-xl text-center space-y-3">
-            <h2 className="text-xl font-semibold">Problème d&apos;initialisation</h2>
-            <p className="text-gray-600 dark:text-gray-300">
-              Le composant Clerk n&apos;est pas initialisé. Vérifiez que VITE_CLERK_PUBLISHABLE_KEY
-              est bien défini et que l&apos;app est enveloppée dans &lt;ClerkProvider&gt;.
-            </p>
-            <div className="mt-4 p-3 bg-red-50 dark:bg-red-900/20 rounded-lg text-left">
-              <p className="text-sm">Clé publique: {clerkPubKey}</p>
-              <p className="text-sm">Provider détecté: {hasProvider ? "Oui" : "Non"}</p>
-            </div>
-            <a className="inline-block mt-4 text-blue-600 hover:underline" href="/">
-              Retour à l&apos;accueil
-            </a>
-          </div>
-        </main>
-      </Page>
-    );
-  }
-
-  // Cas 3: Utilisateur déjà connecté
-  if (isSignedIn) {
-    console.log("ClerkAuth - User already signed in, redirecting to:", redirectTarget);
-    return <Navigate to={redirectTarget} replace />;
-  }
-
-  // Cas 4: Affichage du formulaire d'authentification
-  const redirectQS = redirectParam ? `?redirect=${encodeURIComponent(redirectTarget)}` : "";
-  const signInUrl = `/login${redirectQS}`;
-  const signUpUrl = `/sign-up${redirectQS}`;
-
-  console.log("ClerkAuth - Rendering auth form:", { isSignUp, signInUrl, signUpUrl });
+  const onSubmit = async (data) => {
+    await login({
+      username: data.username,
+      password: data.password,
+    });
+  };
 
   return (
-    <Page title={isSignUp ? "Sign Up" : "Login"}>
-      <main className="min-h-screen grid w-full grow grid-cols-1 place-items-center p-4">
-        <div className="w-full max-w-md">
-          {isSignUp ? (
-            <SignUp
-              routing="path"
-              signInUrl={signInUrl}
-              afterSignUpUrl={redirectTarget}
-              appearance={{
-                elements: {
-                  rootBox: "mx-auto",
-                  card: "shadow-lg"
-                }
-              }}
-            />
-          ) : (
-            <SignIn
-              routing="path"
-              signUpUrl={signUpUrl}
-              afterSignInUrl={redirectTarget}
-              appearance={{
-                elements: {
-                  rootBox: "mx-auto",
-                  card: "shadow-lg"
-                }
-              }}
-            />
-          )}
+    <Page title="Login">
+      <main className="min-h-screen grid w-full grow grid-cols-1 place-items-center">
+        <div className="w-full max-w-[26rem] p-4 sm:px-5">
+          <div className="text-center">
+            <Logo className="mx-auto size-16" />
+            <div className="mt-4">
+              <h2 className="text-2xl font-semibold text-gray-600 dark:text-dark-100">
+                Bienvenue sur TaxiApp
+              </h2>
+              <p className="text-gray-400 dark:text-dark-300">
+                Connectez-vous pour continuer
+              </p>
+            </div>
+          </div>
+          <Card className="mt-5 rounded-lg p-5 lg:p-7">
+            <form onSubmit={handleSubmit(onSubmit)} autoComplete="off">
+              <div className="space-y-4">
+                <Input
+                  label="Email"
+                  placeholder="Entrez votre email"
+                  type="email"
+                  prefix={
+                    <EnvelopeIcon
+                      className="size-5 transition-colors duration-200"
+                      strokeWidth="1"
+                    />
+                  }
+                  {...register("username")}
+                  error={errors?.username?.message}
+                />
+                <Input
+                  label="Mot de passe"
+                  placeholder="Entrez votre mot de passe"
+                  type="password"
+                  prefix={
+                    <LockClosedIcon
+                      className="size-5 transition-colors duration-200"
+                      strokeWidth="1"
+                    />
+                  }
+                  {...register("password")}
+                  error={errors?.password?.message}
+                />
+              </div>
+
+              <div className="mt-2">
+                <InputErrorMsg
+                  when={errorMessage && errorMessage?.message !== ""}
+                >
+                  {errorMessage?.message}
+                </InputErrorMsg>
+              </div>
+
+              <div className="mt-4 flex items-center justify-between space-x-2">
+                <Checkbox label="Se souvenir de moi" />
+                <a
+                  href="#"
+                  className="text-xs text-gray-400 transition-colors hover:text-gray-800 focus:text-gray-800 dark:text-dark-300 dark:hover:text-dark-100 dark:focus:text-dark-100"
+                >
+                  Mot de passe oublié ?
+                </a>
+              </div>
+
+              <Button
+                type="submit"
+                className="mt-5 w-full"
+                color="primary"
+                disabled={isLoading}
+              >
+                {isLoading ? "Connexion..." : "Se connecter"}
+              </Button>
+            </form>
+
+            <div className="mt-4 text-center text-xs-plus">
+              <p className="line-clamp-1">
+                <span>Pas de compte ?</span>{" "}
+                <Link
+                  className="text-primary-600 transition-colors hover:text-primary-800 dark:text-primary-400 dark:hover:text-primary-600"
+                  to="/sign-up"
+                >
+                  Créer un compte
+                </Link>
+              </p>
+            </div>
+          </Card>
+
+          <div className="mt-8 flex justify-center text-xs text-gray-400 dark:text-dark-300">
+            <a href="#">Politique de confidentialité</a>
+            <div className="mx-2.5 my-0.5 w-px bg-gray-200 dark:bg-dark-500"></div>
+            <a href="#">Conditions d&apos;utilisation</a>
+          </div>
         </div>
       </main>
     </Page>
