@@ -130,7 +130,6 @@ export const generateAndDownloadReport = (shiftData, courses, driver, vehicle) =
     // ============ PARTIE HAUTE DU TABLEAU ============
     // Colonne "Heures des prestations"
     doc.rect(currentX, mainTableY, col1Width, rowHeight); // En-tête
-    drawText('Heures des prestations', currentX + col1Width/2, mainTableY + 6, 'center');
 
     // 4 lignes pour les données
     for (let i = 0; i < 4; i++) {
@@ -147,19 +146,29 @@ export const generateAndDownloadReport = (shiftData, courses, driver, vehicle) =
     currentX += col1Width;
 
     // Colonne pour les labels à gauche
+    doc.rect(currentX, mainTableY, col1Width, rowHeight); // En-tête
+    drawText('Heures des prestations', currentX + col1Width/2, mainTableY + 6, 'center');
 
-    doc.rect(currentX, mainTableY, 10, rowHeight * 5);
-    // Labels à l'intérieur de cette colonne
-    drawText('H', currentX + 5, mainTableY + rowHeight + 7, 'center');
-    drawText('H', currentX + 5, mainTableY + 2 * rowHeight + 7, 'center');
-    drawText('H', currentX + 5, mainTableY + 3 * rowHeight + 7, 'center');
-    drawText('H', currentX + 5, mainTableY + 4 * rowHeight + 7, 'center');
-    currentX += 10;
+    // 4 lignes pour les données
+    for (let i = 0; i < 4; i++) {
+      doc.rect(currentX, mainTableY + rowHeight + i * rowHeight, col1Width, rowHeight);
+    }
+
+    // Labels à l'intérieur de la colonne "Heures des prestations"
+    doc.setFont('times', 'normal');
+    drawText('', currentX + 2, mainTableY + rowHeight + 7);
+    drawText('', currentX + 2, mainTableY + 2 * rowHeight + 7);
+    drawText('', currentX + 2, mainTableY + 3 * rowHeight + 7);
+    drawText('', currentX + 2, mainTableY + 4 * rowHeight + 7);
+
+    currentX += col1Width;
 
 
     // Colonne vide entre "Heures des prestations" et "Index km"
-    doc.rect(currentX, mainTableY, 5, rowHeight * 5);
-    currentX += 5;
+    doc.rect(currentX, mainTableY, 5, rowHeight); // En-tête
+    for (let i = 0; i < 4; i++) {
+      doc.rect(currentX, mainTableY + rowHeight + i * rowHeight, 5, rowHeight);
+    }
 
 
     // Colonne "Index km"
