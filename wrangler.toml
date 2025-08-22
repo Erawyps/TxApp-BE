@@ -6,8 +6,6 @@ compatibility_flags = ["nodejs_compat"]
 
 [assets]
 # Vite build output served as static assets with SPA fallback
-# Wrangler will upload files from this directory and bind to ASSETS
-# to be used implicitly by the platform when serving.
 directory = "./dist"
 binding = "ASSETS"
 not_found_handling = "single-page-application"
@@ -15,8 +13,13 @@ not_found_handling = "single-page-application"
 [vars]
 SUPABASE_URL = "https://jfrhzwtkfotsrjkacrns.supabase.co"
 SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Impmcmh6d3RrZm90c3Jqa2Fjcm5zIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDkxMzc2NTMsImV4cCI6MjA2NDcxMzY1M30.wmECv2qWzI076PcUKj0JjKuTOTS3Hb3uoENeDpSNuFU"
-CLERK_SECRET_KEY = ""
+JWT_SECRET = "xNXpyUCbw+G4UCJYwPj5xyCKoAGlOVLuudU0PNtG8+E="
 USERS_TABLE = "utilisateur"
 
 [observability.logs]
 enabled = true
+
+[[hyperdrive]]
+binding = "HYPERDRIVE"
+id = "524a9438f01e47e88558cb5a181d0b14"
+localConnectionString = "postgresql://postgres:rKcnNJbacyLF3TQd@db.jfrhzwtkfotsrjkacrns.supabase.co:5432/postgres"

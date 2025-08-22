@@ -13,7 +13,7 @@ const ghostRoutes = {
     {
       path: "sign-up",
       lazy: async () => ({
-        Component: (await import("app/pages/Auth")).default,
+        Component: (await import("app/pages/SignUp")).default,
       }),
     },
   ],

@@ -6,9 +6,10 @@ import svgr from 'vite-plugin-svgr'
 import tailwindcss from "@tailwindcss/vite";
 import { cloudflare } from '@cloudflare/vite-plugin';
 
-
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [react(), cloudflare(), jsconfigPaths(), svgr(),
-  eslint(), tailwindcss()],
+    eslint({
+      exclude: ['**/worker.js'] // Exclure worker.js du linting
+    }), tailwindcss()],
 })
