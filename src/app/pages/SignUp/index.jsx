@@ -5,7 +5,7 @@ import { useForm } from "react-hook-form";
 import { useState } from "react";
 
 import Logo from "assets/appLogo.svg?react";
-import { Button, Card, Input, InputErrorMsg, Select, SelectOption } from "components/ui";
+import { Button, Card, Input, InputErrorMsg, Select } from "components/ui";
 import { registerSchema } from "../Auth/schema";
 import { Page } from "components/shared/Page";
 
@@ -67,6 +67,13 @@ export default function SignUp() {
     }
   };
 
+  // Options pour le select
+  const userTypeOptions = [
+    { label: "Chauffeur", value: "chauffeur" },
+    { label: "Dispatcher", value: "dispatcher" },
+    { label: "Administrateur", value: "administrateur" }
+  ];
+
   return (
     <Page title="Inscription">
       <main className="min-h-screen grid w-full grow grid-cols-1 place-items-center">
@@ -78,7 +85,7 @@ export default function SignUp() {
                 Créer un compte
               </h2>
               <p className="text-gray-400 dark:text-dark-300">
-                Rejoignez l&apos;équipe TaxiApp
+                Rejoignez l&apos;équipe TxApp
               </p>
             </div>
           </div>
@@ -141,12 +148,9 @@ export default function SignUp() {
 
                 <Select
                   label="Type d'utilisateur"
+                  data={userTypeOptions}
                   {...register("type_utilisateur")}
-                >
-                  <SelectOption value="chauffeur">Chauffeur</SelectOption>
-                  <SelectOption value="dispatcher">Dispatcher</SelectOption>
-                  <SelectOption value="administrateur">Administrateur</SelectOption>
-                </Select>
+                />
 
                 <Input
                   label="Mot de passe *"
