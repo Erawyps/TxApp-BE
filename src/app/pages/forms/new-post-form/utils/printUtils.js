@@ -55,26 +55,6 @@ export const generateAndDownloadReport = (shiftData, courses, driver, vehicle) =
     const formattedDate = safeShiftData?.date ? new Date(safeShiftData.date).toLocaleDateString('fr-FR') : new Date().toLocaleDateString('fr-FR');
     const driverFullName = `${safeDriver.prenom} ${safeDriver.nom}`.trim();
 
-    // ============ VÉHICULE ============
-    doc.setFont('times', 'bold');
-    drawText('Véhicule', margin, yPos);
-    yPos += 8;
-
-    // Plaque d'immatriculation à gauche
-    doc.setFont('times', 'bold');
-    drawText('n° plaque d\'immatriculation :', margin, yPos);
-    doc.setFont('times', 'normal');
-    drawText(safeVehicle.plaque_immatriculation, margin + 65, yPos);
-    doc.line(margin + 65, yPos + 1, margin + 105, yPos + 1);
-
-    // Numéro d'identification à droite
-    doc.setFont('times', 'bold');
-    drawText('n° identification :', margin + 110, yPos);
-    doc.setFont('times', 'normal');
-    drawText(safeVehicle.numero_identification, margin + 145, yPos);
-    doc.line(margin + 145, yPos + 1, pageWidth - margin, yPos + 1);
-    yPos += 15;
-
     // ============ EN-TÊTE IDENTITÉ EXPLOITANT ============
     // Rectangle pour "Identité de l'exploitant"
     doc.rect(margin, yPos, usableWidth, 8);
@@ -313,11 +293,6 @@ export const generateAndDownloadReport = (shiftData, courses, driver, vehicle) =
     let tableStartY = yPos + 8;// 10 lignes de données
     doc.rect(margin, tableStartY, usableWidth, mainRowHeight * 10 + mainRowHeight); // +1 pour l'en-tête
     yPos += mainRowHeight + 15;
-
-    // ============ TABLEAU DES COURSES ============
-    doc.setFont('times', 'bold');
-    drawText('Courses', margin, yPos);
-    yPos += 8;
 
     // Configuration tableau courses selon le modèle original
     const courseRowHeight = 8;
