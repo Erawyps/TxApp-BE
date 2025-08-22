@@ -15,6 +15,8 @@ import router from "app/router/router";
 function App() {
   const clerkPubKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
 
+  console.log('Clerk Public Key:', clerkPubKey ? 'Set' : 'Not set');
+
   // Si Clerk n'est pas configuré, on continue sans
   const AppContent = (
     <AuthProvider>

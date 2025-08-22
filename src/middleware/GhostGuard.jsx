@@ -18,8 +18,8 @@ export default function GhostGuard() {
   )}`;
 
   if (isSignedIn || isAuthenticated) {
-    if (url && url !== "") {
-      return <Navigate to={url} />;
+    if (url && url !== "" && url !== "null") {
+      return <Navigate to={decodeURIComponent(url)} />;
     }
     return <Navigate to={HOME_PATH} />;
   }

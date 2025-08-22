@@ -2,10 +2,6 @@ export const APP_NAME = "Tailux";
 export const APP_KEY = "tailux";
 
 // Redirect Paths
-//export const REDIRECT_URL_KEY = "redirect";
-//export const HOME_PATH = "/"
-//export const GHOST_ENTRY_PATH = "/login"
-
 export const HOME_PATH = "/dashboards/home";
 export const GHOST_ENTRY_PATH = "/login";
 export const REDIRECT_URL_KEY = "redirect";
