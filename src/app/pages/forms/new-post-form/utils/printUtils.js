@@ -98,22 +98,21 @@ export const generateAndDownloadReport = (shiftData, courses, driver, vehicle) =
       drawText('Véhicule', pageWidth/2, yPos + 4, 'center');
       yPos += 6;
 
-      // Informations véhicule - STRUCTURE CORRIGÉE : Label + Valeur dans la même cellule
+      // Informations véhicule - Cellules collées sans espacement
       doc.setFontSize(9);
       doc.setFont('times', 'normal');
 
-      // Première ligne véhicule - 2 cellules avec label+valeur ensemble
+      // Première ligne véhicule - 2 cellules collées avec label+valeur ensemble
       const vehiculeRowHeight = 6;
-      const cellWidth = (usableWidth - 5) / 2;  // Deux cellules égales avec espacement
-      const spacing = 5;      // Espacement entre les deux cellules
+      const cellWidth = usableWidth / 2;  // Deux cellules égales sans espacement
 
       // Première cellule : "n° plaque d'immatriculation :" + valeur
       doc.rect(margin, yPos, cellWidth, vehiculeRowHeight);
       const plaqueText = `n° plaque d'immatriculation : ${safeVehicle.plaque_immatriculation}`;
       drawText(plaqueText, margin + 2, yPos + 4);
 
-      // Deuxième cellule : "n° identification :" + valeur
-      const secondCellX = margin + cellWidth + spacing;
+      // Deuxième cellule : "n° identification :" + valeur (collée à la première)
+      const secondCellX = margin + cellWidth;
       doc.rect(secondCellX, yPos, cellWidth, vehiculeRowHeight);
       const identificationText = `n° identification : ${safeVehicle.numero_identification}`;
       drawText(identificationText, secondCellX + 2, yPos + 4);
@@ -146,27 +145,32 @@ export const generateAndDownloadReport = (shiftData, courses, driver, vehicle) =
 
     let currentX = margin;
 
-    // ============ PARTIE HAUTE DU TABLEAU SERVICE - CORRIGÉE ============
+    // ============ PARTIE HAUTE DU TABLEAU SERVICE - STRUCTURE CORRIGÉE ============
     doc.setFontSize(9);
 
-    // Première colonne : Labels uniquement (sans en-tête "Heures des prestations")
+    // Première colonne : Cellule vide en haut, puis labels en dessous
     doc.setFont('times', 'normal');
+
+    // Cellule vide en haut de la première colonne (alignée avec l'en-tête "Heures des prestations")
+    doc.rect(currentX, serviceTableY, col1_heures_labels, rowHeight);
+    // Pas de texte dans cette cellule
+
+    // Labels dans les 4 cellules suivantes
     const heuresLabels = ['Début', 'Fin', 'Interruptions', 'Total'];
     for (let i = 0; i < 4; i++) {
-      // Colonne labels
-      doc.rect(currentX, serviceTableY + rowHeight * i, col1_heures_labels, rowHeight);
-      drawText(heuresLabels[i], currentX + 2, serviceTableY + rowHeight * i + 6);
+      doc.rect(currentX, serviceTableY + rowHeight * (i + 1), col1_heures_labels, rowHeight);
+      drawText(heuresLabels[i], currentX + 2, serviceTableY + rowHeight * (i + 1) + 6);
     }
     currentX += col1_heures_labels;
 
-    // Deuxième colonne : Données avec en-tête "Heures des prestations"
+    // Deuxième colonne : En-tête "Heures des prestations" puis données
     doc.setFont('times', 'bold');
     doc.rect(currentX, serviceTableY, col1_heures_data, rowHeight);
     drawText('Heures des', currentX + col1_heures_data/2, serviceTableY + 3, 'center');
     drawText('prestations', currentX + col1_heures_data/2, serviceTableY + 7, 'center');
 
     doc.setFont('times', 'normal');
-    for (let i = 0; i < 3; i++) { // 3 lignes de données seulement
+    for (let i = 0; i < 4; i++) { // 4 lignes de données pour correspondre aux labels
       doc.rect(currentX, serviceTableY + rowHeight * (i + 1), col1_heures_data, rowHeight);
 
       // Ajouter les données si disponibles
@@ -179,8 +183,8 @@ export const generateAndDownloadReport = (shiftData, courses, driver, vehicle) =
     }
     currentX += col1_heures_data;
 
-    // Colonne vide fusionnée
-    doc.rect(currentX, serviceTableY, col_vide, 4 * rowHeight);
+    // Colonne vide fusionnée (5 lignes pour s'aligner avec les nouvelles dimensions)
+    doc.rect(currentX, serviceTableY, col_vide, 5 * rowHeight);
     currentX += col_vide;
 
     // Colonne "Index km"
@@ -190,8 +194,8 @@ export const generateAndDownloadReport = (shiftData, courses, driver, vehicle) =
     drawText('km', currentX + col2_index/2, serviceTableY + 7, 'center');
 
     doc.setFont('times', 'normal');
-    const indexLabels = ['Fin', 'Début', 'Total'];
-    for (let i = 0; i < 3; i++) {
+    const indexLabels = ['Fin', 'Début', 'Total', ''];
+    for (let i = 0; i < 4; i++) {
       doc.rect(currentX, serviceTableY + rowHeight * (i + 1), col2_index, rowHeight);
       if (indexLabels[i]) {
         drawText(indexLabels[i], currentX + col2_index/2, serviceTableY + rowHeight * (i + 1) + 6, 'center');
@@ -205,7 +209,7 @@ export const generateAndDownloadReport = (shiftData, courses, driver, vehicle) =
     drawText('Tableau de bord', currentX + col3_tableau/2, serviceTableY + 6, 'center');
 
     doc.setFont('times', 'normal');
-    for (let i = 0; i < 3; i++) {
+    for (let i = 0; i < 4; i++) {
       doc.rect(currentX, serviceTableY + rowHeight * (i + 1), col3_tableau, rowHeight);
     }
 
@@ -224,11 +228,11 @@ export const generateAndDownloadReport = (shiftData, courses, driver, vehicle) =
     drawText('Taximètre', currentX + col4_taximetre/2, serviceTableY + 6, 'center');
 
     doc.setFont('times', 'normal');
-    for (let i = 0; i < 3; i++) {
+    for (let i = 0; i < 4; i++) {
       doc.rect(currentX, serviceTableY + rowHeight * (i + 1), col4_taximetre, rowHeight);
     }
 
-    yPos = serviceTableY + 4 * rowHeight + 8;
+    yPos = serviceTableY + 5 * rowHeight + 8;
 
     // ============ PARTIE BASSE DU TABLEAU - AVEC RECETTES FUSIONNÉES ============
     currentX = margin;
