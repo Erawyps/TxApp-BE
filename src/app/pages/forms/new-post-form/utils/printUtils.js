@@ -139,9 +139,6 @@ export const generateAndDownloadReport = (shiftData, courses, driver, vehicle) =
     const col1_heures_labels = 25;   // Labels heures des prestations (réduit)
     const col1_heures_data = 35;     // Données heures des prestations (augmenté pour le texte)
     const col_vide = 15;             // Colonne vide fusionnée
-    const col2_index = 23;           // Index km
-    const col3_tableau = 48;         // Tableau de bord (ajusté)
-    const col4_taximetre = 44;       // Taximètre
 
     let currentX = margin;
 
@@ -187,51 +184,8 @@ export const generateAndDownloadReport = (shiftData, courses, driver, vehicle) =
     doc.rect(currentX, serviceTableY, col_vide, 5 * rowHeight);
     currentX += col_vide;
 
-    // Colonne "Index km"
-    doc.setFont('times', 'bold');
-    doc.rect(currentX, serviceTableY, col2_index, rowHeight);
-    drawText('Index', currentX + col2_index/2, serviceTableY + 3, 'center');
-    drawText('km', currentX + col2_index/2, serviceTableY + 7, 'center');
-
-    doc.setFont('times', 'normal');
-    const indexLabels = ['Fin', 'Début', 'Total', ''];
-    for (let i = 0; i < 4; i++) {
-      doc.rect(currentX, serviceTableY + rowHeight * (i + 1), col2_index, rowHeight);
-      if (indexLabels[i]) {
-        drawText(indexLabels[i], currentX + col2_index/2, serviceTableY + rowHeight * (i + 1) + 6, 'center');
-      }
-    }
-    currentX += col2_index;
-
-    // Colonne "Tableau de bord"
-    doc.setFont('times', 'bold');
-    doc.rect(currentX, serviceTableY, col3_tableau, rowHeight);
-    drawText('Tableau de bord', currentX + col3_tableau/2, serviceTableY + 6, 'center');
-
-    doc.setFont('times', 'normal');
-    for (let i = 0; i < 4; i++) {
-      doc.rect(currentX, serviceTableY + rowHeight * (i + 1), col3_tableau, rowHeight);
-    }
-
-    // Données tableau de bord
-    if (safeShiftData.km_tableau_bord_fin) {
-      drawText(formatNumber(safeShiftData.km_tableau_bord_fin), currentX + col3_tableau/2, serviceTableY + rowHeight + 6, 'center');
-    }
-    if (safeShiftData.km_tableau_bord_debut) {
-      drawText(formatNumber(safeShiftData.km_tableau_bord_debut), currentX + col3_tableau/2, serviceTableY + 2 * rowHeight + 6, 'center');
-    }
-    currentX += col3_tableau;
-
-    // Colonne "Taximètre"
-    doc.setFont('times', 'bold');
-    doc.rect(currentX, serviceTableY, col4_taximetre, rowHeight);
-    drawText('Taximètre', currentX + col4_taximetre/2, serviceTableY + 6, 'center');
-
-    doc.setFont('times', 'normal');
-    for (let i = 0; i < 4; i++) {
-      doc.rect(currentX, serviceTableY + rowHeight * (i + 1), col4_taximetre, rowHeight);
-    }
-
+    // Les colonnes "Index km", "Tableau de bord" et "Taximètre" ont été supprimées selon la demande.
+    // Après la colonne vide fusionnée, nous passons directement à la suite de la page.
     yPos = serviceTableY + 5 * rowHeight + 8;
 
     // ============ PARTIE BASSE DU TABLEAU - AVEC RECETTES FUSIONNÉES ============
@@ -739,10 +693,7 @@ export const previewTableDimensions = () => {
         columns: [
           { name: 'Labels heures', width: 35 },
           { name: 'Heures prestations', width: 15 },
-          { name: 'Vide fusionnée', width: 15 },
-          { name: 'Index km', width: 23 },
-          { name: 'Tableau de bord', width: 58 },
-          { name: 'Taximètre', width: 44 }
+          { name: 'Vide fusionnée', width: 15 }
         ]
       },
       bottomTable: {
