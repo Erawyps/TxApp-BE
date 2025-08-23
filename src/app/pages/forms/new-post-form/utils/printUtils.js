@@ -255,11 +255,14 @@ export const generateAndDownloadReport = (shiftData, courses, driver, vehicle) =
     drawText('Chutes (€)', currentX + bas_chutes/2, yPos + 6, 'center');
     currentX += bas_chutes;
 
-    // Recettes - Rectangle fusionné sur 3 lignes avec fermeture complète du tableau
-    doc.rect(currentX, yPos, bas_recettes, 4 * rowHeight);
+    // Recettes - Rectangle en-tête fermé + cellule fusionnée en dessous
+    doc.rect(currentX, yPos, bas_recettes, rowHeight);
     drawText('Recettes', currentX + bas_recettes/2, yPos + 6, 'center');
 
-    // 3 lignes de données avec fermeture complète
+    // Cellule fusionnée pour les données recettes (3 lignes suivantes)
+    doc.rect(currentX, yPos + rowHeight, bas_recettes, 3 * rowHeight);
+
+    // 3 lignes de données avec fermeture des autres colonnes
     doc.setFont('times', 'normal');
     const basLabels = ['Fin', 'Début', 'Total'];
     for (let i = 0; i < 3; i++) {
@@ -271,16 +274,14 @@ export const generateAndDownloadReport = (shiftData, courses, driver, vehicle) =
       drawText(basLabels[i], currentX + 2, lineY + 6);
       currentX += bas_vide;
 
-      // Colonnes de données (toutes fermées)
+      // Colonnes de données (fermées individuellement)
       doc.rect(currentX, lineY, bas_prise, rowHeight);
       doc.rect(currentX + bas_prise, lineY, bas_index, rowHeight);
       doc.rect(currentX + bas_prise + bas_index, lineY, bas_kmcharge, rowHeight);
       doc.rect(currentX + bas_prise + bas_index + bas_kmcharge, lineY, bas_chutes, rowHeight);
-    }
 
-    // Ligne de fermeture finale pour le tableau complet
-    const finalLineY = yPos + 4 * rowHeight;
-    doc.line(margin, finalLineY, margin + usableWidth, finalLineY);
+      // Note: La colonne Recettes est fusionnée sur les 3 lignes
+    }
 
     // Remplir les données taximètre
     const totalRecettes = courses.reduce((sum, course) => sum + (Number(course.sommes_percues) || 0), 0);
