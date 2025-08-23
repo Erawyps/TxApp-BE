@@ -253,7 +253,7 @@ export const generateAndDownloadReport = (shiftData, courses, driver, vehicle) =
     currentX += bas_chutes;
 
     // Recettes - Rectangle sur 3 lignes
-    doc.rect(currentX, yPos, bas_recettes, 3 * rowHeight);
+    doc.rect(currentX, yPos, bas_recettes, rowHeight);
     drawText('Recettes', currentX + bas_recettes/2, yPos + 15, 'center');
     currentX += bas_recettes;
 
