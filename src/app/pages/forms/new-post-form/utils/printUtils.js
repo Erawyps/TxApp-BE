@@ -233,9 +233,9 @@ export const generateAndDownloadReport = (shiftData, courses, driver, vehicle) =
     // NE PAS DESSINER la 4ème cellule vide (après Total)
     currentX += col4_taximetre;
 
-    // Ajuster la hauteur finale puisque nous avons une ligne de moins
-    yPos = serviceTableY + 4 * rowHeight + 8; // Changer de 5 à 4 rowHeight
+    yPos = serviceTableY + 5 * rowHeight + 8;
 
+    //yPos += 4 * rowHeight + 10;
     // ============ PARTIE BASSE DU TABLEAU - AVEC RECETTES FUSIONNÉES ============
     currentX = margin;
 
@@ -339,7 +339,7 @@ export const generateAndDownloadReport = (shiftData, courses, driver, vehicle) =
     const recettesX = dataStartX + bas_prise + bas_index + bas_kmcharge + bas_chutes;
     drawText(formatCurrency(totalRecettes), recettesX + bas_recettes/2, yPos + 2 * rowHeight + 6, 'center');
 
-    yPos += 4 * rowHeight + 10;
+    yPos += 4 * rowHeight + 10; // 4 lignes de hauteur + espacement
 
     // ============ SECTION COURSES PAGE 1 ============
     doc.rect(margin, yPos, usableWidth, 6);
