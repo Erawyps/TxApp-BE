@@ -254,7 +254,7 @@ export const generateAndDownloadReport = (shiftData, courses, driver, vehicle) =
 
     // Recettes - Rectangle sur 3 lignes
     doc.rect(currentX, yPos, bas_recettes, rowHeight);
-    drawText('Recettes', currentX + bas_recettes/2, yPos + 15, 'center');
+    drawText('Recettes', currentX + bas_recettes/2, yPos + 6, 'center');
     currentX += bas_recettes;
 
     // 3 lignes de données
