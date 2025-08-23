@@ -112,7 +112,7 @@ export const generateAndDownloadReport = (shiftData, courses, driver, vehicle) =
     // ============ PAGE 1 ============
     let yPos = createPageHeader(true);
 
-    // ============ SECTION SERVICE - EXACTE SELON PHOTO ============
+    // ============ SECTION SERVICE - CORRIGÉE ============
     doc.rect(margin, yPos, usableWidth, 6);
     doc.setFont('times', 'bold');
     doc.setFontSize(10);
@@ -132,38 +132,40 @@ export const generateAndDownloadReport = (shiftData, courses, driver, vehicle) =
 
     let currentX = margin;
 
-    // ============ PARTIE HAUTE DU TABLEAU SERVICE ============
+    // ============ PARTIE HAUTE DU TABLEAU SERVICE - CORRIGÉE ============
     doc.setFontSize(9);
 
-    // Colonne "Heures des prestations" - en-tête qui s'étend sur les 2 sous-colonnes
-    const heuresWidth = col1_heures_labels + col1_heures_data;
-    doc.rect(currentX, serviceTableY, heuresWidth, rowHeight);
-    doc.setFont('times', 'bold');
-    drawText('Heures des prestations', currentX + heuresWidth/2, serviceTableY + 6, 'center');
-
-    // Sous-colonnes pour heures des prestations
+    // Première colonne : Labels uniquement (sans en-tête "Heures des prestations")
     doc.setFont('times', 'normal');
     const heuresLabels = ['Début', 'Fin', 'Interruptions', 'Total'];
     for (let i = 0; i < 4; i++) {
       // Colonne labels
-      doc.rect(currentX, serviceTableY + rowHeight * (i + 1), col1_heures_labels, rowHeight);
-      drawText(heuresLabels[i], currentX + 2, serviceTableY + rowHeight * (i + 1) + 6);
+      doc.rect(currentX, serviceTableY + rowHeight * i, col1_heures_labels, rowHeight);
+      drawText(heuresLabels[i], currentX + 2, serviceTableY + rowHeight * i + 6);
+    }
+    currentX += col1_heures_labels;
 
-      // Colonne données
-      doc.rect(currentX + col1_heures_labels, serviceTableY + rowHeight * (i + 1), col1_heures_data, rowHeight);
+    // Deuxième colonne : Données avec en-tête "Heures des prestations"
+    doc.setFont('times', 'bold');
+    doc.rect(currentX, serviceTableY, col1_heures_data, rowHeight);
+    drawText('Heures des prestations', currentX + col1_heures_data/2, serviceTableY + 6, 'center');
+
+    doc.setFont('times', 'normal');
+    for (let i = 0; i < 3; i++) { // 3 lignes de données seulement
+      doc.rect(currentX, serviceTableY + rowHeight * (i + 1), col1_heures_data, rowHeight);
 
       // Ajouter les données si disponibles
       if (i === 0 && safeShiftData.heure_debut) {
-        drawText(formatTime(safeShiftData.heure_debut), currentX + col1_heures_labels + col1_heures_data/2, serviceTableY + rowHeight * (i + 1) + 6, 'center');
+        drawText(formatTime(safeShiftData.heure_debut), currentX + col1_heures_data/2, serviceTableY + rowHeight * (i + 1) + 6, 'center');
       }
       if (i === 1 && safeShiftData.heure_fin) {
-        drawText(formatTime(safeShiftData.heure_fin), currentX + col1_heures_labels + col1_heures_data/2, serviceTableY + rowHeight * (i + 1) + 6, 'center');
+        drawText(formatTime(safeShiftData.heure_fin), currentX + col1_heures_data/2, serviceTableY + rowHeight * (i + 1) + 6, 'center');
       }
     }
-    currentX += heuresWidth;
+    currentX += col1_heures_data;
 
     // Colonne vide fusionnée
-    doc.rect(currentX, serviceTableY, col_vide, 5 * rowHeight);
+    doc.rect(currentX, serviceTableY, col_vide, 4 * rowHeight);
     currentX += col_vide;
 
     // Colonne "Index km"
@@ -173,8 +175,8 @@ export const generateAndDownloadReport = (shiftData, courses, driver, vehicle) =
     drawText('km', currentX + col2_index/2, serviceTableY + 7, 'center');
 
     doc.setFont('times', 'normal');
-    const indexLabels = ['Fin', 'Début', 'Total', ''];
-    for (let i = 0; i < 4; i++) {
+    const indexLabels = ['Fin', 'Début', 'Total'];
+    for (let i = 0; i < 3; i++) {
       doc.rect(currentX, serviceTableY + rowHeight * (i + 1), col2_index, rowHeight);
       if (indexLabels[i]) {
         drawText(indexLabels[i], currentX + col2_index/2, serviceTableY + rowHeight * (i + 1) + 6, 'center');
@@ -188,7 +190,7 @@ export const generateAndDownloadReport = (shiftData, courses, driver, vehicle) =
     drawText('Tableau de bord', currentX + col3_tableau/2, serviceTableY + 6, 'center');
 
     doc.setFont('times', 'normal');
-    for (let i = 0; i < 4; i++) {
+    for (let i = 0; i < 3; i++) {
       doc.rect(currentX, serviceTableY + rowHeight * (i + 1), col3_tableau, rowHeight);
     }
 
@@ -207,13 +209,13 @@ export const generateAndDownloadReport = (shiftData, courses, driver, vehicle) =
     drawText('Taximètre', currentX + col4_taximetre/2, serviceTableY + 6, 'center');
 
     doc.setFont('times', 'normal');
-    for (let i = 0; i < 4; i++) {
+    for (let i = 0; i < 3; i++) {
       doc.rect(currentX, serviceTableY + rowHeight * (i + 1), col4_taximetre, rowHeight);
     }
 
-    yPos = serviceTableY + 5 * rowHeight + 8;
+    yPos = serviceTableY + 4 * rowHeight + 8;
 
-    // ============ PARTIE BASSE DU TABLEAU - EXACTE SELON PHOTO ============
+    // ============ PARTIE BASSE DU TABLEAU - AVEC RECETTES FUSIONNÉES ============
     currentX = margin;
 
     // Dimensions partie basse selon la photo
@@ -252,10 +254,9 @@ export const generateAndDownloadReport = (shiftData, courses, driver, vehicle) =
     drawText('Chutes (€)', currentX + bas_chutes/2, yPos + 6, 'center');
     currentX += bas_chutes;
 
-    // Recettes - Rectangle sur 3 lignes
-    doc.rect(currentX, yPos, bas_recettes, rowHeight);
+    // Recettes - Rectangle fusionné sur 3 lignes avec fermeture du tableau
+    doc.rect(currentX, yPos, bas_recettes, 4 * rowHeight);
     drawText('Recettes', currentX + bas_recettes/2, yPos + 6, 'center');
-    currentX += bas_recettes;
 
     // 3 lignes de données
     doc.setFont('times', 'normal');
@@ -274,6 +275,8 @@ export const generateAndDownloadReport = (shiftData, courses, driver, vehicle) =
       doc.rect(currentX + bas_prise, lineY, bas_index, rowHeight);
       doc.rect(currentX + bas_prise + bas_index, lineY, bas_kmcharge, rowHeight);
       doc.rect(currentX + bas_prise + bas_index + bas_kmcharge, lineY, bas_chutes, rowHeight);
+
+      // Note: Pas de rectangle pour la colonne Recettes car elle est fusionnée
     }
 
     // Remplir les données taximètre
@@ -308,8 +311,9 @@ export const generateAndDownloadReport = (shiftData, courses, driver, vehicle) =
       drawText(formatCurrency(safeShiftData.taximetre_chutes_debut), dataStartX + bas_prise + bas_index + bas_kmcharge + bas_chutes/2, yPos + 2 * rowHeight + 6, 'center');
     }
 
-    // Total recettes
-    drawText(formatCurrency(totalRecettes), dataStartX + bas_prise + bas_index + bas_kmcharge + bas_chutes + bas_recettes/2, yPos + 3 * rowHeight + 6, 'center');
+    // Total recettes - BIEN CENTRÉ dans la cellule fusionnée
+    const recettesX = dataStartX + bas_prise + bas_index + bas_kmcharge + bas_chutes;
+    drawText(formatCurrency(totalRecettes), recettesX + bas_recettes/2, yPos + 2 * rowHeight + 6, 'center');
 
     yPos += 4 * rowHeight + 10;
 
@@ -711,10 +715,12 @@ export const previewTableDimensions = () => {
       serviceTable: {
         totalWidth: 190,
         columns: [
-          { name: 'Heures prestations', width: 50 },
+          { name: 'Labels heures', width: 35 },
+          { name: 'Heures prestations', width: 15 },
+          { name: 'Vide fusionnée', width: 15 },
           { name: 'Index km', width: 23 },
           { name: 'Tableau de bord', width: 58 },
-          { name: 'Taximètre', width: 59 }
+          { name: 'Taximètre', width: 44 }
         ]
       },
       bottomTable: {
@@ -725,7 +731,7 @@ export const previewTableDimensions = () => {
           { name: 'Index Km totaux', width: 32 },
           { name: 'Km en charge', width: 28 },
           { name: 'Chutes', width: 28 },
-          { name: 'Recettes', width: 52 }
+          { name: 'Recettes (fusionnée)', width: 52 }
         ]
       },
       coursesTable: {
