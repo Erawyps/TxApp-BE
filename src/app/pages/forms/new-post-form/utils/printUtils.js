@@ -183,8 +183,8 @@ export const generateAndDownloadReport = (shiftData, courses, driver, vehicle) =
     }
     currentX += col1_heures_data;
 
-    // Colonne vide fusionnée (4 lignes au lieu de 5 pour supprimer la dernière cellule)
-    doc.rect(currentX, serviceTableY, col_vide, 4 * rowHeight); // Changer de 5 à 4
+    // Colonne vide fusionnée (5 lignes pour s'aligner avec les nouvelles dimensions)
+    doc.rect(currentX, serviceTableY, col_vide, 5 * rowHeight);
     currentX += col_vide;
 
     // Colonne "Index km"
@@ -233,9 +233,9 @@ export const generateAndDownloadReport = (shiftData, courses, driver, vehicle) =
     // NE PAS DESSINER la 4ème cellule vide (après Total)
     currentX += col4_taximetre;
 
-    // Ajuster la hauteur finale puisque nous avons une ligne de moins dans toutes les colonnes
-    yPos = serviceTableY + 4 * rowHeight + 10; // Changer de 5 à 4 rowHeight + espacement
+    yPos = serviceTableY + 5 * rowHeight + 8;
 
+    //yPos += 4 * rowHeight + 10;
     // ============ PARTIE BASSE DU TABLEAU - AVEC RECETTES FUSIONNÉES ============
     currentX = margin;
 
