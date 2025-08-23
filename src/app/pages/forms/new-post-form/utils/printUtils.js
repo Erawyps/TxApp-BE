@@ -237,12 +237,9 @@ export const generateAndDownloadReport = (shiftData, courses, driver, vehicle) =
     yPos = serviceTableY + 4 * rowHeight + 8; // Changer de 5 à 4 rowHeight
 
     // ============ PARTIE BASSE DU TABLEAU - AVEC RECETTES FUSIONNÉES ============
-// Ajouter un espace supplémentaire avant la table suivante
-    yPos += 5; // Ajouter 5mm d'espace supplémentaire
-
     currentX = margin;
 
-// Dimensions partie basse selon la photo
+    // Dimensions partie basse selon la photo
     const bas_vide = 22;           // Colonne vide à gauche
     const bas_prise = 28;          // Prise en charge
     const bas_index = 32;          // Index Km (Km totaux)
@@ -250,12 +247,17 @@ export const generateAndDownloadReport = (shiftData, courses, driver, vehicle) =
     const bas_chutes = 28;         // Chutes (€)
     const bas_recettes = usableWidth - bas_vide - bas_prise - bas_index - bas_kmcharge - bas_chutes; // Recettes
 
-// En-têtes partie basse
+    // En-têtes partie basse
     doc.setFont('times', 'bold');
 
-// Colonne vide
+    // Colonne vide
     doc.rect(currentX, yPos, bas_vide, rowHeight);
     currentX += bas_vide;
+
+    // Prise en charge
+    doc.rect(currentX, yPos, bas_prise, rowHeight);
+    drawText('Prise en charge', currentX + bas_prise/2, yPos + 6, 'center');
+    currentX += bas_prise;
 
     // Index Km (Km totaux)
     doc.rect(currentX, yPos, bas_index, rowHeight);
@@ -340,9 +342,6 @@ export const generateAndDownloadReport = (shiftData, courses, driver, vehicle) =
     yPos += 4 * rowHeight + 10;
 
     // ============ SECTION COURSES PAGE 1 ============
-    // Ajouter un espace supplémentaire avant la table des courses
-    yPos += 5; // Ajouter 5mm d'espace supplémentaire
-
     doc.rect(margin, yPos, usableWidth, 6);
     doc.setFont('times', 'bold');
     doc.setFontSize(10);
