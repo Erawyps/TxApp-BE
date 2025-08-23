@@ -56,7 +56,7 @@ export const generateAndDownloadReport = (shiftData, courses, driver, vehicle) =
         // Ligne de soulignement sous le titre
         const titleWidth = doc.getTextWidth('FEUILLE DE ROUTE');
         const titleStartX = pageWidth/2 - titleWidth/2;
-        doc.line(titleStartX, yPos + 2, titleStartX + titleWidth, yPos + 2);
+        doc.line(titleStartX, yPos + 1, titleStartX + titleWidth, yPos + 1); // Soulignement plus proche du texte
       } else {
         drawText('FEUILLE DE ROUTE (suite)', pageWidth/2, yPos, 'center');
         // Ligne de soulignement sous le titre
