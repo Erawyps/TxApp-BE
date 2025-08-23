@@ -122,13 +122,13 @@ export const generateAndDownloadReport = (shiftData, courses, driver, vehicle) =
     const serviceTableY = yPos;
     const rowHeight = 10;
 
-    // Dimensions colonnes selon la photo EXACTE
-    const col1_heures_labels = 35;   // Labels heures des prestations
-    const col1_heures_data = 15;     // Données heures des prestations
+    // Dimensions colonnes selon la photo EXACTE - AJUSTÉES
+    const col1_heures_labels = 25;   // Labels heures des prestations (réduit)
+    const col1_heures_data = 35;     // Données heures des prestations (augmenté pour le texte)
     const col_vide = 15;             // Colonne vide fusionnée
     const col2_index = 23;           // Index km
-    const col3_tableau = 58;         // Tableau de bord
-    const col4_taximetre = 44;       // Taximètre (ajusté pour compenser la colonne vide)
+    const col3_tableau = 48;         // Tableau de bord (ajusté)
+    const col4_taximetre = 44;       // Taximètre
 
     let currentX = margin;
 
@@ -148,7 +148,8 @@ export const generateAndDownloadReport = (shiftData, courses, driver, vehicle) =
     // Deuxième colonne : Données avec en-tête "Heures des prestations"
     doc.setFont('times', 'bold');
     doc.rect(currentX, serviceTableY, col1_heures_data, rowHeight);
-    drawText('Heures des prestations', currentX + col1_heures_data/2, serviceTableY + 6, 'center');
+    drawText('Heures des', currentX + col1_heures_data/2, serviceTableY + 3, 'center');
+    drawText('prestations', currentX + col1_heures_data/2, serviceTableY + 7, 'center');
 
     doc.setFont('times', 'normal');
     for (let i = 0; i < 3; i++) { // 3 lignes de données seulement
@@ -254,11 +255,11 @@ export const generateAndDownloadReport = (shiftData, courses, driver, vehicle) =
     drawText('Chutes (€)', currentX + bas_chutes/2, yPos + 6, 'center');
     currentX += bas_chutes;
 
-    // Recettes - Rectangle fusionné sur 3 lignes avec fermeture du tableau
+    // Recettes - Rectangle fusionné sur 3 lignes avec fermeture complète du tableau
     doc.rect(currentX, yPos, bas_recettes, 4 * rowHeight);
     drawText('Recettes', currentX + bas_recettes/2, yPos + 6, 'center');
 
-    // 3 lignes de données
+    // 3 lignes de données avec fermeture complète
     doc.setFont('times', 'normal');
     const basLabels = ['Fin', 'Début', 'Total'];
     for (let i = 0; i < 3; i++) {
@@ -270,14 +271,16 @@ export const generateAndDownloadReport = (shiftData, courses, driver, vehicle) =
       drawText(basLabels[i], currentX + 2, lineY + 6);
       currentX += bas_vide;
 
-      // Colonnes de données
+      // Colonnes de données (toutes fermées)
       doc.rect(currentX, lineY, bas_prise, rowHeight);
       doc.rect(currentX + bas_prise, lineY, bas_index, rowHeight);
       doc.rect(currentX + bas_prise + bas_index, lineY, bas_kmcharge, rowHeight);
       doc.rect(currentX + bas_prise + bas_index + bas_kmcharge, lineY, bas_chutes, rowHeight);
-
-      // Note: Pas de rectangle pour la colonne Recettes car elle est fusionnée
     }
+
+    // Ligne de fermeture finale pour le tableau complet
+    const finalLineY = yPos + 4 * rowHeight;
+    doc.line(margin, finalLineY, margin + usableWidth, finalLineY);
 
     // Remplir les données taximètre
     const totalRecettes = courses.reduce((sum, course) => sum + (Number(course.sommes_percues) || 0), 0);
