@@ -64,14 +64,14 @@ export const generateAndDownloadReport = (shiftData, courses, driver, vehicle) =
         const titleStartX = pageWidth/2 - titleWidth/2;
         doc.line(titleStartX, yPos + 2, titleStartX + titleWidth, yPos + 2);
       }
-      yPos += 8; // Espacement après le titre et la ligne
+      yPos += 10; // Espacement après le titre et la ligne
 
       // Rectangle identité exploitant
       doc.rect(margin, yPos, usableWidth, 6);
       doc.setFontSize(10);
       doc.setFont('times', 'normal');
       drawText('(Identité de l\'exploitant)', pageWidth/2, yPos + 4, 'center');
-      yPos += 8;
+      yPos += 10;
 
       // Date et nom du chauffeur
       doc.setFontSize(10);
