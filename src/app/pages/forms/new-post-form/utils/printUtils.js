@@ -117,7 +117,7 @@ export const generateAndDownloadReport = (shiftData, courses, driver, vehicle) =
       const identificationText = `n° identification : ${safeVehicle.numero_identification}`;
       drawText(identificationText, secondCellX + 2, yPos + 4);
 
-      yPos += vehiculeRowHeight + 12;
+      yPos += vehiculeRowHeight + 8; // Hauteur ligne + espacement avant la suite
 
       return yPos;
     };
