@@ -123,36 +123,43 @@ export const generateAndDownloadReport = (shiftData, courses, driver, vehicle) =
     const rowHeight = 10;
 
     // Dimensions colonnes selon la photo EXACTE
-    const col1_heures = 50;      // Heures des prestations
-    const col2_index = 23;       // Index km
-    const col3_tableau = 58;     // Tableau de bord
-    const col4_taximetre = 59;   // Taximètre
+    const col1_heures_labels = 35;   // Labels heures des prestations
+    const col1_heures_data = 15;     // Données heures des prestations
+    const col2_index = 23;           // Index km
+    const col3_tableau = 58;         // Tableau de bord
+    const col4_taximetre = 59;       // Taximètre
 
     let currentX = margin;
 
     // ============ PARTIE HAUTE DU TABLEAU SERVICE ============
     doc.setFontSize(9);
 
-    // Colonne "Heures des prestations" - s'étend sur toute la hauteur (4 lignes + en-tête)
-    doc.rect(currentX, serviceTableY, col1_heures, rowHeight);
+    // Colonne "Heures des prestations" - en-tête qui s'étend sur les 2 sous-colonnes
+    const heuresWidth = col1_heures_labels + col1_heures_data;
+    doc.rect(currentX, serviceTableY, heuresWidth, rowHeight);
     doc.setFont('times', 'bold');
-    drawText('Heures des prestations', currentX + col1_heures/2, serviceTableY + 6, 'center');
+    drawText('Heures des prestations', currentX + heuresWidth/2, serviceTableY + 6, 'center');
 
+    // Sous-colonnes pour heures des prestations
     doc.setFont('times', 'normal');
     const heuresLabels = ['Début', 'Fin', 'Interruptions', 'Total'];
     for (let i = 0; i < 4; i++) {
-      doc.rect(currentX, serviceTableY + rowHeight * (i + 1), col1_heures, rowHeight);
+      // Colonne labels
+      doc.rect(currentX, serviceTableY + rowHeight * (i + 1), col1_heures_labels, rowHeight);
       drawText(heuresLabels[i], currentX + 2, serviceTableY + rowHeight * (i + 1) + 6);
+
+      // Colonne données
+      doc.rect(currentX + col1_heures_labels, serviceTableY + rowHeight * (i + 1), col1_heures_data, rowHeight);
 
       // Ajouter les données si disponibles
       if (i === 0 && safeShiftData.heure_debut) {
-        drawText(formatTime(safeShiftData.heure_debut), currentX + col1_heures - 15, serviceTableY + rowHeight * (i + 1) + 6);
+        drawText(formatTime(safeShiftData.heure_debut), currentX + col1_heures_labels + col1_heures_data/2, serviceTableY + rowHeight * (i + 1) + 6, 'center');
       }
       if (i === 1 && safeShiftData.heure_fin) {
-        drawText(formatTime(safeShiftData.heure_fin), currentX + col1_heures - 15, serviceTableY + rowHeight * (i + 1) + 6);
+        drawText(formatTime(safeShiftData.heure_fin), currentX + col1_heures_labels + col1_heures_data/2, serviceTableY + rowHeight * (i + 1) + 6, 'center');
       }
     }
-    currentX += col1_heures;
+    currentX += heuresWidth;
 
     // Colonne "Index km"
     doc.setFont('times', 'bold');
