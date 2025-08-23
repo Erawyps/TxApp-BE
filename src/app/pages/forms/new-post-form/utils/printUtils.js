@@ -48,13 +48,21 @@ export const generateAndDownloadReport = (shiftData, courses, driver, vehicle) =
     const createPageHeader = (isFirstPage = true) => {
       let yPos = 15;
 
-      // Titre
-      doc.setFont('times', 'bold');
+      // Titre avec soulignement
+      doc.setFont('times', 'normal');  // Pas de bold
       doc.setFontSize(14);
       if (isFirstPage) {
         drawText('FEUILLE DE ROUTE', pageWidth/2, yPos, 'center');
+        // Ligne de soulignement sous le titre
+        const titleWidth = doc.getTextWidth('FEUILLE DE ROUTE');
+        const titleStartX = pageWidth/2 - titleWidth/2;
+        doc.line(titleStartX, yPos + 2, titleStartX + titleWidth, yPos + 2);
       } else {
         drawText('FEUILLE DE ROUTE (suite)', pageWidth/2, yPos, 'center');
+        // Ligne de soulignement sous le titre
+        const titleWidth = doc.getTextWidth('FEUILLE DE ROUTE (suite)');
+        const titleStartX = pageWidth/2 - titleWidth/2;
+        doc.line(titleStartX, yPos + 2, titleStartX + titleWidth, yPos + 2);
       }
       yPos += 10;
 
@@ -90,21 +98,27 @@ export const generateAndDownloadReport = (shiftData, courses, driver, vehicle) =
       drawText('Véhicule', pageWidth/2, yPos + 4, 'center');
       yPos += 6;
 
-      // Informations véhicule sur deux lignes
+      // Informations véhicule - STRUCTURE CORRIGÉE : Label + Valeur dans la même cellule
       doc.setFontSize(9);
       doc.setFont('times', 'normal');
 
-      // Première ligne véhicule
-      doc.rect(margin, yPos, usableWidth, 6);
-      drawText('n° plaque d\'immatriculation :', margin + 2, yPos + 4);
-      drawText('n° identification :', nomChauffeurX + 20, yPos + 4);
-      yPos += 6;
+      // Première ligne véhicule - 2 cellules avec label+valeur ensemble
+      const vehiculeRowHeight = 6;
+      const cellWidth = (usableWidth - 5) / 2;  // Deux cellules égales avec espacement
+      const spacing = 5;      // Espacement entre les deux cellules
 
-      // Deuxième ligne véhicule avec valeurs
-      doc.rect(margin, yPos, usableWidth, 6);
-      drawText(safeVehicle.plaque_immatriculation, margin + 2, yPos + 4);
-      drawText(safeVehicle.numero_identification, nomChauffeurX + 20, yPos + 4);
-      yPos += 12;
+      // Première cellule : "n° plaque d'immatriculation :" + valeur
+      doc.rect(margin, yPos, cellWidth, vehiculeRowHeight);
+      const plaqueText = `n° plaque d'immatriculation : ${safeVehicle.plaque_immatriculation}`;
+      drawText(plaqueText, margin + 2, yPos + 4);
+
+      // Deuxième cellule : "n° identification :" + valeur
+      const secondCellX = margin + cellWidth + spacing;
+      doc.rect(secondCellX, yPos, cellWidth, vehiculeRowHeight);
+      const identificationText = `n° identification : ${safeVehicle.numero_identification}`;
+      drawText(identificationText, secondCellX + 2, yPos + 4);
+
+      yPos += vehiculeRowHeight + 12;
 
       return yPos;
     };
