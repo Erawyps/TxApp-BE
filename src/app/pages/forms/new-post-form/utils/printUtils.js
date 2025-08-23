@@ -502,9 +502,9 @@ export const generateAndDownloadReport = (shiftData, courses, driver, vehicle) =
     doc.setFontSize(9);
     drawText('Signature du chauffeur :', margin, yPos);
     // Ligne de signature bien positionnée en dessous du texte
-    doc.line(margin + 25, yPos + 8, margin + 100, yPos + 8);
+    doc.line(margin + 20, yPos + 8, margin + 100, yPos + 8);
 
-    yPos += 8;
+    yPos += 12;
     drawText('*', margin, yPos);
     drawText('Après déduction d\'une remise commerciale éventuelle.', margin + 5, yPos);
 
