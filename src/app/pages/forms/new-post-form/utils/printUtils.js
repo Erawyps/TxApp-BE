@@ -71,7 +71,7 @@ export const generateAndDownloadReport = (shiftData, courses, driver, vehicle) =
       doc.setFontSize(10);
       doc.setFont('times', 'normal');
       drawText('(Identité de l\'exploitant)', pageWidth/2, yPos + 4, 'center');
-      yPos += 12;
+      yPos += 5;
 
       // Date et nom du chauffeur
       doc.setFontSize(10);
@@ -89,7 +89,7 @@ export const generateAndDownloadReport = (shiftData, courses, driver, vehicle) =
 
       drawText(driverFullName, nomChauffeurX + 40, yPos);
       doc.line(nomChauffeurX + 40, yPos + 1, pageWidth - margin, yPos + 1);
-      yPos += 12;
+      yPos += 5;
 
       // Section véhicule
       doc.rect(margin, yPos, usableWidth, 6);
