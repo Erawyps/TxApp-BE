@@ -56,13 +56,13 @@ export const generateAndDownloadReport = (shiftData, courses, driver, vehicle) =
         // Ligne de soulignement sous le titre
         const titleWidth = doc.getTextWidth('FEUILLE DE ROUTE');
         const titleStartX = pageWidth/2 - titleWidth/2;
-        doc.line(titleStartX, yPos + 2, titleStartX + titleWidth, yPos + 2);
+        doc.line(titleStartX, yPos + 1, titleStartX + titleWidth, yPos + 1);
       } else {
         drawText('FEUILLE DE ROUTE (suite)', pageWidth/2, yPos, 'center');
         // Ligne de soulignement sous le titre
         const titleWidth = doc.getTextWidth('FEUILLE DE ROUTE (suite)');
         const titleStartX = pageWidth/2 - titleWidth/2;
-        doc.line(titleStartX, yPos + 2, titleStartX + titleWidth, yPos + 2);
+        doc.line(titleStartX, yPos + 1, titleStartX + titleWidth, yPos + 1);
       }
       yPos += 10;
 
@@ -183,8 +183,8 @@ export const generateAndDownloadReport = (shiftData, courses, driver, vehicle) =
     }
     currentX += col1_heures_data;
 
-    // Colonne vide fusionnée (5 lignes pour s'aligner avec les nouvelles dimensions)
-    doc.rect(currentX, serviceTableY, col_vide, 5 * rowHeight);
+    // Colonne vide fusionnée (4 lignes au lieu de 5 pour supprimer la dernière cellule)
+    doc.rect(currentX, serviceTableY, col_vide, 4 * rowHeight); // Changer de 5 à 4
     currentX += col_vide;
 
     // Colonne "Index km"
@@ -194,12 +194,10 @@ export const generateAndDownloadReport = (shiftData, courses, driver, vehicle) =
     drawText('km', currentX + col2_index/2, serviceTableY + 7, 'center');
 
     doc.setFont('times', 'normal');
-    const indexLabels = ['Fin', 'Début', 'Total', ''];
-    for (let i = 0; i < 4; i++) {
+    const indexLabels = ['Fin', 'Début', 'Total']; // Supprimer la dernière cellule vide
+    for (let i = 0; i < 3; i++) { // Changer de 4 à 3 pour supprimer la dernière cellule
       doc.rect(currentX, serviceTableY + rowHeight * (i + 1), col2_index, rowHeight);
-      if (indexLabels[i]) {
-        drawText(indexLabels[i], currentX + col2_index/2, serviceTableY + rowHeight * (i + 1) + 6, 'center');
-      }
+      drawText(indexLabels[i], currentX + col2_index/2, serviceTableY + rowHeight * (i + 1) + 6, 'center');
     }
     currentX += col2_index;
 
@@ -209,7 +207,7 @@ export const generateAndDownloadReport = (shiftData, courses, driver, vehicle) =
     drawText('Tableau de bord', currentX + col3_tableau/2, serviceTableY + 6, 'center');
 
     doc.setFont('times', 'normal');
-    for (let i = 0; i < 4; i++) {
+    for (let i = 0; i < 3; i++) { // Changer de 4 à 3 pour supprimer la dernière cellule vide
       doc.rect(currentX, serviceTableY + rowHeight * (i + 1), col3_tableau, rowHeight);
     }
 
@@ -220,6 +218,7 @@ export const generateAndDownloadReport = (shiftData, courses, driver, vehicle) =
     if (safeShiftData.km_tableau_bord_debut) {
       drawText(formatNumber(safeShiftData.km_tableau_bord_debut), currentX + col3_tableau/2, serviceTableY + 2 * rowHeight + 6, 'center');
     }
+    // NE PAS DESSINER la 4ème cellule vide (après Total)
     currentX += col3_tableau;
 
     // Colonne "Taximètre"
@@ -228,9 +227,14 @@ export const generateAndDownloadReport = (shiftData, courses, driver, vehicle) =
     drawText('Taximètre', currentX + col4_taximetre/2, serviceTableY + 6, 'center');
 
     doc.setFont('times', 'normal');
-    for (let i = 0; i < 4; i++) {
+    for (let i = 0; i < 3; i++) { // Changer de 4 à 3 pour supprimer la dernière cellule vide
       doc.rect(currentX, serviceTableY + rowHeight * (i + 1), col4_taximetre, rowHeight);
     }
+    // NE PAS DESSINER la 4ème cellule vide (après Total)
+    currentX += col4_taximetre;
+
+    // Ajuster la hauteur finale puisque nous avons une ligne de moins dans toutes les colonnes
+    // yPos = serviceTableY + 4 * rowHeight + 8; // Changer de 5 à 4 rowHeight
 
     yPos = serviceTableY + 5 * rowHeight + 6;
 
