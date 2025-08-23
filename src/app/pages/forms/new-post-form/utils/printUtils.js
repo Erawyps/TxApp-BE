@@ -234,7 +234,7 @@ export const generateAndDownloadReport = (shiftData, courses, driver, vehicle) =
     currentX += col4_taximetre;
 
 // Ajuster la hauteur finale puisque nous avons une ligne de moins dans toutes les colonnes
-    yPos = serviceTableY + 4 * rowHeight + 10; // Changer de 5 à 4 rowHeight
+    yPos = serviceTableY + 4 * rowHeight + 15; // Changer de 5 à 4 rowHeight
 
     // ============ PARTIE BASSE DU TABLEAU - AVEC RECETTES FUSIONNÉES ============
     currentX = margin;
