@@ -117,7 +117,7 @@ export const generateAndDownloadReport = (shiftData, courses, driver, vehicle) =
       const identificationText = `n° identification : ${safeVehicle.numero_identification}`;
       drawText(identificationText, secondCellX + 2, yPos + 4);
 
-      yPos += vehiculeRowHeight + 8; // Hauteur ligne + espacement avant la suite
+      yPos += vehiculeRowHeight + 5; // Hauteur ligne + espacement avant la suite
 
       return yPos;
     };
@@ -339,7 +339,7 @@ export const generateAndDownloadReport = (shiftData, courses, driver, vehicle) =
     const recettesX = dataStartX + bas_prise + bas_index + bas_kmcharge + bas_chutes;
     drawText(formatCurrency(totalRecettes), recettesX + bas_recettes/2, yPos + 2 * rowHeight + 6, 'center');
 
-    yPos += 4 * rowHeight + 10; // 4 lignes de hauteur + espacement
+    yPos += 4 * rowHeight + 5; // 4 lignes de hauteur + espacement
 
     // ============ SECTION COURSES PAGE 1 ============
     doc.rect(margin, yPos, usableWidth, 6);
