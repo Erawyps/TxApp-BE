@@ -64,7 +64,7 @@ export const generateAndDownloadReport = (shiftData, courses, driver, vehicle) =
         const titleStartX = pageWidth/2 - titleWidth/2;
         doc.line(titleStartX, yPos + 2, titleStartX + titleWidth, yPos + 2);
       }
-      yPos += 10;
+      yPos += 5; // Espacement après le titre et la ligne
 
       // Rectangle identité exploitant
       doc.rect(margin, yPos, usableWidth, 6);
