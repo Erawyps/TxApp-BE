@@ -148,14 +148,14 @@ export const generateAndDownloadReport = (shiftData, courses, driver, vehicle) =
     // ============ PARTIE HAUTE DU TABLEAU SERVICE - STRUCTURE CORRIGÉE ============
     doc.setFontSize(9);
 
-// Première colonne : Cellule vide en haut, puis labels en dessous
+    // Première colonne : Cellule vide en haut, puis labels en dessous
     doc.setFont('times', 'normal');
 
-// Cellule vide en haut de la première colonne (alignée avec l'en-tête "Heures des prestations")
+    // Cellule vide en haut de la première colonne (alignée avec l'en-tête "Heures des prestations")
     doc.rect(currentX, serviceTableY, col1_heures_labels, rowHeight);
-// Pas de texte dans cette cellule
+    // Pas de texte dans cette cellule
 
-// Labels dans les 4 cellules suivantes
+    // Labels dans les 4 cellules suivantes
     const heuresLabels = ['Début', 'Fin', 'Interruptions', 'Total'];
     for (let i = 0; i < 4; i++) {
       doc.rect(currentX, serviceTableY + rowHeight * (i + 1), col1_heures_labels, rowHeight);
@@ -163,7 +163,7 @@ export const generateAndDownloadReport = (shiftData, courses, driver, vehicle) =
     }
     currentX += col1_heures_labels;
 
-// Deuxième colonne : En-tête "Heures des prestations" puis données
+    // Deuxième colonne : En-tête "Heures des prestations" puis données
     doc.setFont('times', 'bold');
     doc.rect(currentX, serviceTableY, col1_heures_data, rowHeight);
     drawText('Heures des', currentX + col1_heures_data/2, serviceTableY + 3, 'center');
@@ -183,11 +183,11 @@ export const generateAndDownloadReport = (shiftData, courses, driver, vehicle) =
     }
     currentX += col1_heures_data;
 
-// Colonne vide fusionnée (4 lignes au lieu de 5 pour supprimer la dernière cellule)
-    doc.rect(currentX, serviceTableY, col_vide, 4 * rowHeight); // Changer de 5 à 4
+    // Colonne vide fusionnée (5 lignes pour s'aligner avec les nouvelles dimensions)
+    doc.rect(currentX, serviceTableY, col_vide, 5 * rowHeight);
     currentX += col_vide;
 
-// Colonne "Index km"
+    // Colonne "Index km"
     doc.setFont('times', 'bold');
     doc.rect(currentX, serviceTableY, col2_index, rowHeight);
     drawText('Index', currentX + col2_index/2, serviceTableY + 3, 'center');
@@ -201,7 +201,7 @@ export const generateAndDownloadReport = (shiftData, courses, driver, vehicle) =
     }
     currentX += col2_index;
 
-// Colonne "Tableau de bord"
+    // Colonne "Tableau de bord"
     doc.setFont('times', 'bold');
     doc.rect(currentX, serviceTableY, col3_tableau, rowHeight);
     drawText('Tableau de bord', currentX + col3_tableau/2, serviceTableY + 6, 'center');
@@ -211,17 +211,17 @@ export const generateAndDownloadReport = (shiftData, courses, driver, vehicle) =
       doc.rect(currentX, serviceTableY + rowHeight * (i + 1), col3_tableau, rowHeight);
     }
 
-// Données tableau de bord
+    // Données tableau de bord
     if (safeShiftData.km_tableau_bord_fin) {
       drawText(formatNumber(safeShiftData.km_tableau_bord_fin), currentX + col3_tableau/2, serviceTableY + rowHeight + 6, 'center');
     }
     if (safeShiftData.km_tableau_bord_debut) {
       drawText(formatNumber(safeShiftData.km_tableau_bord_debut), currentX + col3_tableau/2, serviceTableY + 2 * rowHeight + 6, 'center');
     }
-// NE PAS DESSINER la 4ème cellule vide (après Total)
+    // NE PAS DESSINER la 4ème cellule vide (après Total)
     currentX += col3_tableau;
 
-// Colonne "Taximètre"
+    // Colonne "Taximètre"
     doc.setFont('times', 'bold');
     doc.rect(currentX, serviceTableY, col4_taximetre, rowHeight);
     drawText('Taximètre', currentX + col4_taximetre/2, serviceTableY + 6, 'center');
@@ -230,13 +230,11 @@ export const generateAndDownloadReport = (shiftData, courses, driver, vehicle) =
     for (let i = 0; i < 3; i++) { // Changer de 4 à 3 pour supprimer la dernière cellule vide
       doc.rect(currentX, serviceTableY + rowHeight * (i + 1), col4_taximetre, rowHeight);
     }
-// NE PAS DESSINER la 4ème cellule vide (après Total)
+    // NE PAS DESSINER la 4ème cellule vide (après Total)
     currentX += col4_taximetre;
 
-// Ajuster la hauteur finale puisque nous avons une ligne de moins dans toutes les colonnes
-    yPos = serviceTableY + 4 * rowHeight + 8; // Changer de 5 à 4 rowHeight
+    yPos = serviceTableY + 5 * rowHeight + 10;
 
-    //yPos += 4 * rowHeight + 10;
     // ============ PARTIE BASSE DU TABLEAU - AVEC RECETTES FUSIONNÉES ============
     currentX = margin;
 
