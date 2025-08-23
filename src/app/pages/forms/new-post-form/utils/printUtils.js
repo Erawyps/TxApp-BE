@@ -112,7 +112,7 @@ export const generateAndDownloadReport = (shiftData, courses, driver, vehicle) =
     // ============ PAGE 1 ============
     let yPos = createPageHeader(true);
 
-// ============ SECTION SERVICE - EXACTE SELON PHOTO ============
+    // ============ SECTION SERVICE - EXACTE SELON PHOTO ============
     doc.rect(margin, yPos, usableWidth, 6);
     doc.setFont('times', 'bold');
     doc.setFontSize(10);
@@ -125,9 +125,10 @@ export const generateAndDownloadReport = (shiftData, courses, driver, vehicle) =
     // Dimensions colonnes selon la photo EXACTE
     const col1_heures_labels = 35;   // Labels heures des prestations
     const col1_heures_data = 15;     // Données heures des prestations
+    const col_vide = 15;             // Colonne vide fusionnée
     const col2_index = 23;           // Index km
     const col3_tableau = 58;         // Tableau de bord
-    const col4_taximetre = 59;       // Taximètre
+    const col4_taximetre = 44;       // Taximètre (ajusté pour compenser la colonne vide)
 
     let currentX = margin;
 
@@ -160,6 +161,10 @@ export const generateAndDownloadReport = (shiftData, courses, driver, vehicle) =
       }
     }
     currentX += heuresWidth;
+
+    // Colonne vide fusionnée
+    doc.rect(currentX, serviceTableY, col_vide, 5 * rowHeight);
+    currentX += col_vide;
 
     // Colonne "Index km"
     doc.setFont('times', 'bold');
