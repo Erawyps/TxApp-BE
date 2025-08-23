@@ -71,7 +71,7 @@ export const generateAndDownloadReport = (shiftData, courses, driver, vehicle) =
       doc.setFontSize(10);
       doc.setFont('times', 'normal');
       drawText('(Identité de l\'exploitant)', pageWidth/2, yPos + 4, 'center');
-      yPos += 12;
+      yPos += 10;
 
       // Date et nom du chauffeur
       doc.setFontSize(10);
@@ -89,7 +89,7 @@ export const generateAndDownloadReport = (shiftData, courses, driver, vehicle) =
 
       drawText(driverFullName, nomChauffeurX + 40, yPos);
       doc.line(nomChauffeurX + 40, yPos + 1, pageWidth - margin, yPos + 1);
-      yPos += 12;
+      yPos += 10;
 
       // Section véhicule
       doc.rect(margin, yPos, usableWidth, 6);
@@ -117,7 +117,7 @@ export const generateAndDownloadReport = (shiftData, courses, driver, vehicle) =
       const identificationText = `n° identification : ${safeVehicle.numero_identification}`;
       drawText(identificationText, secondCellX + 2, yPos + 4);
 
-      yPos += vehiculeRowHeight + 12;
+      yPos += vehiculeRowHeight + 6;
 
       return yPos;
     };
@@ -232,7 +232,7 @@ export const generateAndDownloadReport = (shiftData, courses, driver, vehicle) =
       doc.rect(currentX, serviceTableY + rowHeight * (i + 1), col4_taximetre, rowHeight);
     }
 
-    yPos = serviceTableY + 5 * rowHeight + 8;
+    yPos = serviceTableY + 5 * rowHeight + 6;
 
     // ============ PARTIE BASSE DU TABLEAU - AVEC RECETTES FUSIONNÉES ============
     currentX = margin;
@@ -337,7 +337,7 @@ export const generateAndDownloadReport = (shiftData, courses, driver, vehicle) =
     const recettesX = dataStartX + bas_prise + bas_index + bas_kmcharge + bas_chutes;
     drawText(formatCurrency(totalRecettes), recettesX + bas_recettes/2, yPos + 2 * rowHeight + 6, 'center');
 
-    yPos += 4 * rowHeight + 10;
+    yPos += 4 * rowHeight + 6;
 
     // ============ SECTION COURSES PAGE 1 ============
     doc.rect(margin, yPos, usableWidth, 6);
@@ -502,9 +502,9 @@ export const generateAndDownloadReport = (shiftData, courses, driver, vehicle) =
     doc.setFontSize(9);
     drawText('Signature du chauffeur :', margin, yPos);
     // Ligne de signature bien positionnée en dessous du texte
-    doc.line(margin + 55, yPos + 8, margin + 130, yPos + 8);
+    doc.line(margin + 25, yPos + 8, margin + 100, yPos + 8);
 
-    yPos += 12;
+    yPos += 8;
     drawText('*', margin, yPos);
     drawText('Après déduction d\'une remise commerciale éventuelle.', margin + 5, yPos);
 
