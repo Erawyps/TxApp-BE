@@ -194,12 +194,10 @@ export const generateAndDownloadReport = (shiftData, courses, driver, vehicle) =
     drawText('km', currentX + col2_index/2, serviceTableY + 7, 'center');
 
     doc.setFont('times', 'normal');
-    const indexLabels = ['Fin', 'Début', 'Total', ''];
-    for (let i = 0; i < 4; i++) {
+    const indexLabels = ['Fin', 'Début', 'Total']; // Supprimer la dernière cellule vide
+    for (let i = 0; i < 3; i++) { // Changer de 4 à 3 pour supprimer la dernière cellule
       doc.rect(currentX, serviceTableY + rowHeight * (i + 1), col2_index, rowHeight);
-      if (indexLabels[i]) {
-        drawText(indexLabels[i], currentX + col2_index/2, serviceTableY + rowHeight * (i + 1) + 6, 'center');
-      }
+      drawText(indexLabels[i], currentX + col2_index/2, serviceTableY + rowHeight * (i + 1) + 6, 'center');
     }
     currentX += col2_index;
 
@@ -209,7 +207,7 @@ export const generateAndDownloadReport = (shiftData, courses, driver, vehicle) =
     drawText('Tableau de bord', currentX + col3_tableau/2, serviceTableY + 6, 'center');
 
     doc.setFont('times', 'normal');
-    for (let i = 0; i < 4; i++) {
+    for (let i = 0; i < 3; i++) { // Changer de 4 à 3 pour supprimer la dernière cellule vide
       doc.rect(currentX, serviceTableY + rowHeight * (i + 1), col3_tableau, rowHeight);
     }
 
@@ -220,6 +218,7 @@ export const generateAndDownloadReport = (shiftData, courses, driver, vehicle) =
     if (safeShiftData.km_tableau_bord_debut) {
       drawText(formatNumber(safeShiftData.km_tableau_bord_debut), currentX + col3_tableau/2, serviceTableY + 2 * rowHeight + 6, 'center');
     }
+    // NE PAS DESSINER la 4ème cellule vide (après Total)
     currentX += col3_tableau;
 
     // Colonne "Taximètre"
@@ -228,11 +227,14 @@ export const generateAndDownloadReport = (shiftData, courses, driver, vehicle) =
     drawText('Taximètre', currentX + col4_taximetre/2, serviceTableY + 6, 'center');
 
     doc.setFont('times', 'normal');
-    for (let i = 0; i < 4; i++) {
+    for (let i = 0; i < 3; i++) { // Changer de 4 à 3 pour supprimer la dernière cellule vide
       doc.rect(currentX, serviceTableY + rowHeight * (i + 1), col4_taximetre, rowHeight);
     }
+    // NE PAS DESSINER la 4ème cellule vide (après Total)
+    currentX += col4_taximetre;
 
-    yPos = serviceTableY + 5 * rowHeight + 8;
+    // Ajuster la hauteur finale puisque nous avons une ligne de moins
+    yPos = serviceTableY + 4 * rowHeight + 8; // Changer de 5 à 4 rowHeight
 
     // ============ PARTIE BASSE DU TABLEAU - AVEC RECETTES FUSIONNÉES ============
     currentX = margin;
