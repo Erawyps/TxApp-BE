@@ -233,9 +233,8 @@ export const generateAndDownloadReport = (shiftData, courses, driver, vehicle) =
     // NE PAS DESSINER la 4ème cellule vide (après Total)
     currentX += col4_taximetre;
 
-    yPos = serviceTableY + 5 * rowHeight + 8;
+    yPos = serviceTableY + 5 * rowHeight + 10;
 
-    //yPos += 4 * rowHeight + 10;
     // ============ PARTIE BASSE DU TABLEAU - AVEC RECETTES FUSIONNÉES ============
     currentX = margin;
 
