@@ -112,7 +112,7 @@ export const generateAndDownloadReport = (shiftData, courses, driver, vehicle) =
     // ============ PAGE 1 ============
     let yPos = createPageHeader(true);
 
-    // ============ SECTION SERVICE - EXACTE SELON PHOTO ============
+// ============ SECTION SERVICE - EXACTE SELON PHOTO ============
     doc.rect(margin, yPos, usableWidth, 6);
     doc.setFont('times', 'bold');
     doc.setFontSize(10);
@@ -133,7 +133,7 @@ export const generateAndDownloadReport = (shiftData, courses, driver, vehicle) =
     // ============ PARTIE HAUTE DU TABLEAU SERVICE ============
     doc.setFontSize(9);
 
-    // Colonne "Heures des prestations"
+    // Colonne "Heures des prestations" - s'étend sur toute la hauteur (4 lignes + en-tête)
     doc.rect(currentX, serviceTableY, col1_heures, rowHeight);
     doc.setFont('times', 'bold');
     drawText('Heures des prestations', currentX + col1_heures/2, serviceTableY + 6, 'center');
