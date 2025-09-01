@@ -78,15 +78,15 @@ export function AuthProvider({ children }) {
   useEffect(() => {
     const init = async () => {
       try {
+        console.log("🔄 Initialisation du contexte d'authentification...");
         const authToken = window.localStorage.getItem("authToken");
+        console.log("🔑 Token trouvé:", !!authToken);
 
         if (authToken && isTokenValid(authToken)) {
+          console.log("✅ Token valide, vérification avec l'API...");
           setSession(authToken);
 
-          const response = await axios.get("/auth/verify"); // Utiliser le bon endpoint
-          const { user } = response.data;
-
-          dispatch({
+          try {
             type: "INITIALIZE",
             payload: {
               isAuthenticated: true,
@@ -95,22 +95,40 @@ export function AuthProvider({ children }) {
           });
         } else {
           dispatch({
-            type: "INITIALIZE",
-            payload: {
-              isAuthenticated: false,
-              user: null,
-            },
+            const { user } = response.data;
+            console.log("✅ Utilisateur vérifié:", user);
+
+            dispatch({
+              type: "INITIALIZE",
+              payload: {
+                isAuthenticated: true,
+                user,
+              },
+            });
+          } catch (apiError) {
+            console.error("❌ Erreur API de vérification:", apiError.message);
+            // API non disponible ou token invalide, on nettoie et continue
+            setSession(null);
+            dispatch({
+              type: "INITIALIZE",
+              payload: {
+                isAuthenticated: false,
+                user: null,
+              },
+            });
+          }
           });
+          console.log("❌ Pas de token valide, utilisateur non authentifié");
         }
       } catch (err) {
         console.error(err);
         dispatch({
           type: "INITIALIZE",
-          payload: {
-            isAuthenticated: false,
+            },
+          });
             user: null,
           },
-        });
+        console.error("❌ Erreur lors de l'initialisation:", err);
       }
     };
 
