@@ -19,7 +19,7 @@ function App() {
         </LocaleProvider>
       </ThemeProvider>
     </AuthProvider>
-);
+  );
 }
 
 export default App;
