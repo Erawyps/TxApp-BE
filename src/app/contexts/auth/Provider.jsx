@@ -26,6 +26,7 @@ const reducerHandlers = {
       ...state,
       isAuthenticated,
       isInitialized: true,
+      isLoading: false, // Important: s'assurer que le loading est à false
       user,
     };
   },
@@ -34,6 +35,7 @@ const reducerHandlers = {
     return {
       ...state,
       isLoading: true,
+      errorMessage: null, // Reset l'erreur précédente
     };
   },
 
@@ -43,6 +45,7 @@ const reducerHandlers = {
       ...state,
       isAuthenticated: true,
       isLoading: false,
+      errorMessage: null,
       user,
     };
   },
@@ -52,14 +55,18 @@ const reducerHandlers = {
 
     return {
       ...state,
+      isAuthenticated: false,
       errorMessage,
       isLoading: false,
+      user: null,
     };
   },
 
   LOGOUT: (state) => ({
     ...state,
     isAuthenticated: false,
+    isLoading: false,
+    errorMessage: null,
     user: null,
   }),
 };
@@ -87,14 +94,7 @@ export function AuthProvider({ children }) {
           setSession(authToken);
 
           try {
-            type: "INITIALIZE",
-            payload: {
-              isAuthenticated: true,
-              user,
-            },
-          });
-        } else {
-          dispatch({
+            const response = await axios.get("/auth/verify");
             const { user } = response.data;
             console.log("✅ Utilisateur vérifié:", user);
 
@@ -117,18 +117,27 @@ export function AuthProvider({ children }) {
               },
             });
           }
-          });
+        } else {
           console.log("❌ Pas de token valide, utilisateur non authentifié");
-        }
-      } catch (err) {
-        console.error(err);
-        dispatch({
-          type: "INITIALIZE",
+          // Nettoyer les sessions invalides
+          setSession(null);
+          dispatch({
+            type: "INITIALIZE",
+            payload: {
+              isAuthenticated: false,
+              user: null,
             },
           });
+        }
+      } catch (err) {
+        console.error("❌ Erreur lors de l'initialisation:", err);
+        dispatch({
+          type: "INITIALIZE",
+          payload: {
+            isAuthenticated: false,
             user: null,
           },
-        console.error("❌ Erreur lors de l'initialisation:", err);
+        });
       }
     };
 
@@ -148,7 +157,7 @@ export function AuthProvider({ children }) {
 
       const { token, user } = response.data; // Backend retourne 'token' pas 'authToken'
 
-      if (!isString(token) && !isObject(user)) {
+      if (!isString(token) || !isObject(user)) {
         throw new Error("Response is not valid");
       }
 
@@ -161,10 +170,21 @@ export function AuthProvider({ children }) {
         },
       });
     } catch (err) {
+      console.error("❌ Erreur de connexion:", err);
+
+      // Extraire le message d'erreur approprié
+      let errorMessage = "Erreur de connexion inconnue";
+
+      if (err.response?.data?.error) {
+        errorMessage = err.response.data.error;
+      } else if (err.message) {
+        errorMessage = err.message;
+      }
+
       dispatch({
         type: "LOGIN_ERROR",
         payload: {
-          errorMessage: err,
+          errorMessage: { message: errorMessage },
         },
       });
     }
@@ -186,7 +206,7 @@ export function AuthProvider({ children }) {
 
       const { token, user } = response.data;
 
-      if (!isString(token) && !isObject(user)) {
+      if (!isString(token) || !isObject(user)) {
         throw new Error("Response is not valid");
       }
 
@@ -199,10 +219,21 @@ export function AuthProvider({ children }) {
         },
       });
     } catch (err) {
+      console.error("❌ Erreur d'inscription:", err);
+
+      // Extraire le message d'erreur approprié
+      let errorMessage = "Erreur d'inscription inconnue";
+
+      if (err.response?.data?.error) {
+        errorMessage = err.response.data.error;
+      } else if (err.message) {
+        errorMessage = err.message;
+      }
+
       dispatch({
         type: "LOGIN_ERROR",
         payload: {
-          errorMessage: err,
+          errorMessage: { message: errorMessage },
         },
       });
     }
