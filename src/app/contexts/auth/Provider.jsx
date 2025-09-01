@@ -249,7 +249,7 @@ export function AuthProvider({ children }) {
   }
 
   return (
-    <AuthContext
+    <AuthContext.Provider
       value={{
         ...state,
         login,
@@ -258,7 +258,7 @@ export function AuthProvider({ children }) {
       }}
     >
       {children}
-    </AuthContext>
+    </AuthContext.Provider>
   );
 }
 
