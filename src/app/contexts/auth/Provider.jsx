@@ -83,7 +83,7 @@ export function AuthProvider({ children }) {
         if (authToken && isTokenValid(authToken)) {
           setSession(authToken);
 
-          const response = await axios.get("/user/profile");
+          const response = await axios.get("/auth/verify"); // Utiliser le bon endpoint
           const { user } = response.data;
 
           dispatch({
@@ -123,18 +123,56 @@ export function AuthProvider({ children }) {
     });
 
     try {
-      const response = await axios.post("/login", {
-        username,
+      const response = await axios.post("/auth/login", {
+        email: username, // Le backend attend 'email' pas 'username'
         password,
       });
 
-      const { authToken, user } = response.data;
+      const { token, user } = response.data; // Backend retourne 'token' pas 'authToken'
 
-      if (!isString(authToken) && !isObject(user)) {
-        throw new Error("Response is not vallid");
+      if (!isString(token) && !isObject(user)) {
+        throw new Error("Response is not valid");
       }
 
-      setSession(authToken);
+      setSession(token); // Utiliser 'token' au lieu de 'authToken'
+
+      dispatch({
+        type: "LOGIN_SUCCESS",
+        payload: {
+          user,
+        },
+      });
+    } catch (err) {
+      dispatch({
+        type: "LOGIN_ERROR",
+        payload: {
+          errorMessage: err,
+        },
+      });
+    }
+  };
+
+  const register = async ({ email, password, nom, prenom, telephone }) => {
+    dispatch({
+      type: "LOGIN_REQUEST",
+    });
+
+    try {
+      const response = await axios.post("/auth/register", {
+        email,
+        password,
+        nom,
+        prenom,
+        telephone,
+      });
+
+      const { token, user } = response.data;
+
+      if (!isString(token) && !isObject(user)) {
+        throw new Error("Response is not valid");
+      }
+
+      setSession(token);
 
       dispatch({
         type: "LOGIN_SUCCESS",
@@ -166,6 +204,7 @@ export function AuthProvider({ children }) {
       value={{
         ...state,
         login,
+        register,
         logout,
       }}
     >
