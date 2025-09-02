@@ -4,12 +4,26 @@ import jsconfigPaths from 'vite-jsconfig-paths'
 import eslint from 'vite-plugin-eslint';
 import svgr from 'vite-plugin-svgr'
 import tailwindcss from "@tailwindcss/vite";
-import { cloudflare } from '@cloudflare/vite-plugin';
 
 // https://vitejs.dev/config/
 export default defineConfig({
-  plugins: [react(), cloudflare(), jsconfigPaths(), svgr(),
+  plugins: [
+    react(),
+    jsconfigPaths(),
+    svgr(),
     eslint({
-      exclude: ['**/worker.js'] // Exclure worker.js du linting
-    }), tailwindcss()],
+      exclude: ['**/worker.js', '**/server/**'] // Exclure worker.js et server/ du linting
+    }),
+    tailwindcss()
+  ],
+  // Exclure les fichiers serveur de la compilation frontend
+  build: {
+    rollupOptions: {
+      external: ['worker.js', './server/api.js']
+    }
+  },
+  // Optimiser les dépendances en excluant Prisma
+  optimizeDeps: {
+    exclude: ['@prisma/client', 'bcryptjs']
+  }
 })

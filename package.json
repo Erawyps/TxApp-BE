@@ -5,11 +5,26 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:api": "node server/api-simple.cjs",
+    "dev:api-es6": "node server/api.js",
+    "dev:full": "concurrently \"npm run dev:api\" \"npm run dev\"",
     "build": "vite build",
+    "build:prod": "NODE_ENV=production vite build",
     "lint": "eslint .",
     "preview": "vite preview",
     "dev:worker": "wrangler dev",
-    "deploy": "vite build && wrangler deploy"
+    "deploy": "npm run build:prod && wrangler deploy",
+    "deploy:staging": "npm run build && wrangler deploy --env staging",
+    "db:generate": "prisma generate",
+    "db:generate:prod": "prisma generate --schema=prisma/schema-production.prisma",
+    "db:push": "prisma db push",
+    "db:push:prod": "prisma db push --schema=prisma/schema-production.prisma",
+    "db:migrate": "prisma migrate dev",
+    "db:migrate:prod": "prisma migrate deploy --schema=prisma/schema-production.prisma",
+    "db:studio": "prisma studio",
+    "db:studio:prod": "prisma studio --schema=prisma/schema-production.prisma",
+    "create-test-user": "node scripts/create-test-user.js",
+    "create-prod-user": "node scripts/create-prod-user.js"
   },
   "dependencies": {
     "@atlaskit/pragmatic-drag-and-drop": "^1.5.2",
@@ -42,12 +57,14 @@
     "cleave.js": "^1.6.0",
     "clsx": "^2.1.1",
     "color": "^5.0.0",
+    "cors": "^2.8.5",
     "date-fns": "^4.1.0",
     "dayjs": "^1.11.13",
     "drizzle-orm": "^0.43.1",
     "eslint-config-prettier": "^10.1.1",
     "eslint-define-config": "^2.1.0",
     "eslint-plugin-jsx-a11y": "^6.10.2",
+    "express": "^5.1.0",
     "file-saver": "^2.0.5",
     "filepond": "^4.32.7",
     "filepond-plugin-image-preview": "^4.6.12",
@@ -102,6 +119,7 @@
     "@types/react": "^19.0.12",
     "@types/react-dom": "^19.0.4",
     "@vitejs/plugin-react": "^4.3.4",
+    "concurrently": "^9.2.1",
     "drizzle-kit": "^0.31.4",
     "eslint": "^9.31.0",
     "eslint-plugin-react": "^7.37.4",
@@ -126,9 +144,14 @@
       "npx eslint --fix"
     ]
   },
-  "description": "NaN",
+  "description": "TxApp - Application de gestion de transport",
   "main": "eslint.config.js",
-  "keywords": [],
+  "keywords": [
+    "transport",
+    "gestion",
+    "react",
+    "prisma"
+  ],
   "author": "",
   "license": "ISC"
 }

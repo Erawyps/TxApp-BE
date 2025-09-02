@@ -18,14 +18,14 @@ export default function SignIn() {
   } = useForm({
     resolver: yupResolver(schema),
     defaultValues: {
-      username: "admin@taxi.be",
+      username: "admin@txapp.com", // Utiliser un compte de test valide
       password: "password123",
     },
   });
 
   const onSubmit = async (data) => {
     await login({
-      username: data.username,
+      email: data.username, // Convertir username en email pour l'API
       password: data.password,
     });
   };
