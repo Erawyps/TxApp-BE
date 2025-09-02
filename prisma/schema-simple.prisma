@@ -10,7 +10,7 @@ datasource db {
 
 model utilisateur {
   id                  Int       @id @default(autoincrement())
-  type_utilisateur    String    // admin, chauffeur, manager, client
+  type_utilisateur    String // admin, chauffeur, manager, client
   nom                 String
   prenom              String?
   telephone           String
@@ -33,24 +33,24 @@ model utilisateur {
   updated_at          DateTime? @default(now())
 
   // Relations
-  chauffeur           chauffeur?
+  chauffeur chauffeur?
 }
 
 model chauffeur {
-  id                    Int       @id @default(autoincrement())
-  utilisateur_id        Int       @unique
-  numero_badge          String    @unique
-  date_embauche         DateTime
-  date_fin_contrat      DateTime?
-  type_contrat          String?
-  compte_bancaire       String?
-  taux_commission       Float?    @default(0.00)
-  salaire_base          Float?    @default(0.00)
-  notes                 String?
-  actif                 Boolean?  @default(true)
-  created_at            DateTime? @default(now())
-  updated_at            DateTime? @default(now())
+  id               Int       @id @default(autoincrement())
+  utilisateur_id   Int       @unique
+  numero_badge     String    @unique
+  date_embauche    DateTime
+  date_fin_contrat DateTime?
+  type_contrat     String?
+  compte_bancaire  String?
+  taux_commission  Float?    @default(0.00)
+  salaire_base     Float?    @default(0.00)
+  notes            String?
+  actif            Boolean?  @default(true)
+  created_at       DateTime? @default(now())
+  updated_at       DateTime? @default(now())
 
   // Relations
-  utilisateur           utilisateur @relation(fields: [utilisateur_id], references: [id], onDelete: Cascade)
+  utilisateur utilisateur @relation(fields: [utilisateur_id], references: [id], onDelete: Cascade)
 }
