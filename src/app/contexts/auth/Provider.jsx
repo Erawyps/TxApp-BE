@@ -5,7 +5,7 @@ import PropTypes from "prop-types";
 import isString from "lodash/isString";
 
 // Local Imports
-import AuthService from "services/auth.service";
+import axios from "utils/axios";
 import { isTokenValid, setSession } from "utils/jwt";
 import { AuthContext } from "./context";
 
@@ -26,7 +26,7 @@ const reducerHandlers = {
       ...state,
       isAuthenticated,
       isInitialized: true,
-      isLoading: false,
+      isLoading: false, // Important: s'assurer que le loading est à false
       user,
     };
   },
@@ -35,7 +35,7 @@ const reducerHandlers = {
     return {
       ...state,
       isLoading: true,
-      errorMessage: null,
+      errorMessage: null, // Reset l'erreur précédente
     };
   },
 
@@ -65,21 +65,9 @@ const reducerHandlers = {
   LOGOUT: (state) => ({
     ...state,
     isAuthenticated: false,
+    isLoading: false,
+    errorMessage: null,
     user: null,
-    errorMessage: null,
-  }),
-
-  UPDATE_PROFILE: (state, action) => {
-    const { user } = action.payload;
-    return {
-      ...state,
-      user: { ...state.user, ...user },
-    };
-  },
-
-  CLEAR_ERROR: (state) => ({
-    ...state,
-    errorMessage: null,
   }),
 };
 
@@ -97,22 +85,42 @@ export function AuthProvider({ children }) {
   useEffect(() => {
     const init = async () => {
       try {
+        console.log("🔄 Initialisation du contexte d'authentification...");
         const authToken = window.localStorage.getItem("authToken");
+        console.log("🔑 Token trouvé:", !!authToken);
 
         if (authToken && isTokenValid(authToken)) {
+          console.log("✅ Token valide, vérification avec l'API...");
           setSession(authToken);
 
-          // Utiliser l'API pour récupérer le profil au lieu de Prisma directement
-          const user = await AuthService.getProfile();
+          try {
+            const response = await axios.get("/auth/verify");
+            const { user } = response.data;
+            console.log("✅ Utilisateur vérifié:", user);
 
-          dispatch({
-            type: "INITIALIZE",
-            payload: {
-              isAuthenticated: true,
-              user,
-            },
-          });
+            dispatch({
+              type: "INITIALIZE",
+              payload: {
+                isAuthenticated: true,
+                user,
+              },
+            });
+          } catch (apiError) {
+            console.error("❌ Erreur API de vérification:", apiError.message);
+            // API non disponible ou token invalide, on nettoie et continue
+            setSession(null);
+            dispatch({
+              type: "INITIALIZE",
+              payload: {
+                isAuthenticated: false,
+                user: null,
+              },
+            });
+          }
         } else {
+          console.log("❌ Pas de token valide, utilisateur non authentifié");
+          // Nettoyer les sessions invalides
+          setSession(null);
           dispatch({
             type: "INITIALIZE",
             payload: {
@@ -122,8 +130,7 @@ export function AuthProvider({ children }) {
           });
         }
       } catch (err) {
-        console.error("Erreur d'initialisation:", err);
-        setSession(null); // Nettoyer la session en cas d'erreur
+        console.error("❌ Erreur lors de l'initialisation:", err);
         dispatch({
           type: "INITIALIZE",
           payload: {
@@ -137,21 +144,24 @@ export function AuthProvider({ children }) {
     init();
   }, []);
 
-  const login = async ({ email, password }) => {
+  const login = async ({ username, password }) => {
     dispatch({
       type: "LOGIN_REQUEST",
     });
 
     try {
-      // Utiliser l'API pour la connexion
-      const response = await AuthService.login(email, password);
-      const { authToken, user } = response;
+      const response = await axios.post("/auth/login", {
+        email: username, // Le backend attend 'email' pas 'username'
+        password,
+      });
 
-      if (!isString(authToken) || !isObject(user)) {
-        throw new Error("Réponse de connexion invalide");
+      const { token, user } = response.data; // Backend retourne 'token' pas 'authToken'
+
+      if (!isString(token) || !isObject(user)) {
+        throw new Error("Response is not valid");
       }
 
-      setSession(authToken);
+      setSession(token); // Utiliser 'token' au lieu de 'authToken'
 
       dispatch({
         type: "LOGIN_SUCCESS",
@@ -159,27 +169,48 @@ export function AuthProvider({ children }) {
           user,
         },
       });
-
-      return { success: true };
     } catch (err) {
-      console.error("Erreur de connexion:", err);
+      console.error("❌ Erreur de connexion:", err);
+
+      // Extraire le message d'erreur approprié
+      let errorMessage = "Erreur de connexion inconnue";
+
+      if (err.response?.data?.error) {
+        errorMessage = err.response.data.error;
+      } else if (err.message) {
+        errorMessage = err.message;
+      }
+
       dispatch({
         type: "LOGIN_ERROR",
         payload: {
-          errorMessage: err.message || "Erreur de connexion",
+          errorMessage: { message: errorMessage },
         },
       });
-      return { success: false, error: err.message };
     }
   };
 
-  const register = async (userData) => {
+  const register = async ({ email, password, nom, prenom, telephone }) => {
     dispatch({
       type: "LOGIN_REQUEST",
     });
 
     try {
-      const user = await AuthService.register(userData);
+      const response = await axios.post("/auth/register", {
+        email,
+        password,
+        nom,
+        prenom,
+        telephone,
+      });
+
+      const { token, user } = response.data;
+
+      if (!isString(token) || !isObject(user)) {
+        throw new Error("Response is not valid");
+      }
+
+      setSession(token);
 
       dispatch({
         type: "LOGIN_SUCCESS",
@@ -187,55 +218,24 @@ export function AuthProvider({ children }) {
           user,
         },
       });
-
-      return { success: true, user };
     } catch (err) {
-      console.error("Erreur d'inscription:", err);
+      console.error("❌ Erreur d'inscription:", err);
+
+      // Extraire le message d'erreur approprié
+      let errorMessage = "Erreur d'inscription inconnue";
+
+      if (err.response?.data?.error) {
+        errorMessage = err.response.data.error;
+      } else if (err.message) {
+        errorMessage = err.message;
+      }
+
       dispatch({
         type: "LOGIN_ERROR",
         payload: {
-          errorMessage: err.message || "Erreur d'inscription",
+          errorMessage: { message: errorMessage },
         },
       });
-      return { success: false, error: err.message };
-    }
-  };
-
-  const updateProfile = async (updateData) => {
-    try {
-      const updatedUser = await AuthService.updateProfile(updateData);
-
-      dispatch({
-        type: "UPDATE_PROFILE",
-        payload: {
-          user: updatedUser,
-        },
-      });
-
-      return { success: true, user: updatedUser };
-    } catch (err) {
-      console.error("Erreur de mise à jour du profil:", err);
-      return { success: false, error: err.message };
-    }
-  };
-
-  const resetPassword = async (email) => {
-    try {
-      const result = await AuthService.resetPassword(email);
-      return { success: true, result };
-    } catch (err) {
-      console.error("Erreur de réinitialisation:", err);
-      return { success: false, error: err.message };
-    }
-  };
-
-  const confirmPasswordReset = async (resetToken, newPassword) => {
-    try {
-      await AuthService.confirmPasswordReset(resetToken, newPassword);
-      return { success: true };
-    } catch (err) {
-      console.error("Erreur de confirmation de réinitialisation:", err);
-      return { success: false, error: err.message };
     }
   };
 
@@ -244,29 +244,21 @@ export function AuthProvider({ children }) {
     dispatch({ type: "LOGOUT" });
   };
 
-  const clearError = () => {
-    dispatch({ type: "CLEAR_ERROR" });
-  };
-
   if (!children) {
     return null;
   }
 
   return (
-    <AuthContext
+    <AuthContext.Provider
       value={{
         ...state,
         login,
         register,
         logout,
-        updateProfile,
-        resetPassword,
-        confirmPasswordReset,
-        clearError,
       }}
     >
       {children}
-    </AuthContext>
+    </AuthContext.Provider>
   );
 }
 
