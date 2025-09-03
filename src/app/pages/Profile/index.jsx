@@ -111,9 +111,9 @@ export default function UserProfile() {
   const getUserTypeLabel = (type) => {
     const labels = {
       [USER_TYPES.ADMIN]: "Administrateur",
+      [USER_TYPES.GESTIONNAIRE]: "Gestionnaire",
       [USER_TYPES.CHAUFFEUR]: "Chauffeur",
-      [USER_TYPES.DISPATCHER]: "Dispatcher",
-      [USER_TYPES.COMPTABLE]: "Comptable",
+      [USER_TYPES.CLIENT]: "Client",
     };
     return labels[type] || type;
   };

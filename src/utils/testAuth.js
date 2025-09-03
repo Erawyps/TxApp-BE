@@ -67,7 +67,7 @@ export const testCreateTestUser = async () => {
     const { data, error } = await supabase
       .from('utilisateur')
       .insert([{
-        type_utilisateur: 'administrateur',
+        type_utilisateur: 'ADMIN', // Corrigé: utilise 'ADMIN' en majuscules
         nom: 'Test',
         prenom: 'User',
         email: testEmail,
