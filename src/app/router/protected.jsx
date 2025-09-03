@@ -57,6 +57,12 @@ const protectedRoutes = {
           ],
         },
         {
+          path: "/profile",
+          lazy: async () => ({
+            Component: (await import("app/pages/Profile")).default,
+          }),
+        },
+        {
           path: "/tables",
           children: [
             {

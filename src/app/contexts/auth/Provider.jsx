@@ -2,11 +2,11 @@
 import { useEffect, useReducer } from "react";
 import isObject from "lodash/isObject";
 import PropTypes from "prop-types";
-import isString from "lodash/isString";
 
 // Local Imports
-import axios from "utils/axios";
-import { isTokenValid, setSession } from "utils/jwt";
+import { loginUser, getUserProfile } from "services/auth";
+import { isTokenValid, setSession, getUserFromToken } from "utils/jwt";
+import { generateToken } from "utils/jwtLocal";
 import { AuthContext } from "./context";
 
 // ----------------------------------------------------------------------
@@ -26,6 +26,7 @@ const reducerHandlers = {
       ...state,
       isAuthenticated,
       isInitialized: true,
+      isLoading: false,
       user,
     };
   },
@@ -34,6 +35,7 @@ const reducerHandlers = {
     return {
       ...state,
       isLoading: true,
+      errorMessage: null,
     };
   },
 
@@ -43,6 +45,7 @@ const reducerHandlers = {
       ...state,
       isAuthenticated: true,
       isLoading: false,
+      errorMessage: null,
       user,
     };
   },
@@ -54,6 +57,16 @@ const reducerHandlers = {
       ...state,
       errorMessage,
       isLoading: false,
+      isAuthenticated: false,
+      user: null,
+    };
+  },
+
+  UPDATE_PROFILE: (state, action) => {
+    const { user } = action.payload;
+    return {
+      ...state,
+      user: { ...state.user, ...user },
     };
   },
 
@@ -61,6 +74,7 @@ const reducerHandlers = {
     ...state,
     isAuthenticated: false,
     user: null,
+    errorMessage: null,
   }),
 };
 
@@ -83,16 +97,38 @@ export function AuthProvider({ children }) {
         if (authToken && isTokenValid(authToken)) {
           setSession(authToken);
 
-          const response = await axios.get("/user/profile");
-          const { user } = response.data;
+          // Récupérer les infos utilisateur depuis le token
+          const userFromToken = getUserFromToken(authToken);
 
-          dispatch({
-            type: "INITIALIZE",
-            payload: {
-              isAuthenticated: true,
-              user,
-            },
-          });
+          if (userFromToken) {
+            // Récupérer le profil complet depuis la base de données
+            try {
+              const fullUserProfile = await getUserProfile(userFromToken.id);
+
+              dispatch({
+                type: "INITIALIZE",
+                payload: {
+                  isAuthenticated: true,
+                  user: fullUserProfile,
+                },
+              });
+            } catch (profileError) {
+              // Si erreur lors de la récupération du profil, utiliser les données du token
+              console.warn(
+                "Erreur récupération profil, utilisation du token:",
+                profileError
+              );
+              dispatch({
+                type: "INITIALIZE",
+                payload: {
+                  isAuthenticated: true,
+                  user: userFromToken,
+                },
+              });
+            }
+          } else {
+            throw new Error("Token invalide");
+          }
         } else {
           dispatch({
             type: "INITIALIZE",
@@ -103,7 +139,9 @@ export function AuthProvider({ children }) {
           });
         }
       } catch (err) {
-        console.error(err);
+        console.error("Erreur d'initialisation de l'authentification:", err);
+        // Nettoyer en cas d'erreur
+        setSession(null);
         dispatch({
           type: "INITIALIZE",
           payload: {
@@ -123,17 +161,15 @@ export function AuthProvider({ children }) {
     });
 
     try {
-      const response = await axios.post("/login", {
-        username,
-        password,
-      });
+      // Utiliser notre service d'authentification local
+      const { user } = await loginUser(username, password);
 
-      const { authToken, user } = response.data;
-
-      if (!isString(authToken) && !isObject(user)) {
-        throw new Error("Response is not vallid");
+      if (!isObject(user)) {
+        throw new Error("Réponse d'authentification invalide");
       }
 
+      // Générer un token JWT local
+      const authToken = generateToken(user);
       setSession(authToken);
 
       dispatch({
@@ -142,19 +178,57 @@ export function AuthProvider({ children }) {
           user,
         },
       });
+
+      return { success: true };
     } catch (err) {
+      const errorMessage = err.message || "Erreur de connexion";
       dispatch({
         type: "LOGIN_ERROR",
         payload: {
-          errorMessage: err,
+          errorMessage: { message: errorMessage },
         },
       });
+      throw err;
     }
   };
 
   const logout = async () => {
     setSession(null);
     dispatch({ type: "LOGOUT" });
+  };
+
+  const updateProfile = async (profileData) => {
+    try {
+      // Cette fonction peut être étendue pour mettre à jour le profil
+      dispatch({
+        type: "UPDATE_PROFILE",
+        payload: {
+          user: profileData,
+        },
+      });
+      return { success: true };
+    } catch (error) {
+      console.error("Erreur lors de la mise à jour du profil:", error);
+      throw error;
+    }
+  };
+
+  const refreshUserProfile = async () => {
+    try {
+      if (state.user?.id) {
+        const updatedProfile = await getUserProfile(state.user.id);
+        dispatch({
+          type: "UPDATE_PROFILE",
+          payload: {
+            user: updatedProfile,
+          },
+        });
+        return updatedProfile;
+      }
+    } catch (error) {
+      console.error("Erreur lors du rafraîchissement du profil:", error);
+      throw error;
+    }
   };
 
   if (!children) {
@@ -167,6 +241,8 @@ export function AuthProvider({ children }) {
         ...state,
         login,
         logout,
+        updateProfile,
+        refreshUserProfile,
       }}
     >
       {children}

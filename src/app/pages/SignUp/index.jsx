@@ -1,17 +1,56 @@
-import { Link } from "react-router";
-import { EnvelopeIcon, LockClosedIcon, UserIcon, PhoneIcon } from "@heroicons/react/24/outline";
+import { Link, useNavigate } from "react-router";
+import { EnvelopeIcon, LockClosedIcon, UserIcon, PhoneIcon, BuildingOfficeIcon } from "@heroicons/react/24/outline";
 import { yupResolver } from "@hookform/resolvers/yup";
 import { useForm } from "react-hook-form";
 import { useState } from "react";
+import * as yup from "yup";
 
 import Logo from "assets/appLogo.svg?react";
-import { Button, Card, Input, InputErrorMsg, Select } from "components/ui";
-import { registerSchema } from "../Auth/schema";
+import { Button, Card, Input, Select } from "components/ui";
 import { Page } from "components/shared/Page";
+import { createUser } from "services/auth";
+import { USER_TYPES } from "configs/auth.config";
+import { toast } from "react-toastify";
+
+// Schema de validation pour l'inscription
+const registerSchema = yup.object({
+  email: yup
+    .string()
+    .required("L'email est requis")
+    .email("Format d'email invalide")
+    .max(100, "Maximum 100 caractères"),
+  password: yup
+    .string()
+    .required("Le mot de passe est requis")
+    .min(8, "Le mot de passe doit contenir au moins 8 caractères"),
+  confirmPassword: yup
+    .string()
+    .required("La confirmation est requise")
+    .oneOf([yup.ref("password")], "Les mots de passe ne correspondent pas"),
+  nom: yup
+    .string()
+    .required("Le nom est requis")
+    .max(100, "Maximum 100 caractères"),
+  prenom: yup
+    .string()
+    .max(100, "Maximum 100 caractères"),
+  telephone: yup
+    .string()
+    .required("Le téléphone est requis")
+    .max(20, "Maximum 20 caractères"),
+  type_utilisateur: yup
+    .string()
+    .required("Le type d'utilisateur est requis")
+    .oneOf(Object.values(USER_TYPES), "Type d'utilisateur invalide"),
+  adresse: yup.string().max(255, "Maximum 255 caractères"),
+  ville: yup.string().max(100, "Maximum 100 caractères"),
+  code_postal: yup.string().max(20, "Maximum 20 caractères"),
+  pays: yup.string().max(50, "Maximum 50 caractères"),
+});
 
 export default function SignUp() {
   const [isLoading, setIsLoading] = useState(false);
-  const [errorMessage, setErrorMessage] = useState(null);
+  const navigate = useNavigate();
 
   const {
     register,
@@ -26,174 +65,169 @@ export default function SignUp() {
       nom: "",
       prenom: "",
       telephone: "",
-      type_utilisateur: "chauffeur",
+      type_utilisateur: USER_TYPES.CHAUFFEUR,
+      adresse: "",
+      ville: "",
+      code_postal: "",
+      pays: "Belgique",
     },
   });
 
   const onSubmit = async (data) => {
     setIsLoading(true);
-    setErrorMessage(null);
 
     try {
-      const response = await fetch("/api/auth/register", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          email: data.email,
-          password: data.password,
-          nom: data.nom,
-          prenom: data.prenom,
-          telephone: data.telephone,
-          type_utilisateur: data.type_utilisateur,
-        }),
-      });
-
-      const result = await response.json();
-
-      if (!response.ok) {
-        throw new Error(result.error || "Erreur lors de l'inscription");
-      }
-
-      // Stocker le token et rediriger
-      localStorage.setItem("authToken", result.token);
-      window.location.href = "/dashboards/home";
-
-    } catch (err) {
-      setErrorMessage(err.message);
+      await createUser(data);
+      toast.success("Compte créé avec succès ! Vous pouvez maintenant vous connecter.");
+      navigate("/auth");
+    } catch (error) {
+      toast.error(error.message || "Erreur lors de la création du compte");
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Options pour le select
   const userTypeOptions = [
-    { label: "Chauffeur", value: "chauffeur" },
-    { label: "Dispatcher", value: "dispatcher" },
-    { label: "Administrateur", value: "administrateur" }
+    { value: USER_TYPES.CHAUFFEUR, label: "Chauffeur" },
+    { value: USER_TYPES.DISPATCHER, label: "Dispatcher" },
+    { value: USER_TYPES.COMPTABLE, label: "Comptable" },
+    { value: USER_TYPES.ADMIN, label: "Administrateur" },
   ];
 
   return (
     <Page title="Inscription">
-      <main className="min-h-screen grid w-full grow grid-cols-1 place-items-center">
-        <div className="w-full max-w-[28rem] p-4 sm:px-5">
+      <main className="min-h-screen grid w-full grow grid-cols-1 place-items-center py-8">
+        <div className="w-full max-w-2xl p-4 sm:px-5">
           <div className="text-center">
             <Logo className="mx-auto size-16" />
             <div className="mt-4">
               <h2 className="text-2xl font-semibold text-gray-600 dark:text-dark-100">
-                Créer un compte
+                Créer un compte TxApp
               </h2>
               <p className="text-gray-400 dark:text-dark-300">
-                Rejoignez l&apos;équipe TxApp
+                Rejoignez notre plateforme de gestion de taxi
               </p>
             </div>
           </div>
+
           <Card className="mt-5 rounded-lg p-5 lg:p-7">
             <form onSubmit={handleSubmit(onSubmit)} autoComplete="off">
               <div className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
+                {/* Type d'utilisateur */}
+                <Select
+                  label="Type d'utilisateur *"
+                  options={userTypeOptions}
+                  {...register("type_utilisateur")}
+                  error={errors?.type_utilisateur?.message}
+                />
+
+                {/* Informations personnelles */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <Input
                     label="Nom *"
-                    placeholder="Votre nom"
-                    prefix={
-                      <UserIcon
-                        className="size-5 transition-colors duration-200"
-                        strokeWidth="1"
-                      />
-                    }
+                    placeholder="Nom de famille"
+                    prefix={<UserIcon className="size-5" strokeWidth="1" />}
                     {...register("nom")}
                     error={errors?.nom?.message}
                   />
+
                   <Input
                     label="Prénom"
-                    placeholder="Votre prénom"
-                    prefix={
-                      <UserIcon
-                        className="size-5 transition-colors duration-200"
-                        strokeWidth="1"
-                      />
-                    }
+                    placeholder="Prénom"
+                    prefix={<UserIcon className="size-5" strokeWidth="1" />}
                     {...register("prenom")}
                     error={errors?.prenom?.message}
                   />
                 </div>
 
-                <Input
-                  label="Email *"
-                  placeholder="votre@email.com"
-                  type="email"
-                  prefix={
-                    <EnvelopeIcon
-                      className="size-5 transition-colors duration-200"
-                      strokeWidth="1"
+                {/* Contact */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <Input
+                    label="Email *"
+                    placeholder="Entrez votre email"
+                    type="email"
+                    prefix={<EnvelopeIcon className="size-5" strokeWidth="1" />}
+                    {...register("email")}
+                    error={errors?.email?.message}
+                  />
+
+                  <Input
+                    label="Téléphone *"
+                    placeholder="Numéro de téléphone"
+                    type="tel"
+                    prefix={<PhoneIcon className="size-5" strokeWidth="1" />}
+                    {...register("telephone")}
+                    error={errors?.telephone?.message}
+                  />
+                </div>
+
+                {/* Mots de passe */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <Input
+                    label="Mot de passe *"
+                    placeholder="Entrez votre mot de passe"
+                    type="password"
+                    prefix={<LockClosedIcon className="size-5" strokeWidth="1" />}
+                    {...register("password")}
+                    error={errors?.password?.message}
+                  />
+
+                  <Input
+                    label="Confirmer le mot de passe *"
+                    placeholder="Confirmez votre mot de passe"
+                    type="password"
+                    prefix={<LockClosedIcon className="size-5" strokeWidth="1" />}
+                    {...register("confirmPassword")}
+                    error={errors?.confirmPassword?.message}
+                  />
+                </div>
+
+                {/* Adresse (optionnel) */}
+                <div className="border-t pt-4">
+                  <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
+                    Informations d&#39;adresse (optionnel)
+                  </h4>
+
+                  <Input
+                    label="Adresse"
+                    placeholder="Adresse complète"
+                    prefix={<BuildingOfficeIcon className="size-5" strokeWidth="1" />}
+                    {...register("adresse")}
+                    error={errors?.adresse?.message}
+                  />
+
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
+                    <Input
+                      label="Ville"
+                      placeholder="Ville"
+                      {...register("ville")}
+                      error={errors?.ville?.message}
                     />
-                  }
-                  {...register("email")}
-                  error={errors?.email?.message}
-                />
 
-                <Input
-                  label="Téléphone"
-                  placeholder="+32 123 456 789"
-                  prefix={
-                    <PhoneIcon
-                      className="size-5 transition-colors duration-200"
-                      strokeWidth="1"
+                    <Input
+                      label="Code postal"
+                      placeholder="Code postal"
+                      {...register("code_postal")}
+                      error={errors?.code_postal?.message}
                     />
-                  }
-                  {...register("telephone")}
-                  error={errors?.telephone?.message}
-                />
 
-                <Select
-                  label="Type d'utilisateur"
-                  data={userTypeOptions}
-                  {...register("type_utilisateur")}
-                />
-
-                <Input
-                  label="Mot de passe *"
-                  placeholder="Votre mot de passe"
-                  type="password"
-                  prefix={
-                    <LockClosedIcon
-                      className="size-5 transition-colors duration-200"
-                      strokeWidth="1"
+                    <Input
+                      label="Pays"
+                      placeholder="Pays"
+                      {...register("pays")}
+                      error={errors?.pays?.message}
                     />
-                  }
-                  {...register("password")}
-                  error={errors?.password?.message}
-                />
-
-                <Input
-                  label="Confirmer le mot de passe *"
-                  placeholder="Confirmez votre mot de passe"
-                  type="password"
-                  prefix={
-                    <LockClosedIcon
-                      className="size-5 transition-colors duration-200"
-                      strokeWidth="1"
-                    />
-                  }
-                  {...register("confirmPassword")}
-                  error={errors?.confirmPassword?.message}
-                />
-              </div>
-
-              <div className="mt-2">
-                <InputErrorMsg when={errorMessage}>
-                  {errorMessage}
-                </InputErrorMsg>
+                  </div>
+                </div>
               </div>
 
               <Button
                 type="submit"
-                className="mt-5 w-full"
+                className="mt-6 w-full"
                 color="primary"
                 disabled={isLoading}
               >
-                {isLoading ? "Création en cours..." : "Créer le compte"}
+                {isLoading ? "Création du compte..." : "Créer le compte"}
               </Button>
             </form>
 
@@ -202,7 +236,7 @@ export default function SignUp() {
                 <span>Déjà un compte ?</span>{" "}
                 <Link
                   className="text-primary-600 transition-colors hover:text-primary-800 dark:text-primary-400 dark:hover:text-primary-600"
-                  to="/login"
+                  to="/auth"
                 >
                   Se connecter
                 </Link>

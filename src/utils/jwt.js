@@ -1,5 +1,6 @@
-import { jwtDecode } from "jwt-decode";
 import axios from "./axios";
+import { verifyToken, isTokenExpired } from "./jwtLocal";
+import { USER_PERMISSIONS } from "configs/auth.config";
 
 /**
  * Checks if the provided JWT token is valid (not expired).
@@ -14,10 +15,9 @@ const isTokenValid = (authToken) => {
   }
 
   try {
-    const decoded = jwtDecode(authToken);
-    const currentTime = Date.now() / 1000; // Current time in seconds since epoch
-
-    return decoded.exp > currentTime;
+    // Utiliser notre vérification locale
+    const decoded = verifyToken(authToken);
+    return decoded !== null && !isTokenExpired(authToken);
   } catch (err) {
     console.error("Failed to decode token:", err);
     return false;
@@ -41,4 +41,32 @@ const setSession = (authToken) => {
   }
 };
 
-export { isTokenValid, setSession };
+/**
+ * Récupère les informations utilisateur depuis le token
+ * @param {string} authToken - Token JWT
+ * @returns {Object|null} Informations utilisateur ou null
+ */
+const getUserFromToken = (authToken) => {
+  try {
+    const decoded = verifyToken(authToken);
+    return decoded;
+  } catch (error) {
+    console.error("Erreur lors de l'extraction des données utilisateur:", error);
+    return null;
+  }
+};
+
+/**
+ * Vérifie si l'utilisateur a une permission spécifique
+ * @param {Object} user - Utilisateur
+ * @param {string} permission - Permission à vérifier
+ * @returns {boolean}
+ */
+const hasPermission = (user, permission) => {
+  if (!user || !user.type_utilisateur) return false;
+
+  const userPermissions = USER_PERMISSIONS[user.type_utilisateur] || [];
+  return userPermissions.includes('*') || userPermissions.includes(permission);
+};
+
+export { isTokenValid, setSession, getUserFromToken, hasPermission };
