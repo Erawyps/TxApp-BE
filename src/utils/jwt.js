@@ -1,6 +1,6 @@
+import { jwtDecode } from "jwt-decode";
 import axios from "./axios";
-import { verifyToken, isTokenExpired } from "./jwtLocal";
-import { USER_PERMISSIONS } from "configs/auth.config";
+import { TOKEN_STORAGE_KEY } from "configs/auth.config";
 
 /**
  * Checks if the provided JWT token is valid (not expired).
@@ -15,9 +15,10 @@ const isTokenValid = (authToken) => {
   }
 
   try {
-    // Utiliser notre vérification locale
-    const decoded = verifyToken(authToken);
-    return decoded !== null && !isTokenExpired(authToken);
+    const decoded = jwtDecode(authToken);
+    const currentTime = Date.now() / 1000; // Current time in seconds since epoch
+
+    return decoded.exp > currentTime;
   } catch (err) {
     console.error("Failed to decode token:", err);
     return false;
@@ -32,41 +33,77 @@ const isTokenValid = (authToken) => {
 const setSession = (authToken) => {
   if (typeof authToken === "string" && authToken.trim() !== "") {
     // Store token in local storage and set authorization header for axios
-    localStorage.setItem("authToken", authToken);
+    localStorage.setItem(TOKEN_STORAGE_KEY, authToken);
     axios.defaults.headers.common.Authorization = `Bearer ${authToken}`;
   } else {
     // Remove token from local storage and delete authorization header from axios
-    localStorage.removeItem("authToken");
+    localStorage.removeItem(TOKEN_STORAGE_KEY);
     delete axios.defaults.headers.common.Authorization;
   }
 };
 
 /**
- * Récupère les informations utilisateur depuis le token
- * @param {string} authToken - Token JWT
- * @returns {Object|null} Informations utilisateur ou null
+ * Gets the current user from the stored token
+ *
+ * @returns {object|null} - Returns the user data from token or null if no valid token
  */
-const getUserFromToken = (authToken) => {
+const getCurrentUser = () => {
   try {
-    const decoded = verifyToken(authToken);
-    return decoded;
-  } catch (error) {
-    console.error("Erreur lors de l'extraction des données utilisateur:", error);
+    const token = localStorage.getItem(TOKEN_STORAGE_KEY);
+    if (!token || !isTokenValid(token)) {
+      return null;
+    }
+
+    const decoded = jwtDecode(token);
+    return {
+      id: decoded.userId,
+      email: decoded.email,
+      type: decoded.type,
+      exp: decoded.exp,
+    };
+  } catch (err) {
+    console.error("Failed to get current user from token:", err);
     return null;
   }
 };
 
 /**
- * Vérifie si l'utilisateur a une permission spécifique
- * @param {Object} user - Utilisateur
- * @param {string} permission - Permission à vérifier
- * @returns {boolean}
+ * Checks if the current user has the required permission
+ *
+ * @param {string} permission - The permission to check
+ * @returns {boolean} - Returns true if user has permission
  */
-const hasPermission = (user, permission) => {
-  if (!user || !user.type_utilisateur) return false;
+const hasPermission = (permission) => {
+  const user = getCurrentUser();
+  if (!user) return false;
 
-  const userPermissions = USER_PERMISSIONS[user.type_utilisateur] || [];
-  return userPermissions.includes('*') || userPermissions.includes(permission);
+  // Import permissions dynamically to avoid circular dependency
+  import("configs/auth.config")
+    .then(({ USER_PERMISSIONS }) => {
+      const userPermissions = USER_PERMISSIONS[user.type] || [];
+      return userPermissions.includes(permission);
+    })
+    .catch((err) => console.error("Failed to load permissions:", err));
+
+  return false;
 };
 
-export { isTokenValid, setSession, getUserFromToken, hasPermission };
+/**
+ * Gets the token expiration time
+ *
+ * @returns {Date|null} - Returns the expiration date or null
+ */
+const getTokenExpiration = () => {
+  try {
+    const token = localStorage.getItem(TOKEN_STORAGE_KEY);
+    if (!token) return null;
+
+    const decoded = jwtDecode(token);
+    return new Date(decoded.exp * 1000);
+  } catch (err) {
+    console.error("Failed to get token expiration:", err);
+    return null;
+  }
+};
+
+export { isTokenValid, setSession, getCurrentUser, hasPermission, getTokenExpiration };

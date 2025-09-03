@@ -1,6 +1,6 @@
 {
   "name": "txapp",
-  "main": "./worker.js",
+  "main": "./workers/worker.js",
   "compatibility_date": "2025-05-07",
   "compatibility_flags": ["nodejs_compat"],
 
@@ -11,14 +11,9 @@
   },
 
   "vars": {
-    "JWT_SECRET": "xNXpyUCbw+G4UCJYwPj5xyCKoAGlOVLuudU0PNtG8+E=",
-    "USERS_TABLE": "utilisateur"
-  },
-
-  "observability": {
-    "logs": {
-      "enabled": true
-    }
+    "JWT_SECRET": "your-production-jwt-secret-key-here",
+    "USERS_TABLE": "utilisateur",
+    "NODE_ENV": "production"
   },
 
   "hyperdrive": [
@@ -27,5 +22,19 @@
       "id": "524a9438f01e47e88558cb5a181d0b14",
       "localConnectionString": "postgresql://postgres:rKcnNJbacyLF3TQd@db.jfrhzwtkfotsrjkacrns.supabase.co:5432/postgres"
     }
-  ]
+  ],
+
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "txapp-db",
+      "database_id": "your-d1-database-id"
+    }
+  ],
+
+  "observability": {
+    "logs": {
+      "enabled": true
+    }
+  }
 }
