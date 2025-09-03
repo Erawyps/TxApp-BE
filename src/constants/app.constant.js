@@ -1,5 +1,5 @@
-export const APP_NAME = "Tailux";
-export const APP_KEY = "tailux";
+export const APP_NAME = "TxApp";
+export const APP_KEY = "txapp";
 
 // Redirect Paths
 export const HOME_PATH = "/dashboards/home";

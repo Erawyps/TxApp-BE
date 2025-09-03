@@ -106,4 +106,40 @@ const getTokenExpiration = () => {
   }
 };
 
-export { isTokenValid, setSession, getCurrentUser, hasPermission, getTokenExpiration };
+/**
+ * Generate a simple JWT-like token for local use
+ * Note: This is a simple implementation for development/testing
+ * In production, use a proper JWT library with signing
+ *
+ * @param {object} user - User data to encode in token
+ * @returns {string} - Generated token
+ */
+const generateToken = (user) => {
+  const header = {
+    alg: "HS256",
+    typ: "JWT",
+  };
+
+  const payload = {
+    userId: user.id,
+    email: user.email,
+    type: user.type_utilisateur || user.type,
+    iat: Math.floor(Date.now() / 1000),
+    exp: Math.floor(Date.now() / 1000) + 24 * 60 * 60, // 24 hours
+  };
+
+  // Simple base64 encoding (not secure for production)
+  const encodedHeader = btoa(JSON.stringify(header));
+  const encodedPayload = btoa(JSON.stringify(payload));
+
+  return `${encodedHeader}.${encodedPayload}.fake-signature`;
+};
+
+export {
+  isTokenValid,
+  setSession,
+  getCurrentUser,
+  hasPermission,
+  getTokenExpiration,
+  generateToken,
+};
