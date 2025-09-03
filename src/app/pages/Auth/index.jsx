@@ -1,16 +1,21 @@
-import { Link } from "react-router";
+import { Link, useNavigate, useSearchParams } from "react-router";
 import { EnvelopeIcon, LockClosedIcon } from "@heroicons/react/24/outline";
 import { yupResolver } from "@hookform/resolvers/yup";
 import { useForm } from "react-hook-form";
+import { useEffect } from "react";
 
 import Logo from "assets/appLogo.svg?react";
 import { Button, Card, Checkbox, Input, InputErrorMsg } from "components/ui";
 import { useAuthContext } from "app/contexts/auth/context";
 import { schema } from "./schema";
 import { Page } from "components/shared/Page";
+import { HOME_PATH, REDIRECT_URL_KEY } from "constants/app.constant";
 
 export default function SignIn() {
-  const { login, errorMessage, isLoading } = useAuthContext();
+  const { login, errorMessage, isLoading, isAuthenticated } = useAuthContext();
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+
   const {
     register,
     handleSubmit,
@@ -18,16 +23,32 @@ export default function SignIn() {
   } = useForm({
     resolver: yupResolver(schema),
     defaultValues: {
-      username: "admin@txapp.com", // Utiliser un compte de test valide
+      username: "admin@taxi.be",
       password: "password123",
     },
   });
 
+  // Rediriger si déjà authentifié
+  useEffect(() => {
+    if (isAuthenticated) {
+      const redirectUrl = searchParams.get(REDIRECT_URL_KEY);
+      const targetUrl = redirectUrl ? decodeURIComponent(redirectUrl) : HOME_PATH;
+      navigate(targetUrl, { replace: true });
+    }
+  }, [isAuthenticated, navigate, searchParams]);
+
   const onSubmit = async (data) => {
-    await login({
-      email: data.username, // Convertir username en email pour l'API
-      password: data.password,
-    });
+    try {
+      await login({
+        username: data.username,
+        password: data.password,
+      });
+
+      // La redirection sera gérée par l'useEffect après mise à jour de isAuthenticated
+    } catch (error) {
+      // L'erreur est déjà gérée par le context
+      console.error("Erreur de connexion:", error);
+    }
   };
 
   return (

@@ -1,12 +1,11 @@
 // Import Dependencies
 import { useEffect, useReducer } from "react";
-import isObject from "lodash/isObject";
 import PropTypes from "prop-types";
-import isString from "lodash/isString";
+import isObject from "lodash/isObject";
 
 // Local Imports
-import axios from "utils/axios";
-import { isTokenValid, setSession } from "utils/jwt";
+import { loginUser, getUserProfile, createUser } from "services/auth";
+import { isTokenValid, setSession, getCurrentUser, generateToken } from "utils/jwt";
 import { AuthContext } from "./context";
 
 // ----------------------------------------------------------------------
@@ -26,7 +25,7 @@ const reducerHandlers = {
       ...state,
       isAuthenticated,
       isInitialized: true,
-      isLoading: false, // Important: s'assurer que le loading est à false
+      isLoading: false,
       user,
     };
   },
@@ -35,7 +34,7 @@ const reducerHandlers = {
     return {
       ...state,
       isLoading: true,
-      errorMessage: null, // Reset l'erreur précédente
+      errorMessage: null,
     };
   },
 
@@ -55,19 +54,26 @@ const reducerHandlers = {
 
     return {
       ...state,
-      isAuthenticated: false,
       errorMessage,
       isLoading: false,
+      isAuthenticated: false,
       user: null,
+    };
+  },
+
+  UPDATE_PROFILE: (state, action) => {
+    const { user } = action.payload;
+    return {
+      ...state,
+      user: { ...state.user, ...user },
     };
   },
 
   LOGOUT: (state) => ({
     ...state,
     isAuthenticated: false,
-    isLoading: false,
-    errorMessage: null,
     user: null,
+    errorMessage: null,
   }),
 };
 
@@ -85,42 +91,44 @@ export function AuthProvider({ children }) {
   useEffect(() => {
     const init = async () => {
       try {
-        console.log("🔄 Initialisation du contexte d'authentification...");
         const authToken = window.localStorage.getItem("authToken");
-        console.log("🔑 Token trouvé:", !!authToken);
 
         if (authToken && isTokenValid(authToken)) {
-          console.log("✅ Token valide, vérification avec l'API...");
           setSession(authToken);
 
-          try {
-            const response = await axios.get("/auth/verify");
-            const { user } = response.data;
-            console.log("✅ Utilisateur vérifié:", user);
+          // Récupérer les infos utilisateur depuis le token
+          const userFromToken = getCurrentUser();
 
-            dispatch({
-              type: "INITIALIZE",
-              payload: {
-                isAuthenticated: true,
-                user,
-              },
-            });
-          } catch (apiError) {
-            console.error("❌ Erreur API de vérification:", apiError.message);
-            // API non disponible ou token invalide, on nettoie et continue
-            setSession(null);
-            dispatch({
-              type: "INITIALIZE",
-              payload: {
-                isAuthenticated: false,
-                user: null,
-              },
-            });
+          if (userFromToken) {
+            // Récupérer le profil complet depuis la base de données
+            try {
+              const fullUserProfile = await getUserProfile(userFromToken.id);
+
+              dispatch({
+                type: "INITIALIZE",
+                payload: {
+                  isAuthenticated: true,
+                  user: fullUserProfile,
+                },
+              });
+            } catch (profileError) {
+              // Si erreur lors de la récupération du profil, utiliser les données du token
+              console.warn(
+                "Erreur récupération profil, utilisation du token:",
+                profileError
+              );
+              dispatch({
+                type: "INITIALIZE",
+                payload: {
+                  isAuthenticated: true,
+                  user: userFromToken,
+                },
+              });
+            }
+          } else {
+            throw new Error("Token invalide");
           }
         } else {
-          console.log("❌ Pas de token valide, utilisateur non authentifié");
-          // Nettoyer les sessions invalides
-          setSession(null);
           dispatch({
             type: "INITIALIZE",
             payload: {
@@ -130,7 +138,9 @@ export function AuthProvider({ children }) {
           });
         }
       } catch (err) {
-        console.error("❌ Erreur lors de l'initialisation:", err);
+        console.error("Erreur d'initialisation de l'authentification:", err);
+        // Nettoyer en cas d'erreur
+        setSession(null);
         dispatch({
           type: "INITIALIZE",
           payload: {
@@ -150,18 +160,17 @@ export function AuthProvider({ children }) {
     });
 
     try {
-      const response = await axios.post("/auth/login", {
-        email: username, // Le backend attend 'email' pas 'username'
-        password,
-      });
+      // Utiliser notre service d'authentification local
+      // Note: username is actually the email in this context
+      const { user } = await loginUser(username, password);
 
-      const { token, user } = response.data; // Backend retourne 'token' pas 'authToken'
-
-      if (!isString(token) || !isObject(user)) {
-        throw new Error("Response is not valid");
+      if (!isObject(user)) {
+        throw new Error("Réponse d'authentification invalide");
       }
 
-      setSession(token); // Utiliser 'token' au lieu de 'authToken'
+      // Générer un token JWT local
+      const authToken = generateToken(user);
+      setSession(authToken);
 
       dispatch({
         type: "LOGIN_SUCCESS",
@@ -169,79 +178,93 @@ export function AuthProvider({ children }) {
           user,
         },
       });
+
+      return { success: true };
     } catch (err) {
-      console.error("❌ Erreur de connexion:", err);
-
-      // Extraire le message d'erreur approprié
-      let errorMessage = "Erreur de connexion inconnue";
-
-      if (err.response?.data?.error) {
-        errorMessage = err.response.data.error;
-      } else if (err.message) {
-        errorMessage = err.message;
-      }
-
+      const errorMessage = err.message || "Erreur de connexion";
       dispatch({
         type: "LOGIN_ERROR",
         payload: {
           errorMessage: { message: errorMessage },
         },
       });
+      throw err;
     }
   };
 
-  const register = async ({ email, password, nom, prenom, telephone }) => {
+  const register = async (userData) => {
     dispatch({
       type: "LOGIN_REQUEST",
     });
 
     try {
-      const response = await axios.post("/auth/register", {
-        email,
-        password,
-        nom,
-        prenom,
-        telephone,
-      });
+      // Créer le nouvel utilisateur
+      const newUser = await createUser(userData);
 
-      const { token, user } = response.data;
-
-      if (!isString(token) || !isObject(user)) {
-        throw new Error("Response is not valid");
+      if (!isObject(newUser)) {
+        throw new Error("Erreur lors de la création de l'utilisateur");
       }
 
-      setSession(token);
+      // Générer un token JWT local
+      const authToken = generateToken(newUser);
+      setSession(authToken);
 
       dispatch({
         type: "LOGIN_SUCCESS",
         payload: {
-          user,
+          user: newUser,
         },
       });
+
+      return { success: true };
     } catch (err) {
-      console.error("❌ Erreur d'inscription:", err);
-
-      // Extraire le message d'erreur approprié
-      let errorMessage = "Erreur d'inscription inconnue";
-
-      if (err.response?.data?.error) {
-        errorMessage = err.response.data.error;
-      } else if (err.message) {
-        errorMessage = err.message;
-      }
-
+      const errorMessage = err.message || "Erreur lors de l'inscription";
       dispatch({
         type: "LOGIN_ERROR",
         payload: {
           errorMessage: { message: errorMessage },
         },
       });
+      throw err;
     }
   };
 
   const logout = async () => {
     setSession(null);
     dispatch({ type: "LOGOUT" });
+  };
+
+  const updateProfile = async (profileData) => {
+    try {
+      dispatch({
+        type: "UPDATE_PROFILE",
+        payload: {
+          user: profileData,
+        },
+      });
+      return { success: true };
+    } catch (error) {
+      console.error("Erreur lors de la mise à jour du profil:", error);
+      throw error;
+    }
+  };
+
+  const refreshUserProfile = async () => {
+    try {
+      if (state.user?.id) {
+        const updatedProfile = await getUserProfile(state.user.id);
+        dispatch({
+          type: "UPDATE_PROFILE",
+          payload: {
+            user: updatedProfile,
+          },
+        });
+        return updatedProfile;
+      }
+    } catch (error) {
+      console.error("Erreur lors du rafraîchissement du profil:", error);
+      throw error;
+    }
   };
 
   if (!children) {
@@ -255,6 +278,8 @@ export function AuthProvider({ children }) {
         login,
         register,
         logout,
+        updateProfile,
+        refreshUserProfile,
       }}
     >
       {children}

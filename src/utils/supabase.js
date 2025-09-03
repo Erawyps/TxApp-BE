@@ -1,15 +1,10 @@
 import { createClient } from "@supabase/supabase-js";
 
-// Prefer Vite browser env vars; fallback to Node env if available
-const supabaseUrl = typeof import.meta !== "undefined" && import.meta.env && import.meta.env.VITE_SUPABASE_URL
-  ? import.meta.env.VITE_SUPABASE_URL
-  : (typeof globalThis !== "undefined" && globalThis.process && globalThis.process.env.REACT_APP_SUPABASE_URL) || undefined;
+// Utiliser uniquement les variables VITE_ du fichier .env principal
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
-const supabaseKey = typeof import.meta !== "undefined" && import.meta.env && import.meta.env.VITE_SUPABASE_ANON_KEY
-  ? import.meta.env.VITE_SUPABASE_ANON_KEY
-  : (typeof globalThis !== "undefined" && globalThis.process && globalThis.process.env.REACT_APP_SUPABASE_ANON_KEY) || undefined;
-
-// Configuration corrigée sans headers problématiques
+// Configuration simplifiée
 const supabaseOptions = {
   auth: {
     autoRefreshToken: true,
@@ -23,6 +18,12 @@ const supabaseOptions = {
     }
   }
 };
+
+// Vérification de la configuration
+if (!supabaseUrl || !supabaseKey) {
+  console.error('❌ Configuration Supabase manquante. Vérifiez votre fichier .env');
+  console.error('Variables requises: VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY');
+}
 
 export const supabase = supabaseUrl && supabaseKey ? createClient(supabaseUrl, supabaseKey, supabaseOptions) : null;
 
