@@ -1,7 +1,8 @@
-import { Link } from "react-router";
+import { Link, useNavigate } from "react-router";
 import { EnvelopeIcon, LockClosedIcon, UserIcon, PhoneIcon } from "@heroicons/react/24/outline";
 import { yupResolver } from "@hookform/resolvers/yup";
 import { useForm } from "react-hook-form";
+import { useState, useEffect } from "react";
 
 import Logo from "assets/appLogo.svg?react";
 import { Button, Card, Input, InputErrorMsg } from "components/ui";
@@ -10,7 +11,10 @@ import { registerSchema } from "./schema";
 import { Page } from "components/shared/Page";
 
 export default function SignUp() {
-  const { register: registerUser, errorMessage, isLoading } = useAuthContext();
+  const { register: registerUser, errorMessage, isLoading, successMessage } = useAuthContext();
+  const navigate = useNavigate();
+  const [showSuccessMessage, setShowSuccessMessage] = useState(false);
+
   const {
     register,
     handleSubmit,
@@ -27,14 +31,36 @@ export default function SignUp() {
     },
   });
 
+  // Redirection automatique vers la page de connexion après inscription réussie
+  useEffect(() => {
+    if (successMessage) {
+      setShowSuccessMessage(true);
+      const timer = setTimeout(() => {
+        navigate('/sign-in', {
+          state: {
+            message: successMessage,
+            fromRegistration: true
+          }
+        });
+      }, 2000); // Attendre 2 secondes pour que l'utilisateur puisse lire le message
+
+      return () => clearTimeout(timer);
+    }
+  }, [successMessage, navigate]);
+
   const onSubmit = async (data) => {
-    await registerUser({
-      email: data.email,
-      password: data.password,
-      nom: data.nom,
-      prenom: data.prenom,
-      telephone: data.telephone,
-    });
+    try {
+      await registerUser({
+        email: data.email,
+        password: data.password,
+        nom: data.nom,
+        prenom: data.prenom,
+        telephone: data.telephone,
+      });
+    } catch (error) {
+      // L'erreur est déjà gérée par le contexte auth
+      console.error('Erreur lors de l\'inscription:', error);
+    }
   };
 
   return (
@@ -147,6 +173,18 @@ export default function SignUp() {
                 >
                   {errorMessage?.message}
                 </InputErrorMsg>
+
+                {/* Message de succès */}
+                {successMessage && showSuccessMessage && (
+                  <div className="mt-2 p-3 bg-green-50 border border-green-200 rounded-lg">
+                    <p className="text-green-700 text-sm font-medium">
+                      ✓ {successMessage}
+                    </p>
+                    <p className="text-green-600 text-xs mt-1">
+                      Redirection vers la page de connexion...
+                    </p>
+                  </div>
+                )}
               </div>
 
               <Button

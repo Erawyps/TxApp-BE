@@ -61,33 +61,61 @@ export const loginUser = async (email, password) => {
  */
 export const getUserProfile = async (userId) => {
   try {
-    const { data, error } = await supabase
+    // D'abord récupérer l'utilisateur de base
+    const { data: userData, error: userError } = await supabase
       .from('utilisateur')
-      .select(`
-        *,
-        chauffeur (
-          id,
-          numero_badge,
-          date_embauche,
-          type_contrat,
-          taux_commission,
-          salaire_base,
-          actif
-        )
-      `)
+      .select('*')
       .eq('id', userId)
       .eq('actif', true)
       .single();
 
-    if (error) {
+    if (userError) {
+      console.error('Erreur Supabase lors de la récupération du profil utilisateur:', userError);
+
+      // Si l'utilisateur n'existe pas ou n'est pas actif, nettoyer la session
+      if (userError.code === 'PGRST116' || userError.details?.includes('0 rows')) {
+        // Nettoyer le token invalide
+        if (typeof window !== 'undefined') {
+          window.localStorage.removeItem('authToken');
+        }
+        throw new Error('Session expirée. Veuillez vous reconnecter.');
+      }
+
       throw new Error('Utilisateur non trouvé');
     }
 
+    // Ensuite, essayer de récupérer les données chauffeur optionnellement
+    let chauffeurData = null;
+    try {
+      const { data: chauffeur, error: chauffeurError } = await supabase
+        .from('chauffeur')
+        .select('id, numero_badge, date_embauche, type_contrat, taux_commission, salaire_base, actif')
+        .eq('utilisateur_id', userId)
+        .eq('actif', true)
+        .maybeSingle(); // Utiliser maybeSingle au lieu de single pour éviter les erreurs si pas de résultat
+
+      if (!chauffeurError && chauffeur) {
+        chauffeurData = chauffeur;
+      } else if (chauffeurError && chauffeurError.code !== 'PGRST116') {
+        // Log seulement si ce n'est pas juste "pas de résultat"
+        console.warn('Erreur lors de la récupération des données chauffeur:', chauffeurError);
+      }
+    } catch (chauffeurErr) {
+      // Ignorer les erreurs de permissions pour la table chauffeur
+      console.warn('Impossible de récupérer les données chauffeur (permissions):', chauffeurErr);
+    }
+
+    // Construire le profil utilisateur complet
+    const userProfile = {
+      ...userData,
+      chauffeur: chauffeurData
+    };
+
     // Retourner sans le mot de passe
     // eslint-disable-next-line no-unused-vars
-    const { mot_de_passe: _, reset_token: __, reset_token_expires: ___, ...userProfile } = data;
+    const { mot_de_passe: _, reset_token: __, reset_token_expires: ___, ...userWithoutPassword } = userProfile;
 
-    return userProfile;
+    return userWithoutPassword;
   } catch (error) {
     console.error('Erreur lors de la récupération du profil:', error);
     throw error;
@@ -105,22 +133,22 @@ export const createUser = async (userData) => {
     const hashedPassword = await bcrypt.hash(userData.password, 12);
 
     const newUser = {
-      type_utilisateur: userData.type_utilisateur || 'administrateur',
+      type_utilisateur: userData.type_utilisateur || 'CHAUFFEUR', // Changé en majuscules
       nom: userData.nom,
       prenom: userData.prenom,
       telephone: userData.telephone,
       email: userData.email,
       mot_de_passe: hashedPassword,
-      adresse: userData.adresse,
-      ville: userData.ville,
-      code_postal: userData.code_postal,
+      adresse: userData.adresse || null,
+      ville: userData.ville || null,
+      code_postal: userData.code_postal || null,
       pays: userData.pays || 'Belgique',
-      num_bce: userData.num_bce,
-      num_tva: userData.num_tva,
+      num_bce: userData.num_bce || null,
+      num_tva: userData.num_tva || null,
       tva_applicable: userData.tva_applicable ?? true,
       tva_percent: userData.tva_percent || 21.00,
-      actif: true,
-      date_creation: new Date().toISOString()
+      actif: true
+      // Suppression de date_creation car il y a déjà created_at avec default
     };
 
     const { data, error } = await supabase
@@ -130,10 +158,14 @@ export const createUser = async (userData) => {
       .single();
 
     if (error) {
+      console.error('Erreur Supabase détaillée:', error);
       if (error.code === '23505') { // Code d'erreur pour violation de contrainte unique
         throw new Error('Un utilisateur avec cet email existe déjà');
       }
-      throw new Error('Erreur lors de la création de l\'utilisateur');
+      if (error.code === '23514') { // Code d'erreur pour violation de contrainte check
+        throw new Error('Type d\'utilisateur invalide. Valeurs autorisées: ADMIN, CHAUFFEUR, DISPATCHER, COMPTABLE');
+      }
+      throw new Error(`Erreur lors de la création de l'utilisateur: ${error.message}`);
     }
 
     // Retourner sans le mot de passe
