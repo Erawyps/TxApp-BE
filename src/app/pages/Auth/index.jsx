@@ -1,8 +1,8 @@
-import { Link, useNavigate, useSearchParams } from "react-router";
+import { Link, useNavigate, useSearchParams, useLocation } from "react-router";
 import { EnvelopeIcon, LockClosedIcon } from "@heroicons/react/24/outline";
 import { yupResolver } from "@hookform/resolvers/yup";
 import { useForm } from "react-hook-form";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 
 import Logo from "assets/appLogo.svg?react";
 import { Button, Card, Checkbox, Input, InputErrorMsg } from "components/ui";
@@ -15,6 +15,8 @@ export default function SignIn() {
   const { login, errorMessage, isLoading, isAuthenticated } = useAuthContext();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  const location = useLocation();
+  const [registrationMessage, setRegistrationMessage] = useState(null);
 
   const {
     register,
@@ -23,10 +25,22 @@ export default function SignIn() {
   } = useForm({
     resolver: yupResolver(schema),
     defaultValues: {
-      username: "admin@taxi.be",
-      password: "password123",
+      username: "",
+      password: "",
     },
   });
+
+  // Gérer le message de succès de l'inscription
+  useEffect(() => {
+    if (location.state?.fromRegistration && location.state?.message) {
+      setRegistrationMessage(location.state.message);
+      // Nettoyer l'état après 5 secondes
+      const timer = setTimeout(() => {
+        setRegistrationMessage(null);
+      }, 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [location.state]);
 
   // Rediriger si déjà authentifié
   useEffect(() => {
@@ -103,6 +117,18 @@ export default function SignIn() {
                 >
                   {errorMessage?.message}
                 </InputErrorMsg>
+
+                {/* Message de succès de l'inscription */}
+                {registrationMessage && (
+                  <div className="mt-2 p-3 bg-green-50 border border-green-200 rounded-lg">
+                    <p className="text-green-700 text-sm font-medium">
+                      ✓ {registrationMessage}
+                    </p>
+                    <p className="text-green-600 text-xs mt-1">
+                      Vous pouvez maintenant vous connecter avec vos identifiants.
+                    </p>
+                  </div>
+                )}
               </div>
 
               <div className="mt-4 flex items-center justify-between space-x-2">

@@ -33,6 +33,33 @@ const protectedRoutes = {
                 Component: (await import("app/pages/dashboards/home")).default,
               }),
             },
+            {
+              path: "driver",
+              lazy: async () => ({
+                Component: (await import("app/pages/dashboards/driver")).default,
+              }),
+            },
+          ],
+        },
+        {
+          path: "/admin",
+          children: [
+            {
+              index: true,
+              element: <Navigate to="/admin/oversight" />,
+            },
+            {
+              path: "oversight",
+              lazy: async () => ({
+                Component: (await import("app/pages/admin/oversight")).default,
+              }),
+            },
+            {
+              path: "courses",
+              lazy: async () => ({
+                Component: (await import("app/pages/admin/courses")).default,
+              }),
+            },
           ],
         },
         {

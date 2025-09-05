@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { useAuthContext } from 'app/contexts/auth/context';
-import AuthService from 'services/auth.service';
 
 /**
  * Hook personnalisé pour la gestion des utilisateurs avec Prisma

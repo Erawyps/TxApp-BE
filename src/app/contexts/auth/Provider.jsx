@@ -49,6 +49,18 @@ const reducerHandlers = {
     };
   },
 
+  REGISTER_SUCCESS: (state, action) => {
+    const { message } = action.payload;
+    return {
+      ...state,
+      isAuthenticated: false,
+      isLoading: false,
+      errorMessage: null,
+      user: null,
+      successMessage: message,
+    };
+  },
+
   LOGIN_ERROR: (state, action) => {
     const { errorMessage } = action.payload;
 
@@ -112,11 +124,25 @@ export function AuthProvider({ children }) {
                 },
               });
             } catch (profileError) {
-              // Si erreur lors de la récupération du profil, utiliser les données du token
-              console.warn(
-                "Erreur récupération profil, utilisation du token:",
-                profileError
-              );
+              console.warn("Erreur récupération profil:", profileError);
+
+              // Si la session est expirée ou l'utilisateur n'existe plus
+              if (profileError.message?.includes('Session expirée') ||
+                  profileError.message?.includes('Utilisateur non trouvé')) {
+                console.log("Session expirée ou utilisateur invalide, nettoyage...");
+                setSession(null);
+                dispatch({
+                  type: "INITIALIZE",
+                  payload: {
+                    isAuthenticated: false,
+                    user: null,
+                  },
+                });
+                return;
+              }
+
+              // Pour d'autres erreurs, utiliser les données du token comme fallback
+              console.warn("Utilisation du token comme fallback:", profileError);
               dispatch({
                 type: "INITIALIZE",
                 payload: {
@@ -129,6 +155,8 @@ export function AuthProvider({ children }) {
             throw new Error("Token invalide");
           }
         } else {
+          // Token invalide ou expiré
+          setSession(null);
           dispatch({
             type: "INITIALIZE",
             payload: {
@@ -205,18 +233,17 @@ export function AuthProvider({ children }) {
         throw new Error("Erreur lors de la création de l'utilisateur");
       }
 
-      // Générer un token JWT local
-      const authToken = generateToken(newUser);
-      setSession(authToken);
+      // NE PAS connecter automatiquement l'utilisateur après l'inscription
+      // L'utilisateur doit se connecter manuellement après la création du compte
 
       dispatch({
-        type: "LOGIN_SUCCESS",
+        type: "REGISTER_SUCCESS", // Nouveau type d'action pour l'inscription réussie
         payload: {
-          user: newUser,
+          message: "Compte créé avec succès. Veuillez vous connecter.",
         },
       });
 
-      return { success: true };
+      return { success: true, message: "Compte créé avec succès. Veuillez vous connecter." };
     } catch (err) {
       const errorMessage = err.message || "Erreur lors de l'inscription";
       dispatch({
