@@ -59,6 +59,310 @@ const authMiddleware = async (c, next) => {
   await next();
 };
 
+// Middleware pour hash des mots de passe
+const hashPassword = async (password) => {
+  const salt = await bcrypt.genSalt(12);
+  return await bcrypt.hash(password, salt);
+};
+
+// Middleware pour vérifier les mots de passe
+const verifyPassword = async (password, hashedPassword) => {
+  return await bcrypt.compare(password, hashedPassword);
+};
+
+// Route de connexion (login)
+app.post('/api/auth/login', dbMiddleware, async (c) => {
+  try {
+    const { username, password } = await c.req.json();
+
+    if (!username || !password) {
+      return c.json({ error: 'Nom d\'utilisateur et mot de passe requis' }, 400);
+    }
+
+    const sql = c.get('db');
+
+    // Rechercher l'utilisateur par email ou nom d'utilisateur
+    const users = await sql`
+      SELECT 
+        u.id,
+        u.nom,
+        u.prenom,
+        u.email,
+        u.telephone,
+        u.mot_de_passe,
+        u.type_utilisateur,
+        u.actif,
+        u.derniere_connexion,
+        c.id as chauffeur_id,
+        c.numero_badge
+      FROM utilisateur u
+      LEFT JOIN chauffeur c ON u.id = c.utilisateur_id
+      WHERE (u.email = ${username} OR u.nom_utilisateur = ${username})
+      AND u.actif = true
+      LIMIT 1
+    `;
+
+    if (users.length === 0) {
+      return c.json({ error: 'Identifiants invalides' }, 401);
+    }
+
+    const user = users[0];
+
+    // Vérifier le mot de passe
+    const isValidPassword = await verifyPassword(password, user.mot_de_passe);
+
+    if (!isValidPassword) {
+      return c.json({ error: 'Identifiants invalides' }, 401);
+    }
+
+    // Mettre à jour la dernière connexion
+    await sql`
+      UPDATE utilisateur 
+      SET derniere_connexion = NOW() 
+      WHERE id = ${user.id}
+    `;
+
+    // Créer le token JWT
+    const payload = {
+      id: user.id,
+      email: user.email,
+      type: user.type_utilisateur,
+      chauffeur_id: user.chauffeur_id,
+      exp: Math.floor(Date.now() / 1000) + (24 * 60 * 60) // 24h
+    };
+
+    const token = await sign(payload, c.env.JWT_SECRET);
+
+    // Retourner les données utilisateur (sans mot de passe)
+    const userData = {
+      id: user.id,
+      nom: user.nom,
+      prenom: user.prenom,
+      email: user.email,
+      telephone: user.telephone,
+      type_utilisateur: user.type_utilisateur,
+      chauffeur_id: user.chauffeur_id,
+      numero_badge: user.numero_badge,
+      derniere_connexion: user.derniere_connexion
+    };
+
+    return c.json({
+      success: true,
+      user: userData,
+      token,
+      message: 'Connexion réussie'
+    });
+
+  } catch (error) {
+    console.error('Error during login:', error);
+    return c.json({ error: 'Erreur interne du serveur' }, 500);
+  }
+});
+
+// Route d'inscription (register)
+app.post('/api/auth/register', dbMiddleware, async (c) => {
+  try {
+    const { nom, prenom, email, telephone, password, type_utilisateur } = await c.req.json();
+
+    // Validation des données
+    if (!nom || !prenom || !email || !password) {
+      return c.json({ error: 'Tous les champs obligatoires doivent être remplis' }, 400);
+    }
+
+    // Validation du mot de passe
+    if (password.length < 8) {
+      return c.json({ error: 'Le mot de passe doit contenir au moins 8 caractères' }, 400);
+    }
+
+    const sql = c.get('db');
+
+    // Vérifier si l'utilisateur existe déjà
+    const existingUsers = await sql`
+      SELECT id FROM utilisateur 
+      WHERE email = ${email} 
+      LIMIT 1
+    `;
+
+    if (existingUsers.length > 0) {
+      return c.json({ error: 'Un utilisateur avec cet email existe déjà' }, 409);
+    }
+
+    // Hasher le mot de passe
+    const hashedPassword = await hashPassword(password);
+
+    // Créer l'utilisateur
+    const newUsers = await sql`
+      INSERT INTO utilisateur (
+        nom, prenom, email, telephone, mot_de_passe, type_utilisateur, actif
+      ) VALUES (
+        ${nom}, ${prenom}, ${email}, ${telephone || null}, ${hashedPassword}, 
+        ${type_utilisateur || 'CLIENT'}, true
+      ) RETURNING id, nom, prenom, email, telephone, type_utilisateur
+    `;
+
+    const newUser = newUsers[0];
+
+    return c.json({
+      success: true,
+      user: newUser,
+      message: 'Inscription réussie'
+    });
+
+  } catch (error) {
+    console.error('Error during registration:', error);
+    return c.json({ error: 'Erreur interne du serveur' }, 500);
+  }
+});
+
+// Route de vérification du token
+app.get('/api/auth/verify', authMiddleware, async (c) => {
+  try {
+    const user = c.get('user');
+
+    if (!user) {
+      return c.json({ error: 'Token invalide' }, 401);
+    }
+
+    const sql = c.get('db');
+
+    // Récupérer les données utilisateur actualisées
+    const users = await sql`
+      SELECT 
+        u.id,
+        u.nom,
+        u.prenom,
+        u.email,
+        u.telephone,
+        u.type_utilisateur,
+        u.actif,
+        c.id as chauffeur_id,
+        c.numero_badge
+      FROM utilisateur u
+      LEFT JOIN chauffeur c ON u.id = c.utilisateur_id
+      WHERE u.id = ${user.id} AND u.actif = true
+      LIMIT 1
+    `;
+
+    if (users.length === 0) {
+      return c.json({ error: 'Utilisateur non trouvé' }, 404);
+    }
+
+    const userData = users[0];
+
+    return c.json({
+      success: true,
+      user: userData,
+      message: 'Token valide'
+    });
+
+  } catch (error) {
+    console.error('Error during token verification:', error);
+    return c.json({ error: 'Erreur interne du serveur' }, 500);
+  }
+});
+
+// Route de déconnexion
+app.post('/api/auth/logout', authMiddleware, async (c) => {
+  try {
+    // En JWT, la déconnexion côté serveur est principalement symbolique
+    // Le client doit supprimer le token de son côté
+    return c.json({
+      success: true,
+      message: 'Déconnexion réussie'
+    });
+  } catch (error) {
+    console.error('Error during logout:', error);
+    return c.json({ error: 'Erreur interne du serveur' }, 500);
+  }
+});
+
+// Route de rafraîchissement du token
+app.post('/api/auth/refresh', authMiddleware, async (c) => {
+  try {
+    const user = c.get('user');
+
+    if (!user) {
+      return c.json({ error: 'Token invalide' }, 401);
+    }
+
+    // Créer un nouveau token avec une nouvelle expiration
+    const payload = {
+      id: user.id,
+      email: user.email,
+      type: user.type,
+      chauffeur_id: user.chauffeur_id,
+      exp: Math.floor(Date.now() / 1000) + (24 * 60 * 60) // 24h
+    };
+
+    const newToken = await sign(payload, c.env.JWT_SECRET);
+
+    return c.json({
+      success: true,
+      token: newToken,
+      message: 'Token rafraîchi'
+    });
+
+  } catch (error) {
+    console.error('Error during token refresh:', error);
+    return c.json({ error: 'Erreur interne du serveur' }, 500);
+  }
+});
+
+// Route de changement de mot de passe
+app.post('/api/auth/change-password', authMiddleware, async (c) => {
+  try {
+    const user = c.get('user');
+    const { currentPassword, newPassword } = await c.req.json();
+
+    if (!currentPassword || !newPassword) {
+      return c.json({ error: 'Mot de passe actuel et nouveau mot de passe requis' }, 400);
+    }
+
+    if (newPassword.length < 8) {
+      return c.json({ error: 'Le nouveau mot de passe doit contenir au moins 8 caractères' }, 400);
+    }
+
+    const sql = c.get('db');
+
+    // Récupérer le mot de passe actuel
+    const users = await sql`
+      SELECT mot_de_passe FROM utilisateur 
+      WHERE id = ${user.id} AND actif = true
+      LIMIT 1
+    `;
+
+    if (users.length === 0) {
+      return c.json({ error: 'Utilisateur non trouvé' }, 404);
+    }
+
+    // Vérifier le mot de passe actuel
+    const isValidPassword = await verifyPassword(currentPassword, users[0].mot_de_passe);
+
+    if (!isValidPassword) {
+      return c.json({ error: 'Mot de passe actuel incorrect' }, 400);
+    }
+
+    // Hasher le nouveau mot de passe
+    const hashedNewPassword = await hashPassword(newPassword);
+
+    // Mettre à jour le mot de passe
+    await sql`
+      UPDATE utilisateur 
+      SET mot_de_passe = ${hashedNewPassword}, updated_at = NOW()
+      WHERE id = ${user.id}
+    `;
+
+    return c.json({
+      success: true,
+      message: 'Mot de passe modifié avec succès'
+    });
+
+  } catch (error) {
+    console.error('Error during password change:', error);
+    return c.json({ error: 'Erreur interne du serveur' }, 500);
+  }
+});
+
 // Routes pour chauffeurs
 app.get('/api/chauffeurs', dbMiddleware, authMiddleware, async (c) => {
   try {
