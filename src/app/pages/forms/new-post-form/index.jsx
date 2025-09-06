@@ -27,8 +27,15 @@ import { ExpenseForm } from "./components/ExpenseForm";
 import { ExternalCourseForm } from "./components/ExternalCourseForm";
 import { HistoryModal } from "./components/HistoryModal";
 import { ControlModal } from "./components/ControlModal";
-import { mockData } from "./data";
+
+// Services
 import { fetchCourses, upsertCourse, deleteCourse as removeCourse } from "services/courses";
+import { createFeuilleRoute, endFeuilleRoute, getActiveFeuilleRoute } from "services/feuillesRoute";
+import { getChauffeurs } from "services/chauffeurs";
+import { getVehicules } from "services/vehicules";
+import { getClients } from "services/clients";
+import { getModesPaiement } from "services/modesPaiement";
+import { getCharges, createCharge } from "services/charges";
 
 // ----------------------------------------------------------------------
 
@@ -45,7 +52,12 @@ export default function TxApp() {
   const [expenses, setExpenses] = useState([]);
   const [externalCourses, setExternalCourses] = useState([]);
   const [shiftData, setShiftData] = useState(null);
-  
+  const [currentFeuilleRoute, setCurrentFeuilleRoute] = useState(null);
+
+  // Données de référence
+  const [vehicules, setVehicules] = useState([]);
+  const [currentChauffeur, setCurrentChauffeur] = useState(null);
+
   // Modal states
   const [showCourseModal, setShowCourseModal] = useState(false);
   const [showVehicleModal, setShowVehicleModal] = useState(false);
@@ -58,17 +70,90 @@ export default function TxApp() {
   const [editingCourse, setEditingCourse] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [loading, setLoading] = useState(true);
 
   // Vérifier s'il y a un shift actif
-  const hasActiveShift = Boolean(shiftData && !shiftData.heure_fin);
+  const hasActiveShift = Boolean(currentFeuilleRoute && currentFeuilleRoute.statut === 'En cours');
+
+  // Chargement initial des données
+  useEffect(() => {
+    const loadInitialData = async () => {
+      try {
+        setLoading(true);
+
+        // Charger les données de référence
+        const [chauffeursList, vehiculesList] = await Promise.all([
+          getChauffeurs(),
+          getVehicules(),
+          getClients(),
+          getModesPaiement()
+        ]);
+
+        setVehicules(vehiculesList);
+
+        // Pour le moment, on prend le premier chauffeur comme utilisateur actuel
+        // À terme, ceci devrait venir de l'authentification
+        if (chauffeursList.length > 0) {
+          const chauffeur = chauffeursList[0];
+          setCurrentChauffeur(chauffeur);
+
+          // Vérifier s'il y a une feuille de route active
+          const activeSheet = await getActiveFeuilleRoute(chauffeur.id);
+          if (activeSheet) {
+            setCurrentFeuilleRoute(activeSheet);
+            setShiftData({
+              id: activeSheet.id,
+              chauffeur_id: activeSheet.chauffeur_id,
+              vehicule_id: activeSheet.vehicule_id,
+              date: activeSheet.date,
+              heure_debut: activeSheet.heure_debut,
+              heure_fin: activeSheet.heure_fin,
+              km_debut: activeSheet.km_debut,
+              km_fin: activeSheet.km_fin,
+              prise_en_charge_debut: activeSheet.prise_en_charge_debut,
+              prise_en_charge_fin: activeSheet.prise_en_charge_fin,
+              chutes_debut: activeSheet.chutes_debut,
+              chutes_fin: activeSheet.chutes_fin,
+              statut: activeSheet.statut,
+              notes: activeSheet.notes
+            });
+
+            // Charger les courses de cette feuille de route
+            const coursesList = await fetchCourses(activeSheet.id);
+            setCourses(coursesList);
+
+            // Charger les charges/dépenses
+            const chargesList = await getCharges(activeSheet.id);
+            setExpenses(chargesList);
+          }
+        }
+      } catch (error) {
+        console.error('Erreur lors du chargement initial:', error);
+        toast.error('Erreur lors du chargement des données');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadInitialData();
+  }, []);
 
   const handleDownloadReport = () => {
     try {
+      if (!currentFeuilleRoute || !currentChauffeur) {
+        toast.error('Aucune feuille de route active');
+        return;
+      }
+
       const fileName = generateAndDownloadReport(
         shiftData,
         courses,
-        mockData.driver,
-        mockData.vehicles[0]
+        {
+          nom: currentChauffeur.utilisateur?.nom,
+          prenom: currentChauffeur.utilisateur?.prenom,
+          numero_badge: currentChauffeur.numero_badge
+        },
+        currentFeuilleRoute.vehicule
       );
       toast.success(`Feuille de route téléchargée : ${fileName}`);
     } catch (error) {
@@ -108,24 +193,6 @@ export default function TxApp() {
     });
   }, [courses, searchTerm, statusFilter]);
 
-  useEffect(() => {
-    // Charger les courses depuis la base (Supabase) ou localStorage fallback
-    (async () => {
-      try {
-        const list = await fetchCourses();
-        if (list && list.length) {
-          setCourses(list);
-        } else {
-          // Fallback initial avec données mock si aucune donnée
-          setCourses(mockData.courses);
-        }
-      } catch (e) {
-        console.error("Erreur chargement courses:", e);
-        setCourses(mockData.courses);
-      }
-    })();
-  }, []);
-
   // Handlers
   const handleNewCourse = () => {
     if (!hasActiveShift) {
@@ -156,13 +223,29 @@ export default function TxApp() {
 
   const handleSubmitCourse = async (courseData) => {
     try {
-      // Persist to DB (Supabase) or localStorage fallback
-      const saved = await upsertCourse({ ...courseData, id: editingCourse?.id });
+      if (!currentFeuilleRoute) {
+        toast.error("Aucune feuille de route active");
+        return;
+      }
+
+      // Ajouter l'ID de la feuille de route et le numéro d'ordre
+      const courseWithMeta = {
+        ...courseData,
+        feuille_route_id: currentFeuilleRoute.id,
+        numero_ordre: editingCourse ? editingCourse.numero_ordre : courses.length + 1,
+        id: editingCourse?.id
+      };
+
+      const saved = await upsertCourse(courseWithMeta);
+
       if (editingCourse) {
         setCourses(courses.map(c => c.id === editingCourse.id ? saved : c));
+        toast.success("Course modifiée avec succès");
       } else {
         setCourses([...courses, saved]);
+        toast.success("Course ajoutée avec succès");
       }
+
       setShowCourseModal(false);
       setEditingCourse(null);
     } catch (e) {
@@ -171,45 +254,142 @@ export default function TxApp() {
     }
   };
 
+  const handleStartShift = async (shiftFormData) => {
+    try {
+      if (!currentChauffeur) {
+        toast.error("Aucun chauffeur sélectionné");
+        return;
+      }
+
+      // Créer une nouvelle feuille de route
+      const feuilleRouteData = {
+        chauffeur_id: currentChauffeur.id,
+        vehicule_id: shiftFormData.vehicule_id,
+        date: shiftFormData.date,
+        heure_debut: shiftFormData.heure_debut,
+        km_debut: shiftFormData.km_debut,
+        prise_en_charge_debut: shiftFormData.prise_en_charge_debut,
+        chutes_debut: shiftFormData.chutes_debut,
+        notes: shiftFormData.notes
+      };
+
+      const newFeuilleRoute = await createFeuilleRoute(feuilleRouteData);
+
+      setCurrentFeuilleRoute(newFeuilleRoute);
+      setShiftData({
+        id: newFeuilleRoute.id,
+        chauffeur_id: newFeuilleRoute.chauffeur_id,
+        vehicule_id: newFeuilleRoute.vehicule_id,
+        date: newFeuilleRoute.date,
+        heure_debut: newFeuilleRoute.heure_debut,
+        km_debut: newFeuilleRoute.km_debut,
+        prise_en_charge_debut: newFeuilleRoute.prise_en_charge_debut,
+        chutes_debut: newFeuilleRoute.chutes_debut,
+        statut: newFeuilleRoute.statut,
+        notes: newFeuilleRoute.notes
+      });
+
+      // Réinitialiser les courses pour la nouvelle feuille
+      setCourses([]);
+      setExpenses([]);
+
+      setActiveTab('courses');
+      toast.success("Nouvelle feuille de route créée");
+    } catch (error) {
+      console.error('Erreur lors de la création de la feuille de route:', error);
+      toast.error("Erreur lors de la création de la feuille de route");
+    }
+  };
+
+  const handleEndShift = async (endData) => {
+    try {
+      if (!currentFeuilleRoute) {
+        toast.error("Aucune feuille de route active");
+        return;
+      }
+
+      // Finaliser la feuille de route
+      const updatedFeuilleRoute = await endFeuilleRoute(currentFeuilleRoute.id, {
+        heure_fin: endData.heure_fin,
+        km_fin: endData.km_fin,
+        prise_en_charge_fin: endData.prise_en_charge_fin,
+        chutes_fin: endData.chutes_fin,
+        notes: endData.notes
+      });
+
+      setCurrentFeuilleRoute(updatedFeuilleRoute);
+      setShiftData({
+        ...shiftData,
+        heure_fin: updatedFeuilleRoute.heure_fin,
+        km_fin: updatedFeuilleRoute.km_fin,
+        prise_en_charge_fin: updatedFeuilleRoute.prise_en_charge_fin,
+        chutes_fin: updatedFeuilleRoute.chutes_fin,
+        statut: updatedFeuilleRoute.statut,
+        notes: updatedFeuilleRoute.notes
+      });
+
+      toast.success("Feuille de route terminée");
+      setActiveTab('dashboard');
+    } catch (error) {
+      console.error('Erreur lors de la finalisation de la feuille de route:', error);
+      toast.error("Erreur lors de la finalisation de la feuille de route");
+    }
+  };
+
+  const handleSubmitExpense = async (expenseData) => {
+    try {
+      if (!currentFeuilleRoute) {
+        toast.error("Aucune feuille de route active");
+        return;
+      }
+
+      const chargeData = {
+        feuille_route_id: currentFeuilleRoute.id,
+        type_charge: expenseData.type_charge || 'Autre',
+        description: expenseData.description,
+        montant: expenseData.montant,
+        date: expenseData.date || new Date(),
+        mode_paiement_id: expenseData.mode_paiement_id,
+        notes: expenseData.notes
+      };
+
+      const newCharge = await createCharge(chargeData);
+      setExpenses([...expenses, newCharge]);
+      setShowExpenseModal(false);
+      toast.success("Dépense ajoutée avec succès");
+    } catch (error) {
+      console.error('Erreur lors de l\'ajout de la dépense:', error);
+      toast.error("Erreur lors de l'ajout de la dépense");
+    }
+  };
+
   const handleCancelCourse = () => {
     setShowCourseModal(false);
     setEditingCourse(null);
-  };
-
-  const handleStartShift = (shiftFormData) => {
-    setShiftData(shiftFormData);
-    setActiveTab('courses');
-    toast.success("Nouvelle feuille de route créée");
-  };
-
-  const handleEndShift = (endData) => {
-    const completeShiftData = {
-      ...shiftData,
-      ...endData,
-      heure_fin: new Date().toLocaleTimeString('fr-FR', {
-        hour: '2-digit',
-        minute: '2-digit'
-      })
-    };
-    setShiftData(completeShiftData);
-    toast.success("Feuille de route terminée");
-    // Optionnel: revenir au dashboard après la fin du shift
-    setActiveTab('dashboard');
   };
 
   const handleShowControl = () => {
     setShowControlModal(true);
   };
 
-  const handleSubmitExpense = (expenseData) => {
-    setExpenses([...expenses, expenseData]);
-    setShowExpenseModal(false);
-  };
-
   const handleSubmitExternalCourse = (externalCourseData) => {
     setExternalCourses([...externalCourses, externalCourseData]);
     setShowExternalCourseModal(false);
+    toast.success("Course externe ajoutée");
   };
+
+  if (loading) {
+    return (
+      <Page title="TxApp - Gestion Taxi">
+        <div className="min-h-screen bg-gray-50 dark:bg-dark-900 flex items-center justify-center">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-500 mx-auto"></div>
+            <p className="mt-4 text-gray-600 dark:text-gray-400">Chargement des données...</p>
+          </div>
+        </div>
+      </Page>
+    );
+  }
 
   return (
     <Page title="TxApp - Gestion Taxi">
@@ -246,8 +426,12 @@ export default function TxApp() {
           <div className="transition-content">
             {activeTab === 'dashboard' && (
               <Dashboard
-                driver={mockData.driver}
-                vehicle={mockData.vehicles[0]}
+                driver={currentChauffeur ? {
+                  nom: currentChauffeur.utilisateur?.nom,
+                  prenom: currentChauffeur.utilisateur?.prenom,
+                  numero_badge: currentChauffeur.numero_badge
+                } : null}
+                vehicle={currentFeuilleRoute?.vehicule || null}
                 totals={totals}
                 onNewCourse={handleNewCourse}
                 onShowHistory={() => setShowHistoryModal(true)}
@@ -259,7 +443,8 @@ export default function TxApp() {
 
             {activeTab === 'shift' && (
               <ShiftForm
-                vehicles={mockData.vehicles}
+                vehicles={vehicules}
+                chauffeur={currentChauffeur}
                 onStartShift={handleStartShift}
                 onShowVehicleInfo={() => setShowVehicleModal(true)}
               />
@@ -287,7 +472,12 @@ export default function TxApp() {
               <EndShiftForm 
                 onEndShift={handleEndShift}
                 shiftData={shiftData}
-                driver={mockData.driver}
+                driver={currentChauffeur ? {
+                  nom: currentChauffeur.utilisateur?.nom,
+                  prenom: currentChauffeur.utilisateur?.prenom,
+                  numero_badge: currentChauffeur.numero_badge
+                } : null}
+                vehicle={currentFeuilleRoute?.vehicule || null}
                 onPrintReport={handleDownloadReport}
               />
             )}
@@ -515,15 +705,19 @@ export default function TxApp() {
         <VehicleModal
           isOpen={showVehicleModal}
           onClose={() => setShowVehicleModal(false)}
-          vehicle={mockData.vehicles[0]}
+          vehicle={currentFeuilleRoute?.vehicule || null}
         />
 
         {/* Control Modal */}
         <ControlModal
           isOpen={showControlModal}
           onClose={() => setShowControlModal(false)}
-          driver={mockData.driver}
-          vehicle={mockData.vehicles[0]}
+          driver={currentChauffeur ? {
+            nom: currentChauffeur.utilisateur?.nom,
+            prenom: currentChauffeur.utilisateur?.prenom,
+            numero_badge: currentChauffeur.numero_badge
+          } : null}
+          vehicle={currentFeuilleRoute?.vehicule || null}
           shiftData={shiftData}
           courses={courses}
         />

@@ -13,7 +13,10 @@
   "vars": {
     "JWT_SECRET": "your-production-jwt-secret-key-here",
     "USERS_TABLE": "utilisateur",
-    "NODE_ENV": "production"
+    "NODE_ENV": "production",
+    "CORS_ORIGIN": "https://txapp.be",
+    "PORT": "3001",
+    "HOST": "0.0.0.0"
   },
 
   "hyperdrive": [
@@ -24,10 +27,15 @@
     }
   ],
 
-
   "observability": {
     "logs": {
       "enabled": true
     }
+  },
+
+  "compatibility_date": "2025-01-01",
+
+  "build": {
+    "command": "npm run build"
   }
 }
