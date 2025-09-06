@@ -81,55 +81,87 @@ export default function TxApp() {
       try {
         setLoading(true);
 
-        // Charger les données de référence
+        // Charger les données de référence avec gestion d'erreur
         const [chauffeursList, vehiculesList] = await Promise.all([
-          getChauffeurs(),
-          getVehicules(),
-          getClients(),
-          getModesPaiement()
+          getChauffeurs().catch(err => {
+            console.error('Erreur chargement chauffeurs:', err);
+            return [];
+          }),
+          getVehicules().catch(err => {
+            console.error('Erreur chargement véhicules:', err);
+            return [];
+          }),
+          getClients().catch(err => {
+            console.error('Erreur chargement clients:', err);
+            return [];
+          }),
+          getModesPaiement().catch(err => {
+            console.error('Erreur chargement modes paiement:', err);
+            return [];
+          })
         ]);
 
         setVehicules(vehiculesList);
 
-        // Pour le moment, on prend le premier chauffeur comme utilisateur actuel
-        // À terme, ceci devrait venir de l'authentification
+        // Vérifier si on a des chauffeurs et les données utilisateur
         if (chauffeursList.length > 0) {
           const chauffeur = chauffeursList[0];
-          setCurrentChauffeur(chauffeur);
 
-          // Vérifier s'il y a une feuille de route active
-          const activeSheet = await getActiveFeuilleRoute(chauffeur.id);
-          if (activeSheet) {
-            setCurrentFeuilleRoute(activeSheet);
-            setShiftData({
-              id: activeSheet.id,
-              chauffeur_id: activeSheet.chauffeur_id,
-              vehicule_id: activeSheet.vehicule_id,
-              date: activeSheet.date,
-              heure_debut: activeSheet.heure_debut,
-              heure_fin: activeSheet.heure_fin,
-              km_debut: activeSheet.km_debut,
-              km_fin: activeSheet.km_fin,
-              prise_en_charge_debut: activeSheet.prise_en_charge_debut,
-              prise_en_charge_fin: activeSheet.prise_en_charge_fin,
-              chutes_debut: activeSheet.chutes_debut,
-              chutes_fin: activeSheet.chutes_fin,
-              statut: activeSheet.statut,
-              notes: activeSheet.notes
-            });
+          // Vérifier que le chauffeur a des données utilisateur valides
+          if (chauffeur && chauffeur.utilisateur) {
+            setCurrentChauffeur(chauffeur);
 
-            // Charger les courses de cette feuille de route
-            const coursesList = await fetchCourses(activeSheet.id);
-            setCourses(coursesList);
+            // Vérifier s'il y a une feuille de route active
+            try {
+              const activeSheet = await getActiveFeuilleRoute(chauffeur.id);
+              if (activeSheet) {
+                setCurrentFeuilleRoute(activeSheet);
+                setShiftData({
+                  id: activeSheet.id,
+                  chauffeur_id: activeSheet.chauffeur_id,
+                  vehicule_id: activeSheet.vehicule_id,
+                  date: activeSheet.date,
+                  heure_debut: activeSheet.heure_debut,
+                  heure_fin: activeSheet.heure_fin,
+                  km_debut: activeSheet.km_debut,
+                  km_fin: activeSheet.km_fin,
+                  prise_en_charge_debut: activeSheet.prise_en_charge_debut,
+                  prise_en_charge_fin: activeSheet.prise_en_charge_fin,
+                  chutes_debut: activeSheet.chutes_debut,
+                  chutes_fin: activeSheet.chutes_fin,
+                  statut: activeSheet.statut,
+                  notes: activeSheet.notes
+                });
 
-            // Charger les charges/dépenses
-            const chargesList = await getCharges(activeSheet.id);
-            setExpenses(chargesList);
+                // Charger les courses de cette feuille de route
+                const coursesList = await fetchCourses(activeSheet.id);
+                setCourses(coursesList);
+
+                // Charger les charges/dépenses
+                const chargesList = await getCharges(activeSheet.id);
+                setExpenses(chargesList);
+              }
+            } catch (sheetError) {
+              console.error('Erreur lors du chargement de la feuille de route:', sheetError);
+              // Continuer même si la feuille de route ne peut pas être chargée
+            }
+          } else {
+            console.error('Données utilisateur manquantes pour le chauffeur');
+            toast.error('Données utilisateur incomplètes');
           }
+        } else {
+          console.error('Aucun chauffeur trouvé');
+          toast.error('Aucun chauffeur disponible');
         }
       } catch (error) {
         console.error('Erreur lors du chargement initial:', error);
         toast.error('Erreur lors du chargement des données');
+
+        // Si c'est une erreur d'authentification, rediriger vers la connexion
+        if (error.message.includes('Non authentifié')) {
+          // La redirection est déjà gérée dans le service API
+          return;
+        }
       } finally {
         setLoading(false);
       }
@@ -140,19 +172,27 @@ export default function TxApp() {
 
   const handleDownloadReport = () => {
     try {
-      if (!currentFeuilleRoute || !currentChauffeur) {
+      if (!currentFeuilleRoute) {
         toast.error('Aucune feuille de route active');
         return;
       }
 
+      if (!currentChauffeur || !currentChauffeur.utilisateur) {
+        toast.error('Données du chauffeur indisponibles');
+        return;
+      }
+
+      // Vérifier que les données utilisateur existent
+      const driverData = {
+        nom: currentChauffeur.utilisateur?.nom || 'Non défini',
+        prenom: currentChauffeur.utilisateur?.prenom || 'Non défini',
+        numero_badge: currentChauffeur.numero_badge || 'N/A'
+      };
+
       const fileName = generateAndDownloadReport(
         shiftData,
         courses,
-        {
-          nom: currentChauffeur.utilisateur?.nom,
-          prenom: currentChauffeur.utilisateur?.prenom,
-          numero_badge: currentChauffeur.numero_badge
-        },
+        driverData,
         currentFeuilleRoute.vehicule
       );
       toast.success(`Feuille de route téléchargée : ${fileName}`);
