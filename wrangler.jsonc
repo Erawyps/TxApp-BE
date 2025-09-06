@@ -11,7 +11,7 @@
   },
 
   "vars": {
-    "JWT_SECRET": "your-production-jwt-secret-key-here",
+    "JWT_SECRET": "TxApp-2025-Super-Secure-JWT-Secret-Key-Change-In-Production-9f8e7d6c5b4a3",
     "USERS_TABLE": "utilisateur",
     "NODE_ENV": "production",
     "CORS_ORIGIN": "https://txapp.be",
@@ -24,6 +24,13 @@
       "binding": "HYPERDRIVE",
       "id": "524a9438f01e47e88558cb5a181d0b14",
       "localConnectionString": "postgresql://postgres:rKcnNJbacyLF3TQd@db.jfrhzwtkfotsrjkacrns.supabase.co:5432/postgres"
+    }
+  ],
+
+  "routes": [
+    {
+      "pattern": "txapp.be/api/*",
+      "zone_name": "txapp.be"
     }
   ],
 

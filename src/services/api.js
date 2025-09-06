@@ -1,5 +1,9 @@
-// Configuration API
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
+// Configuration API - utiliser le worker Cloudflare en production
+const API_BASE_URL = import.meta.env.VITE_API_URL || (
+  import.meta.env.PROD
+    ? 'https://txapp.be/api'  // Production : utiliser le worker Cloudflare
+    : 'http://localhost:3001/api'  // Développement : serveur local
+);
 
 // Fonction pour récupérer le token d'authentification
 const getAuthToken = () => {
@@ -17,6 +21,7 @@ async function apiCall(endpoint, options = {}) {
       ...(token && { 'Authorization': `Bearer ${token}` }),
       ...options.headers,
     },
+    credentials: 'include', // Important pour CORS avec cookies
     ...options,
   };
 
@@ -25,6 +30,7 @@ async function apiCall(endpoint, options = {}) {
   }
 
   try {
+    console.log(`[API] Calling: ${url}`); // Debug log
     const response = await fetch(url, config);
 
     if (response.status === 401) {
@@ -43,10 +49,14 @@ async function apiCall(endpoint, options = {}) {
     }
 
     if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`[API] Error response: ${response.status} - ${errorText}`);
       throw new Error(`HTTP error! status: ${response.status}`);
     }
 
-    return await response.json();
+    const result = await response.json();
+    console.log(`[API] Success: ${url}`, result); // Debug log
+    return result;
   } catch (error) {
     console.error(`Erreur API ${endpoint}:`, error);
     throw error;
