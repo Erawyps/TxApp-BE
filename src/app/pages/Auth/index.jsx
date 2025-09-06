@@ -5,14 +5,22 @@ import { useForm } from "react-hook-form";
 import { useEffect, useState } from "react";
 
 import Logo from "assets/appLogo.svg?react";
-import { Button, Card, Checkbox, Input, InputErrorMsg } from "components/ui";
+import DashboardCheck from "assets/illustrations/dashboard-check.svg?react";
+import { Button, Checkbox, Input, InputErrorMsg } from "components/ui";
 import { useAuthContext } from "app/contexts/auth/context";
+import { useThemeContext } from "app/contexts/theme/context";
 import { schema } from "./schema";
 import { Page } from "components/shared/Page";
 import { HOME_PATH, REDIRECT_URL_KEY } from "constants/app.constant";
 
 export default function SignIn() {
   const { login, errorMessage, isLoading, isAuthenticated } = useAuthContext();
+  const {
+    primaryColorScheme: primary,
+    lightColorScheme: light,
+    darkColorScheme: dark,
+    isDark,
+  } = useThemeContext();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const location = useLocation();
@@ -21,7 +29,6 @@ export default function SignIn() {
   const {
     register,
     handleSubmit,
-    formState: { errors },
   } = useForm({
     resolver: yupResolver(schema),
     defaultValues: {
@@ -67,26 +74,63 @@ export default function SignIn() {
 
   return (
     <Page title="Login">
-      <main className="min-h-screen grid w-full grow grid-cols-1 place-items-center">
-        <div className="w-full max-w-[26rem] p-4 sm:px-5">
-          <div className="text-center">
-            <Logo className="mx-auto size-16" />
-            <div className="mt-4">
-              <h2 className="text-2xl font-semibold text-gray-600 dark:text-dark-100">
-                Bienvenue sur TxApp
-              </h2>
-              <p className="text-gray-400 dark:text-dark-300">
-                Connectez-vous pour continuer
-              </p>
-            </div>
+      <main className="min-h-100vh flex">
+        <div className="fixed top-0 hidden p-6 lg:block lg:px-12">
+          <div className="flex items-center gap-2">
+            <Logo className="size-12" />
+            <p className="text-xl font-semibold uppercase text-gray-800 dark:text-dark-100">
+              TxApp
+            </p>
           </div>
-          <Card className="mt-5 rounded-lg p-5 lg:p-7">
-            <form onSubmit={handleSubmit(onSubmit)} autoComplete="off">
+        </div>
+        <div className="hidden w-full place-items-center lg:grid">
+          <div className="w-full max-w-lg p-6">
+            <DashboardCheck
+              style={{
+                "--primary": primary[500],
+                "--dark-500": isDark ? dark[500] : light[200],
+                "--dark-600": isDark ? dark[600] : light[100],
+                "--dark-700": isDark ? dark[700] : light[300],
+                "--dark-450": isDark ? dark[450] : light[400],
+                "--dark-800": isDark ? dark[800] : light[400],
+              }}
+              className="w-full"
+            />
+          </div>
+        </div>
+        <div className="flex w-full flex-col items-center ltr:border-l rtl:border-r border-gray-150 bg-white dark:border-transparent dark:bg-dark-700 lg:max-w-md">
+          <div className="flex w-full max-w-sm grow flex-col justify-center p-5">
+            <div className="text-center">
+              <Logo className="mx-auto size-16 lg:hidden" />
+              <div className="mt-4 lg:mt-0">
+                <h2 className="text-2xl font-semibold text-gray-600 dark:text-dark-100">
+                  Bienvenue sur TxApp
+                </h2>
+                <p className="text-gray-400 dark:text-dark-300">
+                  Connectez-vous pour continuer
+                </p>
+              </div>
+            </div>
+
+            {/* Message de succès de l'inscription */}
+            {registrationMessage && (
+              <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-lg dark:bg-green-900/20 dark:border-green-800">
+                <p className="text-green-700 dark:text-green-400 text-sm font-medium">
+                  ✓ {registrationMessage}
+                </p>
+                <p className="text-green-600 dark:text-green-300 text-xs mt-1">
+                  Vous pouvez maintenant vous connecter avec vos identifiants.
+                </p>
+              </div>
+            )}
+
+            <form onSubmit={handleSubmit(onSubmit)} className="mt-16">
               <div className="space-y-4">
                 <Input
-                  label="Email"
+                  unstyled
                   placeholder="Entrez votre email"
                   type="email"
+                  className="rounded-lg bg-gray-150 px-3 py-2 transition-colors placeholder:text-gray-400 focus:ring-3 focus:ring-primary-500/50 dark:bg-dark-900 dark:placeholder:text-dark-200/70"
                   prefix={
                     <EnvelopeIcon
                       className="size-5 transition-colors duration-200"
@@ -94,12 +138,12 @@ export default function SignIn() {
                     />
                   }
                   {...register("username")}
-                  error={errors?.username?.message}
                 />
                 <Input
-                  label="Mot de passe"
-                  placeholder="Entrez votre mot de passe"
+                  unstyled
                   type="password"
+                  placeholder="Entrez votre mot de passe"
+                  className="rounded-lg bg-gray-150 px-3 py-2 transition-colors placeholder:text-gray-400 focus:ring-3 focus:ring-primary-500/50 dark:bg-dark-900 dark:placeholder:text-dark-200/70"
                   prefix={
                     <LockClosedIcon
                       className="size-5 transition-colors duration-200"
@@ -107,44 +151,29 @@ export default function SignIn() {
                     />
                   }
                   {...register("password")}
-                  error={errors?.password?.message}
                 />
+                <div className="flex items-center justify-between space-x-2">
+                  <Checkbox label="Se souvenir de moi" />
+                  <a
+                    href="#"
+                    className="text-xs text-gray-400 transition-colors hover:text-gray-800 focus:text-gray-800 dark:text-dark-300 dark:hover:text-dark-100 dark:focus:text-dark-100"
+                  >
+                    Mot de passe oublié ?
+                  </a>
+                </div>
               </div>
 
-              <div className="mt-2">
-                <InputErrorMsg
-                  when={errorMessage && errorMessage?.message !== ""}
-                >
-                  {errorMessage?.message}
-                </InputErrorMsg>
-
-                {/* Message de succès de l'inscription */}
-                {registrationMessage && (
-                  <div className="mt-2 p-3 bg-green-50 border border-green-200 rounded-lg">
-                    <p className="text-green-700 text-sm font-medium">
-                      ✓ {registrationMessage}
-                    </p>
-                    <p className="text-green-600 text-xs mt-1">
-                      Vous pouvez maintenant vous connecter avec vos identifiants.
-                    </p>
-                  </div>
-                )}
-              </div>
-
-              <div className="mt-4 flex items-center justify-between space-x-2">
-                <Checkbox label="Se souvenir de moi" />
-                <a
-                  href="#"
-                  className="text-xs text-gray-400 transition-colors hover:text-gray-800 focus:text-gray-800 dark:text-dark-300 dark:hover:text-dark-100 dark:focus:text-dark-100"
-                >
-                  Mot de passe oublié ?
-                </a>
-              </div>
+              <InputErrorMsg
+                when={errorMessage && errorMessage?.message !== ""}
+                className="mt-2"
+              >
+                {errorMessage?.message}
+              </InputErrorMsg>
 
               <Button
                 type="submit"
-                className="mt-5 w-full"
                 color="primary"
+                className="mt-10 h-10 w-full"
                 disabled={isLoading}
               >
                 {isLoading ? "Connexion..." : "Se connecter"}
@@ -162,9 +191,34 @@ export default function SignIn() {
                 </Link>
               </p>
             </div>
-          </Card>
 
-          <div className="mt-8 flex justify-center text-xs text-gray-400 dark:text-dark-300">
+            <div className="my-7 flex items-center text-tiny-plus">
+              <div className="h-px flex-1 bg-gray-200 dark:bg-dark-500"></div>
+              <p className="mx-3">OU</p>
+              <div className="h-px flex-1 bg-gray-200 dark:bg-dark-500"></div>
+            </div>
+
+            <div className="flex gap-4">
+              <Button className="h-10 flex-1 gap-3" variant="outlined">
+                <img
+                  className="size-5.5"
+                  src="/images/logos/google.svg"
+                  alt="logo"
+                />
+                <span>Google</span>
+              </Button>
+              <Button className="h-10 flex-1 gap-3" variant="outlined">
+                <img
+                  className="size-5.5"
+                  src="/images/logos/github.svg"
+                  alt="logo"
+                />
+                <span>Github</span>
+              </Button>
+            </div>
+          </div>
+
+          <div className="mb-3 mt-5 flex justify-center text-xs text-gray-400 dark:text-dark-300">
             <a href="#">Politique de confidentialité</a>
             <div className="mx-2.5 my-0.5 w-px bg-gray-200 dark:bg-dark-500"></div>
             <a href="#">Conditions d&apos;utilisation</a>

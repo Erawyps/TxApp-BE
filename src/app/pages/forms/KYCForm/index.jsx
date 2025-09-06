@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Page } from 'components/shared/Page';
+import { Card, Button } from 'components/ui';
 import {
   UsersIcon,
   TruckIcon,
@@ -336,11 +337,13 @@ const TxAppAdmin = () => {
             {activeTab === 'dashboard' && (
               <div className="space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+                  <Card className="p-6">
                     <div className="flex items-center">
-                      <UsersIcon className="h-12 w-12 text-blue-600" />
+                      <div className="p-2 rounded-lg bg-blue-100 dark:bg-blue-900/20">
+                        <UsersIcon className="h-8 w-8 text-blue-600 dark:text-blue-400" />
+                      </div>
                       <div className="ml-4">
-                        <p className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                        <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
                           Chauffeurs actifs
                         </p>
                         <p className="text-2xl font-bold text-gray-900 dark:text-white">
@@ -348,13 +351,15 @@ const TxAppAdmin = () => {
                         </p>
                       </div>
                     </div>
-                  </div>
+                  </Card>
 
-                  <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+                  <Card className="p-6">
                     <div className="flex items-center">
-                      <TruckIcon className="h-12 w-12 text-green-600" />
+                      <div className="p-2 rounded-lg bg-green-100 dark:bg-green-900/20">
+                        <TruckIcon className="h-8 w-8 text-green-600 dark:text-green-400" />
+                      </div>
                       <div className="ml-4">
-                        <p className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                        <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
                           Véhicules en service
                         </p>
                         <p className="text-2xl font-bold text-gray-900 dark:text-white">
@@ -362,13 +367,15 @@ const TxAppAdmin = () => {
                         </p>
                       </div>
                     </div>
-                  </div>
+                  </Card>
 
-                  <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+                  <Card className="p-6">
                     <div className="flex items-center">
-                      <CurrencyEuroIcon className="h-12 w-12 text-yellow-600" />
+                      <div className="p-2 rounded-lg bg-gray-100 dark:bg-gray-800">
+                        <CurrencyEuroIcon className="h-8 w-8 text-gray-700 dark:text-gray-300" />
+                      </div>
                       <div className="ml-4">
-                        <p className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                        <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
                           Recettes totales
                         </p>
                         <p className="text-2xl font-bold text-gray-900 dark:text-white">
@@ -376,50 +383,46 @@ const TxAppAdmin = () => {
                         </p>
                       </div>
                     </div>
-                  </div>
+                  </Card>
                 </div>
 
-                <div className="bg-white dark:bg-gray-800 rounded-lg shadow">
-                  <div className="p-6 border-b border-gray-200 dark:border-gray-700">
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                      Activité récente
-                    </h3>
-                  </div>
-                  <div className="p-6">
-                    <div className="space-y-4">
-                      {shifts.map(shift => {
-                        const driver = drivers.find(d => d.id === shift.chauffeur_id);
-                        const vehicle = vehicles.find(v => v.id === shift.vehicule_id);
-                        return (
-                          <div key={shift.id} className="flex items-center justify-between py-2">
-                            <div>
-                              <p className="text-sm font-medium text-gray-900 dark:text-white">
-                                {driver ? `${driver.prenom} ${driver.nom}` : 'Chauffeur inconnu'}
-                              </p>
-                              <p className="text-xs text-gray-500 dark:text-gray-400">
-                                {vehicle?.plaque_immatriculation} • {shift.date} • {shift.nb_courses} courses
-                              </p>
-                            </div>
-                            <div className="text-right">
-                              <p className="text-sm font-medium text-green-600">
-                                {shift.recettes.toFixed(2)}€
-                              </p>
-                              <p className="text-xs text-gray-500 dark:text-gray-400">
-                                {shift.statut}
-                              </p>
-                            </div>
+                <Card className="p-6">
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                    Activité récente
+                  </h3>
+                  <div className="space-y-4">
+                    {shifts.map(shift => {
+                      const driver = drivers.find(d => d.id === shift.chauffeur_id);
+                      const vehicle = vehicles.find(v => v.id === shift.vehicule_id);
+                      return (
+                        <div key={shift.id} className="flex items-center justify-between py-2 border-b border-gray-100 dark:border-gray-700 last:border-b-0">
+                          <div>
+                            <p className="text-sm font-medium text-gray-900 dark:text-white">
+                              {driver ? `${driver.prenom} ${driver.nom}` : 'Chauffeur inconnu'}
+                            </p>
+                            <p className="text-xs text-gray-500 dark:text-gray-400">
+                              {vehicle?.plaque_immatriculation} • {shift.date} • {shift.nb_courses} courses
+                            </p>
                           </div>
-                        );
-                      })}
-                    </div>
+                          <div className="text-right">
+                            <p className="text-sm font-medium text-gray-900 dark:text-white">
+                              {shift.recettes.toFixed(2)}€
+                            </p>
+                            <p className="text-xs text-gray-500 dark:text-gray-400">
+                              {shift.statut}
+                            </p>
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
-                </div>
+                </Card>
               </div>
             )}
 
             {activeTab === 'drivers' && (
               <div className="space-y-6">
-                <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+                <Card className="p-6">
                   <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                     <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
                       Gestion des Chauffeurs
@@ -447,21 +450,22 @@ const TxAppAdmin = () => {
                         <option value="Inactif">Inactif</option>
                       </select>
                       
-                      <button
+                      <Button
                         onClick={() => {
                           setSelectedDriver(null);
                           setShowDriverModal(true);
                         }}
-                        className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                        className="flex items-center gap-2"
+                        variant="primary"
                       >
                         <PlusIcon className="h-5 w-5" />
                         Nouveau chauffeur
-                      </button>
+                      </Button>
                     </div>
                   </div>
-                </div>
+                </Card>
 
-                <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
+                <Card className="overflow-hidden">
                   <div className="overflow-x-auto">
                     <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
                       <thead className="bg-gray-50 dark:bg-gray-700">
@@ -524,20 +528,23 @@ const TxAppAdmin = () => {
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                               <div className="flex gap-2">
-                                <button
+                                <Button
                                   onClick={() => handleEditDriver(driver)}
-                                  className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300"
+                                  variant="ghost"
+                                  size="sm"
                                   title="Modifier"
                                 >
-                                  <PencilSquareIcon className="h-5 w-5" />
-                                </button>
-                                <button
+                                  <PencilSquareIcon className="h-4 w-4" />
+                                </Button>
+                                <Button
                                   onClick={() => handleDeleteDriver(driver.id)}
-                                  className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300"
+                                  variant="ghost"
+                                  size="sm"
                                   title="Supprimer"
+                                  className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300"
                                 >
-                                  <TrashIcon className="h-5 w-5" />
-                                </button>
+                                  <TrashIcon className="h-4 w-4" />
+                                </Button>
                               </div>
                             </td>
                           </tr>
@@ -545,13 +552,13 @@ const TxAppAdmin = () => {
                       </tbody>
                     </table>
                   </div>
-                </div>
+                </Card>
               </div>
             )}
 
             {activeTab === 'vehicles' && (
               <div className="space-y-6">
-                <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+                <Card className="p-6">
                   <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                     <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Gestion des Véhicules</h2>
                     <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
@@ -565,18 +572,19 @@ const TxAppAdmin = () => {
                           className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                         />
                       </div>
-                      <button
+                      <Button
                         onClick={() => { setEditingVehicle(null); setShowVehicleModal(true); }}
-                        className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                        className="flex items-center gap-2"
+                        variant="primary"
                       >
                         <PlusIcon className="h-5 w-5" />
                         Nouveau véhicule
-                      </button>
+                      </Button>
                     </div>
                   </div>
-                </div>
+                </Card>
 
-                <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
+                <Card className="overflow-hidden">
                   <div className="overflow-x-auto">
                     <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
                       <thead className="bg-gray-50 dark:bg-gray-700">
@@ -599,12 +607,12 @@ const TxAppAdmin = () => {
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                               <div className="flex gap-2">
-                                <button onClick={() => handleEditVehicle(v)} className="text-blue-600 hover:text-blue-900 dark:text-blue-400" title="Modifier">
-                                  <PencilSquareIcon className="h-5 w-5" />
-                                </button>
-                                <button onClick={() => handleDeleteVehicle(v.id)} className="text-red-600 hover:text-red-900 dark:text-red-400" title="Supprimer">
-                                  <TrashIcon className="h-5 w-5" />
-                                </button>
+                                <Button onClick={() => handleEditVehicle(v)} variant="ghost" size="sm" title="Modifier">
+                                  <PencilSquareIcon className="h-4 w-4" />
+                                </Button>
+                                <Button onClick={() => handleDeleteVehicle(v.id)} variant="ghost" size="sm" title="Supprimer" className="text-red-600 hover:text-red-900 dark:text-red-400">
+                                  <TrashIcon className="h-4 w-4" />
+                                </Button>
                               </div>
                             </td>
                           </tr>
@@ -612,33 +620,35 @@ const TxAppAdmin = () => {
                       </tbody>
                     </table>
                   </div>
-                </div>
+                </Card>
               </div>
             )}
 
             {activeTab === 'shifts' && (
-              <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+              <Card className="p-6">
                 <div className="flex items-center justify-between gap-4 mb-4">
                   <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
                     Feuilles de Route
                   </h2>
                   <div className="flex items-center gap-3">
-                    <button
+                    <Button
                       onClick={() => setShowNewShiftModal(true)}
-                      className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-green-600 text-white hover:bg-green-700 transition-colors"
+                      variant="primary"
+                      className="inline-flex items-center gap-2"
                       title="Créer une nouvelle feuille de route"
                     >
                       <PlusIcon className="h-5 w-5" />
                       Nouvelle feuille
-                    </button>
-                    <button
+                    </Button>
+                    <Button
                       onClick={handleDownloadReport}
-                      className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition-colors"
+                      variant="outlined"
+                      className="inline-flex items-center gap-2"
                       title="Télécharger la feuille de route"
                     >
                       <PrinterIcon className="h-5 w-5" />
                       Télécharger
-                    </button>
+                    </Button>
                   </div>
                 </div>
                 <div className="overflow-x-auto">
@@ -677,12 +687,12 @@ const TxAppAdmin = () => {
                     </tbody>
                   </table>
                 </div>
-              </div>
+              </Card>
             )}
 
             {activeTab === 'courses' && (
               <div className="space-y-6">
-                <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+                <Card className="p-6">
                   <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                     <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Gestion des Courses</h2>
                     <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
@@ -705,18 +715,19 @@ const TxAppAdmin = () => {
                           <option key={opt.value} value={opt.value}>{opt.label}</option>
                         ))}
                       </select>
-                      <button
+                      <Button
                         onClick={handleAddCourse}
-                        className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                        variant="primary"
+                        className="flex items-center gap-2"
                       >
                         <PlusIcon className="h-5 w-5" />
                         Nouvelle course
-                      </button>
+                      </Button>
                     </div>
                   </div>
-                </div>
+                </Card>
 
-                <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
+                <Card className="overflow-hidden">
                   <div className="overflow-x-auto">
                     <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
                       <thead className="bg-gray-50 dark:bg-gray-700">
@@ -751,12 +762,12 @@ const TxAppAdmin = () => {
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                               <div className="flex gap-2">
-                                <button onClick={() => handleEditCourse(c)} className="text-blue-600 hover:text-blue-900 dark:text-blue-400" title="Modifier">
-                                  <PencilSquareIcon className="h-5 w-5" />
-                                </button>
-                                <button onClick={() => handleDeleteCourse(c.id)} className="text-red-600 hover:text-red-900 dark:text-red-400" title="Supprimer">
-                                  <TrashIcon className="h-5 w-5" />
-                                </button>
+                                <Button onClick={() => handleEditCourse(c)} variant="ghost" size="sm" title="Modifier">
+                                  <PencilSquareIcon className="h-4 w-4" />
+                                </Button>
+                                <Button onClick={() => handleDeleteCourse(c.id)} variant="ghost" size="sm" title="Supprimer" className="text-red-600 hover:text-red-900 dark:text-red-400">
+                                  <TrashIcon className="h-4 w-4" />
+                                </Button>
                               </div>
                             </td>
                           </tr>
@@ -764,29 +775,30 @@ const TxAppAdmin = () => {
                       </tbody>
                     </table>
                   </div>
-                </div>
+                </Card>
               </div>
             )}
 
             {activeTab === 'charges' && (
               <div className="space-y-6">
-                <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+                <Card className="p-6">
                   <div className="flex items-center justify-between gap-4">
                     <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Gestion des Charges</h2>
                     <div className="flex items-center gap-4">
                       <div className="text-sm text-gray-700 dark:text-gray-200">Total: <span className="font-semibold">{chargesTotal.toFixed(2)}€</span></div>
-                      <button
+                      <Button
                         onClick={handleAddCharge}
-                        className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                        variant="primary"
+                        className="flex items-center gap-2"
                       >
                         <PlusIcon className="h-5 w-5" />
                         Nouvelle charge
-                      </button>
+                      </Button>
                     </div>
                   </div>
-                </div>
+                </Card>
 
-                <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
+                <Card className="overflow-hidden">
                   <div className="overflow-x-auto">
                     <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
                       <thead className="bg-gray-50 dark:bg-gray-700">
@@ -809,12 +821,12 @@ const TxAppAdmin = () => {
                             <td className="px-6 py-4 whitespace-nowrap">{ch.mode_paiement}</td>
                             <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                               <div className="flex gap-2">
-                                <button onClick={() => handleEditCharge(ch)} className="text-blue-600 hover:text-blue-900 dark:text-blue-400" title="Modifier">
-                                  <PencilSquareIcon className="h-5 w-5" />
-                                </button>
-                                <button onClick={() => handleDeleteCharge(ch.id)} className="text-red-600 hover:text-red-900 dark:text-red-400" title="Supprimer">
-                                  <TrashIcon className="h-5 w-5" />
-                                </button>
+                                <Button onClick={() => handleEditCharge(ch)} variant="ghost" size="sm" title="Modifier">
+                                  <PencilSquareIcon className="h-4 w-4" />
+                                </Button>
+                                <Button onClick={() => handleDeleteCharge(ch.id)} variant="ghost" size="sm" title="Supprimer" className="text-red-600 hover:text-red-900 dark:text-red-400">
+                                  <TrashIcon className="h-4 w-4" />
+                                </Button>
                               </div>
                             </td>
                           </tr>
@@ -822,7 +834,7 @@ const TxAppAdmin = () => {
                       </tbody>
                     </table>
                   </div>
-                </div>
+                </Card>
               </div>
             )}
           </div>
@@ -874,3 +886,4 @@ const TxAppAdmin = () => {
 };
 
 export default TxAppAdmin;
+

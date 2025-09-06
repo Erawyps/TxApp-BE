@@ -1,5 +1,5 @@
 // Import Dependencies
-import { BanknotesIcon, TruckIcon, ChartBarIcon } from "@heroicons/react/24/outline";
+import { BanknotesIcon, TruckIcon, ChartBarIcon, MapIcon } from "@heroicons/react/24/outline";
 import PropTypes from "prop-types";
 
 // Local Imports
@@ -10,30 +10,37 @@ import { Card } from "components/ui";
 export function StatsCards({ totals }) {
   const stats = [
     {
-      label: "Recettes du jour",
+      label: "Chiffre d'affaires total",
       value: `${totals.recettes.toFixed(2)} €`,
       icon: BanknotesIcon,
-      color: "text-green-600 dark:text-green-400",
-      bg: "bg-green-100 dark:bg-green-900/20"
+      color: "text-gray-700 dark:text-gray-300", // Couleur neutre
+      bg: "bg-gray-100 dark:bg-gray-800"
     },
     {
-      label: "Courses effectuées",
+      label: "Nombre total de courses",
       value: totals.coursesCount,
       icon: TruckIcon,
-      color: "text-blue-600 dark:text-blue-400",
-      bg: "bg-blue-100 dark:bg-blue-900/20"
+      color: "text-gray-700 dark:text-gray-300", // Couleur neutre
+      bg: "bg-gray-100 dark:bg-gray-800"
     },
     {
-      label: "Moyenne / course",
-      value: `${totals.averagePerCourse.toFixed(2)} €`,
+      label: "Km parcourus",
+      value: `${(totals.totalKm || 0).toFixed(1)} km`,
+      icon: MapIcon,
+      color: "text-gray-700 dark:text-gray-300", // Couleur neutre
+      bg: "bg-gray-100 dark:bg-gray-800"
+    },
+    {
+      label: "Ratio (€/km)",
+      value: totals.totalKm > 0 ? `${(totals.recettes / totals.totalKm).toFixed(2)} €/km` : "0.00 €/km",
       icon: ChartBarIcon,
-      color: "text-purple-600 dark:text-purple-400",
-      bg: "bg-purple-100 dark:bg-purple-900/20"
+      color: "text-gray-700 dark:text-gray-300", // Couleur neutre
+      bg: "bg-gray-100 dark:bg-gray-800"
     }
   ];
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
       {stats.map((stat, index) => {
         const Icon = stat.icon;
         return (
@@ -46,7 +53,7 @@ export function StatsCards({ totals }) {
                 <p className="text-sm text-gray-600 dark:text-gray-400">
                   {stat.label}
                 </p>
-                <p className="text-2xl font-bold text-gray-900 dark:text-white">
+                <p className="text-lg font-bold text-gray-900 dark:text-white">
                   {stat.value}
                 </p>
               </div>
@@ -62,6 +69,7 @@ StatsCards.propTypes = {
   totals: PropTypes.shape({
     recettes: PropTypes.number.isRequired,
     coursesCount: PropTypes.number.isRequired,
-    averagePerCourse: PropTypes.number.isRequired
+    totalKm: PropTypes.number,
+    averagePerCourse: PropTypes.number
   }).isRequired
 };
