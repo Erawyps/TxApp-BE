@@ -41,7 +41,7 @@ const testEnvironmentVariables = () => {
     displayResult('JWT_SECRET sécurisé', false, 'Utilise encore une valeur faible');
     allPresent = false;
   } else if (process.env.JWT_SECRET) {
-    displayResult('JWT_SECRET sécurisé', true);
+    displayResult('JWT_SECRET s��curisé', true);
   }
 
   if (process.env.SESSION_SECRET && process.env.SESSION_SECRET.includes('your-super-secure')) {
@@ -112,19 +112,21 @@ const testSecurity = () => {
 };
 
 // Test de configuration des fichiers
-const testFileConfiguration = () => {
+const testFileConfiguration = async () => {
   console.log('\n📁 Vérification des fichiers de configuration...');
 
   try {
     const fs = await import('fs');
-    const path = await import('path');
 
     // Vérifier l'existence des fichiers critiques
     const criticalFiles = [
       'package.json',
       'prisma/schema.prisma',
       'wrangler.jsonc',
-      'src/api/server.js'
+      'src/api/server.js',
+      'src/configs/auth.config.js',
+      'src/services/auth.service.js',
+      'worker.js'
     ];
 
     let allExist = true;
@@ -138,6 +140,34 @@ const testFileConfiguration = () => {
     return allExist;
   } catch (error) {
     displayResult('Vérification des fichiers', false, error.message);
+    return false;
+  }
+};
+
+// Test de l'authentification
+const testAuthentication = () => {
+  console.log('\n🔐 Vérification de l\'authentification...');
+
+  try {
+    // Vérifier la configuration Auth
+    const authConfigExists = require('fs').existsSync('src/configs/auth.config.js');
+    displayResult('Configuration Auth', authConfigExists);
+
+    // Vérifier le service Auth
+    const authServiceExists = require('fs').existsSync('src/services/auth.service.js');
+    displayResult('Service Auth', authServiceExists);
+
+    // Vérifier les variables d'environnement JWT
+    const jwtSecret = process.env.JWT_SECRET;
+    displayResult('JWT Secret configuré', jwtSecret && jwtSecret.length > 30);
+
+    // Vérifier que le JWT secret n'est pas la valeur par défaut
+    const isSecureJWT = jwtSecret && !jwtSecret.includes('change') && !jwtSecret.includes('your-');
+    displayResult('JWT Secret sécurisé', isSecureJWT);
+
+    return authConfigExists && authServiceExists && jwtSecret && isSecureJWT;
+  } catch (error) {
+    displayResult('Vérification Auth', false, error.message);
     return false;
   }
 };
