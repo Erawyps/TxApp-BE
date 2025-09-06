@@ -2,18 +2,37 @@
 import { 
   PlusIcon, 
   PrinterIcon, 
-  ArrowUpTrayIcon, 
-  CalendarIcon 
+  CalendarIcon,
+  ShieldCheckIcon
 } from "@heroicons/react/24/outline";
 import PropTypes from "prop-types";
+import { useState } from "react";
 
 // Local Imports
-import { Card, Button } from "components/ui";
+import { Card, Button, Select } from "components/ui";
 import { StatsCards } from "./StatsCards";
 
 // ----------------------------------------------------------------------
 
-export function Dashboard({ driver, vehicle, totals, onNewCourse, onShowHistory, onPrintReport }) {
+export function Dashboard({
+  driver,
+  vehicle,
+  totals,
+  onNewCourse,
+  onShowHistory,
+  onPrintReport,
+  onShowControl,
+  hasActiveShift
+}) {
+  const [periodFilter, setPeriodFilter] = useState('today');
+
+  const periodOptions = [
+    { value: 'today', label: 'Jour courant' },
+    { value: 'yesterday', label: 'Dernier jour' },
+    { value: 'current_week', label: 'Semaine courante' },
+    { value: 'last_week', label: 'Dernière semaine' }
+  ];
+
   return (
     <div className="space-y-6">
       {/* Driver Info Card */}
@@ -21,7 +40,7 @@ export function Dashboard({ driver, vehicle, totals, onNewCourse, onShowHistory,
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold">
-              {driver.prenom} {driver.nom}
+              Bienvenue, {driver.prenom} {driver.nom}
             </h1>
             <p className="opacity-90">
               Badge: {driver.numero_badge} • {driver.type_contrat}
@@ -34,10 +53,26 @@ export function Dashboard({ driver, vehicle, totals, onNewCourse, onShowHistory,
         </div>
       </Card>
 
+      {/* Period Filter */}
+      <Card className="p-4">
+        <div className="flex items-center justify-between">
+          <h3 className="text-lg font-semibold text-gray-800 dark:text-dark-100">
+            Résumé de l&apos;activité
+          </h3>
+          <div className="w-48">
+            <Select
+              value={periodFilter}
+              onChange={setPeriodFilter}
+              options={periodOptions}
+            />
+          </div>
+        </div>
+      </Card>
+
       {/* Statistics Cards */}
       <StatsCards totals={totals} />
 
-      {/* Quick Actions - Modifié pour inclure historique et impression */}
+      {/* Quick Actions - Réorganisées selon les exigences */}
       <Card className="p-4">
         <h3 className="text-lg font-semibold mb-4 text-gray-800 dark:text-dark-100">
           Actions rapides
@@ -50,19 +85,10 @@ export function Dashboard({ driver, vehicle, totals, onNewCourse, onShowHistory,
           >
             <PlusIcon className="h-6 w-6" />
             <span className="text-xs text-center leading-tight">
-              Nouvelle course
+              {hasActiveShift ? "Nouvelle course" : "Nouvelle feuille"}
             </span>
           </Button>
-          <Button
-            variant="outlined"
-            className="h-20 flex-col space-x-0 space-y-1"
-            onClick={onShowHistory}
-          >
-            <CalendarIcon className="h-6 w-6" />
-            <span className="text-xs text-center leading-tight">
-              Historique
-            </span>
-          </Button>
+
           <Button
             variant="outlined"
             className="h-20 flex-col space-x-0 space-y-1"
@@ -73,14 +99,28 @@ export function Dashboard({ driver, vehicle, totals, onNewCourse, onShowHistory,
               Imprimer rapport
             </span>
           </Button>
+
+          {/* Bouton Contrôle déplacé à droite selon les exigences */}
           <Button
             variant="outlined"
             className="h-20 flex-col space-x-0 space-y-1"
-            onClick={() => console.log("Export data")}
+            onClick={onShowControl}
           >
-            <ArrowUpTrayIcon className="h-6 w-6" />
+            <ShieldCheckIcon className="h-6 w-6" />
             <span className="text-xs text-center leading-tight">
-              Exporter données
+              Contrôle
+            </span>
+          </Button>
+
+          {/* Historique renommé mais gardé pour compatibilité */}
+          <Button
+            variant="outlined"
+            className="h-20 flex-col space-x-0 space-y-1"
+            onClick={onShowHistory}
+          >
+            <CalendarIcon className="h-6 w-6" />
+            <span className="text-xs text-center leading-tight">
+              Historique
             </span>
           </Button>
         </div>
@@ -102,9 +142,13 @@ Dashboard.propTypes = {
   totals: PropTypes.shape({
     recettes: PropTypes.number.isRequired,
     coursesCount: PropTypes.number.isRequired,
-    averagePerCourse: PropTypes.number.isRequired
+    averagePerCourse: PropTypes.number.isRequired,
+    totalKm: PropTypes.number,
+    ratioEuroKm: PropTypes.number
   }).isRequired,
   onNewCourse: PropTypes.func.isRequired,
   onShowHistory: PropTypes.func.isRequired,
-  onPrintReport: PropTypes.func.isRequired
+  onPrintReport: PropTypes.func.isRequired,
+  onShowControl: PropTypes.func.isRequired,
+  hasActiveShift: PropTypes.bool
 };

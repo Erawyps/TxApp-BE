@@ -26,6 +26,7 @@ import { FinancialSummary } from "./components/FinancialSummary";
 import { ExpenseForm } from "./components/ExpenseForm";
 import { ExternalCourseForm } from "./components/ExternalCourseForm";
 import { HistoryModal } from "./components/HistoryModal";
+import { ControlModal } from "./components/ControlModal";
 import { mockData } from "./data";
 import { fetchCourses, upsertCourse, deleteCourse as removeCourse } from "services/courses";
 
@@ -33,9 +34,9 @@ import { fetchCourses, upsertCourse, deleteCourse as removeCourse } from "servic
 
 const tabs = [
   { key: 'dashboard', label: 'Tableau de bord', icon: ChartBarIcon },
-  { key: 'shift', label: 'Début Shift', icon: ClockIcon },
+  { key: 'shift', label: 'Nouvelle feuille', icon: ClockIcon },
   { key: 'courses', label: 'Courses', icon: TruckIcon },
-  { key: 'end', label: 'Fin Shift', icon: CheckIcon }
+  { key: 'end', label: 'Fin de feuille', icon: CheckIcon }
 ];
 
 export default function TxApp() {
@@ -52,35 +53,49 @@ export default function TxApp() {
   const [showExpenseModal, setShowExpenseModal] = useState(false);
   const [showExternalCourseModal, setShowExternalCourseModal] = useState(false);
   const [showHistoryModal, setShowHistoryModal] = useState(false);
-  
+  const [showControlModal, setShowControlModal] = useState(false);
+
   const [editingCourse, setEditingCourse] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
 
+  // Vérifier s'il y a un shift actif
+  const hasActiveShift = Boolean(shiftData && !shiftData.heure_fin);
 
-const handleDownloadReport = () => {
-  try {
-    const fileName = generateAndDownloadReport(
-      shiftData, 
-      courses, 
-      mockData.driver, 
-      mockData.vehicles[0]
-    );
-    toast.success(`Feuille de route téléchargée : ${fileName}`);
-  } catch (error) {
-    console.error('Erreur lors du téléchargement:', error);
-    toast.error('Erreur lors du téléchargement de la feuille de route');
-  }
-};
+  const handleDownloadReport = () => {
+    try {
+      const fileName = generateAndDownloadReport(
+        shiftData,
+        courses,
+        mockData.driver,
+        mockData.vehicles[0]
+      );
+      toast.success(`Feuille de route téléchargée : ${fileName}`);
+    } catch (error) {
+      console.error('Erreur lors du téléchargement:', error);
+      toast.error('Erreur lors du téléchargement de la feuille de route');
+    }
+  };
 
-  // Calculs des totaux - Seules les courses directes comptent pour le chauffeur
-  const totals = useMemo(() => ({
-    recettes: courses.reduce((sum, course) => sum + (course.sommes_percues || 0), 0),
-    coursesCount: courses.length,
-    averagePerCourse: courses.length > 0 
-      ? courses.reduce((sum, course) => sum + (course.sommes_percues || 0), 0) / courses.length 
-      : 0
-  }), [courses]);
+  // Calculs des totaux - Ajout du calcul des km et ratio €/km
+  const totals = useMemo(() => {
+    const recettes = courses.reduce((sum, course) => sum + (course.sommes_percues || 0), 0);
+    const coursesCount = courses.length;
+
+    // Calcul des km parcourus basé sur les index de départ/arrivée
+    const totalKm = courses.reduce((sum, course) => {
+      const kmCourse = (course.index_debarquement || 0) - (course.index_embarquement || 0);
+      return sum + Math.max(0, kmCourse); // S'assurer que les km sont positifs
+    }, 0);
+
+    return {
+      recettes,
+      coursesCount,
+      totalKm,
+      averagePerCourse: coursesCount > 0 ? recettes / coursesCount : 0,
+      ratioEuroKm: totalKm > 0 ? recettes / totalKm : 0
+    };
+  }, [courses]);
 
   // Filtrage des courses
   const filteredCourses = useMemo(() => {
@@ -113,6 +128,12 @@ const handleDownloadReport = () => {
 
   // Handlers
   const handleNewCourse = () => {
+    if (!hasActiveShift) {
+      // Si pas de shift actif, rediriger vers la création de feuille
+      setActiveTab('shift');
+      toast.info("Veuillez d'abord créer une nouvelle feuille de route");
+      return;
+    }
     setEditingCourse(null);
     setShowCourseModal(true);
   };
@@ -158,21 +179,26 @@ const handleDownloadReport = () => {
   const handleStartShift = (shiftFormData) => {
     setShiftData(shiftFormData);
     setActiveTab('courses');
+    toast.success("Nouvelle feuille de route créée");
   };
 
   const handleEndShift = (endData) => {
     const completeShiftData = {
       ...shiftData,
-      ...endData
+      ...endData,
+      heure_fin: new Date().toLocaleTimeString('fr-FR', {
+        hour: '2-digit',
+        minute: '2-digit'
+      })
     };
-    console.log('Complete shift data:', completeShiftData);
-    // Mettre à jour shiftData avec les informations de fin
     setShiftData(completeShiftData);
-    // Optionnel: afficher un message de succès ou rediriger
+    toast.success("Feuille de route terminée");
+    // Optionnel: revenir au dashboard après la fin du shift
+    setActiveTab('dashboard');
   };
 
-  const handleShowVehicleInfo = () => {
-    setShowVehicleModal(true);
+  const handleShowControl = () => {
+    setShowControlModal(true);
   };
 
   const handleSubmitExpense = (expenseData) => {
@@ -226,6 +252,8 @@ const handleDownloadReport = () => {
                 onNewCourse={handleNewCourse}
                 onShowHistory={() => setShowHistoryModal(true)}
                 onPrintReport={handleDownloadReport}
+                onShowControl={handleShowControl}
+                hasActiveShift={hasActiveShift}
               />
             )}
 
@@ -233,7 +261,7 @@ const handleDownloadReport = () => {
               <ShiftForm
                 vehicles={mockData.vehicles}
                 onStartShift={handleStartShift}
-                onShowVehicleInfo={handleShowVehicleInfo}
+                onShowVehicleInfo={() => setShowVehicleModal(true)}
               />
             )}
 
@@ -488,6 +516,16 @@ const handleDownloadReport = () => {
           isOpen={showVehicleModal}
           onClose={() => setShowVehicleModal(false)}
           vehicle={mockData.vehicles[0]}
+        />
+
+        {/* Control Modal */}
+        <ControlModal
+          isOpen={showControlModal}
+          onClose={() => setShowControlModal(false)}
+          driver={mockData.driver}
+          vehicle={mockData.vehicles[0]}
+          shiftData={shiftData}
+          courses={courses}
         />
 
         {/* Mobile Bottom Action */}
