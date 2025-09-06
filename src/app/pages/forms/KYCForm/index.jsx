@@ -300,8 +300,9 @@ const TxAppAdmin = () => {
 
   return (
     <Page title="TxApp - Administration">
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+      <div className="min-h-screen bg-gray-50 dark:bg-dark-900">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+          {/* En-tête - exactement comme new-post-form */}
           <div className="mb-6">
             <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
               🚕 TxApp - Administration
@@ -311,29 +312,35 @@ const TxAppAdmin = () => {
             </p>
           </div>
 
-          <div className="mb-6 border-b border-gray-200 dark:border-gray-700">
-            <nav className="flex space-x-8 overflow-x-auto">
-              {tabs.map(tab => {
-                const Icon = tab.icon;
-                return (
-                  <button
-                    key={tab.key}
-                    onClick={() => setActiveTab(tab.key)}
-                    className={`flex items-center gap-2 py-2 px-1 border-b-2 font-medium text-sm whitespace-nowrap transition-colors ${
-                      activeTab === tab.key
-                        ? 'border-blue-500 text-blue-600 dark:text-blue-400'
-                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400'
-                    }`}
-                  >
-                    <Icon className="h-5 w-5" />
-                    {tab.label}
-                  </button>
-                );
-              })}
-            </nav>
+          {/* Navigation Tabs - exactement comme new-post-form */}
+          <div className="mb-6">
+            <div className="border-b border-gray-200 dark:border-dark-500">
+              <nav className="flex justify-center">
+                <div className="flex space-x-8 md:space-x-16">
+                  {tabs.map(tab => {
+                    const Icon = tab.icon;
+                    return (
+                      <button
+                        key={tab.key}
+                        onClick={() => setActiveTab(tab.key)}
+                        className={`flex items-center gap-2 py-2 px-1 border-b-2 font-medium text-sm whitespace-nowrap transition-colors ${
+                          activeTab === tab.key
+                            ? 'border-blue-500 text-blue-600 dark:text-blue-400'
+                            : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'
+                        }`}
+                      >
+                        <Icon className="h-5 w-5" />
+                        {tab.label}
+                      </button>
+                    );
+                  })}
+                </div>
+              </nav>
+            </div>
           </div>
 
-          <div className="transition-all duration-300">
+          {/* Tab Content - exactement comme new-post-form */}
+          <div className="transition-content">
             {activeTab === 'dashboard' && (
               <div className="space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
