@@ -16,8 +16,8 @@ export const defaultTheme = {
     isMonochrome: false,  
     // If true, the theme uses a monochrome color palette  
 
-    themeLayout: "main-layout",  
-    // Options: "main-layout", "sideblock"  
+    themeLayout: "sideblock",
+    // Options: "main-layout", "sideblock"
     cardSkin: "bordered",  
     // Options: "bordered", "shadow-sm"  
 
@@ -49,4 +49,4 @@ export const defaultTheme = {
         position: "bottom-right",  
         visibleToasts: 4,  
     },  
-};  
+};
