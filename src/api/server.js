@@ -64,7 +64,7 @@ app.use('/api/', limiter);
 const corsOptions = {
   origin: process.env.NODE_ENV === 'production'
     ? [process.env.CORS_ORIGIN, 'https://www.txapp.be']
-    : ['http://localhost:5173', 'http://127.0.0.1:5173', 'http://localhost:3000'],
+    : ['http://localhost:5173', 'http://127.0.0.1:5173', 'http://localhost:5174', 'http://127.0.0.1:5174', 'http://localhost:3000'],
   credentials: true,
   optionsSuccessStatus: 200,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
@@ -171,6 +171,102 @@ router.use(async (req, res, next) => {
   }
 });
 
+// Fonction pour calculer les métriques d'un chauffeur
+async function calculateChauffeurMetrics(chauffeur) {
+  try {
+    const feuillesRoute = chauffeur.feuille_route || [];
+
+    // Calculer les métriques
+    let totalCourses = 0;
+    let totalChiffreAffaires = 0;
+    let totalTaximetre = 0;
+    let totalKmParcourus = 0;
+    let totalDepenses = 0;
+    let courses = [];
+
+    feuillesRoute.forEach(feuille => {
+      // Courses de cette feuille de route
+      if (feuille.course && Array.isArray(feuille.course)) {
+        feuille.course.forEach(course => {
+          totalCourses++;
+          totalChiffreAffaires += parseFloat(course.somme_percue || 0);
+          totalTaximetre += parseFloat(course.prix_taximetre || 0);
+          totalKmParcourus += parseInt(course.distance_km || 0);
+
+          courses.push({
+            id: course.id,
+            date: course.heure_embarquement,
+            depart: course.lieu_embarquement,
+            arrivee: course.lieu_debarquement,
+            index_depart: course.index_depart, // Ajouter l'index de départ
+            index_arrivee: course.index_arrivee, // Ajouter l'index d'arrivée
+            prix_taximetre: parseFloat(course.prix_taximetre || 0),
+            somme_percue: parseFloat(course.somme_percue || 0),
+            distance_km: parseInt(course.distance_km || 0),
+            ratio_euro_km: parseFloat(course.ratio_euro_km || 0),
+            client: course.client ? `${course.client.prenom} ${course.client.nom}` : null,
+            mode_paiement: course.mode_paiement ? course.mode_paiement.libelle : null
+          });
+        });
+      }
+
+      // Charges de cette feuille de route
+      if (feuille.charge && Array.isArray(feuille.charge)) {
+        feuille.charge.forEach(charge => {
+          totalDepenses += parseFloat(charge.montant || 0);
+        });
+      }
+
+      // Km parcourus de la feuille de route (si pas déjà compté dans les courses)
+      if (feuille.km_parcourus && totalKmParcourus === 0) {
+        totalKmParcourus = parseInt(feuille.km_parcourus);
+      }
+    });
+
+    // Calculs supplémentaires
+    const differenceRecettes = totalChiffreAffaires - totalTaximetre;
+    const beneficeNet = totalChiffreAffaires - totalDepenses;
+    const ratioEuroKm = totalKmParcourus > 0 ? totalChiffreAffaires / totalKmParcourus : 0;
+
+    // Trouver l'index km début de la feuille active
+    const feuilleActive = feuillesRoute.find(f => f.statut === 'En cours');
+    const indexKmDebut = feuilleActive ? feuilleActive.km_debut : null;
+
+    return {
+      chiffre_affaires_total: totalChiffreAffaires,
+      nombre_total_courses: totalCourses,
+      km_parcourus: totalKmParcourus,
+      ratio_euro_km: ratioEuroKm,
+      index_km_debut: indexKmDebut,
+      verification_taximetre: totalTaximetre,
+      total_taximetre: totalTaximetre,
+      total_feuille_route: totalChiffreAffaires,
+      difference_total_recettes: differenceRecettes,
+      total_depenses: totalDepenses,
+      benefice_net: beneficeNet,
+      nb_courses: totalCourses,
+      courses: courses
+    };
+  } catch (error) {
+    console.error('Erreur lors du calcul des métriques:', error);
+    return {
+      chiffre_affaires_total: 0,
+      nombre_total_courses: 0,
+      km_parcourus: 0,
+      ratio_euro_km: 0,
+      index_km_debut: null,
+      verification_taximetre: 0,
+      total_taximetre: 0,
+      total_feuille_route: 0,
+      difference_total_recettes: 0,
+      total_depenses: 0,
+      benefice_net: 0,
+      nb_courses: 0,
+      courses: []
+    };
+  }
+}
+
 // Routes pour chauffeurs avec pagination et filtrage
 router.get('/chauffeurs', async (req, res) => {
   try {
@@ -188,7 +284,7 @@ router.get('/chauffeurs', async (req, res) => {
       })
     };
 
-    const [chauffeurs, total] = await Promise.all([
+    const [chauffeursBase, total] = await Promise.all([
       prisma.chauffeur.findMany({
         where,
         include: {
@@ -201,7 +297,37 @@ router.get('/chauffeurs', async (req, res) => {
               email: true
             }
           },
-          regle_salaire: true
+          regle_salaire: true,
+          feuille_route: {
+            include: {
+              vehicule: {
+                select: {
+                  id: true,
+                  plaque_immatriculation: true,
+                  marque: true,
+                  modele: true,
+                  etat: true
+                }
+              },
+              course: {
+                include: {
+                  mode_paiement: true,
+                  client: {
+                    select: {
+                      id: true,
+                      nom: true,
+                      prenom: true
+                    }
+                  }
+                }
+              },
+              charge: {
+                include: {
+                  mode_paiement: true
+                }
+              }
+            }
+          }
         },
         orderBy: { numero_badge: 'asc' },
         skip,
@@ -209,6 +335,17 @@ router.get('/chauffeurs', async (req, res) => {
       }),
       prisma.chauffeur.count({ where })
     ]);
+
+    // Calculer les métriques pour chaque chauffeur
+    const chauffeurs = await Promise.all(
+      chauffeursBase.map(async (chauffeur) => {
+        const metrics = await calculateChauffeurMetrics(chauffeur);
+        return {
+          ...chauffeur,
+          metrics: metrics
+        };
+      })
+    );
 
     res.json({
       data: chauffeurs,
@@ -280,6 +417,73 @@ router.get('/vehicules/:id', async (req, res) => {
   }
 });
 
+// Routes pour règles de salaire
+router.get('/regles-salaire', async (req, res) => {
+  try {
+    const { page = 1, limit = 50, search, actif = 'true' } = req.query;
+    const skip = (parseInt(page) - 1) * parseInt(limit);
+
+    const where = {
+      actif: actif === 'true',
+      ...(search && {
+        OR: [
+          { nom: { contains: search, mode: 'insensitive' } },
+          { description: { contains: search, mode: 'insensitive' } },
+          { type_regle: { contains: search, mode: 'insensitive' } }
+        ]
+      })
+    };
+
+    const [reglesSalaire, total] = await Promise.all([
+      prisma.regle_salaire.findMany({
+        where,
+        orderBy: { nom: 'asc' },
+        skip,
+        take: parseInt(limit)
+      }),
+      prisma.regle_salaire.count({ where })
+    ]);
+
+    res.json({
+      data: reglesSalaire,
+      pagination: {
+        page: parseInt(page),
+        limit: parseInt(limit),
+        total,
+        pages: Math.ceil(total / parseInt(limit))
+      }
+    });
+  } catch (error) {
+    console.error('Erreur lors de la récupération des règles de salaire:', error);
+    res.status(500).json({
+      error: 'Erreur lors de la récupération des règles de salaire',
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
+// Récupérer une règle de salaire par ID
+router.get('/regles-salaire/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const regleSalaire = await prisma.regle_salaire.findUnique({
+      where: { id: parseInt(id) }
+    });
+
+    if (!regleSalaire) {
+      return res.status(404).json({ error: 'Règle de salaire non trouvée' });
+    }
+
+    res.json(regleSalaire);
+  } catch (error) {
+    console.error('Erreur lors de la récupération de la règle de salaire:', error);
+    res.status(500).json({
+      error: 'Erreur lors de la récupération de la règle de salaire',
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
 // Mettre à jour un véhicule
 router.put('/vehicules/:id', async (req, res) => {
   try {
@@ -329,6 +533,27 @@ router.get('/modes-paiement', async (req, res) => {
 });
 
 // Routes pour feuilles de route
+router.get('/feuilles-route', async (req, res) => {
+  try {
+    const { chauffeur_id } = req.query;
+    const where = chauffeur_id ? { chauffeur_id: parseInt(chauffeur_id) } : {};
+
+    const feuillesRoute = await prisma.feuille_route.findMany({
+      where,
+      include: {
+        chauffeur: { include: { utilisateur: true } },
+        vehicule: true,
+        course: { include: { client: true, mode_paiement: true } }
+      },
+      orderBy: { created_at: 'desc' }
+    });
+    res.json({ data: feuillesRoute });
+  } catch (error) {
+    console.error('Erreur lors de la récupération des feuilles de route:', error);
+    res.status(500).json({ error: 'Erreur serveur' });
+  }
+});
+
 router.get('/feuilles-route/active/:chauffeurId', async (req, res) => {
   try {
     const { chauffeurId } = req.params;

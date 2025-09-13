@@ -2,7 +2,7 @@ import { PrismaClient } from '@prisma/client';
 
 // Configuration de pool de connexions pour la production
 const getDatabaseConfig = () => {
-  const isProduction = process.env.NODE_ENV === 'production';
+  const isProduction = typeof process !== 'undefined' && process?.env?.NODE_ENV === 'production' && (typeof window === 'undefined' || typeof window === 'object' && window === null);
 
   return {
     // Configuration Prisma optimisée pour la production
@@ -13,16 +13,9 @@ const getDatabaseConfig = () => {
     // Configuration de timeout et retry
     datasources: {
       db: {
-        url: process.env.DATABASE_URL
+        url: (typeof process !== 'undefined' && process?.env?.DATABASE_URL) ? process.env.DATABASE_URL : ''
       }
-    },
-
-    // Configuration d'optimisation pour la production
-    ...(isProduction && {
-      errorFormat: 'minimal',
-      // Configuration de pool pour Supabase/PostgreSQL
-      datasourceUrl: process.env.DATABASE_URL + '&connection_limit=10&pool_timeout=20'
-    })
+    }
   };
 };
 

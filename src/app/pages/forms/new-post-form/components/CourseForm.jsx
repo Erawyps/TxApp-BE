@@ -16,7 +16,8 @@ export function CourseForm({
   editingCourse, 
   coursesCount, 
   onSubmit, 
-  onCancel 
+  onCancel,
+  reglesSalaire = []
 }) {
   const initialData = editingCourse || {
     numero_ordre: coursesCount + 1,
@@ -31,7 +32,7 @@ export function CourseForm({
     sommes_percues: '',
     mode_paiement: 'CASH',
     client: '',
-    remuneration_chauffeur: 'Indépendant',
+    remuneration_chauffeur: '',
     notes: ''
   };
 
@@ -48,6 +49,14 @@ export function CourseForm({
 
   const watchedData = watch();
   const requiresClient = watchedData.mode_paiement && watchedData.mode_paiement.startsWith('F-');
+
+  // Utiliser les règles de salaire de la base de données ou les types par défaut
+  const baseRemunerationOptions = reglesSalaire.length > 0 ? reglesSalaire : contractTypes;
+  const remunerationOptions = baseRemunerationOptions.length > 0
+    ? [{ value: '', label: 'Sélectionner une rémunération' }, ...baseRemunerationOptions]
+    : [{ value: '', label: 'Chargement des rémunérations...' }];
+
+  console.log('CourseForm - Regles salaire:', reglesSalaire?.length || 0, 'options:', remunerationOptions.length);
 
   const handleFormSubmit = (data) => {
     const courseData = {
@@ -184,9 +193,9 @@ export function CourseForm({
             control={control}
             render={({ field }) => (
               <Listbox
-                data={contractTypes}
-                value={contractTypes.find(c => c.value === field.value) || contractTypes[0]}
-                onChange={(val) => field.onChange(val.value)}
+                data={remunerationOptions}
+                value={field.value ? remunerationOptions.find(c => c.value === field.value) || null : null}
+                onChange={(val) => field.onChange(val?.value)}
                 label="Rémunération chauffeur"
                 displayField="label"
                 error={errors?.remuneration_chauffeur?.message}
@@ -227,5 +236,6 @@ CourseForm.propTypes = {
   editingCourse: PropTypes.object,
   coursesCount: PropTypes.number.isRequired,
   onSubmit: PropTypes.func.isRequired,
-  onCancel: PropTypes.func.isRequired
+  onCancel: PropTypes.func.isRequired,
+  reglesSalaire: PropTypes.array
 };

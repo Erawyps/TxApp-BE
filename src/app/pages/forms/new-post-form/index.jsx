@@ -29,13 +29,14 @@ import { HistoryModal } from "./components/HistoryModal";
 import { ControlModal } from "./components/ControlModal";
 
 // Services
-import { fetchCourses, upsertCourse, deleteCourse as removeCourse } from "services/courses";
+import { upsertCourse, deleteCourse as removeCourse } from "services/courses";
 import { createFeuilleRoute, endFeuilleRoute, getActiveFeuilleRoute } from "services/feuillesRoute";
 import { getChauffeurs } from "services/chauffeurs";
 import { getVehicules } from "services/vehicules";
 import { getClients } from "services/clients";
 import { getModesPaiement } from "services/modesPaiement";
 import { getCharges, createCharge } from "services/charges";
+import { getReglesSalaireForDropdown } from "services/reglesSalaire";
 
 // ----------------------------------------------------------------------
 
@@ -57,6 +58,7 @@ export default function TxApp() {
   // Données de référence
   const [vehicules, setVehicules] = useState([]);
   const [currentChauffeur, setCurrentChauffeur] = useState(null);
+  const [reglesSalaire, setReglesSalaire] = useState([]);
 
   // Modal states
   const [showCourseModal, setShowCourseModal] = useState(false);
@@ -75,46 +77,253 @@ export default function TxApp() {
   // Vérifier s'il y a un shift actif
   const hasActiveShift = Boolean(currentFeuilleRoute && currentFeuilleRoute.statut === 'En cours');
 
+  // Debug: Log des courses
+  useEffect(() => {
+    console.log('Courses state updated:', courses.length, 'courses');
+    if (courses.length > 0) {
+      console.log('Sample course:', courses[0]);
+    }
+  }, [courses]);
+
   // Chargement initial des données
   useEffect(() => {
+    console.log('🚀 loadInitialData - Démarrage du chargement des données');
+
     const loadInitialData = async () => {
       try {
+        console.log('🔄 loadInitialData - Début du chargement');
         setLoading(true);
 
-        // Charger les données de référence avec gestion d'erreur
-        const [chauffeursList, vehiculesList] = await Promise.all([
-          getChauffeurs().catch(err => {
-            console.error('Erreur chargement chauffeurs:', err);
-            return [];
-          }),
-          getVehicules().catch(err => {
-            console.error('Erreur chargement véhicules:', err);
-            return [];
-          }),
-          getClients().catch(err => {
-            console.error('Erreur chargement clients:', err);
-            return [];
-          }),
-          getModesPaiement().catch(err => {
-            console.error('Erreur chargement modes paiement:', err);
-            return [];
-          })
-        ]);
+        // Charger les données de référence avec gestion d'erreur améliorée
+        console.log('🔄 Chargement des données initiales...');
+
+        let chauffeursList = [];
+        let vehiculesList = [];
+        let clientsList = [];
+        let modesList = [];
+        let reglesSalaireList = [];
+
+        try {
+          console.log('📡 Tentative de récupération des chauffeurs...');
+          const chauffeursResponse = await getChauffeurs().catch(err => {
+            console.error('❌ Erreur API chauffeurs:', err);
+            console.error('Détails de l\'erreur:', {
+              message: err.message,
+              status: err.status,
+              stack: err.stack
+            });
+            return { data: [] };
+          });
+
+          chauffeursList = chauffeursResponse?.data || [];
+          console.log('✅ Chauffeurs récupérés:', chauffeursList.length);
+
+        } catch (apiError) {
+          console.error('💥 Erreur critique API chauffeurs:', apiError);
+          chauffeursList = [];
+        }
+
+        // Charger les autres données même si les chauffeurs échouent
+        try {
+          const [vehiculesRes, clientsRes, modesRes, reglesRes] = await Promise.all([
+            getVehicules().catch(err => {
+              console.error('❌ Erreur véhicules:', err);
+              return [];
+            }),
+            getClients().catch(err => {
+              console.error('❌ Erreur clients:', err);
+              return [];
+            }),
+            getModesPaiement().catch(err => {
+              console.error('❌ Erreur modes paiement:', err);
+              return [];
+            }),
+            getReglesSalaireForDropdown().catch(err => {
+              console.error('❌ Erreur règles salaire:', err);
+              return [];
+            })
+          ]);
+
+          vehiculesList = vehiculesRes || [];
+          clientsList = clientsRes || [];
+          modesList = modesRes || [];
+          reglesSalaireList = reglesRes || [];
+
+        } catch (otherError) {
+          console.error('💥 Erreur chargement autres données:', otherError);
+        }
+
+        console.log('📊 Données chargées:', {
+          chauffeurs: chauffeursList.length,
+          vehicules: vehiculesList.length,
+          clients: clientsList.length,
+          modes: modesList.length
+        });
+
+        // Vérification finale des données
+        if (chauffeursList.length === 0) {
+          console.warn('⚠️ Aucune donnée chauffeur reçue de l\'API');
+          console.log('Tentative de récupération directe depuis l\'API...');
+
+          // Tentative de récupération directe pour diagnostiquer
+          try {
+            const directResponse = await fetch('http://localhost:3001/api/chauffeurs', {
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              credentials: 'include'
+            });
+
+            if (directResponse.ok) {
+              const directData = await directResponse.json();
+              console.log('✅ Récupération directe réussie:', directData.data?.length || 0, 'chauffeurs');
+              if (directData.data && directData.data.length > 0) {
+                chauffeursList = directData.data;
+                console.log('🔄 Utilisation des données de récupération directe');
+              }
+            } else {
+              console.error('❌ Échec récupération directe:', directResponse.status);
+            }
+          } catch (directError) {
+            console.error('💥 Erreur récupération directe:', directError);
+          }
+        }
 
         setVehicules(vehiculesList);
+        setReglesSalaire(reglesSalaireList);
 
         // Vérifier si on a des chauffeurs et les données utilisateur
-        if (chauffeursList.length > 0) {
-          const chauffeur = chauffeursList[0];
+        console.log('🔍 Vérification finale des chauffeurs...');
+        console.log('Liste brute des chauffeurs:', chauffeursList);
+
+        // Filtrer les chauffeurs valides (avec données utilisateur)
+        const validChauffeurs = chauffeursList.filter(ch =>
+          ch && ch.utilisateur && ch.utilisateur.nom && ch.utilisateur.prenom
+        );
+
+        console.log(`✅ Chauffeurs valides: ${validChauffeurs.length}/${chauffeursList.length}`);
+
+        if (validChauffeurs.length > 0) {
+          console.log('✅ Chauffeurs trouvés:', validChauffeurs.length);
+
+          // Afficher tous les chauffeurs valides disponibles
+          validChauffeurs.forEach((ch, index) => {
+            console.log(`Chauffeur ${index + 1}:`, {
+              id: ch.id,
+              nom: ch.utilisateur?.nom,
+              prenom: ch.utilisateur?.prenom,
+              actif: ch.actif,
+              courses: ch.metrics?.courses?.length || 0
+            });
+          });
+
+          // Chercher spécifiquement François-José Dubois
+          let chauffeur = validChauffeurs.find(ch =>
+            ch.utilisateur.prenom === 'François-José' &&
+            ch.utilisateur.nom === 'Dubois'
+          );
+
+          console.log('Recherche Dubois par nom complet:', chauffeur ? '✅ Trouvé' : '❌ Non trouvé');
+
+          // Si pas trouvé, chercher par prénom seulement
+          if (!chauffeur) {
+            chauffeur = validChauffeurs.find(ch =>
+              ch.utilisateur.prenom === 'François-José'
+            );
+            console.log('Recherche Dubois par prénom seulement:', chauffeur ? '✅ Trouvé' : '❌ Non trouvé');
+          }
+
+          // Si toujours pas trouvé, prendre le premier chauffeur actif
+          if (!chauffeur) {
+            chauffeur = validChauffeurs.find(ch => ch.actif);
+            console.log('Recherche premier chauffeur actif:', chauffeur ? '✅ Trouvé' : '❌ Non trouvé');
+          }
+
+          // Si toujours pas trouvé, prendre le premier de la liste
+          if (!chauffeur) {
+            chauffeur = validChauffeurs[0];
+            console.log('Prendre le premier chauffeur:', chauffeur ? '✅ Trouvé' : '❌ Non trouvé');
+          }
+
+          console.log('Chauffeurs disponibles:', chauffeursList.map(c => ({
+            id: c.id,
+            nom: c.utilisateur?.nom,
+            prenom: c.utilisateur?.prenom,
+            actif: c.actif
+          })));
+          console.log('Chauffeur sélectionné:', chauffeur?.utilisateur?.prenom, chauffeur?.utilisateur?.nom);
+          console.log('Métriques du chauffeur:', chauffeur?.metrics);
 
           // Vérifier que le chauffeur a des données utilisateur valides
           if (chauffeur && chauffeur.utilisateur) {
+            console.log('🎯 Chauffeur sélectionné:', {
+              id: chauffeur.id,
+              nom: chauffeur.utilisateur?.nom,
+              prenom: chauffeur.utilisateur?.prenom,
+              actif: chauffeur.actif,
+              courses_count: chauffeur.metrics?.courses?.length || 0
+            });
+
             setCurrentChauffeur(chauffeur);
+
+            // Charger les courses depuis les métriques du chauffeur (toutes ses courses)
+            if (chauffeur.metrics && chauffeur.metrics.courses) {
+              console.log('📋 Chargement des courses depuis métriques...');
+
+              // Transformer les courses des métriques pour correspondre au format attendu
+              const chauffeurCourses = chauffeur.metrics.courses.map((course, index) => ({
+                id: course.id,
+                numero_ordre: index + 1, // Numéro séquentiel basé sur l'index
+                index_embarquement: course.index_depart || 0,
+                index_debarquement: course.index_arrivee || 0,
+                lieu_embarquement: course.depart || 'Point de départ non spécifié',
+                lieu_debarquement: course.arrivee || 'Point d\'arrivée non spécifié',
+                heure_embarquement: course.date ? new Date(course.date).toLocaleTimeString('fr-FR', {
+                  hour: '2-digit',
+                  minute: '2-digit'
+                }) : '00:00',
+                heure_debarquement: course.date ? new Date(course.date).toLocaleTimeString('fr-FR', {
+                  hour: '2-digit',
+                  minute: '2-digit'
+                }) : '00:00',
+                prix_taximetre: parseFloat(course.prix_taximetre) || 0,
+                sommes_percues: parseFloat(course.somme_percue) || 0,
+                mode_paiement: course.mode_paiement || 'CASH',
+                client: course.client || '',
+                distance_km: parseInt(course.distance_km) || 0,
+                ratio_euro_km: parseFloat(course.ratio_euro_km) || 0,
+                status: 'completed',
+                notes: `Course du ${new Date(course.date).toLocaleDateString('fr-FR')} - ${course.depart} → ${course.arrivee}`
+              }));
+              setCourses(chauffeurCourses);
+              console.log('✅ Courses transformées:', chauffeurCourses.length);
+              console.log('📋 Détails des courses:', chauffeurCourses.map(c => ({
+                id: c.id,
+                numero: c.numero_ordre,
+                trajet: `${c.lieu_embarquement} → ${c.lieu_debarquement}`,
+                index: `${c.index_embarquement} → ${c.index_debarquement}`,
+                montant: `${c.prix_taximetre}€ (${c.sommes_percues}€ perçus)`,
+                distance: `${c.distance_km} km`
+              })));
+
+              // Vérifier que les courses ont des données valides
+              const validCourses = chauffeurCourses.filter(c =>
+                c.index_embarquement !== undefined &&
+                c.index_debarquement !== undefined &&
+                c.lieu_embarquement &&
+                c.lieu_debarquement
+              );
+              console.log('Courses valides:', validCourses.length, 'sur', chauffeurCourses.length);
+
+              // Mettre à jour filteredCourses immédiatement
+              setSearchTerm('');
+            }
 
             // Vérifier s'il y a une feuille de route active
             try {
               const activeSheet = await getActiveFeuilleRoute(chauffeur.id);
               if (activeSheet) {
+                console.log('Feuille de route active trouvée:', activeSheet.id);
                 setCurrentFeuilleRoute(activeSheet);
                 setShiftData({
                   id: activeSheet.id,
@@ -133,11 +342,7 @@ export default function TxApp() {
                   notes: activeSheet.notes
                 });
 
-                // Charger les courses de cette feuille de route
-                const coursesList = await fetchCourses(activeSheet.id);
-                setCourses(coursesList);
-
-                // Charger les charges/dépenses
+                // Charger les charges/dépenses de la feuille active
                 const chargesList = await getCharges(activeSheet.id);
                 setExpenses(chargesList);
               }
@@ -150,8 +355,17 @@ export default function TxApp() {
             toast.error('Données utilisateur incomplètes');
           }
         } else {
-          console.error('Aucun chauffeur trouvé');
-          toast.error('Aucun chauffeur disponible');
+          console.error('❌ ERREUR: Aucun chauffeur valide trouvé');
+          console.error('Détails du problème:', {
+            chauffeurs_bruts: chauffeursList.length,
+            chauffeurs_valides: validChauffeurs.length,
+            chauffeurs_list: chauffeursList.map(ch => ({
+              id: ch?.id,
+              utilisateur: ch?.utilisateur,
+              actif: ch?.actif
+            }))
+          });
+          toast.error('Aucun chauffeur avec données complètes trouvé - Vérifiez la connexion API');
         }
       } catch (error) {
         console.error('Erreur lors du chargement initial:', error);
@@ -232,6 +446,10 @@ export default function TxApp() {
       return matchesSearch && matchesStatus;
     });
   }, [courses, searchTerm, statusFilter]);
+
+  useEffect(() => {
+    console.log('FilteredCourses updated:', filteredCourses.length, 'filtered courses');
+  }, [filteredCourses]);
 
   // Handlers
   const handleNewCourse = () => {
@@ -483,12 +701,16 @@ export default function TxApp() {
 
             {activeTab === 'shift' && (
               <ShiftForm
+                key={`shift-form-${vehicules?.length || 0}`}
                 vehicles={vehicules}
                 chauffeur={currentChauffeur}
                 onStartShift={handleStartShift}
                 onShowVehicleInfo={() => setShowVehicleModal(true)}
+                reglesSalaire={reglesSalaire}
               />
             )}
+
+            {console.log('Parent - Passing to ShiftForm:', { vehicules: vehicules?.length || 0, reglesSalaire: reglesSalaire?.length || 0 })}
 
             {activeTab === 'courses' && (
               <CoursesList
@@ -569,6 +791,7 @@ export default function TxApp() {
                         coursesCount={courses.length}
                         onSubmit={handleSubmitCourse}
                         onCancel={handleCancelCourse}
+                        reglesSalaire={reglesSalaire}
                       />
                     </div>
                   </DialogPanel>
@@ -577,6 +800,8 @@ export default function TxApp() {
             </div>
           </Dialog>
         </Transition>
+
+        {console.log('Parent - Passing to CourseForm:', { reglesSalaire: reglesSalaire?.length || 0 })}
 
         {/* Financial Summary Modal */}
         <Transition show={showFinancialModal} as={Fragment}>

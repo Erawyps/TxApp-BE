@@ -33,6 +33,23 @@ export function Dashboard({
     { value: 'last_week', label: 'Dernière semaine' }
   ];
 
+  if (!driver) {
+    return (
+      <div className="space-y-6">
+        <Card className="p-6">
+          <div className="text-center">
+            <h1 className="text-2xl font-bold text-gray-600">
+              Chargement des données...
+            </h1>
+            <p className="text-gray-500 mt-2">
+              Veuillez patienter pendant que nous récupérons vos informations.
+            </p>
+          </div>
+        </Card>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       {/* Driver Info Card */}
@@ -40,15 +57,15 @@ export function Dashboard({
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold">
-              Bienvenue, {driver.prenom} {driver.nom}
+              Bienvenue, {driver.prenom || 'Non défini'} {driver.nom || 'Non défini'}
             </h1>
             <p className="opacity-90">
-              Badge: {driver.numero_badge} • {driver.type_contrat}
+              Badge: {driver.numero_badge || 'N/A'} • {driver.type_contrat || 'N/A'}
             </p>
           </div>
           <div className="text-right">
             <p className="text-sm opacity-90">Véhicule actuel</p>
-            <p className="font-semibold">{vehicle.plaque_immatriculation}</p>
+            <p className="font-semibold">{vehicle?.plaque_immatriculation || 'Non défini'}</p>
           </div>
         </div>
       </Card>
@@ -131,14 +148,14 @@ export function Dashboard({
 
 Dashboard.propTypes = {
   driver: PropTypes.shape({
-    nom: PropTypes.string.isRequired,
-    prenom: PropTypes.string.isRequired,
-    numero_badge: PropTypes.string.isRequired,
-    type_contrat: PropTypes.string.isRequired
-  }).isRequired,
+    nom: PropTypes.string,
+    prenom: PropTypes.string,
+    numero_badge: PropTypes.string,
+    type_contrat: PropTypes.string
+  }),
   vehicle: PropTypes.shape({
-    plaque_immatriculation: PropTypes.string.isRequired
-  }).isRequired,
+    plaque_immatriculation: PropTypes.string
+  }),
   totals: PropTypes.shape({
     recettes: PropTypes.number.isRequired,
     coursesCount: PropTypes.number.isRequired,

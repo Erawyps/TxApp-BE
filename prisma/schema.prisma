@@ -68,9 +68,27 @@ model chauffeur {
   feuille_route         feuille_route[]
   paiement_salaire      paiement_salaire[]
   performance_chauffeur performance_chauffeur[]
+  vehicules             chauffeur_vehicule[]
 
   @@index([numero_badge], map: "idx_chauffeur_badge")
   @@index([utilisateur_id], map: "idx_chauffeur_utilisateur")
+}
+
+model chauffeur_vehicule {
+  id          Int       @id @default(autoincrement())
+  chauffeur_id Int
+  vehicule_id Int
+  date_assignation DateTime? @default(now()) @db.Timestamp(6)
+  actif       Boolean?  @default(true)
+  notes       String?
+  created_at  DateTime? @default(now()) @db.Timestamp(6)
+  updated_at  DateTime? @default(now()) @db.Timestamp(6)
+  chauffeur   chauffeur @relation(fields: [chauffeur_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  vehicule    vehicule  @relation(fields: [vehicule_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([chauffeur_id, vehicule_id])
+  @@index([chauffeur_id], map: "idx_chauffeur_vehicule_chauffeur")
+  @@index([vehicule_id], map: "idx_chauffeur_vehicule_vehicule")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
@@ -342,6 +360,7 @@ model vehicule {
   created_at             DateTime?       @default(now()) @db.Timestamp(6)
   updated_at             DateTime?       @default(now()) @db.Timestamp(6)
   feuille_route          feuille_route[]
+  chauffeurs             chauffeur_vehicule[]
 
   @@index([plaque_immatriculation], map: "idx_vehicule_plaque")
 }

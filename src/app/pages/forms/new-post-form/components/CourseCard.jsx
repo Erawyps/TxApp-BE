@@ -14,6 +14,18 @@ import { Card, Button, Badge } from "components/ui";
 // ----------------------------------------------------------------------
 
 export function CourseCard({ course, onEdit, onDelete, onView }) {
+  console.log('CourseCard - course data:', course);
+  console.log('CourseCard - Index data:', {
+    embarquement: course.index_embarquement,
+    debarquement: course.index_debarquement,
+    difference: course.index_debarquement - course.index_embarquement
+  });
+  console.log('CourseCard - course data:', course);
+  console.log('CourseCard - Index data:', {
+    embarquement: course.index_embarquement,
+    debarquement: course.index_debarquement,
+    difference: course.index_debarquement - course.index_embarquement
+  });
   const getStatusBadge = (status) => {
     switch (status) {
       case 'completed':
@@ -57,7 +69,14 @@ export function CourseCard({ course, onEdit, onDelete, onView }) {
               </span>
             </div>
             <div className="flex items-center gap-4 text-sm text-gray-500 dark:text-gray-400">
-              <span>Index: {course.index_embarquement} → {course.index_debarquement}</span>
+              <span className="font-medium text-blue-600 dark:text-blue-400">
+                📍 Index: {course.index_embarquement} → {course.index_debarquement}
+                {course.index_debarquement > course.index_embarquement &&
+                  <span className="ml-2 text-green-600 dark:text-green-400">
+                    (+{course.index_debarquement - course.index_embarquement} km)
+                  </span>
+                }
+              </span>
               <span>Taximètre: {course.prix_taximetre.toFixed(2)} €</span>
             </div>
             {course.notes && (
