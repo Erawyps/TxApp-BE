@@ -14,6 +14,18 @@ import { Card, Button, Badge } from "components/ui";
 // ----------------------------------------------------------------------
 
 export function CourseCard({ course, onEdit, onDelete, onView }) {
+  console.log('CourseCard - course data:', course);
+  console.log('CourseCard - Index data:', {
+    embarquement: course.index_embarquement,
+    debarquement: course.index_debarquement,
+    difference: course.index_debarquement - course.index_embarquement
+  });
+  console.log('CourseCard - course data:', course);
+  console.log('CourseCard - Index data:', {
+    embarquement: course.index_embarquement,
+    debarquement: course.index_debarquement,
+    difference: course.index_debarquement - course.index_embarquement
+  });
   const getStatusBadge = (status) => {
     switch (status) {
       case 'completed':
@@ -53,12 +65,19 @@ export function CourseCard({ course, onEdit, onDelete, onView }) {
               </span>
               <span className="flex items-center gap-1">
                 <BanknotesIcon className="h-4 w-4" />
-                {course.sommes_percues.toFixed(2)} € ({course.mode_paiement})
+                {(course.sommes_percues || 0).toFixed(2)} € ({course.mode_paiement?.libelle || course.mode_paiement || 'N/A'})
               </span>
             </div>
             <div className="flex items-center gap-4 text-sm text-gray-500 dark:text-gray-400">
-              <span>Index: {course.index_embarquement} → {course.index_debarquement}</span>
-              <span>Taximètre: {course.prix_taximetre.toFixed(2)} €</span>
+              <span className="font-medium text-blue-600 dark:text-blue-400">
+                📍 Index: {course.index_embarquement} → {course.index_debarquement}
+                {course.index_debarquement > course.index_embarquement &&
+                  <span className="ml-2 text-green-600 dark:text-green-400">
+                    (+{course.index_debarquement - course.index_embarquement} km)
+                  </span>
+                }
+              </span>
+              <span>Taximètre: {(course.prix_taximetre || 0).toFixed(2)} €</span>
             </div>
             {course.notes && (
               <p className="text-sm text-gray-500 dark:text-gray-400 italic">

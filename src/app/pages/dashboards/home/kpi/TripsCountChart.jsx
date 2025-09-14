@@ -1,5 +1,4 @@
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
-import { dailyTripsCount } from "./data";
 import { Card } from "components/ui";
 
 const CustomTooltip = ({ active, payload, label }) => {
@@ -17,7 +16,20 @@ const CustomTooltip = ({ active, payload, label }) => {
   return null;
 };
 
-export default function TripsCountChart() {
+export default function TripsCountChart({ data = [], loading = false }) {
+  if (loading) {
+    return (
+      <Card className="p-4">
+        <h3 className="mb-4 text-lg font-semibold text-gray-800 dark:text-dark-100">
+          Nombre de Courses Journalières
+        </h3>
+        <div className="flex h-72 w-full items-center justify-center">
+          <div className="text-gray-500">Chargement des données...</div>
+        </div>
+      </Card>
+    );
+  }
+
   return (
     <Card className="p-4">
       <h3 className="mb-4 text-lg font-semibold text-gray-800 dark:text-dark-100">
@@ -25,23 +37,23 @@ export default function TripsCountChart() {
       </h3>
       <div className="h-72 w-full">
         <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={dailyTripsCount}>
+          <LineChart data={data}>
             <CartesianGrid strokeDasharray="3 3" vertical={false} />
-            <XAxis 
-              dataKey="date" 
+            <XAxis
+              dataKey="date"
               tick={{ fontSize: 12 }}
               tickMargin={10}
             />
-            <YAxis 
+            <YAxis
               tick={{ fontSize: 12 }}
             />
             <Tooltip content={<CustomTooltip />} />
-            <Line 
-              type="monotone" 
-              dataKey="count" 
-              stroke="#10b981" 
-              strokeWidth={2} 
-              dot={{ r: 3 }} 
+            <Line
+              type="monotone"
+              dataKey="count"
+              stroke="#10b981"
+              strokeWidth={2}
+              dot={{ r: 3 }}
               name="Nombre de courses"
             />
           </LineChart>

@@ -4,6 +4,7 @@ import { yupResolver } from "@hookform/resolvers/yup";
 import { InformationCircleIcon } from "@heroicons/react/24/outline";
 import { toast } from "sonner";
 import PropTypes from "prop-types";
+import { useEffect } from "react";
 
 // Local Imports
 import { Card, Button, Input } from "components/ui";
@@ -14,7 +15,7 @@ import { contractTypes } from "../data";
 // ----------------------------------------------------------------------
 
 
-export function ShiftForm({ vehicles, onStartShift, onShowVehicleInfo }) {
+export function ShiftForm({ vehicles, onStartShift, onShowVehicleInfo, reglesSalaire = [] }) {
   const {
     register,
     handleSubmit,
@@ -28,7 +29,7 @@ export function ShiftForm({ vehicles, onStartShift, onShowVehicleInfo }) {
       heure_debut: '',
       heure_fin_estimee: '',
       interruptions: '00:00',
-      type_remuneration: 'Indépendant',
+      type_remuneration: '',
       vehicule_id: '',
       km_tableau_bord_debut: '',
       taximetre_prise_charge_debut: '0',
@@ -38,6 +39,20 @@ export function ShiftForm({ vehicles, onStartShift, onShowVehicleInfo }) {
     }
   });
 
+  // Utiliser les règles de salaire de la base de données ou les types par défaut
+  const remunerationTypes = reglesSalaire.length > 0
+    ? reglesSalaire.map(regle => ({
+        value: regle.id,
+        label: regle.nom
+      }))
+    : contractTypes;
+
+  // Forcer le re-rendu quand les véhicules changent
+  useEffect(() => {
+    console.log('ShiftForm - Vehicles updated:', vehicles?.length || 0);
+  }, [vehicles]);
+
+  // Surveiller les changements des champs du formulaire
   const watchedData = watch();
 
   const calculateShiftDuration = () => {
@@ -128,16 +143,23 @@ export function ShiftForm({ vehicles, onStartShift, onShowVehicleInfo }) {
               <Controller
                 name="type_remuneration"
                 control={control}
-                render={({ field }) => (
-                  <Listbox
-                    data={contractTypes}
-                    value={contractTypes.find(c => c.value === field.value) || null}
-                    onChange={(val) => field.onChange(val?.value)}
-                    label="Type de rémunération"
-                    displayField="label"
-                    error={errors?.type_remuneration?.message}
-                  />
-                )}
+                render={({ field }) => {
+                  // Ajouter un placeholder pour le type de rémunération
+                  const remunerationOptions = remunerationTypes.length > 0
+                    ? [{ value: '', label: 'Sélectionner un type de rémunération' }, ...remunerationTypes]
+                    : [{ value: '', label: 'Chargement des types...' }];
+                  
+                  return (
+                    <Listbox
+                      data={remunerationOptions}
+                      value={field.value ? remunerationOptions.find(c => c.value === field.value) || remunerationOptions[0] : remunerationOptions[0]}
+                      onChange={(val) => field.onChange(val?.value)}
+                      label="Type de rémunération"
+                      displayField="label"
+                      error={errors?.type_remuneration?.message}
+                    />
+                  );
+                }}
               />
             </div>
           </div>
@@ -160,14 +182,21 @@ export function ShiftForm({ vehicles, onStartShift, onShowVehicleInfo }) {
               control={control}
               render={({ field }) => {
                 // Map vehicles prop to Listbox options
-                const vehicleOptions = vehicles.map(v => ({
-                  value: v.id,
-                  label: `${v.plaque_immatriculation} - ${v.marque} ${v.modele}`
-                }));
+                const baseVehicleOptions = (vehicles && Array.isArray(vehicles) && vehicles.length > 0)
+                  ? vehicles.map(v => ({
+                      value: v.id,
+                      label: `${v.plaque_immatriculation} - ${v.marque} ${v.modele}`
+                    }))
+                  : [];
+                const vehicleOptions = baseVehicleOptions.length > 0
+                  ? [{ value: '', label: 'Sélectionner un véhicule' }, ...baseVehicleOptions]
+                  : [{ value: '', label: 'Chargement des véhicules...' }];
+
+                console.log('ShiftForm - Vehicles:', vehicles?.length || 0, 'options:', vehicleOptions.length);
                 return (
                   <Listbox
                     data={vehicleOptions}
-                    value={vehicleOptions.find(v => v.value === field.value) || null}
+                    value={field.value ? vehicleOptions.find(v => v.value === field.value) || vehicleOptions[0] : vehicleOptions[0]}
                     onChange={(val) => field.onChange(val?.value)}
                     placeholder="Sélectionner un véhicule"
                     displayField="label"

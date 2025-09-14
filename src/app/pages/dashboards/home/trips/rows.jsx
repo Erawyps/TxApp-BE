@@ -45,9 +45,11 @@ export function DistanceCell({ getValue }) {
 }
 
 export function PrixCell({ getValue }) {
+  const value = getValue();
+  const numericValue = typeof value === 'string' ? parseFloat(value) : Number(value);
   return (
     <p className="font-medium text-gray-800 dark:text-dark-100">
-      {getValue().toFixed(2)} €
+      {isNaN(numericValue) ? '0.00' : numericValue.toFixed(2)} €
     </p>
   );
 }
@@ -55,7 +57,7 @@ export function PrixCell({ getValue }) {
 export function PaiementCell({ getValue }) {
   const method = paymentMethods.find(m => m.value === getValue());
   return (
-    <Badge color={method?.color || "gray"}>
+    <Badge color={method?.color || "neutral"}>
       {method?.label || getValue()}
     </Badge>
   );
@@ -66,7 +68,7 @@ export function StatutCourseCell({ getValue }) {
   const option = tripStatusOptions.find((item) => item.value === val);
 
   return (
-    <Badge color={option?.color || "gray"} className="gap-1.5">
+    <Badge color={option?.color || "neutral"} className="gap-1.5">
       {option?.icon && <option.icon className="h-4 w-4" />}
       <span>{option?.label || "Inconnu"}</span>
     </Badge>

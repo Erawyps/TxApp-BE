@@ -101,14 +101,24 @@ export function ControlModal({ isOpen, onClose, driver, vehicle, shiftData, cour
                     <div className="grid grid-cols-2 gap-4">
                       <div>
                         <p className="text-sm text-gray-600 dark:text-gray-400">Chauffeur</p>
-                        <p className="font-medium text-gray-900 dark:text-white">{driver.prenom} {driver.nom}</p>
-                        <p className="text-sm text-gray-600 dark:text-gray-400">Badge: {driver.numero_badge}</p>
-                        <p className="text-sm text-gray-600 dark:text-gray-400">Licence: {driver.media || 'N/A'}</p>
+                        <p className="font-medium text-gray-900 dark:text-white">
+                          {driver ? `${driver.prenom || 'Non défini'} ${driver.nom || 'Non défini'}` : 'Non défini'}
+                        </p>
+                        <p className="text-sm text-gray-600 dark:text-gray-400">
+                          Badge: {driver?.numero_badge || 'N/A'}
+                        </p>
+                        <p className="text-sm text-gray-600 dark:text-gray-400">
+                          Licence: {driver?.media || 'N/A'}
+                        </p>
                       </div>
                       <div>
                         <p className="text-sm text-gray-600 dark:text-gray-400">Véhicule</p>
-                        <p className="font-medium text-gray-900 dark:text-white">{vehicle.plaque_immatriculation}</p>
-                        <p className="text-sm text-gray-600 dark:text-gray-400">N° identification: {vehicle.numero_identification}</p>
+                        <p className="font-medium text-gray-900 dark:text-white">
+                          {vehicle?.plaque_immatriculation || 'Non défini'}
+                        </p>
+                        <p className="text-sm text-gray-600 dark:text-gray-400">
+                          N° identification: {vehicle?.numero_identification || 'N/A'}
+                        </p>
                       </div>
                     </div>
                   </div>
@@ -145,23 +155,23 @@ export function ControlModal({ isOpen, onClose, driver, vehicle, shiftData, cour
                       <div className="text-center">
                         <p className="text-sm text-gray-600 dark:text-gray-400">Total Taximètre</p>
                         <p className="text-2xl font-bold text-gray-900 dark:text-white">
-                          {totalTaximetre.toFixed(2)} €
+                          {(totalTaximetre || 0).toFixed(2)} €
                         </p>
                       </div>
                       <div className="text-center">
                         <p className="text-sm text-gray-600 dark:text-gray-400">Total Feuille de Route</p>
                         <p className="text-2xl font-bold text-gray-900 dark:text-white">
-                          {totalFeuilleRoute.toFixed(2)} €
+                          {(totalFeuilleRoute || 0).toFixed(2)} €
                         </p>
                       </div>
                       <div className="text-center">
                         <p className="text-sm text-gray-600 dark:text-gray-400">Différence</p>
                         <p className={`text-2xl font-bold ${
-                          Math.abs(difference) < 0.01 
+                          Math.abs(difference || 0) < 0.01 
                             ? 'text-gray-900 dark:text-white' 
                             : 'text-red-600 dark:text-red-400'
                         }`}>
-                          {difference.toFixed(2)} €
+                          {(difference || 0).toFixed(2)} €
                         </p>
                       </div>
                     </div>
@@ -228,8 +238,8 @@ export function ControlModal({ isOpen, onClose, driver, vehicle, shiftData, cour
 ControlModal.propTypes = {
   isOpen: PropTypes.bool.isRequired,
   onClose: PropTypes.func.isRequired,
-  driver: PropTypes.object.isRequired,
-  vehicle: PropTypes.object.isRequired,
+  driver: PropTypes.object,
+  vehicle: PropTypes.object,
   shiftData: PropTypes.object,
   courses: PropTypes.array.isRequired
 };

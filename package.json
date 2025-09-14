@@ -81,6 +81,7 @@
     "jwt-decode": "^4.0.0",
     "lint-staged": "^15.5.0",
     "morgan": "^1.10.1",
+    "node-fetch": "^3.3.2",
     "pdf-lib": "^1.17.1",
     "quill": "^2.0.3",
     "quill-magic-url": "^4.2.0",
@@ -151,6 +152,6 @@
   "description": "NaN",
   "main": "eslint.config.js",
   "keywords": [],
-  "author": "",
-  "license": "ISC"
+  "author": "Hasler TEHOU",
+  "license": "MIT"
 }

@@ -11,9 +11,9 @@ import {
     useReactTable,
   } from "@tanstack/react-table";
   import clsx from "clsx";
-  import { Fragment, useRef, useState } from "react";
-  
-  // Local Imports
+  import { Fragment, useRef, useState, useEffect } from "react";
+
+// Local Imports
   import { TableSortIcon } from "components/shared/table/TableSortIcon";
   import { ColumnFilter } from "components/shared/table/ColumnFilter";
   import { PaginationSection } from "components/shared/table/PaginationSection";
@@ -29,7 +29,7 @@ import {
   import { SelectedRowsActions } from "./SelectedRowsActions"; // Attention: ./ (car dans trips/)
   import { SubRowComponent } from "./SubRowComponent";
   import { columns } from "./columns";
-  import { tripsList } from "./data";             // <<< Tes données de courses
+  import { tripsService } from "services/tripsService"; // Service pour récupérer les données
   import { Toolbar } from "./Toolbar";
   import { useThemeContext } from "app/contexts/theme/context";
   import { getUserAgentBrowser } from "utils/dom/getUserAgentBrowser";
@@ -40,9 +40,11 @@ import {
   
   export default function TripsTable() {
     const { cardSkin } = useThemeContext();
-  
+
     const [autoResetPageIndex, skipAutoResetPageIndex] = useSkipper();
-    const [trips, setTrips] = useState([...tripsList]);
+    const [trips, setTrips] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
     const [tableSettings, setTableSettings] = useState({
       enableSorting: true,
       enableColumnFilters: true,
@@ -51,7 +53,7 @@ import {
     });
     const [globalFilter, setGlobalFilter] = useState("");
     const [sorting, setSorting] = useState([]);
-  
+
     const [columnVisibility, setColumnVisibility] = useLocalStorage(
       "column-visibility-trips",
       {}
@@ -60,10 +62,30 @@ import {
       "column-pinning-trips",
       {}
     );
-  
+
     const cardRef = useRef();
     const { width: cardWidth } = useBoxSize({ ref: cardRef });
-  
+
+    // Charger les données depuis la base de données
+    useEffect(() => {
+      const loadTrips = async () => {
+        try {
+          setLoading(true);
+          setError(null);
+          const response = await tripsService.getTrips();
+          setTrips(response.courses || []);
+        } catch (err) {
+          console.error('Erreur lors du chargement des courses:', err);
+          setError(err.message);
+          setTrips([]);
+        } finally {
+          setLoading(false);
+        }
+      };
+
+      loadTrips();
+    }, []);
+
     const table = useReactTable({
       data: trips,
       columns,
@@ -106,7 +128,46 @@ import {
   
     useDidUpdate(() => table.resetRowSelection(), [trips]);
     useLockScrollbar(tableSettings.enableFullScreen);
-  
+
+    // Affichage du chargement
+    if (loading) {
+      return (
+        <div className="flex flex-col">
+          <Toolbar table={table} />
+          <Card className="relative mt-3 flex grow flex-col">
+            <div className="flex h-64 items-center justify-center">
+              <div className="text-center">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600 mx-auto mb-4"></div>
+                <p className="text-gray-600 dark:text-gray-400">Chargement des courses...</p>
+              </div>
+            </div>
+          </Card>
+        </div>
+      );
+    }
+
+    // Affichage de l'erreur
+    if (error) {
+      return (
+        <div className="flex flex-col">
+          <Toolbar table={table} />
+          <Card className="relative mt-3 flex grow flex-col">
+            <div className="flex h-64 items-center justify-center">
+              <div className="text-center">
+                <div className="text-red-500 mb-4">
+                  <svg className="w-12 h-12 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                  </svg>
+                </div>
+                <p className="text-red-600 font-medium">Erreur de chargement</p>
+                <p className="text-gray-600 dark:text-gray-400 text-sm mt-1">{error}</p>
+              </div>
+            </div>
+          </Card>
+        </div>
+      );
+    }
+
     return (
       <div className="flex flex-col">
         <Toolbar table={table} />

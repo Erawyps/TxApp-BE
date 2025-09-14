@@ -39,18 +39,18 @@ export function SubRowComponent({ row, cardWidth }) {
                 {course.lieu_embarquement} → {course.lieu_debarquement}
               </Td>
               <Td>
-                {new Date(course.heure_embarquement).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                {course.heure_embarquement ? new Date(course.heure_embarquement).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : '--:--'}
               </Td>
-              <Td>{course.prix_final.toFixed(2)} €</Td>
+              <Td>{(course.prix_final || 0).toFixed(2)} €</Td>
               <Td>
-                <Tag color={course.mode_paiement === 'Cash' ? 'success' : 'primary'}>
-                  {course.mode_paiement}
+                <Tag color={course.mode_paiement?.libelle === 'Espèces' ? 'success' : 'primary'}>
+                  {course.mode_paiement?.libelle || course.mode_paiement || 'N/A'}
                 </Tag>
               </Td>
               <Td className="px-0 ltr:rounded-r-lg rtl:rounded-l-lg">
                 <Tag color={
                   course.statut === 'Terminée' ? 'success' : 
-                  course.statut === 'Annulée' ? 'danger' : 'warning'
+                  course.statut === 'Annulée' ? 'error' : 'warning'
                 }>
                   {course.statut}
                 </Tag>
@@ -66,32 +66,32 @@ export function SubRowComponent({ row, cardWidth }) {
             <TBody>
               <Tr>
                 <Td>Prix de base :</Td>
-                <Td>{course.prix_base.toFixed(2)} €</Td>
+                <Td>{(course.prix_base || 0).toFixed(2)} €</Td>
               </Tr>
-              {course.supplement > 0 && (
+              {(course.supplement || 0) > 0 && (
                 <Tr>
                   <Td>Supplément :</Td>
-                  <Td>+{course.supplement.toFixed(2)} €</Td>
+                  <Td>+{(course.supplement || 0).toFixed(2)} €</Td>
                 </Tr>
               )}
-              {course.remise > 0 && (
+              {(course.remise || 0) > 0 && (
                 <Tr>
                   <Td>Remise :</Td>
-                  <Td>-{course.remise.toFixed(2)} €</Td>
+                  <Td>-{(course.remise || 0).toFixed(2)} €</Td>
                 </Tr>
               )}
               <Tr className="text-lg text-primary-600 dark:text-primary-400">
                 <Td>Total :</Td>
                 <Td>
                   <span className="font-medium">
-                    {course.prix_final.toFixed(2)} €
+                    {(course.prix_final || 0).toFixed(2)} €
                   </span>
                 </Td>
               </Tr>
             </TBody>
           </Table>
           <div className="mt-2 flex justify-end gap-1.5">
-            {course.mode_paiement === 'Facture' && (
+            {course.mode_paiement?.libelle === 'Facture' && (
               <Tag 
                 component="button" 
                 color="primary" 
@@ -102,7 +102,7 @@ export function SubRowComponent({ row, cardWidth }) {
                 Facture
               </Tag>
             )}
-            {course.mode_paiement === 'Cash' && (
+            {course.mode_paiement?.libelle === 'Espèces' && (
               <Tag 
                 component="button" 
                 color="success" 

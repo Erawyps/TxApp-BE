@@ -606,4 +606,7 @@ app.get('*', async (c) => {
   }
 });
 
+// Routes pour le dashboard
+// Route déplacée vers src/api/server.js
+
 export default app;

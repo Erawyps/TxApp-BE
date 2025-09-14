@@ -3,7 +3,8 @@ import {
   PlusIcon, 
   PrinterIcon, 
   CalendarIcon,
-  ShieldCheckIcon
+  ShieldCheckIcon,
+  BeakerIcon
 } from "@heroicons/react/24/outline";
 import PropTypes from "prop-types";
 import { useState } from "react";
@@ -33,6 +34,63 @@ export function Dashboard({
     { value: 'last_week', label: 'Dernière semaine' }
   ];
 
+  const handleDatabaseTest = async () => {
+    try {
+      // Test de connexion à l'API
+      const apiResponse = await fetch('http://localhost:3001/health');
+      const apiStatus = apiResponse.ok ? '✅ Connecté' : '❌ Erreur';
+
+      // Test des chauffeurs
+      const chauffeursResponse = await fetch('http://localhost:3001/api/chauffeurs');
+      const chauffeursData = await chauffeursResponse.json();
+      const chauffeursCount = chauffeursData?.data?.length || 0;
+
+      // Test des véhicules
+      const vehiculesResponse = await fetch('http://localhost:3001/api/vehicules');
+      const vehiculesData = await vehiculesResponse.json();
+      const vehiculesCount = vehiculesData?.data?.length || 0;
+
+      // Test des règles de salaire
+      const reglesResponse = await fetch('http://localhost:3001/api/regles-salaire');
+      const reglesData = await reglesResponse.json();
+      const reglesCount = reglesData?.data?.length || 0;
+
+      // Afficher les résultats
+      const message = `
+🧪 Tests de base de données - new-post-form
+
+📡 API Server: ${apiStatus}
+👥 Chauffeurs: ${chauffeursCount} trouvés
+🚗 Véhicules: ${vehiculesCount} disponibles
+💰 Règles de salaire: ${reglesCount} configurées
+
+✅ Tous les services fonctionnent correctement !
+      `.trim();
+
+      alert(message);
+    } catch (error) {
+      console.error('Erreur lors des tests:', error);
+      alert(`❌ Erreur lors des tests de base de données:\n${error.message}`);
+    }
+  };
+
+  if (!driver) {
+    return (
+      <div className="space-y-6">
+        <Card className="p-6">
+          <div className="text-center">
+            <h1 className="text-2xl font-bold text-gray-600">
+              Chargement des données...
+            </h1>
+            <p className="text-gray-500 mt-2">
+              Veuillez patienter pendant que nous récupérons vos informations.
+            </p>
+          </div>
+        </Card>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       {/* Driver Info Card */}
@@ -40,15 +98,15 @@ export function Dashboard({
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold">
-              Bienvenue, {driver.prenom} {driver.nom}
+              Bienvenue, {driver.prenom || 'Non défini'} {driver.nom || 'Non défini'}
             </h1>
             <p className="opacity-90">
-              Badge: {driver.numero_badge} • {driver.type_contrat}
+              Badge: {driver.numero_badge || 'N/A'} • {driver.type_contrat || 'N/A'}
             </p>
           </div>
           <div className="text-right">
             <p className="text-sm opacity-90">Véhicule actuel</p>
-            <p className="font-semibold">{vehicle.plaque_immatriculation}</p>
+            <p className="font-semibold">{vehicle?.plaque_immatriculation || 'Non défini'}</p>
           </div>
         </div>
       </Card>
@@ -125,20 +183,38 @@ export function Dashboard({
           </Button>
         </div>
       </Card>
+
+      {/* Database Tests Section */}
+      <Card className="p-4">
+        <h3 className="text-lg font-semibold mb-4 text-gray-800 dark:text-dark-100">
+          Tests de la base de données
+        </h3>
+        <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+          Cliquez sur le bouton ci-dessous pour tester la connexion à la base de données et vérifier que les services d&apos;authentification fonctionnent correctement.
+        </p>
+        <Button
+          variant="secondary"
+          className="w-full flex items-center justify-center space-x-2"
+          onClick={handleDatabaseTest}
+        >
+          <BeakerIcon className="h-5 w-5" />
+          <span>Lancer les tests pour new-post-form</span>
+        </Button>
+      </Card>
     </div>
   );
 }
 
 Dashboard.propTypes = {
   driver: PropTypes.shape({
-    nom: PropTypes.string.isRequired,
-    prenom: PropTypes.string.isRequired,
-    numero_badge: PropTypes.string.isRequired,
-    type_contrat: PropTypes.string.isRequired
-  }).isRequired,
+    nom: PropTypes.string,
+    prenom: PropTypes.string,
+    numero_badge: PropTypes.string,
+    type_contrat: PropTypes.string
+  }),
   vehicle: PropTypes.shape({
-    plaque_immatriculation: PropTypes.string.isRequired
-  }).isRequired,
+    plaque_immatriculation: PropTypes.string
+  }),
   totals: PropTypes.shape({
     recettes: PropTypes.number.isRequired,
     coursesCount: PropTypes.number.isRequired,

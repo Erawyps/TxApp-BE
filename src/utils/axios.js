@@ -36,8 +36,8 @@ axiosInstance.interceptors.response.use(
       delete axiosInstance.defaults.headers.common.Authorization;
 
       // Rediriger vers la page de connexion si pas déjà sur une page publique
-      if (!window.location.pathname.includes('/auth/')) {
-        window.location.href = '/auth/login';
+      if (!window.location.pathname.includes('/login') && !window.location.pathname.includes('/sign-up')) {
+        window.location.href = '/login';
       }
     }
 

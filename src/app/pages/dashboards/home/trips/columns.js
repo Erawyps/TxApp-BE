@@ -22,13 +22,13 @@ export const columns = [
     header: SelectHeader,
     cell: SelectCell,
   }),
-  columnHelper.accessor((row) => row.chauffeur.nom, {
+  columnHelper.accessor((row) => `${row.chauffeur_nom} ${row.chauffeur_prenom}`, {
     id: "chauffeur",
     label: "Chauffeur",
     header: "Chauffeur",
     cell: ChauffeurCell,
   }),
-  columnHelper.accessor((row) => row.vehicule.plaque_immatriculation, {
+  columnHelper.accessor((row) => row.vehicule_immatriculation, {
     id: "vehicule",
     label: "Véhicule",
     header: "Véhicule",
@@ -56,7 +56,7 @@ export const columns = [
     filter: "numberRange",
     filterFn: "inNumberRange",
   }),
-  columnHelper.accessor((row) => row.prix_final, {
+  columnHelper.accessor((row) => row.prix_course, {
     id: "prix",
     label: "Prix (€)",
     header: "Prix",
@@ -64,7 +64,7 @@ export const columns = [
     filter: "numberRange",
     filterFn: "inNumberRange",
   }),
-  columnHelper.accessor((row) => row.mode_paiement, {
+  columnHelper.accessor((row) => row.mode_paiement_libelle, {
     id: "paiement",
     label: "Paiement",
     header: "Paiement",

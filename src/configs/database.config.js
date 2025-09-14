@@ -1,4 +1,6 @@
-import { PrismaClient } from '@prisma/client';
+import { createRequire } from 'module';
+const require = createRequire(import.meta.url);
+const { PrismaClient } = require('./../../prisma/node_modules/.prisma/client');
 
 // Configuration de pool de connexions pour la production
 const getDatabaseConfig = () => {
@@ -34,23 +36,31 @@ const createPrismaClient = () => {
     const config = getDatabaseConfig();
     prisma = new PrismaClient(config);
 
-    // Gestion gracieuse des déconnexions
-    process.on('beforeExit', async () => {
-      console.log('Fermeture des connexions à la base de données...');
-      await prisma.$disconnect();
-    });
+    // Gestion gracieuse des déconnexions (désactivée en développement)
+    if (process.env.NODE_ENV !== 'development') {
+      process.on('beforeExit', async () => {
+        console.log('Fermeture des connexions à la base de données...');
+        await prisma.$disconnect();
+      });
 
-    process.on('SIGINT', async () => {
-      console.log('Interruption détectée, fermeture de la base de données...');
-      await prisma.$disconnect();
-      process.exit(0);
-    });
+      process.on('SIGINT', async () => {
+        console.log('Interruption détectée, fermeture de la base de données...');
+        await prisma.$disconnect();
+        process.exit(0);
+      });
 
-    process.on('SIGTERM', async () => {
-      console.log('Terminaison détectée, fermeture de la base de données...');
-      await prisma.$disconnect();
-      process.exit(0);
-    });
+      process.on('SIGTERM', async () => {
+        console.log('Terminaison détectée, fermeture de la base de données...');
+        await prisma.$disconnect();
+        process.exit(0);
+      });
+    } else {
+      // En développement, on ferme seulement la connexion sans arrêter le processus
+      process.on('beforeExit', async () => {
+        console.log('Fermeture des connexions à la base de données...');
+        await prisma.$disconnect();
+      });
+    }
   }
 
   return prisma;

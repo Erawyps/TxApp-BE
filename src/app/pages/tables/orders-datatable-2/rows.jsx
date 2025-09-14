@@ -71,7 +71,7 @@ export function KmCell({ getValue }) {
 export function RecetteCell({ getValue }) {
     return (
         <span className="font-medium text-success-600 dark:text-success-400">
-            {getValue().toFixed(2)} €
+            {(getValue() || 0).toFixed(2)} €
         </span>
     );
 }
@@ -85,7 +85,7 @@ export function StatusCell({ getValue }) {
         'en_attente': { color: 'warning', icon: ClockIcon }
     };
     
-    const { color, icon: Icon } = options[status] || { color: 'gray' };
+    const { color, icon: Icon } = options[status] || { color: 'neutral' };
     
     return (
         <Badge color={color} className="space-x-1.5 capitalize">

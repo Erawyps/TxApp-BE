@@ -1,5 +1,4 @@
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
-import { dailyRevenues } from "./data";
 import { Card } from "components/ui";
 
 const CustomTooltip = ({ active, payload, label }) => {
@@ -9,7 +8,7 @@ const CustomTooltip = ({ active, payload, label }) => {
         <p className="font-bold">{label}</p>
         <p className="text-primary-600">
           <span className="text-gray-600 dark:text-gray-300">Revenus: </span>
-          {payload[0].value.toFixed(2)} €
+          {(payload[0].value || 0).toFixed(2)} €
         </p>
       </div>
     );
@@ -17,7 +16,20 @@ const CustomTooltip = ({ active, payload, label }) => {
   return null;
 };
 
-export default function RevenuesChart() {
+export default function RevenuesChart({ data = [], loading = false }) {
+  if (loading) {
+    return (
+      <Card className="p-4">
+        <h3 className="mb-4 text-lg font-semibold text-gray-800 dark:text-dark-100">
+          Revenus Journaliers
+        </h3>
+        <div className="flex h-72 w-full items-center justify-center">
+          <div className="text-gray-500">Chargement des données...</div>
+        </div>
+      </Card>
+    );
+  }
+
   return (
     <Card className="p-4">
       <h3 className="mb-4 text-lg font-semibold text-gray-800 dark:text-dark-100">
@@ -25,22 +37,22 @@ export default function RevenuesChart() {
       </h3>
       <div className="h-72 w-full">
         <ResponsiveContainer width="100%" height="100%">
-          <BarChart data={dailyRevenues}>
+          <BarChart data={data}>
             <CartesianGrid strokeDasharray="3 3" vertical={false} />
-            <XAxis 
-              dataKey="date" 
+            <XAxis
+              dataKey="date"
               tick={{ fontSize: 12 }}
               tickMargin={10}
             />
-            <YAxis 
+            <YAxis
               tickFormatter={(value) => `${value} €`}
               tick={{ fontSize: 12 }}
             />
             <Tooltip content={<CustomTooltip />} />
-            <Bar 
-              dataKey="earnings" 
-              fill="#3b82f6" 
-              radius={[4, 4, 0, 0]} 
+            <Bar
+              dataKey="earnings"
+              fill="#3b82f6"
+              radius={[4, 4, 0, 0]}
               name="Revenus"
             />
           </BarChart>

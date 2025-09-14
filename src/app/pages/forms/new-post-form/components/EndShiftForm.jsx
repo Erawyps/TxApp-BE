@@ -32,7 +32,7 @@ export function EndShiftForm({ onEndShift, shiftData, driver, onPrintReport }) {
     resolver: yupResolver(endShiftSchema),
     defaultValues: {
       ...initialEndShiftData,
-      signature_chauffeur: `${driver.prenom} ${driver.nom}`
+      signature_chauffeur: `${driver?.prenom || 'Non défini'} ${driver?.nom || 'Non défini'}`
     }
   });
 
@@ -242,6 +242,6 @@ export function EndShiftForm({ onEndShift, shiftData, driver, onPrintReport }) {
 EndShiftForm.propTypes = {
   onEndShift: PropTypes.func.isRequired,
   shiftData: PropTypes.object,
-  driver: PropTypes.object.isRequired,
+  driver: PropTypes.object,
   onPrintReport: PropTypes.func.isRequired
 };

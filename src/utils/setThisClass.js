@@ -4,7 +4,8 @@ const colors = {
     info: 'this:info',
     success: 'this:success',
     warning: 'this:warning',
-    error: 'this:error'
+    error: 'this:error',
+    neutral: 'this:neutral'
 };
 
 /**

@@ -12,11 +12,11 @@ import {
   PencilSquareIcon,
   TrashIcon,
   MagnifyingGlassIcon,
-  PrinterIcon
+  PrinterIcon,
+  ArrowPathIcon
 } from '@heroicons/react/24/outline';
 import { generateAndDownloadReport } from 'app/pages/forms/new-post-form/utils/printUtils';
 import { mockData as newPostMock } from 'app/pages/forms/new-post-form/data';
-import { fetchCourses, upsertCourse, deleteCourse as removeCourse } from 'services/courses';
 import { paymentMethods, statusOptions } from 'app/pages/forms/new-post-form/data';
 import { DriverModal } from './components/DriverModal';
 import { VehicleModal } from './components/VehicleModal';
@@ -24,69 +24,17 @@ import { CourseModal } from './components/CourseModal';
 import { ChargeModal } from './components/ChargeModal';
 import { NewShiftModal } from './components/NewShiftModal';
 import { calcChargesTotal, buildShift, computeStats } from './utils/helpers';
+import {
+  chauffeurService,
+  vehiculeService,
+  courseService,
+  chargeService,
+  feuilleRouteService,
+  clientService,
+  modePaiementService
+} from './services/adminServices';
 
-// Données mock pour l'administration
-const mockDrivers = [
-  { 
-    id: 1, 
-    prenom: 'Jean', 
-    nom: 'Dupont', 
-    telephone: '+32 478 12 34 56',
-    email: 'jean.dupont@email.com',
-    numero_badge: 'TX-2024-001',
-    type_contrat: 'CDI',
-    date_embauche: '2024-01-15',
-    statut: 'Actif'
-  },
-  { 
-    id: 2, 
-    prenom: 'Marie', 
-    nom: 'Martin', 
-    telephone: '+32 478 65 43 21',
-    email: 'marie.martin@email.com',
-    numero_badge: 'TX-2024-002',
-    type_contrat: 'Indépendant',
-    date_embauche: '2024-02-01',
-    statut: 'Actif'
-  }
-];
-
-const mockVehicles = [
-  {
-    id: 1,
-    plaque_immatriculation: 'TX-AA-171',
-    numero_identification: '10',
-    marque: 'Mercedes',
-    modele: 'Classe E',
-    type_vehicule: 'Berline',
-    annee: 2022,
-    couleur: 'Noir',
-    statut: 'En service',
-    kilometrage: 85420,
-    derniere_revision: '2024-07-15',
-    assurance_expiration: '2024-12-31'
-  }
-];
-
-const mockShifts = [
-  {
-    id: 1,
-    date: '2024-08-08',
-    chauffeur_id: 1,
-    vehicule_id: 1,
-    heure_debut: '08:00',
-    heure_fin: '16:00',
-    nb_courses: 12,
-    recettes: 285.50,
-    charges: 45.20,
-    statut: 'Terminé'
-  }
-];
-
-// const mockCharges = [
-//   { id: 1, type: 'Carburant', montant: 25.50, date: '2024-08-08', chauffeur_id: 1 },
-//   { id: 2, type: 'Péage', montant: 12.20, date: '2024-08-08', chauffeur_id: 1 }
-// ];
+// Données mock pour l'administration (maintenant chargées depuis l'API)
 
 
 
@@ -95,10 +43,37 @@ const mockShifts = [
 
 const TxAppAdmin = () => {
   const [activeTab, setActiveTab] = useState('dashboard');
-  const [drivers, setDrivers] = useState(mockDrivers);
-  const [vehicles, setVehicles] = useState(mockVehicles);
-  const [shifts, setShifts] = useState(mockShifts);
+
+  // États de données avec chargement
+  const [drivers, setDrivers] = useState([]);
+  const [vehicles, setVehicles] = useState([]);
+  const [shifts, setShifts] = useState([]);
   const [courses, setCourses] = useState([]);
+  const [charges, setCharges] = useState([]);
+  const [clients, setClients] = useState([]); // eslint-disable-line no-unused-vars
+  const [modesPaiement, setModesPaiement] = useState([]); // eslint-disable-line no-unused-vars
+
+  // États de chargement
+  const [loading, setLoading] = useState({
+    drivers: false,
+    vehicles: false,
+    courses: false,
+    charges: false,
+    shifts: false,
+    clients: false,
+    modesPaiement: false
+  });
+
+  // États d'erreur
+  const [errors, setErrors] = useState({ // eslint-disable-line no-unused-vars
+    drivers: null,
+    vehicles: null,
+    courses: null,
+    charges: null,
+    shifts: null,
+    clients: null,
+    modesPaiement: null
+  });
   
   const [showDriverModal, setShowDriverModal] = useState(false);
   const [selectedDriver, setSelectedDriver] = useState(null);
@@ -117,8 +92,7 @@ const TxAppAdmin = () => {
   const [courseStatusFilter, setCourseStatusFilter] = useState('all');
   const [savingCourse, setSavingCourse] = useState(false);
 
-  // Charges state (local)
-  const [charges, setCharges] = useState([]);
+  // Charges state (maintenant géré au niveau supérieur)
   const [showChargeModal, setShowChargeModal] = useState(false);
   const [editingCharge, setEditingCharge] = useState(null);
 
@@ -127,16 +101,72 @@ const TxAppAdmin = () => {
 
   // Charger les courses comme dans new-post-form pour la génération identique
   useEffect(() => {
-    (async () => {
-      try {
-        const list = await fetchCourses();
-        setCourses(list && list.length ? list : newPostMock.courses);
-      } catch (e) {
-        console.error('Erreur chargement courses:', e);
-        setCourses(newPostMock.courses);
-      }
-    })();
+    loadAllData();
   }, []);
+
+  // Fonction pour charger toutes les données depuis les APIs
+  const loadAllData = async () => {
+    try {
+      // Charger les chauffeurs
+      setLoading(prev => ({ ...prev, drivers: true }));
+      setErrors(prev => ({ ...prev, drivers: null }));
+      const driversData = await chauffeurService.getAll();
+      setDrivers(driversData);
+      setLoading(prev => ({ ...prev, drivers: false }));
+
+      // Charger les véhicules
+      setLoading(prev => ({ ...prev, vehicles: true }));
+      setErrors(prev => ({ ...prev, vehicles: null }));
+      const vehiclesData = await vehiculeService.getAll();
+      setVehicles(vehiclesData);
+      setLoading(prev => ({ ...prev, vehicles: false }));
+
+      // Charger les courses
+      setLoading(prev => ({ ...prev, courses: true }));
+      setErrors(prev => ({ ...prev, courses: null }));
+      const coursesData = await courseService.getAll();
+      setCourses(coursesData);
+      setLoading(prev => ({ ...prev, courses: false }));
+
+      // Charger les charges
+      setLoading(prev => ({ ...prev, charges: true }));
+      setErrors(prev => ({ ...prev, charges: null }));
+      const chargesData = await chargeService.getAll();
+      setCharges(chargesData);
+      setLoading(prev => ({ ...prev, charges: false }));
+
+      // Charger les feuilles de route
+      setLoading(prev => ({ ...prev, shifts: true }));
+      setErrors(prev => ({ ...prev, shifts: null }));
+      const shiftsData = await feuilleRouteService.getAll();
+      setShifts(shiftsData);
+      setLoading(prev => ({ ...prev, shifts: false }));
+
+      // Charger les clients et modes de paiement
+      setLoading(prev => ({ ...prev, clients: true, modesPaiement: true }));
+      const [clientsData, modesPaiementData] = await Promise.all([
+        clientService.getAll(),
+        modePaiementService.getAll()
+      ]);
+      setClients(clientsData);
+      setModesPaiement(modesPaiementData);
+      setLoading(prev => ({ ...prev, clients: false, modesPaiement: false }));
+
+    } catch (error) {
+      console.error('Erreur lors du chargement des données:', error);
+      // En cas d'erreur, utiliser les données mockées comme fallback
+      setCourses(newPostMock.courses);
+      setLoading({
+        drivers: false,
+        vehicles: false,
+        courses: false,
+        charges: false,
+        shifts: false,
+        clients: false,
+        modesPaiement: false
+      });
+    }
+  };
 
   const handleDownloadReport = () => {
     try {
@@ -152,6 +182,67 @@ const TxAppAdmin = () => {
     }
   };
 
+  const handleRefreshData = async () => {
+    try {
+      await loadAllData();
+    } catch (error) {
+      console.error('Erreur lors du rafraîchissement des données:', error);
+    }
+  };
+
+  // Fonction de validation des données
+  const validateDriverData = (data) => {
+    const errors = [];
+    if (!data.prenom?.trim()) errors.push('Le prénom est requis');
+    if (!data.nom?.trim()) errors.push('Le nom est requis');
+    if (!data.telephone?.trim()) errors.push('Le téléphone est requis');
+    if (!data.email?.trim()) errors.push('L\'email est requis');
+    if (!data.numero_badge?.trim()) errors.push('Le numéro de badge est requis');
+    if (!data.date_embauche) errors.push('La date d\'embauche est requise');
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (data.email && !emailRegex.test(data.email)) {
+      errors.push('L\'email n\'est pas valide');
+    }
+
+    return errors;
+  };
+
+  const validateVehicleData = (data) => {
+    const errors = [];
+    if (!data.plaque_immatriculation?.trim()) errors.push('La plaque d\'immatriculation est requise');
+    if (!data.numero_identification?.trim()) errors.push('Le numéro d\'identification est requis');
+    if (!data.marque?.trim()) errors.push('La marque est requise');
+    if (!data.modele?.trim()) errors.push('Le modèle est requis');
+    if (!data.annee) errors.push('L\'année est requise');
+    if (data.annee && (data.annee < 1900 || data.annee > new Date().getFullYear() + 1)) {
+      errors.push('L\'année n\'est pas valide');
+    }
+
+    return errors;
+  };
+
+  const validateCourseData = (data) => {
+    const errors = [];
+    if (!data.numero_ordre) errors.push('Le numéro d\'ordre est requis');
+    if (!data.lieu_embarquement?.trim()) errors.push('Le lieu d\'embarquement est requis');
+    if (!data.lieu_debarquement?.trim()) errors.push('Le lieu de débarquement est requis');
+    if (!data.prix_taximetre) errors.push('Le prix du taximètre est requis');
+    if (data.prix_taximetre <= 0) errors.push('Le prix doit être positif');
+
+    return errors;
+  };
+
+  const validateChargeData = (data) => {
+    const errors = [];
+    if (!data.type?.trim()) errors.push('Le type de charge est requis');
+    if (!data.montant) errors.push('Le montant est requis');
+    if (data.montant <= 0) errors.push('Le montant doit être positif');
+    if (!data.date) errors.push('La date est requise');
+
+    return errors;
+  };
+
   const tabs = [
     { key: 'dashboard', label: 'Tableau de bord', icon: ChartBarIcon },
     { key: 'drivers', label: 'Chauffeurs', icon: UsersIcon },
@@ -161,13 +252,32 @@ const TxAppAdmin = () => {
     { key: 'charges', label: 'Charges', icon: CurrencyEuroIcon }
   ];
 
-  const handleSaveDriver = (driverData) => {
-    if (selectedDriver) {
-      setDrivers(drivers.map(d => d.id === selectedDriver.id ? { ...driverData, id: selectedDriver.id } : d));
-    } else {
-      setDrivers([...drivers, { ...driverData, id: Date.now() }]);
+  const handleSaveDriver = async (driverData) => {
+    try {
+      // Validation des données
+      const validationErrors = validateDriverData(driverData);
+      if (validationErrors.length > 0) {
+        alert('Erreurs de validation:\n' + validationErrors.join('\n'));
+        return;
+      }
+
+      if (selectedDriver) {
+        // Mise à jour
+        await chauffeurService.update(selectedDriver.id, driverData);
+        setDrivers(drivers.map(d => d.id === selectedDriver.id ? { ...driverData, id: selectedDriver.id } : d));
+      } else {
+        // Création
+        const newDriver = await chauffeurService.create(driverData);
+        setDrivers([...drivers, newDriver]);
+      }
+      setSelectedDriver(null);
+      setShowDriverModal(false);
+      // Recharger les données pour synchroniser
+      await loadAllData();
+    } catch (error) {
+      console.error('Erreur sauvegarde chauffeur:', error);
+      alert('Erreur lors de la sauvegarde du chauffeur: ' + error.message);
     }
-    setSelectedDriver(null);
   };
 
   const handleEditDriver = (driver) => {
@@ -175,30 +285,64 @@ const TxAppAdmin = () => {
     setShowDriverModal(true);
   };
 
-  const handleDeleteDriver = (driverId) => {
-    if (window.confirm('Êtes-vous sûr de vouloir supprimer ce chauffeur ?')) {
+  const handleDeleteDriver = async (driverId) => {
+    if (!window.confirm('Êtes-vous sûr de vouloir supprimer ce chauffeur ?')) return;
+
+    try {
+      await chauffeurService.delete(driverId);
       setDrivers(drivers.filter(d => d.id !== driverId));
+    } catch (error) {
+      console.error('Erreur suppression chauffeur:', error);
+      alert('Erreur lors de la suppression du chauffeur');
     }
   };
 
   // Handlers: Véhicules
-  const handleSaveVehicle = (vehicleData) => {
-    if (editingVehicle) {
-      setVehicles((prev) => prev.map((v) => (v.id === editingVehicle.id ? { ...vehicleData, id: editingVehicle.id } : v)));
-    } else {
-      setVehicles((prev) => [...prev, { ...vehicleData, id: Date.now() }]);
+  const handleSaveVehicle = async (vehicleData) => {
+    try {
+      // Validation des données
+      const validationErrors = validateVehicleData(vehicleData);
+      if (validationErrors.length > 0) {
+        alert('Erreurs de validation:\n' + validationErrors.join('\n'));
+        return;
+      }
+
+      if (editingVehicle) {
+        // Mise à jour
+        await vehiculeService.update(editingVehicle.id, vehicleData);
+        setVehicles((prev) => prev.map((v) => (v.id === editingVehicle.id ? { ...vehicleData, id: editingVehicle.id } : v)));
+      } else {
+        // Création
+        const newVehicle = await vehiculeService.create(vehicleData);
+        setVehicles((prev) => [...prev, newVehicle]);
+      }
+      setEditingVehicle(null);
+      setShowVehicleModal(false);
+      // Recharger les données pour synchroniser
+      await loadAllData();
+    } catch (error) {
+      console.error('Erreur sauvegarde véhicule:', error);
+      alert('Erreur lors de la sauvegarde du véhicule: ' + error.message);
     }
-    setEditingVehicle(null);
-    setShowVehicleModal(false);
   };
+
   const handleEditVehicle = (vehicle) => {
     setEditingVehicle(vehicle);
     setShowVehicleModal(true);
   };
-  const handleDeleteVehicle = (vehicleId) => {
+
+  const handleDeleteVehicle = async (vehicleId) => {
     if (!window.confirm('Êtes-vous sûr de vouloir supprimer ce véhicule ?')) return;
-    setVehicles((prev) => prev.filter((v) => v.id !== vehicleId));
+
+    try {
+      await vehiculeService.delete(vehicleId);
+      setVehicles((prev) => prev.filter((v) => v.id !== vehicleId));
+    } catch (error) {
+      console.error('Erreur suppression véhicule:', error);
+      alert('Erreur lors de la suppression du véhicule');
+    }
   };
+
   const filteredVehicles = vehicles.filter((v) => {
     const s = vehicleSearch.toLowerCase();
     return (
@@ -208,45 +352,61 @@ const TxAppAdmin = () => {
     );
   });
 
-  // Handlers: Courses (Supabase/local fallback)
+  // Handlers: Courses (API)
   const handleAddCourse = () => {
     setEditingCourse(null);
     setShowCourseModal(true);
   };
+
   const handleEditCourse = (course) => {
     setEditingCourse(course);
     setShowCourseModal(true);
   };
+
   const handleSaveCourse = async (courseData) => {
+    setSavingCourse(true);
     try {
-      setSavingCourse(true);
-      const saved = await upsertCourse(courseData);
-      setCourses((prev) => {
-        const idx = prev.findIndex((c) => c.id === saved.id);
-        if (idx >= 0) {
-          const copy = [...prev];
-          copy[idx] = saved;
-          return copy;
-        }
-        return [...prev, saved];
-      });
+      // Validation des données
+      const validationErrors = validateCourseData(courseData);
+      if (validationErrors.length > 0) {
+        alert('Erreurs de validation:\n' + validationErrors.join('\n'));
+        setSavingCourse(false);
+        return;
+      }
+
+      if (editingCourse) {
+        // Mise à jour
+        await courseService.update(editingCourse.id, courseData);
+        setCourses(courses.map(c => c.id === editingCourse.id ? { ...courseData, id: editingCourse.id } : c));
+      } else {
+        // Création
+        const newCourse = await courseService.create(courseData);
+        setCourses([...courses, newCourse]);
+      }
       setEditingCourse(null);
       setShowCourseModal(false);
-    } catch (e) {
-      console.error('Erreur enregistrement course:', e);
+      // Recharger les données pour synchroniser
+      await loadAllData();
+    } catch (error) {
+      console.error('Erreur sauvegarde course:', error);
+      alert('Erreur lors de la sauvegarde de la course: ' + error.message);
     } finally {
       setSavingCourse(false);
     }
   };
+
   const handleDeleteCourse = async (id) => {
-    if (!window.confirm('Supprimer cette course ?')) return;
+    if (!window.confirm('Êtes-vous sûr de vouloir supprimer cette course ?')) return;
+
     try {
-      await removeCourse(id);
-      setCourses((prev) => prev.filter((c) => c.id !== id));
-    } catch (e) {
-      console.error('Erreur suppression course:', e);
+      await courseService.delete(id);
+      setCourses(courses.filter(c => c.id !== id));
+    } catch (error) {
+      console.error('Erreur suppression course:', error);
+      alert('Erreur lors de la suppression de la course');
     }
   };
+
   const filteredCourses = courses.filter((course) => {
     const term = courseSearchTerm.toLowerCase();
     const matchesSearch =
@@ -257,27 +417,55 @@ const TxAppAdmin = () => {
     return matchesSearch && matchesStatus;
   });
 
-  // Handlers: Charges (local)
+  // Handlers: Charges (API)
   const handleAddCharge = () => {
     setEditingCharge(null);
     setShowChargeModal(true);
   };
-  const handleSaveCharge = (chargeData) => {
-    if (editingCharge) {
-      setCharges((prev) => prev.map((ch) => (ch.id === editingCharge.id ? { ...chargeData, id: editingCharge.id } : ch)));
-    } else {
-      setCharges((prev) => [...prev, { ...chargeData, id: Date.now() }]);
+
+  const handleSaveCharge = async (chargeData) => {
+    try {
+      // Validation des données
+      const validationErrors = validateChargeData(chargeData);
+      if (validationErrors.length > 0) {
+        alert('Erreurs de validation:\n' + validationErrors.join('\n'));
+        return;
+      }
+
+      if (editingCharge) {
+        // Mise à jour
+        await chargeService.update(editingCharge.id, chargeData);
+        setCharges(charges.map(c => c.id === editingCharge.id ? { ...chargeData, id: editingCharge.id } : c));
+      } else {
+        // Création
+        const newCharge = await chargeService.create(chargeData);
+        setCharges([...charges, newCharge]);
+      }
+      setEditingCharge(null);
+      setShowChargeModal(false);
+      // Recharger les données pour synchroniser
+      await loadAllData();
+    } catch (error) {
+      console.error('Erreur sauvegarde charge:', error);
+      alert('Erreur lors de la sauvegarde de la charge: ' + error.message);
     }
-    setEditingCharge(null);
-    setShowChargeModal(false);
   };
+
   const handleEditCharge = (charge) => {
     setEditingCharge(charge);
     setShowChargeModal(true);
   };
-  const handleDeleteCharge = (id) => {
-    if (!window.confirm('Supprimer cette charge ?')) return;
-    setCharges((prev) => prev.filter((ch) => ch.id !== id));
+
+  const handleDeleteCharge = async (id) => {
+    if (!window.confirm('Êtes-vous sûr de vouloir supprimer cette charge ?')) return;
+
+    try {
+      await chargeService.delete(id);
+      setCharges(charges.filter(c => c.id !== id));
+    } catch (error) {
+      console.error('Erreur suppression charge:', error);
+      alert('Erreur lors de la suppression de la charge');
+    }
   };
   const chargesTotal = calcChargesTotal(charges);
 
@@ -290,9 +478,9 @@ const TxAppAdmin = () => {
 
   // Filtre: Chauffeurs
   const filteredDrivers = drivers.filter(driver => {
-    const matchesSearch = driver.nom.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         driver.prenom.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = statusFilter === 'all' || driver.statut === statusFilter;
+    const matchesSearch = driver.nom?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         driver.prenom?.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesStatus = statusFilter === 'all' || driver.actif === (statusFilter === 'Actif');
     return matchesSearch && matchesStatus;
   });
 
@@ -304,12 +492,24 @@ const TxAppAdmin = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           {/* En-tête - exactement comme new-post-form */}
           <div className="mb-6">
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
-              🚕 TxApp - Administration
-            </h1>
-            <p className="text-gray-600 dark:text-gray-400">
-              Gestion complète de votre flotte de taxis
-            </p>
+            <div className="flex justify-between items-center">
+              <div>
+                <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+                  🚕 TxApp - Administration
+                </h1>
+                <p className="text-gray-600 dark:text-gray-400">
+                  Gestion complète de votre flotte de taxis
+                </p>
+              </div>
+              <Button
+                onClick={handleRefreshData}
+                className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg"
+                disabled={Object.values(loading).some(l => l)}
+              >
+                <ArrowPathIcon className={`h-4 w-4 ${Object.values(loading).some(l => l) ? 'animate-spin' : ''}`} />
+                Actualiser
+              </Button>
+            </div>
           </div>
 
           {/* Navigation Tabs - exactement comme new-post-form */}
@@ -386,7 +586,7 @@ const TxAppAdmin = () => {
                           Recettes totales
                         </p>
                         <p className="text-2xl font-bold text-gray-900 dark:text-white">
-                          {stats.todayRevenue.toFixed(2)}€
+                          {stats.todayRevenue ? stats.todayRevenue.toFixed(2) : '0.00'}€
                         </p>
                       </div>
                     </div>
@@ -413,7 +613,7 @@ const TxAppAdmin = () => {
                           </div>
                           <div className="text-right">
                             <p className="text-sm font-medium text-gray-900 dark:text-white">
-                              {shift.recettes.toFixed(2)}€
+                              {shift.recettes ? shift.recettes.toFixed(2) : '0.00'}€
                             </p>
                             <p className="text-xs text-gray-500 dark:text-gray-400">
                               {shift.statut}
@@ -683,8 +883,8 @@ const TxAppAdmin = () => {
                             <td className="px-6 py-4 whitespace-nowrap">{v ? v.plaque_immatriculation : '—'}</td>
                             <td className="px-6 py-4 whitespace-nowrap">{s.heure_debut} → {s.heure_fin}</td>
                             <td className="px-6 py-4 whitespace-nowrap">{s.nb_courses}</td>
-                            <td className="px-6 py-4 whitespace-nowrap">{s.recettes.toFixed(2)}€</td>
-                            <td className="px-6 py-4 whitespace-nowrap">{s.charges.toFixed(2)}€</td>
+                            <td className="px-6 py-4 whitespace-nowrap">{s.recettes ? s.recettes.toFixed(2) : '0.00'}€</td>
+                            <td className="px-6 py-4 whitespace-nowrap">{s.charges ? s.charges.toFixed(2) : '0.00'}€</td>
                             <td className="px-6 py-4 whitespace-nowrap">
                               <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-100">{s.statut}</span>
                             </td>
@@ -792,7 +992,7 @@ const TxAppAdmin = () => {
                   <div className="flex items-center justify-between gap-4">
                     <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Gestion des Charges</h2>
                     <div className="flex items-center gap-4">
-                      <div className="text-sm text-gray-700 dark:text-gray-200">Total: <span className="font-semibold">{chargesTotal.toFixed(2)}€</span></div>
+                      <div className="text-sm text-gray-700 dark:text-gray-200">Total: <span className="font-semibold">{chargesTotal ? chargesTotal.toFixed(2) : '0.00'}€</span></div>
                       <Button
                         onClick={handleAddCharge}
                         variant="primary"
@@ -893,4 +1093,3 @@ const TxAppAdmin = () => {
 };
 
 export default TxAppAdmin;
-

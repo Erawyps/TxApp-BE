@@ -33,7 +33,7 @@ export const tripStatusOptions = [
   {
     value: "Annulée",
     label: "Annulée",
-    color: "danger",
+    color: "error",
     icon: XCircleIcon,
   },
   {
@@ -45,10 +45,11 @@ export const tripStatusOptions = [
 ];
 
 export const paymentMethods = [
-  { value: "Cash", label: "Espèces", color: "success" },
-  { value: "Bancontact", label: "Bancontact", color: "primary" },
-  { value: "Facture", label: "Facture", color: "info" },
-  { value: "Virement", label: "Virement", color: "primary" },
+  { value: "Espèces", label: "Espèces", color: "success" },
+  { value: "Carte Bancaire", label: "Carte Bancaire", color: "primary" },
+  { value: "Virement bancaire", label: "Virement bancaire", color: "secondary" },
+  { value: "Bancontact", label: "Bancontact", color: "info" },
+  { value: "Facture", label: "Facture", color: "warning" },
 ];
 
 export const tripsList = [

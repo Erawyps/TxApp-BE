@@ -25,6 +25,9 @@ export function CoursesList({
   onShowExpenseForm,
   onShowExternalCourseForm
 }) {
+  console.log('CoursesList - courses:', courses.length, 'filteredCourses:', filteredCourses.length);
+  console.log('CoursesList - courses data:', courses);
+  console.log('CoursesList - filteredCourses data:', filteredCourses);
   return (
     <div className="space-y-4">
       <Card className="p-4">

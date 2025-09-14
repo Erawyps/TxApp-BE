@@ -1,42 +1,41 @@
 import { Card } from "components/ui";
-import { kpis } from "./data";
 import { FaTaxi, FaEuroSign, FaRoad, FaUserTie, FaCarSide, FaChartLine } from "react-icons/fa6";
 
-export default function KpiCards() {
+export default function KpiCards({ kpis, loading = false }) {
   const cards = [
-    { 
-      title: "Courses Effectuées", 
-      value: kpis.totalCourses, 
+    {
+      title: "Courses Effectuées",
+      value: loading ? "..." : kpis.totalCourses,
       icon: <FaTaxi size={24} />,
       description: "Nombre total de courses"
     },
-    { 
-      title: "Revenus Totaux", 
-      value: `${kpis.totalRevenue.toFixed(2)} €`, 
+    {
+      title: "Revenus Totaux",
+      value: loading ? "..." : `${Number(kpis.totalRevenue || 0).toFixed(2)} €`,
       icon: <FaEuroSign size={24} />,
       description: "Chiffre d'affaires total"
     },
-    { 
-      title: "Revenu Moyen", 
-      value: `${kpis.averageEarningsPerTrip.toFixed(2)} €`, 
+    {
+      title: "Revenu Moyen",
+      value: loading ? "..." : `${Number(kpis.averageEarningsPerTrip || 0).toFixed(2)} €`,
       icon: <FaChartLine size={24} />,
       description: "Par course"
     },
-    { 
-      title: "Chauffeurs Actifs", 
-      value: kpis.chauffeursActifs, 
+    {
+      title: "Chauffeurs Actifs",
+      value: loading ? "..." : kpis.chauffeursActifs,
       icon: <FaUserTie size={24} />,
       description: "Nombre de chauffeurs ayant effectué des courses"
     },
-    { 
-      title: "Distance Totale", 
-      value: `${kpis.totalDistance.toFixed(1)} km`, 
+    {
+      title: "Distance Totale",
+      value: loading ? "..." : `${Number(kpis.totalDistance || 0).toFixed(1)} km`,
       icon: <FaRoad size={24} />,
       description: "Kilomètres parcourus"
     },
-    { 
-      title: "Distance Moyenne", 
-      value: `${kpis.averageDistancePerTrip.toFixed(1)} km`, 
+    {
+      title: "Distance Moyenne",
+      value: loading ? "..." : `${Number(kpis.averageDistancePerTrip || 0).toFixed(1)} km`,
       icon: <FaCarSide size={24} />,
       description: "Par course"
     },

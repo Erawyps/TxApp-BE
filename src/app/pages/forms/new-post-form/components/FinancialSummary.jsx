@@ -125,8 +125,8 @@ export function FinancialSummary({ courses, expenses = [], externalCourses = [] 
                     </span>
                   </div>
                   <div className="text-right">
-                    <div className="font-medium">{course.sommes_percues.toFixed(2)} €</div>
-                    <div className="text-xs text-gray-500">{course.mode_paiement}</div>
+                    <div className="font-medium">{(course.sommes_percues || 0).toFixed(2)} €</div>
+                    <div className="text-xs text-gray-500">{course.mode_paiement?.libelle || course.mode_paiement || 'N/A'}</div>
                   </div>
                 </div>
               ))}
