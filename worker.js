@@ -25,13 +25,20 @@ const cloudflareChallengeMiddleware = async (c, next) => {
   c.header('X-Robots-Tag', 'noindex');
   c.header('CF-Cache-Status', 'DYNAMIC');
   c.header('Cache-Control', 'no-cache, no-store, must-revalidate');
+  c.header('CF-Ray', c.req.header('CF-Ray') || 'bypass');
+  c.header('User-Agent', 'Mozilla/5.0 (compatible; TxApp-API/1.0)');
+  c.header('Accept', 'application/json');
+  c.header('X-Requested-With', 'XMLHttpRequest');
 
   await next();
 
-  // S'assurer que la réponse a les bons headers CORS
+  // S'assurer que la réponse a les bons headers CORS après l'exécution
   c.header('Access-Control-Allow-Origin', 'https://txapp.be');
   c.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
   c.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
+  c.header('Access-Control-Allow-Credentials', 'true');
+  c.header('X-Content-Type-Options', 'nosniff');
+  c.header('X-Frame-Options', 'DENY');
 };
 
 // Appliquer le middleware Cloudflare à toutes les routes API
@@ -39,10 +46,11 @@ app.use('/api/*', cloudflareChallengeMiddleware);
 
 // CORS pour toutes les routes
 app.use('*', cors({
-  origin: ['https://txapp.be', 'https://www.txapp.be'],
-  allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowHeaders: ['Content-Type', 'Authorization'],
-  credentials: true
+  origin: ['https://txapp.be', 'https://www.txapp.be', 'http://localhost:5173', 'http://localhost:3000'],
+  allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+  allowHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin'],
+  credentials: true,
+  maxAge: 86400
 }));
 
 // Health check
@@ -51,6 +59,13 @@ app.get('/api/health', (c) => c.json({
   env: 'worker',
   timestamp: new Date().toISOString(),
   database: 'connected'
+}, {
+  headers: {
+    'Content-Type': 'application/json',
+    'X-API-Version': '1.0',
+    'X-Rate-Limit-Remaining': '999',
+    'X-Rate-Limit-Reset': new Date(Date.now() + 3600000).toISOString()
+  }
 }));
 
 // Middleware pour initialiser la connexion PostgreSQL avec Hyperdrive
