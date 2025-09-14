@@ -7,6 +7,15 @@ set -e  # Arrêter le script en cas d'erreur
 
 echo "🚀 Début du déploiement TxApp en production..."
 
+# Charger les variables d'environnement depuis .env.production
+if [ -f ".env.production" ]; then
+    echo "📄 Chargement des variables depuis .env.production..."
+    export $(grep -v '^#' .env.production | xargs)
+else
+    echo "❌ Fichier .env.production non trouvé"
+    exit 1
+fi
+
 # Vérification des variables d'environnement critiques
 if [ -z "$DATABASE_URL" ]; then
     echo "❌ Variable DATABASE_URL manquante"
@@ -36,16 +45,16 @@ npx prisma generate
 # Test de connexion à la base de données
 echo "🔗 Test de connexion à la base de données..."
 node -e "
-import { testDatabaseConnection } from './src/configs/database.config.js';
-testDatabaseConnection().then(connected => {
-  if (!connected) {
-    console.error('❌ Connexion DB échouée');
-    process.exit(1);
-  }
+const { PrismaClient } = require('./prisma/node_modules/.prisma/client');
+const prisma = new PrismaClient();
+prisma.\$queryRaw\`SELECT 1\`.then(() => {
   console.log('✅ Connexion DB réussie');
+  process.exit(0);
 }).catch(err => {
-  console.error('❌ Erreur de connexion DB:', err);
+  console.error('❌ Connexion DB échouée:', err.message);
   process.exit(1);
+}).finally(() => {
+  prisma.\$disconnect();
 });
 "
 
