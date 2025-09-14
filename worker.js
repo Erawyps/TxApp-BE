@@ -7,6 +7,36 @@ import postgres from 'postgres';
 
 const app = new Hono();
 
+// Middleware pour gérer les challenges Cloudflare
+const cloudflareChallengeMiddleware = async (c, next) => {
+  // Détecter si la requête vient de Cloudflare avec un challenge
+  const cfRay = c.req.header('CF-RAY');
+  const cfMitigated = c.req.header('CF-Mitigated');
+
+  if (cfMitigated === 'challenge') {
+    // Si c'est un challenge Cloudflare, retourner une réponse appropriée
+    return c.json({
+      error: 'Cloudflare challenge detected',
+      message: 'Please complete the security challenge and try again'
+    }, 403);
+  }
+
+  // Ajouter des headers pour aider à bypass la protection Cloudflare
+  c.header('X-Robots-Tag', 'noindex');
+  c.header('CF-Cache-Status', 'DYNAMIC');
+  c.header('Cache-Control', 'no-cache, no-store, must-revalidate');
+
+  await next();
+
+  // S'assurer que la réponse a les bons headers CORS
+  c.header('Access-Control-Allow-Origin', 'https://txapp.be');
+  c.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  c.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
+};
+
+// Appliquer le middleware Cloudflare à toutes les routes API
+app.use('/api/*', cloudflareChallengeMiddleware);
+
 // CORS pour toutes les routes
 app.use('*', cors({
   origin: ['https://txapp.be', 'https://www.txapp.be'],
