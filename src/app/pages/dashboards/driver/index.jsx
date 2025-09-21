@@ -156,10 +156,10 @@ export default function DriverDashboard() {
   ];
 
   // Check if user has admin privileges (you may need to adjust this logic)
-  const isAdmin = user?.type_utilisateur === 'ADMIN' || user?.type_utilisateur === 'admin';
+  const isAdmin = user?.type_utilisateur === 'ADMIN';
 
   // Vérifier si l'utilisateur est un chauffeur
-  const isChauffeur = user?.type_utilisateur === 'CHAUFFEUR' || user?.type_utilisateur === 'chauffeur';
+  const isChauffeur = user?.type_utilisateur === 'CHAUFFEUR';
 
   if (shiftLoading) {
     return (

@@ -29,10 +29,10 @@ export default function DashboardRouter() {
 
   const getDashboardPath = (userType) => {
     const dashboardRoutes = {
-      admin: '/dashboard/admin',
-      gestionnaire: '/dashboard/gestionnaire',
-      chauffeur: '/dashboard/chauffeur',
-      client: '/dashboard/client'
+      ADMIN: '/dashboard/admin',
+      GESTIONNAIRE: '/dashboard/gestionnaire',
+      CHAUFFEUR: '/dashboard/chauffeur',
+      CLIENT: '/dashboard/client'
     };
 
     return dashboardRoutes[userType] || '/dashboard';
@@ -40,7 +40,7 @@ export default function DashboardRouter() {
 
   const getUserTypeInfo = (userType) => {
     const userTypes = {
-      admin: {
+      ADMIN: {
         icon: ShieldCheckIcon,
         title: 'Administrateur',
         description: 'Accès complet à la gestion de la plateforme',
@@ -53,7 +53,7 @@ export default function DashboardRouter() {
           'Configuration système'
         ]
       },
-      gestionnaire: {
+      GESTIONNAIRE: {
         icon: CogIcon,
         title: 'Gestionnaire',
         description: 'Gestion opérationnelle et supervision',
@@ -66,7 +66,7 @@ export default function DashboardRouter() {
           'Support client'
         ]
       },
-      chauffeur: {
+      CHAUFFEUR: {
         icon: TruckIcon,
         title: 'Chauffeur',
         description: 'Gestion de vos courses et feuilles de route',
@@ -79,7 +79,7 @@ export default function DashboardRouter() {
           'Rapports quotidiens'
         ]
       },
-      client: {
+      CLIENT: {
         icon: UserGroupIcon,
         title: 'Client',
         description: 'Réservation et suivi de vos courses',

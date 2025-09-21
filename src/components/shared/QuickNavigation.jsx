@@ -17,8 +17,8 @@ export function QuickNavigation() {
   const location = useLocation();
   const [isExpanded, setIsExpanded] = useState(false);
 
-  const isAdmin = user?.type_utilisateur === 'admin' || user?.role === 'admin';
-  const isDriver = user?.type_utilisateur === 'chauffeur' || user?.role === 'chauffeur';
+  const isAdmin = user?.type_utilisateur === 'ADMIN';
+  const isDriver = user?.type_utilisateur === 'CHAUFFEUR';
 
   const navigationItems = [
     {
@@ -31,26 +31,26 @@ export function QuickNavigation() {
       name: 'Tableau Chauffeur',
       href: '/dashboards/driver',
       icon: TruckIcon,
-      roles: ['chauffeur', 'admin']
+      roles: ['CHAUFFEUR', 'ADMIN']
     },
     {
       name: 'Supervision Admin',
       href: '/admin/oversight',
       icon: EyeIcon,
-      roles: ['admin'],
+      roles: ['ADMIN'],
       badge: true
     },
     {
       name: 'Gestion Courses',
       href: '/admin/courses',
       icon: ChartBarIcon,
-      roles: ['admin']
+      roles: ['ADMIN']
     },
     {
       name: 'Formulaires',
       href: '/forms/ekyc-form',
       icon: DocumentTextIcon,
-      roles: ['admin']
+      roles: ['ADMIN']
     },
     {
       name: 'Profil',
@@ -62,14 +62,14 @@ export function QuickNavigation() {
       name: 'Paramètres',
       href: '/settings',
       icon: CogIcon,
-      roles: ['admin']
+      roles: ['ADMIN']
     }
   ];
 
   const filteredItems = navigationItems.filter(item => {
     if (item.roles.includes('all')) return true;
-    if (isAdmin && item.roles.includes('admin')) return true;
-    if (isDriver && item.roles.includes('chauffeur')) return true;
+        if (isAdmin && item.roles.includes('ADMIN')) return true;
+    if (isDriver && item.roles.includes('CHAUFFEUR')) return true;
     return false;
   });
 

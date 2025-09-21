@@ -4,7 +4,7 @@ import PropTypes from "prop-types";
 import isObject from "lodash/isObject";
 
 // Local Imports
-import { loginUser, getUserProfile, createUser } from "services/auth";
+import { loginUser, getUserProfile, createUser, updateUserProfile } from "services/auth";
 import { isTokenValid, setSession, getCurrentUser, generateToken } from "utils/jwt";
 import { AuthContext } from "./context";
 
@@ -263,12 +263,17 @@ export function AuthProvider({ children }) {
 
   const updateProfile = async (profileData) => {
     try {
+      // Mettre à jour en base de données
+      const updatedUser = await updateUserProfile(state.user.id, profileData);
+
+      // Mettre à jour l'état local avec l'utilisateur mis à jour
       dispatch({
         type: "UPDATE_PROFILE",
         payload: {
-          user: profileData,
+          user: updatedUser,
         },
       });
+
       return { success: true };
     } catch (error) {
       console.error("Erreur lors de la mise à jour du profil:", error);

@@ -53,7 +53,7 @@ const signUpSchema = yup.object().shape({
     .required("Le numéro de téléphone est requis"),
   type_utilisateur: yup
     .string()
-    .oneOf(['client', 'chauffeur'], "Type d'utilisateur invalide")
+    .oneOf(['CLIENT', 'CHAUFFEUR'], "Type d'utilisateur invalide")
     .required("Le type d'utilisateur est requis"),
   adresse: yup
     .string()
@@ -113,26 +113,26 @@ export default function SignUp() {
 
   const getRedirectPath = (userType) => {
     const redirectMap = {
-      admin: '/dashboard/admin',
-      gestionnaire: '/dashboard/gestionnaire',
-      chauffeur: '/dashboard/chauffeur',
-      client: '/dashboard/client'
+      ADMIN: '/dashboard/admin',
+      GESTIONNAIRE: '/dashboard/gestionnaire',
+      CHAUFFEUR: '/dashboard/chauffeur',
+      CLIENT: '/dashboard/client'
     };
     return redirectMap[userType] || '/dashboard';
   };
 
   const getUserTypeLabel = (type) => {
     const labels = {
-      client: 'Client',
-      chauffeur: 'Chauffeur'
+      CLIENT: 'Client',
+      CHAUFFEUR: 'Chauffeur'
     };
     return labels[type] || type;
   };
 
   const getUserTypeDescription = (type) => {
     const descriptions = {
-      client: 'Réservation et suivi de courses',
-      chauffeur: 'Gestion des courses et véhicules'
+      CLIENT: 'Réservation et suivi de courses',
+      CHAUFFEUR: 'Gestion des courses et véhicules'
     };
     return descriptions[type] || '';
   };
@@ -365,7 +365,7 @@ export default function SignUp() {
                     Type de compte
                   </label>
                   <div className="grid grid-cols-1 gap-3">
-                    {['client', 'chauffeur'].map((type) => (
+                    {['CLIENT', 'CHAUFFEUR'].map((type) => (
                       <div
                         key={type}
                         onClick={() => handleTypeChange(type)}

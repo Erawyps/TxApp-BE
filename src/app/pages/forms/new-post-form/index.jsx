@@ -38,6 +38,9 @@ import { getModesPaiement } from "services/modesPaiement";
 import { getCharges, createCharge } from "services/charges";
 import { getReglesSalaireForDropdown } from "services/reglesSalaire";
 
+// Hooks
+import { useAuth } from "hooks/useAuth";
+
 // ----------------------------------------------------------------------
 
 const tabs = [
@@ -60,6 +63,9 @@ export default function TxApp() {
   const [currentChauffeur, setCurrentChauffeur] = useState(null);
   const [reglesSalaire, setReglesSalaire] = useState([]);
 
+  // Authentification
+  const { user, isAuthenticated, isLoading: authLoading } = useAuth();
+
   // Modal states
   const [showCourseModal, setShowCourseModal] = useState(false);
   const [showVehicleModal, setShowVehicleModal] = useState(false);
@@ -77,13 +83,111 @@ export default function TxApp() {
   // Vérifier s'il y a un shift actif
   const hasActiveShift = Boolean(currentFeuilleRoute && currentFeuilleRoute.statut === 'En cours');
 
-  // Debug: Log des courses
+  // Vérification d'authentification et permissions
   useEffect(() => {
-    console.log('Courses state updated:', courses.length, 'courses');
-    if (courses.length > 0) {
-      console.log('Sample course:', courses[0]);
+    if (!authLoading && !isAuthenticated) {
+      console.warn('Utilisateur non authentifié - redirection vers login');
+      // TODO: Rediriger vers la page de connexion
+      return;
     }
-  }, [courses]);
+
+    if (!authLoading && isAuthenticated && user) {
+      console.log('Utilisateur connecté:', {
+        id: user.id,
+        nom: user.nom,
+        prenom: user.prenom,
+        type: user.type_utilisateur
+      });
+
+      // Vérifier que l'utilisateur est un chauffeur
+      if (user.type_utilisateur !== 'CHAUFFEUR') {
+        console.warn('❌ Accès refusé: L\'utilisateur connecté n\'est pas un chauffeur');
+        console.log('Type utilisateur:', user.type_utilisateur);
+        console.log('Types autorisés: CHAUFFEUR');
+
+        // Afficher un message d'erreur et empêcher l'accès
+        toast.error('Accès refusé: Cette interface est réservée aux chauffeurs');
+        // TODO: Rediriger vers une page d'erreur ou le dashboard approprié
+        return;
+      }
+
+      console.log('✅ Permissions validées: Utilisateur chauffeur autorisé');
+    }
+  }, [user, isAuthenticated, authLoading]);
+
+  // Synchronisation des données en temps réel avec l'utilisateur connecté
+  useEffect(() => {
+    if (isAuthenticated && user && currentChauffeur) {
+      // Vérifier que le chauffeur actuel correspond bien à l'utilisateur connecté
+      if (currentChauffeur.utilisateur_id !== user.id) {
+        console.log('🔄 Synchronisation: Rechargement des données pour le nouvel utilisateur');
+
+        // Recharger les données pour le bon utilisateur
+        const loadUserSpecificData = async () => {
+          try {
+            console.log('🔄 Rechargement des données utilisateur...');
+
+            // Recharger les chauffeurs pour s'assurer d'avoir les données à jour
+            const chauffeursResponse = await getChauffeurs();
+            const chauffeursList = chauffeursResponse?.data || [];
+            const validChauffeurs = chauffeursList.filter(ch =>
+              ch && ch.utilisateur && ch.utilisateur.nom && ch.utilisateur.prenom
+            );
+
+            // Trouver le chauffeur correspondant à l'utilisateur connecté
+            const userChauffeur = validChauffeurs.find(ch => ch.utilisateur_id === user.id);
+
+            if (userChauffeur) {
+              console.log('✅ Chauffeur synchronisé pour l\'utilisateur connecté');
+              setCurrentChauffeur(userChauffeur);
+
+              // Recharger les courses du chauffeur
+              if (userChauffeur.metrics && userChauffeur.metrics.courses) {
+                const chauffeurCourses = userChauffeur.metrics.courses.map((course, index) => ({
+                  id: course.id,
+                  numero_ordre: index + 1,
+                  index_embarquement: course.index_depart || 0,
+                  index_debarquement: course.index_arrivee || 0,
+                  lieu_embarquement: course.depart || 'Point de départ non spécifié',
+                  lieu_debarquement: course.arrivee || 'Point d\'arrivée non spécifié',
+                  heure_embarquement: course.date ? new Date(course.date).toLocaleTimeString('fr-FR', {
+                    hour: '2-digit',
+                    minute: '2-digit'
+                  }) : '00:00',
+                  heure_debarquement: course.date ? new Date(course.date).toLocaleTimeString('fr-FR', {
+                    hour: '2-digit',
+                    minute: '2-digit'
+                  }) : '00:00',
+                  prix_taximetre: parseFloat(course.prix_taximetre) || 0,
+                  sommes_percues: parseFloat(course.somme_percue) || 0,
+                  mode_paiement: course.mode_paiement || 'CASH',
+                  client: course.client || '',
+                  distance_km: parseInt(course.distance_km) || 0,
+                  ratio_euro_km: parseFloat(course.ratio_euro_km) || 0,
+                  status: 'completed',
+                  notes: `Course du ${new Date(course.date).toLocaleDateString('fr-FR')} - ${course.depart} → ${course.arrivee}`,
+                  chauffeur_id: userChauffeur.id,
+                  utilisateur_id: userChauffeur.utilisateur_id
+                }));
+
+                setCourses(chauffeurCourses);
+                console.log('✅ Courses synchronisées pour l\'utilisateur connecté:', chauffeurCourses.length);
+              }
+            } else {
+              console.warn('❌ Aucun chauffeur trouvé pour l\'utilisateur connecté');
+              // Réinitialiser les données
+              setCurrentChauffeur(null);
+              setCourses([]);
+            }
+          } catch (error) {
+            console.error('❌ Erreur lors de la synchronisation des données:', error);
+          }
+        };
+
+        loadUserSpecificData();
+      }
+    }
+  }, [user, isAuthenticated, currentChauffeur]);
 
   // Chargement initial des données
   useEffect(() => {
@@ -217,32 +321,71 @@ export default function TxApp() {
             });
           });
 
-          // Chercher spécifiquement François-José Dubois
-          let chauffeur = validChauffeurs.find(ch =>
-            ch.utilisateur.prenom === 'François-José' &&
-            ch.utilisateur.nom === 'Dubois'
-          );
+          let chauffeur = null;
 
-          console.log('Recherche Dubois par nom complet:', chauffeur ? '✅ Trouvé' : '❌ Non trouvé');
+          // Si l'utilisateur est connecté, chercher le chauffeur correspondant
+          if (isAuthenticated && user) {
+            console.log('🔍 Recherche du chauffeur pour l\'utilisateur connecté:', {
+              userId: user.id,
+              userNom: user.nom,
+              userPrenom: user.prenom
+            });
 
-          // Si pas trouvé, chercher par prénom seulement
-          if (!chauffeur) {
+            // Chercher par ID utilisateur d'abord
+            chauffeur = validChauffeurs.find(ch => ch.utilisateur_id === user.id);
+
+            if (chauffeur) {
+              console.log('✅ Chauffeur trouvé par ID utilisateur');
+            } else {
+              // Chercher par nom/prénom si pas trouvé par ID
+              chauffeur = validChauffeurs.find(ch =>
+                ch.utilisateur.nom === user.nom &&
+                ch.utilisateur.prenom === user.prenom
+              );
+
+              if (chauffeur) {
+                console.log('✅ Chauffeur trouvé par nom/prénom');
+              } else {
+                console.log('❌ Aucun chauffeur trouvé pour l\'utilisateur connecté');
+                console.log('Utilisateurs connecté:', { id: user.id, nom: user.nom, prenom: user.prenom });
+                console.log('Chauffeurs disponibles:', validChauffeurs.map(c => ({
+                  id: c.id,
+                  utilisateur_id: c.utilisateur_id,
+                  nom: c.utilisateur?.nom,
+                  prenom: c.utilisateur?.prenom
+                })));
+              }
+            }
+          } else {
+            console.log('⚠️ Utilisateur non connecté, utilisation du mode dégradé');
+
+            // Mode dégradé: chercher François-José Dubois (logique existante)
             chauffeur = validChauffeurs.find(ch =>
-              ch.utilisateur.prenom === 'François-José'
+              ch.utilisateur.prenom === 'François-José' &&
+              ch.utilisateur.nom === 'Dubois'
             );
-            console.log('Recherche Dubois par prénom seulement:', chauffeur ? '✅ Trouvé' : '❌ Non trouvé');
-          }
 
-          // Si toujours pas trouvé, prendre le premier chauffeur actif
-          if (!chauffeur) {
-            chauffeur = validChauffeurs.find(ch => ch.actif);
-            console.log('Recherche premier chauffeur actif:', chauffeur ? '✅ Trouvé' : '❌ Non trouvé');
-          }
+            console.log('Recherche Dubois par nom complet:', chauffeur ? '✅ Trouvé' : '❌ Non trouvé');
 
-          // Si toujours pas trouvé, prendre le premier de la liste
-          if (!chauffeur) {
-            chauffeur = validChauffeurs[0];
-            console.log('Prendre le premier chauffeur:', chauffeur ? '✅ Trouvé' : '❌ Non trouvé');
+            // Si pas trouvé, chercher par prénom seulement
+            if (!chauffeur) {
+              chauffeur = validChauffeurs.find(ch =>
+                ch.utilisateur.prenom === 'François-José'
+              );
+              console.log('Recherche Dubois par prénom seulement:', chauffeur ? '✅ Trouvé' : '❌ Non trouvé');
+            }
+
+            // Si toujours pas trouvé, prendre le premier chauffeur actif
+            if (!chauffeur) {
+              chauffeur = validChauffeurs.find(ch => ch.actif);
+              console.log('Recherche premier chauffeur actif:', chauffeur ? '✅ Trouvé' : '❌ Non trouvé');
+            }
+
+            // Si toujours pas trouvé, prendre le premier de la liste
+            if (!chauffeur) {
+              chauffeur = validChauffeurs[0];
+              console.log('Prendre le premier chauffeur:', chauffeur ? '✅ Trouvé' : '❌ Non trouvé');
+            }
           }
 
           console.log('Chauffeurs disponibles:', chauffeursList.map(c => ({
@@ -261,14 +404,26 @@ export default function TxApp() {
               nom: chauffeur.utilisateur?.nom,
               prenom: chauffeur.utilisateur?.prenom,
               actif: chauffeur.actif,
-              courses_count: chauffeur.metrics?.courses?.length || 0
+              courses_count: chauffeur.metrics?.courses?.length || 0,
+              utilisateur_id: chauffeur.utilisateur_id,
+              user_connecte_id: user?.id
             });
+
+            // Vérifier la cohérence entre l'utilisateur connecté et le chauffeur
+            if (isAuthenticated && user && chauffeur.utilisateur_id !== user.id) {
+              console.warn('⚠️ Incohérence détectée: Le chauffeur sélectionné ne correspond pas à l\'utilisateur connecté');
+              console.log('Utilisateur connecté:', { id: user.id, nom: user.nom, prenom: user.prenom });
+              console.log('Chauffeur sélectionné:', { utilisateur_id: chauffeur.utilisateur_id, nom: chauffeur.utilisateur.nom, prenom: chauffeur.utilisateur.prenom });
+
+              // En mode production, on pourrait empêcher l'accès ou afficher un message d'erreur
+              // Pour l'instant, on continue mais on log l'incohérence
+            }
 
             setCurrentChauffeur(chauffeur);
 
-            // Charger les courses depuis les métriques du chauffeur (toutes ses courses)
+            // Charger les courses depuis les métriques du chauffeur (uniquement celles du chauffeur connecté)
             if (chauffeur.metrics && chauffeur.metrics.courses) {
-              console.log('📋 Chargement des courses depuis métriques...');
+              console.log('📋 Chargement des courses depuis métriques du chauffeur connecté...');
 
               // Transformer les courses des métriques pour correspondre au format attendu
               const chauffeurCourses = chauffeur.metrics.courses.map((course, index) => ({
@@ -293,10 +448,14 @@ export default function TxApp() {
                 distance_km: parseInt(course.distance_km) || 0,
                 ratio_euro_km: parseFloat(course.ratio_euro_km) || 0,
                 status: 'completed',
-                notes: `Course du ${new Date(course.date).toLocaleDateString('fr-FR')} - ${course.depart} → ${course.arrivee}`
+                notes: `Course du ${new Date(course.date).toLocaleDateString('fr-FR')} - ${course.depart} → ${course.arrivee}`,
+                // Marquer que ces données appartiennent au chauffeur connecté
+                chauffeur_id: chauffeur.id,
+                utilisateur_id: chauffeur.utilisateur_id
               }));
+
               setCourses(chauffeurCourses);
-              console.log('✅ Courses transformées:', chauffeurCourses.length);
+              console.log('✅ Courses du chauffeur connecté chargées:', chauffeurCourses.length);
               console.log('📋 Détails des courses:', chauffeurCourses.map(c => ({
                 id: c.id,
                 numero: c.numero_ordre,
@@ -382,7 +541,7 @@ export default function TxApp() {
     };
 
     loadInitialData();
-  }, []);
+  }, [isAuthenticated, user]);
 
   const handleDownloadReport = () => {
     try {

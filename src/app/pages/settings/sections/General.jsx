@@ -11,6 +11,7 @@ import { toast } from "react-toastify";
 import { PreviewImg } from "components/shared/PreviewImg";
 import { Avatar, Button, Input, Upload } from "components/ui";
 import { useAuthContext } from "app/contexts/auth/context";
+import { updateUserProfile } from "services/auth";
 
 // ----------------------------------------------------------------------
 
@@ -30,7 +31,7 @@ const generalSchema = yup.object({
 });
 
 export default function General() {
-  const { user, updateProfile } = useAuthContext();
+  const { user, updateProfile, refreshUserProfile } = useAuthContext();
   const [avatar, setAvatar] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
@@ -48,11 +49,19 @@ export default function General() {
   const handleUpdateProfile = async (data) => {
     setIsLoading(true);
     try {
-      // TODO: Implement profile update logic
-      await updateProfile(data);
+      // Mettre à jour en base de données
+      const updatedUser = await updateUserProfile(user.id, data);
+
+      // Mettre à jour l'état local
+      await updateProfile(updatedUser);
+
+      // Rafraîchir le profil depuis la base
+      await refreshUserProfile();
+
       setIsEditing(false);
       toast.success("Informations mises à jour avec succès");
-    } catch {
+    } catch (error) {
+      console.error("Erreur lors de la mise à jour:", error);
       toast.error("Erreur lors de la mise à jour des informations");
     } finally {
       setIsLoading(false);
@@ -66,10 +75,10 @@ export default function General() {
 
   const getUserTypeLabel = (type) => {
     const labels = {
-      admin: "Administrateur",
-      gestionnaire: "Gestionnaire",
-      chauffeur: "Chauffeur",
-      client: "Client",
+      ADMIN: "Administrateur",
+      GESTIONNAIRE: "Gestionnaire",
+      CHAUFFEUR: "Chauffeur",
+      CLIENT: "Client",
     };
     return labels[type] || type;
   };
