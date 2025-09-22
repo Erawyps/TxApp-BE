@@ -44,7 +44,7 @@ export function SubRowComponent({ row, cardWidth }) {
               <Td>{(course.prix_final || 0).toFixed(2)} €</Td>
               <Td>
                 <Tag color={course.mode_paiement?.libelle === 'Espèces' ? 'success' : 'primary'}>
-                  {course.mode_paiement?.libelle || course.mode_paiement || 'N/A'}
+                  {course.mode_paiement?.libelle || 'N/A'}
                 </Tag>
               </Td>
               <Td className="px-0 ltr:rounded-r-lg rtl:rounded-l-lg">

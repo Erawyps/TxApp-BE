@@ -68,7 +68,7 @@ export function SubRowComponent({ row, cardWidth }) {
                                 <Td>{course.prix} €</Td>
                                 <Td className="px-0 font-medium text-gray-800 dark:text-dark-100 ltr:rounded-r-lg rtl:rounded-l-lg">
                                     <Badge color="info" className="capitalize">
-                                        {course.mode_paiement?.libelle || course.mode_paiement || 'N/A'}
+                                        {course.mode_paiement?.libelle || 'N/A'}
                                     </Badge>
                                 </Td>
                             </Tr>

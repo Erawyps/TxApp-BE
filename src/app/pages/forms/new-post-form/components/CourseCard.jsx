@@ -65,7 +65,7 @@ export function CourseCard({ course, onEdit, onDelete, onView }) {
               </span>
               <span className="flex items-center gap-1">
                 <BanknotesIcon className="h-4 w-4" />
-                {(course.sommes_percues || 0).toFixed(2)} € ({course.mode_paiement?.libelle || course.mode_paiement || 'N/A'})
+                {(course.sommes_percues || 0).toFixed(2)} € ({course.mode_paiement?.libelle || 'N/A'})
               </span>
             </div>
             <div className="flex items-center gap-4 text-sm text-gray-500 dark:text-gray-400">
