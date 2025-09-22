@@ -642,17 +642,8 @@ app.post('/api/feuilles-route', dbMiddleware, authMiddleware, async (c) => {
   }
 });
 
-// Servir les assets statiques
-app.get('*', async (c) => {
-  try {
-    return c.env.ASSETS.fetch(c.req.raw);
-  } catch (error) {
-    return new Response('Not Found', { status: 404 });
-  }
-});
-
 // Routes pour le dashboard
-app.get('/api/dashboard/courses', dbMiddleware, authMiddleware, async (c) => {
+app.get('/api/dashboard/courses', dbMiddleware, async (c) => {
   try {
     const url = new URL(c.req.url);
     const page = parseInt(url.searchParams.get('page')) || 1;
@@ -725,99 +716,89 @@ app.get('/api/dashboard/courses', dbMiddleware, authMiddleware, async (c) => {
 });
 
 // Route pour les statistiques des courses
-app.get('/api/dashboard/courses/stats', dbMiddleware, authMiddleware, async (c) => {
+app.get('/api/dashboard/courses/stats', dbMiddleware, async (c) => {
   try {
-    const url = new URL(c.req.url);
-    const dateFrom = url.searchParams.get('dateFrom');
-    const dateTo = url.searchParams.get('dateTo');
-    const chauffeurId = url.searchParams.get('chauffeurId');
-
     const sql = c.get('db');
 
-    // Construire la clause WHERE
-    let whereClause = '';
-    const params = [];
-
-    if (dateFrom) {
-      whereClause += ' AND c.created_at >= $' + (params.length + 1);
-      params.push(dateFrom);
-    }
-    if (dateTo) {
-      whereClause += ' AND c.created_at <= $' + (params.length + 1);
-      params.push(dateTo);
-    }
-    if (chauffeurId) {
-      whereClause += ' AND fr.chauffeur_id = $' + (params.length + 1);
-      params.push(parseInt(chauffeurId));
+    // Test simple de connexion DB
+    const testQuery = await sql`SELECT 1 as test`;
+    if (!testQuery || testQuery.length === 0) {
+      throw new Error('Database connection failed');
     }
 
-    // Nombre total de courses
-    const totalCoursesResult = await sql`
-      SELECT COUNT(*) as count
-      FROM course c
-      LEFT JOIN feuille_route fr ON c.feuille_route_id = fr.id
-      WHERE 1=1 ${whereClause}
-    `;
+    // Statistiques simples et sûres
+    const stats = {
+      totalCourses: 0,
+      totalRevenue: 0,
+      totalDistance: 0,
+      chauffeursActifs: 0,
+      vehiculesUtilises: 0,
+      timestamp: new Date().toISOString()
+    };
 
-    // Revenus totaux
-    const totalRevenueResult = await sql`
-      SELECT COALESCE(SUM(c.somme_percue), 0) as revenue
-      FROM course c
-      LEFT JOIN feuille_route fr ON c.feuille_route_id = fr.id
-      WHERE 1=1 ${whereClause}
-    `;
+    try {
+      // Nombre total de courses (requête simple)
+      const totalCoursesResult = await sql`SELECT COUNT(*) as count FROM course`;
+      stats.totalCourses = parseInt(totalCoursesResult[0]?.count || 0);
+    } catch (error) {
+      console.error('Error fetching total courses:', error);
+    }
 
-    // Distance totale
-    const totalDistanceResult = await sql`
-      SELECT COALESCE(SUM(c.distance_km), 0) as distance
-      FROM course c
-      LEFT JOIN feuille_route fr ON c.feuille_route_id = fr.id
-      WHERE 1=1 ${whereClause}
-    `;
+    try {
+      // Revenus totaux
+      const totalRevenueResult = await sql`SELECT COALESCE(SUM(somme_percue), 0) as revenue FROM course`;
+      stats.totalRevenue = parseFloat(totalRevenueResult[0]?.revenue || 0);
+    } catch (error) {
+      console.error('Error fetching total revenue:', error);
+    }
 
-    // Nombre de chauffeurs actifs
-    const chauffeursActifsResult = await sql`
-      SELECT COUNT(DISTINCT fr.chauffeur_id) as count
-      FROM course c
-      LEFT JOIN feuille_route fr ON c.feuille_route_id = fr.id
-      WHERE fr.chauffeur_id IS NOT NULL ${whereClause}
-    `;
+    try {
+      // Distance totale
+      const totalDistanceResult = await sql`SELECT COALESCE(SUM(distance_km), 0) as distance FROM course`;
+      stats.totalDistance = parseFloat(totalDistanceResult[0]?.distance || 0);
+    } catch (error) {
+      console.error('Error fetching total distance:', error);
+    }
 
-    // Nombre de véhicules utilisés
-    const vehiculesUtilisesResult = await sql`
-      SELECT COUNT(DISTINCT fr.vehicule_id) as count
-      FROM course c
-      LEFT JOIN feuille_route fr ON c.feuille_route_id = fr.id
-      WHERE fr.vehicule_id IS NOT NULL ${whereClause}
-    `;
+    try {
+      // Nombre de chauffeurs actifs
+      const chauffeursResult = await sql`
+        SELECT COUNT(DISTINCT fr.chauffeur_id) as count
+        FROM course c
+        LEFT JOIN feuille_route fr ON c.feuille_route_id = fr.id
+        WHERE fr.chauffeur_id IS NOT NULL
+      `;
+      stats.chauffeursActifs = parseInt(chauffeursResult[0]?.count || 0);
+    } catch (error) {
+      console.error('Error fetching active drivers:', error);
+    }
 
-    const totalCourses = parseInt(totalCoursesResult[0].count);
-    const totalRevenue = parseFloat(totalRevenueResult[0].revenue);
-    const totalDistance = parseInt(totalDistanceResult[0].distance);
-    const chauffeursActifs = parseInt(chauffeursActifsResult[0].count);
-    const vehiculesUtilises = parseInt(vehiculesUtilisesResult[0].count);
+    try {
+      // Nombre de véhicules utilisés
+      const vehiculesResult = await sql`
+        SELECT COUNT(DISTINCT fr.vehicule_id) as count
+        FROM course c
+        LEFT JOIN feuille_route fr ON c.feuille_route_id = fr.id
+        WHERE fr.vehicule_id IS NOT NULL
+      `;
+      stats.vehiculesUtilises = parseInt(vehiculesResult[0]?.count || 0);
+    } catch (error) {
+      console.error('Error fetching vehicles used:', error);
+    }
 
-    // Calculer les moyennes
-    const averageEarningsPerTrip = totalCourses > 0 ? totalRevenue / totalCourses : 0;
-    const averageDistancePerTrip = totalCourses > 0 ? totalDistance / totalCourses : 0;
-
-    return c.json({
-      totalCourses,
-      totalRevenue,
-      totalDistance,
-      chauffeursActifs,
-      vehiculesUtilises,
-      averageEarningsPerTrip: Math.round(averageEarningsPerTrip * 100) / 100,
-      averageDistancePerTrip: Math.round(averageDistancePerTrip * 100) / 100
-    });
+    return c.json(stats);
   } catch (error) {
-    console.error('Error fetching dashboard courses stats:', error);
-    return c.json({ error: 'Erreur lors de la récupération des statistiques des courses' }, 500);
+    console.error('Error in dashboard stats:', error);
+    return c.json({
+      error: 'Erreur dashboard stats',
+      details: error.message,
+      timestamp: new Date().toISOString()
+    }, 500);
   }
 });
 
 // Route pour les données de graphique
-app.get('/api/dashboard/courses/chart-data', dbMiddleware, authMiddleware, async (c) => {
+app.get('/api/dashboard/courses/chart-data', dbMiddleware, async (c) => {
   try {
     const url = new URL(c.req.url);
     const dateFrom = url.searchParams.get('dateFrom');
@@ -933,5 +914,12 @@ app.get('/api/dashboard/courses/chart-data', dbMiddleware, authMiddleware, async
 });
 
 // Servir les assets statiques
+app.get('*', async (c) => {
+  try {
+    return c.env.ASSETS.fetch(c.req.raw);
+  } catch (error) {
+    return new Response('Not Found', { status: 404 });
+  }
+});
 
 export default app;
