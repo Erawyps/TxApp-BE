@@ -43,17 +43,8 @@ const createPrismaClient = () => {
         await prisma.$disconnect();
       });
 
-      process.on('SIGINT', async () => {
-        console.log('Interruption détectée, fermeture de la base de données...');
-        await prisma.$disconnect();
-        process.exit(0);
-      });
-
-      process.on('SIGTERM', async () => {
-        console.log('Terminaison détectée, fermeture de la base de données...');
-        await prisma.$disconnect();
-        process.exit(0);
-      });
+      // Ne pas gérer SIGINT/SIGTERM ici - laisser le serveur les gérer
+      // pour éviter les conflits et permettre un arrêt propre
     } else {
       // En développement, on ferme seulement la connexion sans arrêter le processus
       process.on('beforeExit', async () => {
