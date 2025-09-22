@@ -478,9 +478,9 @@ const TxAppAdmin = () => {
 
   // Filtre: Chauffeurs
   const filteredDrivers = drivers.filter(driver => {
-    const matchesSearch = driver.nom?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         driver.prenom?.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = statusFilter === 'all' || driver.actif === (statusFilter === 'Actif');
+    const matchesSearch = driver.utilisateur?.nom?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         driver.utilisateur?.prenom?.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesStatus = statusFilter === 'all' || driver.statut === statusFilter;
     return matchesSearch && matchesStatus;
   });
 
@@ -605,7 +605,7 @@ const TxAppAdmin = () => {
                         <div key={shift.id} className="flex items-center justify-between py-2 border-b border-gray-100 dark:border-gray-700 last:border-b-0">
                           <div>
                             <p className="text-sm font-medium text-gray-900 dark:text-white">
-                              {driver ? `${driver.prenom} ${driver.nom}` : 'Chauffeur inconnu'}
+                              {driver && driver.utilisateur?.prenom && driver.utilisateur?.nom ? `${driver.utilisateur.prenom} ${driver.utilisateur.nom}` : 'Chauffeur inconnu'}
                             </p>
                             <p className="text-xs text-gray-500 dark:text-gray-400">
                               {vehicle?.plaque_immatriculation} • {shift.date} • {shift.nb_courses} courses
@@ -703,7 +703,7 @@ const TxAppAdmin = () => {
                             <td className="px-6 py-4 whitespace-nowrap">
                               <div>
                                 <div className="text-sm font-medium text-gray-900 dark:text-white">
-                                  {driver.prenom} {driver.nom}
+                                  {driver.utilisateur?.prenom} {driver.utilisateur?.nom}
                                 </div>
                                 <div className="text-sm text-gray-500 dark:text-gray-400">
                                   Embauché le {new Date(driver.date_embauche).toLocaleDateString('fr-FR')}
@@ -963,7 +963,7 @@ const TxAppAdmin = () => {
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap">{c.heure_embarquement} → {c.heure_debarquement}</td>
                             <td className="px-6 py-4 whitespace-nowrap">{Number(c.sommes_percues || 0).toFixed(2)}€</td>
-                            <td className="px-6 py-4 whitespace-nowrap">{c.mode_paiement}</td>
+                            <td className="px-6 py-4 whitespace-nowrap">{c.mode_paiement?.libelle}</td>
                             <td className="px-6 py-4 whitespace-nowrap">
                               <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-100">{c.status}</span>
                             </td>
@@ -1025,7 +1025,7 @@ const TxAppAdmin = () => {
                             <td className="px-6 py-4 whitespace-nowrap">{ch.type}</td>
                             <td className="px-6 py-4 whitespace-nowrap">{ch.description}</td>
                             <td className="px-6 py-4 whitespace-nowrap">{Number(ch.montant || 0).toFixed(2)}€</td>
-                            <td className="px-6 py-4 whitespace-nowrap">{ch.mode_paiement}</td>
+                            <td className="px-6 py-4 whitespace-nowrap">{ch.mode_paiement?.libelle}</td>
                             <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                               <div className="flex gap-2">
                                 <Button onClick={() => handleEditCharge(ch)} variant="ghost" size="sm" title="Modifier">

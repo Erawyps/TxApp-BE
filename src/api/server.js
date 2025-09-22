@@ -834,8 +834,12 @@ router.delete('/courses/:id', async (req, res) => {
 router.get('/charges', async (req, res) => {
   try {
     const { feuilleRouteId } = req.query;
+    const where = feuilleRouteId && feuilleRouteId !== 'undefined' && feuilleRouteId !== 'null'
+      ? { feuille_route_id: parseInt(feuilleRouteId) }
+      : {};
+
     const charges = await prisma.charge.findMany({
-      where: { feuille_route_id: parseInt(feuilleRouteId) },
+      where,
       include: { mode_paiement: true },
       orderBy: { created_at: 'desc' }
     });

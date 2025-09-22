@@ -124,7 +124,7 @@ export const courseService = {
       const response = await fetch(`${API_BASE_URL}/api/courses`);
       if (!response.ok) throw new Error('Erreur chargement courses');
       const data = await response.json();
-      return data.data || [];
+      return data || [];
     } catch (error) {
       console.error('Erreur API courses:', error);
       return [];
@@ -182,7 +182,7 @@ export const chargeService = {
       const response = await fetch(`${API_BASE_URL}/api/charges`);
       if (!response.ok) throw new Error('Erreur chargement charges');
       const data = await response.json();
-      return data.data || [];
+      return data || [];
     } catch (error) {
       console.error('Erreur API charges:', error);
       return [];
