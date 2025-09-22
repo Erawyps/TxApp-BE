@@ -32,11 +32,7 @@ const cloudflareChallengeMiddleware = async (c, next) => {
 
   await next();
 
-  // S'assurer que la réponse a les bons headers CORS après l'exécution
-  c.header('Access-Control-Allow-Origin', 'https://txapp.be');
-  c.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-  c.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
-  c.header('Access-Control-Allow-Credentials', 'true');
+  // Headers de sécurité supplémentaires
   c.header('X-Content-Type-Options', 'nosniff');
   c.header('X-Frame-Options', 'DENY');
 };
@@ -46,7 +42,7 @@ app.use('/api/*', cloudflareChallengeMiddleware);
 
 // CORS pour toutes les routes
 app.use('*', cors({
-  origin: ['https://txapp.be', 'https://www.txapp.be', 'http://localhost:5173', 'http://localhost:3000'],
+  origin: ['https://txapp.be', 'https://www.txapp.be', 'https://api.txapp.be', 'http://localhost:5173', 'http://localhost:3000'],
   allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
   allowHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin'],
   credentials: true,

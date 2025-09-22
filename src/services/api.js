@@ -1,7 +1,7 @@
 // Configuration API - utiliser le worker Cloudflare en production
 const API_BASE_URL = import.meta.env.VITE_API_URL || (
   import.meta.env.PROD
-    ? 'https://txapp.be/api'  // Production : utiliser le worker Cloudflare
+    ? 'https://api.txapp.be/api'  // Production : utiliser le sous-domaine API Cloudflare
     : 'http://localhost:3001/api'  // Développement : serveur local
 );
 
