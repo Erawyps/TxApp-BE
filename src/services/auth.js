@@ -1,5 +1,6 @@
 import { supabase } from "utils/supabase";
 import bcrypt from "bcryptjs";
+import { getChauffeurByUserId } from './chauffeurs';
 
 /**
  * Service d'authentification pour TxApp
@@ -84,25 +85,13 @@ export const getUserProfile = async (userId) => {
       throw new Error('Utilisateur non trouvé');
     }
 
-    // Ensuite, essayer de récupérer les données chauffeur optionnellement
+    // Récupérer les données chauffeur via l'API backend (plus sécurisé)
     let chauffeurData = null;
     try {
-      const { data: chauffeur, error: chauffeurError } = await supabase
-        .from('chauffeur')
-        .select('id, numero_badge, date_embauche, type_contrat, taux_commission, salaire_base, actif')
-        .eq('utilisateur_id', userId)
-        .eq('actif', true)
-        .maybeSingle(); // Utiliser maybeSingle au lieu de single pour éviter les erreurs si pas de résultat
-
-      if (!chauffeurError && chauffeur) {
-        chauffeurData = chauffeur;
-      } else if (chauffeurError && chauffeurError.code !== 'PGRST116') {
-        // Log seulement si ce n'est pas juste "pas de résultat"
-        console.warn('Erreur lors de la récupération des données chauffeur:', chauffeurError);
-      }
+      chauffeurData = await getChauffeurByUserId(userId);
     } catch (chauffeurErr) {
-      // Ignorer les erreurs de permissions pour la table chauffeur
-      console.warn('Impossible de récupérer les données chauffeur (permissions):', chauffeurErr);
+      // Ne pas logger comme erreur si le chauffeur n'existe pas
+      console.warn('Aucune donnée chauffeur trouvée pour cet utilisateur:', chauffeurErr.message);
     }
 
     // Construire le profil utilisateur complet
@@ -189,7 +178,7 @@ export const updateUserProfile = async (userId, updateData) => {
   try {
     // Préparer les données de mise à jour
     const allowedFields = [
-      'nom', 'prenom', 'telephone', 'adresse', 'ville',
+      'nom', 'prenom', 'telephone', 'email', 'adresse', 'ville',
       'code_postal', 'pays', 'num_bce', 'num_tva',
       'tva_applicable', 'tva_percent'
     ];
@@ -211,7 +200,36 @@ export const updateUserProfile = async (userId, updateData) => {
       .single();
 
     if (error) {
-      throw new Error('Erreur lors de la mise à jour du profil');
+      console.error('Erreur Supabase détaillée:', error);
+
+      // Gérer les erreurs spécifiques
+      if (error.code === '23505') { // Violation de contrainte unique
+        if (error.message.includes('email')) {
+          // Chercher quel utilisateur a déjà cet email
+          try {
+            const { data: existingUser } = await supabase
+              .from('utilisateur')
+              .select('id, nom, prenom, email')
+              .eq('email', dataToUpdate.email)
+              .single();
+
+            if (existingUser) {
+              throw new Error(`Cet email est déjà utilisé par l'utilisateur ${existingUser.nom} ${existingUser.prenom} (ID: ${existingUser.id})`);
+            } else {
+              throw new Error('Cet email est déjà utilisé par un autre utilisateur');
+            }
+          } catch {
+            throw new Error('Cet email est déjà utilisé par un autre utilisateur');
+          }
+        }
+        throw new Error('Une valeur unique existe déjà dans la base de données');
+      }
+
+      if (error.code === '409') { // Conflit
+        throw new Error('Conflit de données - vérifiez que l\'email n\'est pas déjà utilisé');
+      }
+
+      throw new Error(`Erreur lors de la mise à jour du profil: ${error.message}`);
     }
 
     // Retourner sans le mot de passe

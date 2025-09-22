@@ -869,33 +869,338 @@ router.post('/charges', async (req, res) => {
   }
 });
 
-// Mount API routes
-app.use('/api', router);
+// Routes pour le dashboard
+    app.get('/api/dashboard/courses', async (req, res) => {
+      try {
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 10;
+        const offset = (page - 1) * limit;
 
-// Route 404 pour l'API
-// app.use('/api/*', (req, res) => {
-//   res.status(404).json({
-//     error: 'Route non trouvée',
-//     path: req.path,
-//     method: req.method,
-//     timestamp: new Date().toISOString()
-//   });
-// });
+        // Récupérer les courses avec pagination
+        const courses = await prisma.course.findMany({
+          skip: offset,
+          take: limit,
+          orderBy: {
+            created_at: 'desc'
+          },
+          include: {
+            client: {
+              select: {
+                id: true,
+                nom: true,
+                prenom: true
+              }
+            },
+            feuille_route: {
+              select: {
+                id: true,
+                date: true,
+                heure_debut: true,
+                heure_fin: true,
+                chauffeur: {
+                  select: {
+                    id: true,
+                    numero_badge: true,
+                    utilisateur: {
+                      select: {
+                        nom: true,
+                        prenom: true
+                      }
+                    }
+                  }
+                },
+                vehicule: {
+                  select: {
+                    id: true,
+                    plaque_immatriculation: true,
+                    marque: true,
+                    modele: true
+                  }
+                }
+              }
+            },
+            mode_paiement: {
+              select: {
+                id: true,
+                libelle: true
+              }
+            }
+          }
+        });
 
-// Initialisation du serveur avec test de connexion DB
-const startServer = async () => {
-  try {
-    console.log('🚀 Démarrage du serveur...');
+        // Compter le nombre total de courses
+        const total = await prisma.course.count();
 
-    // Test de la connexion à la base de données au démarrage
-    console.log('🔄 Test de connexion à la base de données...');
-    const dbConnected = await testDatabaseConnection();
-    console.log('📊 Résultat test DB:', dbConnected);
+        res.json({
+          courses,
+          pagination: {
+            page,
+            limit,
+            total,
+            totalPages: Math.ceil(total / limit)
+          }
+        });
+      } catch (error) {
+        console.error('Error fetching dashboard courses:', error);
+        res.status(500).json({ error: 'Erreur lors de la récupération des courses du dashboard' });
+      }
+    });
 
-    if (!dbConnected) {
-      console.error('❌ Impossible de se connecter à la base de données');
-      process.exit(1);
-    }
+    // Route pour les statistiques des courses
+    app.get('/api/dashboard/courses/stats', async (req, res) => {
+      try {
+        const { dateFrom, dateTo, chauffeurId } = req.query;
+
+        // Construire les conditions de filtrage
+        const where = {};
+        if (dateFrom || dateTo) {
+          where.created_at = {};
+          if (dateFrom) where.created_at.gte = new Date(dateFrom);
+          if (dateTo) where.created_at.lte = new Date(dateTo);
+        }
+        if (chauffeurId) {
+          where.feuille_route = {
+            chauffeur_id: parseInt(chauffeurId)
+          };
+        }
+
+        // Récupérer les statistiques
+        const [
+          totalCourses,
+          totalRevenue,
+          totalDistance,
+          chauffeursActifs,
+          vehiculesUtilises
+        ] = await Promise.all([
+          // Nombre total de courses
+          prisma.course.count({ where }),
+
+          // Revenus totaux (somme des montants)
+          prisma.course.aggregate({
+            where,
+            _sum: { somme_percue: true }
+          }).then(result => result._sum.somme_percue || 0),
+
+          // Distance totale (somme des distances)
+          prisma.course.aggregate({
+            where,
+            _sum: { distance_km: true }
+          }).then(result => result._sum.distance_km || 0),
+
+          // Nombre de chauffeurs actifs
+          prisma.course.findMany({
+            where,
+            select: {
+              feuille_route: {
+                select: {
+                  chauffeur_id: true
+                }
+              }
+            }
+          }).then(courses => {
+            const chauffeurIds = [...new Set(
+              courses
+                .filter(c => c.feuille_route?.chauffeur_id)
+                .map(c => c.feuille_route.chauffeur_id)
+            )];
+            return chauffeurIds.length;
+          }),
+
+          // Nombre de véhicules utilisés
+          prisma.course.findMany({
+            where,
+            select: {
+              feuille_route: {
+                select: {
+                  vehicule_id: true
+                }
+              }
+            }
+          }).then(courses => {
+            const vehiculeIds = [...new Set(
+              courses
+                .filter(c => c.feuille_route?.vehicule_id)
+                .map(c => c.feuille_route.vehicule_id)
+            )];
+            return vehiculeIds.length;
+          })
+        ]);
+
+        // Calculer les moyennes
+        const averageEarningsPerTrip = totalCourses > 0 ? Number(totalRevenue) / totalCourses : 0;
+        const averageDistancePerTrip = totalCourses > 0 ? totalDistance / totalCourses : 0;
+
+        // Convertir les valeurs en nombres et formater la réponse
+        const response = {
+          totalCourses,
+          totalRevenue: Number(totalRevenue),
+          totalDistance,
+          chauffeursActifs,
+          vehiculesUtilises,
+          averageEarningsPerTrip: Math.round(averageEarningsPerTrip * 100) / 100,
+          averageDistancePerTrip: Math.round(averageDistancePerTrip * 100) / 100
+        };
+
+        res.json(response);
+      } catch (error) {
+        console.error('Error fetching dashboard courses stats:', error);
+        res.status(500).json({ error: 'Erreur lors de la récupération des statistiques des courses' });
+      }
+    });
+
+    // Route pour les données de graphique
+    app.get('/api/dashboard/courses/chart-data', async (req, res) => {
+      try {
+        const { dateFrom, dateTo, type } = req.query;
+
+        // Construire les conditions de filtrage
+        const where = {};
+        if (dateFrom || dateTo) {
+          where.created_at = {};
+          if (dateFrom) where.created_at.gte = new Date(dateFrom);
+          if (dateTo) where.created_at.lte = new Date(dateTo);
+        }
+
+        let data = [];
+
+        switch (type) {
+          case 'trips-count':
+            // Nombre de courses par jour
+            data = await prisma.$queryRaw`
+              SELECT
+                DATE(created_at) as date,
+                COUNT(*) as count
+              FROM course
+              WHERE ${dateFrom ? `created_at >= ${dateFrom}` : '1=1'}
+                AND ${dateTo ? `created_at <= ${dateTo}` : '1=1'}
+              GROUP BY DATE(created_at)
+              ORDER BY DATE(created_at)
+            `;
+            break;
+
+          case 'daily-revenue':
+            // Revenus par jour
+            data = await prisma.$queryRaw`
+              SELECT
+                DATE(created_at) as date,
+                SUM(somme_percue) as revenue
+              FROM course
+              WHERE ${dateFrom ? `created_at >= ${dateFrom}` : '1=1'}
+                AND ${dateTo ? `created_at <= ${dateTo}` : '1=1'}
+              GROUP BY DATE(created_at)
+              ORDER BY DATE(created_at)
+            `;
+            break;
+
+          case 'driver-performance':
+            // Performance des chauffeurs
+            data = await prisma.feuille_route.groupBy({
+              by: ['chauffeur_id'],
+              where: {
+                course: {
+                  some: where
+                }
+              },
+              _count: {
+                id: true
+              },
+              _sum: {
+                course: {
+                  somme_percue: true
+                }
+              }
+            }).then(async (results) => {
+              // Enrichir avec les informations des utilisateurs
+              const enrichedResults = await Promise.all(
+                results.map(async (item) => {
+                  const chauffeur = await prisma.chauffeur.findUnique({
+                    where: { id: item.chauffeur_id },
+                    include: {
+                      utilisateur: {
+                        select: {
+                          nom: true,
+                          prenom: true
+                        }
+                      }
+                    }
+                  });
+
+                  return {
+                    nom: chauffeur?.utilisateur?.nom,
+                    prenom: chauffeur?.utilisateur?.prenom,
+                    trips_count: item._count.id,
+                    total_revenue: item._sum.course?.somme_percue || 0,
+                    avg_revenue: item._count.id > 0 ? (item._sum.course?.somme_percue || 0) / item._count.id : 0,
+                  };
+                })
+              );
+
+              return enrichedResults.filter(item => item.nom && item.prenom); // Filtrer les entrées valides
+            });
+            break;
+
+          case 'payment-methods':
+            // Répartition des modes de paiement
+            data = await prisma.course.groupBy({
+              by: ['mode_paiement_id'],
+              where,
+              _count: {
+                id: true
+              },
+              _sum: {
+                somme_percue: true
+              }
+            }).then(async (results) => {
+              // Enrichir avec les informations des modes de paiement
+              const enrichedResults = await Promise.all(
+                results.map(async (item) => {
+                  const modePaiement = await prisma.mode_paiement.findUnique({
+                    where: { id: item.mode_paiement_id },
+                    select: {
+                      libelle: true
+                    }
+                  });
+
+                  return {
+                    mode: modePaiement?.libelle || 'Inconnu',
+                    count: item._count.id,
+                    total: item._sum.somme_percue || 0
+                  };
+                })
+              );
+
+              return enrichedResults;
+            });
+            break;
+
+          default:
+            return res.status(400).json({ error: 'Type de graphique non supporté' });
+        }
+
+        // Convertir les BigInt en nombres et les chaînes numériques en nombres pour la sérialisation JSON
+        const serializedData = JSON.parse(JSON.stringify(data, (key, value) => {
+          if (typeof value === 'bigint') {
+            return Number(value);
+          }
+          // Convertir les chaînes qui représentent des nombres
+          if (typeof value === 'string' && !isNaN(value) && value.trim() !== '') {
+            const numValue = Number(value);
+            // Vérifier si c'est un nombre entier ou décimal
+            if (numValue % 1 === 0) {
+              return parseInt(value, 10);
+            } else {
+              return numValue;
+            }
+          }
+          return value;
+        }));
+
+        res.json({ data: serializedData });
+      } catch (error) {
+        console.error('Error fetching dashboard courses chart data:', error);
+        res.status(500).json({ error: 'Erreur lors de la récupération des données de graphique' });
+      }
+    });
 
     // Routes pour le dashboard
     app.get('/api/dashboard/courses', async (req, res) => {
