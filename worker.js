@@ -804,30 +804,26 @@ app.get('/api/dashboard/courses/chart-data', dbMiddleware, async (c) => {
     const sql = c.get('db');
 
     let data = [];
-    let whereClause = '';
     const params = [];
 
-    if (dateFrom) {
-      whereClause += ' AND created_at >= $' + (params.length + 1);
-      params.push(dateFrom);
-    }
-    if (dateTo) {
-      whereClause += ' AND created_at <= $' + (params.length + 1);
-      params.push(dateTo);
-    }
+    if (dateFrom) params.push(dateFrom);
+    if (dateTo) params.push(dateTo);
 
     switch (type) {
       case 'trips-count': {
         // Nombre de courses par jour
-        const tripsData = await sql`
+        let query = `
           SELECT
             DATE(created_at) as date,
             COUNT(*) as count
           FROM course
-          WHERE 1=1 ${whereClause}
-          GROUP BY DATE(created_at)
-          ORDER BY DATE(created_at)
+          WHERE 1=1
         `;
+        if (dateFrom) query += ' AND created_at >= $1';
+        if (dateTo) query += dateFrom ? ' AND created_at <= $2' : ' AND created_at <= $1';
+        query += ' GROUP BY DATE(created_at) ORDER BY DATE(created_at)';
+
+        const tripsData = await sql.unsafe(query, params);
         data = tripsData.map(row => ({
           date: row.date,
           count: parseInt(row.count)
@@ -837,15 +833,18 @@ app.get('/api/dashboard/courses/chart-data', dbMiddleware, async (c) => {
 
       case 'daily-revenue': {
         // Revenus quotidiens
-        const revenueData = await sql`
+        let query = `
           SELECT
             DATE(created_at) as date,
             COALESCE(SUM(somme_percue), 0) as revenue
           FROM course
-          WHERE 1=1 ${whereClause}
-          GROUP BY DATE(created_at)
-          ORDER BY DATE(created_at)
+          WHERE 1=1
         `;
+        if (dateFrom) query += ' AND created_at >= $1';
+        if (dateTo) query += dateFrom ? ' AND created_at <= $2' : ' AND created_at <= $1';
+        query += ' GROUP BY DATE(created_at) ORDER BY DATE(created_at)';
+
+        const revenueData = await sql.unsafe(query, params);
         data = revenueData.map(row => ({
           date: row.date,
           revenue: parseFloat(row.revenue)
@@ -855,16 +854,19 @@ app.get('/api/dashboard/courses/chart-data', dbMiddleware, async (c) => {
 
       case 'payment-methods': {
         // Distribution des méthodes de paiement
-        const paymentData = await sql`
+        let query = `
           SELECT
             mp.libelle as method,
             COUNT(c.id) as count
           FROM course c
           LEFT JOIN mode_paiement mp ON c.mode_paiement_id = mp.id
-          WHERE 1=1 ${whereClause}
-          GROUP BY mp.libelle
-          ORDER BY count DESC
+          WHERE 1=1
         `;
+        if (dateFrom) query += ' AND c.created_at >= $1';
+        if (dateTo) query += dateFrom ? ' AND c.created_at <= $2' : ' AND c.created_at <= $1';
+        query += ' GROUP BY mp.libelle ORDER BY count DESC';
+
+        const paymentData = await sql.unsafe(query, params);
         data = paymentData.map(row => ({
           method: row.method,
           count: parseInt(row.count)
@@ -874,7 +876,7 @@ app.get('/api/dashboard/courses/chart-data', dbMiddleware, async (c) => {
 
       case 'driver-performance': {
         // Performance des chauffeurs
-        const driverData = await sql`
+        let query = `
           SELECT
             u.nom,
             u.prenom,
@@ -884,10 +886,13 @@ app.get('/api/dashboard/courses/chart-data', dbMiddleware, async (c) => {
           LEFT JOIN feuille_route fr ON c.feuille_route_id = fr.id
           LEFT JOIN chauffeur ch ON fr.chauffeur_id = ch.id
           LEFT JOIN utilisateur u ON ch.utilisateur_id = u.id
-          WHERE u.nom IS NOT NULL AND u.prenom IS NOT NULL ${whereClause}
-          GROUP BY u.nom, u.prenom
-          ORDER BY total_revenue DESC
+          WHERE u.nom IS NOT NULL AND u.prenom IS NOT NULL
         `;
+        if (dateFrom) query += ' AND c.created_at >= $1';
+        if (dateTo) query += dateFrom ? ' AND c.created_at <= $2' : ' AND c.created_at <= $1';
+        query += ' GROUP BY u.nom, u.prenom ORDER BY total_revenue DESC';
+
+        const driverData = await sql.unsafe(query, params);
         data = driverData.map(row => ({
           nom: row.nom,
           prenom: row.prenom,
