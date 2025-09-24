@@ -7,6 +7,31 @@ import morgan from 'morgan';
 import prisma, { testDatabaseConnection, getDatabaseHealth } from '../configs/database.config.js';
 import { monitor, monitoringMiddleware } from '../configs/monitoring.config.js';
 
+// Import des middlewares personnalisés
+import {
+  authenticateToken,
+  requireRole,
+  requireOwnership,
+  optionalAuth
+} from '../middlewares/auth.middleware.js';
+import {
+  validateRequest,
+  validateParams,
+  chauffeurValidation,
+  vehiculeValidation,
+  clientValidation,
+  courseValidation,
+  chargeValidation,
+  feuilleRouteValidation,
+  paramValidation
+} from '../middlewares/validation.middleware.js';
+import {
+  errorHandler,
+  notFoundHandler,
+  requestLogger,
+  rateLimiter
+} from '../middlewares/error.middleware.js';
+
 const app = express();
 
 // Démarrer le monitoring en production
@@ -370,7 +395,12 @@ router.get('/chauffeurs', async (req, res) => {
 });
 
 // Route pour mettre à jour un chauffeur
-router.put('/chauffeurs/:id', async (req, res) => {
+router.put('/chauffeurs/:id',
+  authenticateToken,
+  validateParams(paramValidation.id),
+  validateRequest(chauffeurValidation.update),
+  requireRole('admin'),
+  async (req, res) => {
   try {
     const { id } = req.params;
     const updateData = req.body;
@@ -455,6 +485,112 @@ router.get('/chauffeurs/:id', async (req, res) => {
   }
 });
 
+// Route pour créer un chauffeur
+router.post('/chauffeurs',
+  authenticateToken,
+  requireRole('admin'),
+  validateRequest(chauffeurValidation.create),
+  async (req, res) => {
+  try {
+    const chauffeurData = req.body;
+
+    const chauffeur = await prisma.chauffeur.create({
+      data: {
+        utilisateur_id: chauffeurData.utilisateur_id,
+        regle_salaire_id: chauffeurData.regle_salaire_id || null,
+        numero_badge: chauffeurData.numero_badge,
+        date_embauche: new Date(chauffeurData.date_embauche),
+        date_fin_contrat: chauffeurData.date_fin_contrat ? new Date(chauffeurData.date_fin_contrat) : null,
+        type_contrat: chauffeurData.type_contrat || null,
+        compte_bancaire: chauffeurData.compte_bancaire || null,
+        taux_commission: chauffeurData.taux_commission ? parseFloat(chauffeurData.taux_commission) : 0.00,
+        salaire_base: chauffeurData.salaire_base ? parseFloat(chauffeurData.salaire_base) : 0.00,
+        notes: chauffeurData.notes || null,
+        actif: chauffeurData.actif !== undefined ? chauffeurData.actif : true
+      },
+      include: {
+        utilisateur: {
+          select: {
+            id: true,
+            nom: true,
+            prenom: true,
+            telephone: true,
+            email: true
+          }
+        },
+        regle_salaire: true
+      }
+    });
+
+    res.status(201).json({
+      success: true,
+      data: chauffeur,
+      message: 'Chauffeur créé avec succès'
+    });
+  } catch (error) {
+    console.error('Erreur lors de la création du chauffeur:', error.message);
+    res.status(500).json({
+      error: 'Erreur lors de la création du chauffeur',
+      details: error.message,
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
+// Route pour supprimer un chauffeur
+router.delete('/chauffeurs/:id',
+  authenticateToken,
+  validateParams(paramValidation.id),
+  requireRole('admin'),
+  async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Vérifier que le chauffeur existe
+    const chauffeur = await prisma.chauffeur.findUnique({
+      where: { id: parseInt(id) },
+      include: {
+        feuille_route: {
+          where: { statut: 'En cours' }
+        }
+      }
+    });
+
+    if (!chauffeur) {
+      return res.status(404).json({
+        error: 'Chauffeur non trouvé',
+        timestamp: new Date().toISOString()
+      });
+    }
+
+    // Vérifier qu'il n'a pas de feuille de route en cours
+    if (chauffeur.feuille_route && chauffeur.feuille_route.length > 0) {
+      return res.status(400).json({
+        error: 'Suppression impossible',
+        message: 'Le chauffeur a des feuilles de route en cours',
+        timestamp: new Date().toISOString()
+      });
+    }
+
+    // Supprimer le chauffeur (cascade vers les relations)
+    await prisma.chauffeur.delete({
+      where: { id: parseInt(id) }
+    });
+
+    res.json({
+      success: true,
+      message: 'Chauffeur supprimé avec succès'
+    });
+  } catch (error) {
+    console.error('Erreur lors de la suppression du chauffeur:', error.message);
+    res.status(500).json({
+      error: 'Erreur lors de la suppression du chauffeur',
+      details: error.message,
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
 // Routes pour véhicules avec pagination
 router.get('/vehicules', async (req, res) => {
   try {
@@ -504,6 +640,103 @@ router.get('/vehicules/:id', async (req, res) => {
   } catch (error) {
     console.error('Erreur lors de la récupération du véhicule:', error);
     res.status(500).json({ error: 'Erreur serveur' });
+  }
+});
+
+// Route pour créer un véhicule
+router.post('/vehicules',
+  authenticateToken,
+  requireRole('admin'),
+  validateRequest(vehiculeValidation.create),
+  async (req, res) => {
+  try {
+    const vehiculeData = req.body;
+
+    const vehicule = await prisma.vehicule.create({
+      data: {
+        plaque_immatriculation: vehiculeData.plaque_immatriculation,
+        numero_identification: vehiculeData.numero_identification,
+        marque: vehiculeData.marque,
+        modele: vehiculeData.modele,
+        annee: parseInt(vehiculeData.annee),
+        type_vehicule: vehiculeData.type_vehicule || null,
+        couleur: vehiculeData.couleur || null,
+        date_mise_circulation: new Date(vehiculeData.date_mise_circulation),
+        date_dernier_controle: vehiculeData.date_dernier_controle ? new Date(vehiculeData.date_dernier_controle) : null,
+        capacite: vehiculeData.capacite ? parseInt(vehiculeData.capacite) : 4,
+        carburant: vehiculeData.carburant || null,
+        consommation: vehiculeData.consommation ? parseFloat(vehiculeData.consommation) : null,
+        etat: vehiculeData.etat || 'Disponible',
+        notes: vehiculeData.notes || null
+      }
+    });
+
+    res.status(201).json({
+      success: true,
+      data: vehicule,
+      message: 'Véhicule créé avec succès'
+    });
+  } catch (error) {
+    console.error('Erreur lors de la création du véhicule:', error.message);
+    res.status(500).json({
+      error: 'Erreur lors de la création du véhicule',
+      details: error.message,
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
+// Route pour supprimer un véhicule
+router.delete('/vehicules/:id',
+  authenticateToken,
+  validateParams(paramValidation.id),
+  requireRole('admin'),
+  async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Vérifier que le véhicule existe
+    const vehicule = await prisma.vehicule.findUnique({
+      where: { id: parseInt(id) },
+      include: {
+        feuille_route: {
+          where: { statut: 'En cours' }
+        }
+      }
+    });
+
+    if (!vehicule) {
+      return res.status(404).json({
+        error: 'Véhicule non trouvé',
+        timestamp: new Date().toISOString()
+      });
+    }
+
+    // Vérifier qu'il n'est pas utilisé dans une feuille de route en cours
+    if (vehicule.feuille_route && vehicule.feuille_route.length > 0) {
+      return res.status(400).json({
+        error: 'Suppression impossible',
+        message: 'Le véhicule est utilisé dans une feuille de route en cours',
+        timestamp: new Date().toISOString()
+      });
+    }
+
+    // Supprimer le véhicule (cascade vers les relations)
+    await prisma.vehicule.delete({
+      where: { id: parseInt(id) }
+    });
+
+    res.json({
+      success: true,
+      message: 'Véhicule supprimé avec succès'
+    });
+  } catch (error) {
+    console.error('Erreur lors de la suppression du véhicule:', error.message);
+    res.status(500).json({
+      error: 'Erreur lors de la suppression du véhicule',
+      details: error.message,
+      timestamp: new Date().toISOString()
+    });
   }
 });
 
@@ -574,8 +807,138 @@ router.get('/regles-salaire/:id', async (req, res) => {
   }
 });
 
+// Route pour créer une règle de salaire
+router.post('/regles-salaire', async (req, res) => {
+  try {
+    const regleData = req.body;
+
+    // Validation des données requises
+    if (!regleData.nom || !regleData.type_regle) {
+      return res.status(400).json({
+        error: 'Données manquantes',
+        message: 'nom et type_regle sont requis',
+        timestamp: new Date().toISOString()
+      });
+    }
+
+    const regleSalaire = await prisma.regle_salaire.create({
+      data: {
+        nom: regleData.nom,
+        description: regleData.description || null,
+        type_regle: regleData.type_regle,
+        taux_fixe: regleData.taux_fixe ? parseFloat(regleData.taux_fixe) : null,
+        taux_variable: regleData.taux_variable ? parseFloat(regleData.taux_variable) : null,
+        seuil: regleData.seuil ? parseFloat(regleData.seuil) : null,
+        heure_debut: regleData.heure_debut ? new Date(`1970-01-01T${regleData.heure_debut}`) : null,
+        heure_fin: regleData.heure_fin ? new Date(`1970-01-01T${regleData.heure_fin}`) : null,
+        jours_semaine: regleData.jours_semaine || '1,2,3,4,5',
+        actif: regleData.actif !== undefined ? regleData.actif : true
+      }
+    });
+
+    res.status(201).json({
+      success: true,
+      data: regleSalaire,
+      message: 'Règle de salaire créée avec succès'
+    });
+  } catch (error) {
+    console.error('Erreur lors de la création de la règle de salaire:', error.message);
+    res.status(500).json({
+      error: 'Erreur lors de la création de la règle de salaire',
+      details: error.message,
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
+// Route pour mettre à jour une règle de salaire
+router.put('/regles-salaire/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const updateData = req.body;
+
+    const regleSalaire = await prisma.regle_salaire.update({
+      where: { id: parseInt(id) },
+      data: {
+        ...updateData,
+        updated_at: new Date()
+      }
+    });
+
+    res.json({
+      success: true,
+      data: regleSalaire,
+      message: 'Règle de salaire mise à jour avec succès'
+    });
+  } catch (error) {
+    console.error('Erreur lors de la mise à jour de la règle de salaire:', error.message);
+    res.status(500).json({
+      error: 'Erreur lors de la mise à jour de la règle de salaire',
+      details: error.message,
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
+// Route pour supprimer une règle de salaire
+router.delete('/regles-salaire/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Vérifier que la règle de salaire existe
+    const regleSalaire = await prisma.regle_salaire.findUnique({
+      where: { id: parseInt(id) },
+      include: {
+        chauffeur: true
+      }
+    });
+
+    if (!regleSalaire) {
+      return res.status(404).json({
+        error: 'Règle de salaire non trouvée',
+        timestamp: new Date().toISOString()
+      });
+    }
+
+    // Vérifier qu'elle n'est pas utilisée par des chauffeurs
+    if (regleSalaire.chauffeur && regleSalaire.chauffeur.length > 0) {
+      return res.status(400).json({
+        error: 'Suppression impossible',
+        message: 'La règle de salaire est utilisée par des chauffeurs',
+        timestamp: new Date().toISOString()
+      });
+    }
+
+    // Désactiver la règle de salaire au lieu de la supprimer
+    await prisma.regle_salaire.update({
+      where: { id: parseInt(id) },
+      data: {
+        actif: false,
+        updated_at: new Date()
+      }
+    });
+
+    res.json({
+      success: true,
+      message: 'Règle de salaire désactivée avec succès'
+    });
+  } catch (error) {
+    console.error('Erreur lors de la suppression de la règle de salaire:', error.message);
+    res.status(500).json({
+      error: 'Erreur lors de la suppression de la règle de salaire',
+      details: error.message,
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
 // Mettre à jour un véhicule
-router.put('/vehicules/:id', async (req, res) => {
+router.put('/vehicules/:id',
+  authenticateToken,
+  validateParams(paramValidation.id),
+  validateRequest(vehiculeValidation.update),
+  requireRole('admin'),
+  async (req, res) => {
   try {
     const { id } = req.params;
     const data = req.body;
@@ -608,6 +971,158 @@ router.get('/clients', async (req, res) => {
   }
 });
 
+// Route pour récupérer un client par ID
+router.get('/clients/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const client = await prisma.client.findUnique({
+      where: { id: parseInt(id) }
+    });
+
+    if (!client) {
+      return res.status(404).json({
+        error: 'Client non trouvé',
+        timestamp: new Date().toISOString()
+      });
+    }
+
+    res.json(client);
+  } catch (error) {
+    console.error('Erreur lors de la récupération du client:', error);
+    res.status(500).json({
+      error: 'Erreur lors de la récupération du client',
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
+// Route pour créer un client
+router.post('/clients',
+  authenticateToken,
+  requireRole('admin', 'chauffeur'),
+  validateRequest(clientValidation.create),
+  async (req, res) => {
+  try {
+    const clientData = req.body;
+
+    const client = await prisma.client.create({
+      data: {
+        type_client: clientData.type_client,
+        nom: clientData.nom,
+        prenom: clientData.prenom || null,
+        telephone: clientData.telephone,
+        email: clientData.email || null,
+        adresse: clientData.adresse || null,
+        ville: clientData.ville || null,
+        code_postal: clientData.code_postal || null,
+        pays: clientData.pays || 'Belgique',
+        num_tva: clientData.num_tva || null,
+        periode_facturation: clientData.periode_facturation || 'Mensuelle',
+        mode_facturation: clientData.mode_facturation || 'Simple',
+        procedure_envoi: clientData.procedure_envoi || null,
+        adresse_facturation_diff: clientData.adresse_facturation_diff || false,
+        adresse_facturation: clientData.adresse_facturation || null,
+        notes: clientData.notes || null,
+        actif: clientData.actif !== undefined ? clientData.actif : true
+      }
+    });
+
+    res.status(201).json({
+      success: true,
+      data: client,
+      message: 'Client créé avec succès'
+    });
+  } catch (error) {
+    console.error('Erreur lors de la création du client:', error.message);
+    res.status(500).json({
+      error: 'Erreur lors de la création du client',
+      details: error.message,
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
+// Route pour mettre à jour un client
+router.put('/clients/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const updateData = req.body;
+
+    const client = await prisma.client.update({
+      where: { id: parseInt(id) },
+      data: {
+        ...updateData,
+        updated_at: new Date()
+      }
+    });
+
+    res.json({
+      success: true,
+      data: client,
+      message: 'Client mis à jour avec succès'
+    });
+  } catch (error) {
+    console.error('Erreur lors de la mise à jour du client:', error.message);
+    res.status(500).json({
+      error: 'Erreur lors de la mise à jour du client',
+      details: error.message,
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
+// Route pour supprimer un client
+router.delete('/clients/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Vérifier que le client existe
+    const client = await prisma.client.findUnique({
+      where: { id: parseInt(id) },
+      include: {
+        course: true
+      }
+    });
+
+    if (!client) {
+      return res.status(404).json({
+        error: 'Client non trouvé',
+        timestamp: new Date().toISOString()
+      });
+    }
+
+    // Vérifier qu'il n'a pas de courses associées
+    if (client.course && client.course.length > 0) {
+      return res.status(400).json({
+        error: 'Suppression impossible',
+        message: 'Le client a des courses associées',
+        timestamp: new Date().toISOString()
+      });
+    }
+
+    // Désactiver le client au lieu de le supprimer
+    await prisma.client.update({
+      where: { id: parseInt(id) },
+      data: {
+        actif: false,
+        updated_at: new Date()
+      }
+    });
+
+    res.json({
+      success: true,
+      message: 'Client désactivé avec succès'
+    });
+  } catch (error) {
+    console.error('Erreur lors de la suppression du client:', error.message);
+    res.status(500).json({
+      error: 'Erreur lors de la suppression du client',
+      details: error.message,
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
 // Routes pour modes de paiement
 router.get('/modes-paiement', async (req, res) => {
   try {
@@ -619,6 +1134,171 @@ router.get('/modes-paiement', async (req, res) => {
   } catch (error) {
     console.error('Erreur lors de la récupération des modes de paiement:', error);
     res.status(500).json({ error: 'Erreur serveur' });
+  }
+});
+
+// Route pour récupérer un mode de paiement par ID
+router.get('/modes-paiement/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const mode = await prisma.mode_paiement.findUnique({
+      where: { id: parseInt(id) }
+    });
+
+    if (!mode) {
+      return res.status(404).json({
+        error: 'Mode de paiement non trouvé',
+        timestamp: new Date().toISOString()
+      });
+    }
+
+    res.json(mode);
+  } catch (error) {
+    console.error('Erreur lors de la récupération du mode de paiement:', error);
+    res.status(500).json({
+      error: 'Erreur lors de la récupération du mode de paiement',
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
+// Route pour créer un mode de paiement
+router.post('/modes-paiement', async (req, res) => {
+  try {
+    const modeData = req.body;
+
+    // Validation des données requises
+    if (!modeData.code || !modeData.libelle || !modeData.type_paiement) {
+      return res.status(400).json({
+        error: 'Données manquantes',
+        message: 'code, libelle et type_paiement sont requis',
+        timestamp: new Date().toISOString()
+      });
+    }
+
+    // Vérifier que le code est unique
+    const existingMode = await prisma.mode_paiement.findUnique({
+      where: { code: modeData.code }
+    });
+
+    if (existingMode) {
+      return res.status(400).json({
+        error: 'Code déjà utilisé',
+        message: 'Un mode de paiement avec ce code existe déjà',
+        timestamp: new Date().toISOString()
+      });
+    }
+
+    const mode = await prisma.mode_paiement.create({
+      data: {
+        code: modeData.code,
+        libelle: modeData.libelle,
+        type_paiement: modeData.type_paiement,
+        facturation_requise: modeData.facturation_requise || false,
+        tva_applicable: modeData.tva_applicable !== undefined ? modeData.tva_applicable : true,
+        actif: modeData.actif !== undefined ? modeData.actif : true
+      }
+    });
+
+    res.status(201).json({
+      success: true,
+      data: mode,
+      message: 'Mode de paiement créé avec succès'
+    });
+  } catch (error) {
+    console.error('Erreur lors de la création du mode de paiement:', error.message);
+    res.status(500).json({
+      error: 'Erreur lors de la création du mode de paiement',
+      details: error.message,
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
+// Route pour mettre à jour un mode de paiement
+router.put('/modes-paiement/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const updateData = req.body;
+
+    const mode = await prisma.mode_paiement.update({
+      where: { id: parseInt(id) },
+      data: {
+        ...updateData,
+        updated_at: new Date()
+      }
+    });
+
+    res.json({
+      success: true,
+      data: mode,
+      message: 'Mode de paiement mis à jour avec succès'
+    });
+  } catch (error) {
+    console.error('Erreur lors de la mise à jour du mode de paiement:', error.message);
+    res.status(500).json({
+      error: 'Erreur lors de la mise à jour du mode de paiement',
+      details: error.message,
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
+// Route pour supprimer un mode de paiement
+router.delete('/modes-paiement/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Vérifier que le mode de paiement existe
+    const mode = await prisma.mode_paiement.findUnique({
+      where: { id: parseInt(id) },
+      include: {
+        course: true,
+        charge: true,
+        paiement_salaire: true
+      }
+    });
+
+    if (!mode) {
+      return res.status(404).json({
+        error: 'Mode de paiement non trouvé',
+        timestamp: new Date().toISOString()
+      });
+    }
+
+    // Vérifier qu'il n'est pas utilisé
+    const hasUsage = (mode.course && mode.course.length > 0) ||
+                     (mode.charge && mode.charge.length > 0) ||
+                     (mode.paiement_salaire && mode.paiement_salaire.length > 0);
+
+    if (hasUsage) {
+      return res.status(400).json({
+        error: 'Suppression impossible',
+        message: 'Le mode de paiement est utilisé dans des courses, charges ou paiements de salaire',
+        timestamp: new Date().toISOString()
+      });
+    }
+
+    // Désactiver le mode de paiement au lieu de le supprimer
+    await prisma.mode_paiement.update({
+      where: { id: parseInt(id) },
+      data: {
+        actif: false,
+        updated_at: new Date()
+      }
+    });
+
+    res.json({
+      success: true,
+      message: 'Mode de paiement désactivé avec succès'
+    });
+  } catch (error) {
+    console.error('Erreur lors de la suppression du mode de paiement:', error.message);
+    res.status(500).json({
+      error: 'Erreur lors de la suppression du mode de paiement',
+      details: error.message,
+      timestamp: new Date().toISOString()
+    });
   }
 });
 
@@ -719,6 +1399,131 @@ router.put('/feuilles-route/:id/end', async (req, res) => {
   } catch (error) {
     console.error('Erreur lors de la finalisation de la feuille de route:', error);
     res.status(500).json({ error: 'Erreur serveur' });
+  }
+});
+
+// Route pour récupérer une feuille de route par ID
+router.get('/feuilles-route/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const feuilleRoute = await prisma.feuille_route.findUnique({
+      where: { id: parseInt(id) },
+      include: {
+        chauffeur: { include: { utilisateur: true } },
+        vehicule: true,
+        course: { include: { client: true, mode_paiement: true } },
+        charge: { include: { mode_paiement: true } }
+      }
+    });
+
+    if (!feuilleRoute) {
+      return res.status(404).json({
+        error: 'Feuille de route non trouvée',
+        timestamp: new Date().toISOString()
+      });
+    }
+
+    res.json(feuilleRoute);
+  } catch (error) {
+    console.error('Erreur lors de la récupération de la feuille de route:', error);
+    res.status(500).json({
+      error: 'Erreur lors de la récupération de la feuille de route',
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
+// Route pour mettre à jour une feuille de route
+router.put('/feuilles-route/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const updateData = req.body;
+
+    const feuilleRoute = await prisma.feuille_route.update({
+      where: { id: parseInt(id) },
+      data: {
+        ...updateData,
+        date: updateData.date ? new Date(updateData.date) : undefined,
+        heure_debut: updateData.heure_debut ? new Date(`1970-01-01T${updateData.heure_debut}`) : undefined,
+        heure_fin: updateData.heure_fin ? new Date(`1970-01-01T${updateData.heure_fin}`) : undefined,
+        km_debut: updateData.km_debut ? parseInt(updateData.km_debut) : undefined,
+        km_fin: updateData.km_fin ? parseInt(updateData.km_fin) : undefined,
+        prise_en_charge_debut: updateData.prise_en_charge_debut ? parseFloat(updateData.prise_en_charge_debut) : undefined,
+        prise_en_charge_fin: updateData.prise_en_charge_fin ? parseFloat(updateData.prise_en_charge_fin) : undefined,
+        chutes_debut: updateData.chutes_debut ? parseFloat(updateData.chutes_debut) : undefined,
+        chutes_fin: updateData.chutes_fin ? parseFloat(updateData.chutes_fin) : undefined,
+        updated_at: new Date()
+      },
+      include: {
+        chauffeur: { include: { utilisateur: true } },
+        vehicule: true,
+        course: { include: { client: true, mode_paiement: true } }
+      }
+    });
+
+    res.json({
+      success: true,
+      data: feuilleRoute,
+      message: 'Feuille de route mise à jour avec succès'
+    });
+  } catch (error) {
+    console.error('Erreur lors de la mise à jour de la feuille de route:', error.message);
+    res.status(500).json({
+      error: 'Erreur lors de la mise à jour de la feuille de route',
+      details: error.message,
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
+// Route pour supprimer une feuille de route
+router.delete('/feuilles-route/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Vérifier que la feuille de route existe
+    const feuilleRoute = await prisma.feuille_route.findUnique({
+      where: { id: parseInt(id) },
+      include: {
+        course: true,
+        charge: true
+      }
+    });
+
+    if (!feuilleRoute) {
+      return res.status(404).json({
+        error: 'Feuille de route non trouvée',
+        timestamp: new Date().toISOString()
+      });
+    }
+
+    // Vérifier qu'elle n'a pas de courses ou charges associées
+    const hasCourses = feuilleRoute.course && feuilleRoute.course.length > 0;
+    const hasCharges = feuilleRoute.charge && feuilleRoute.charge.length > 0;
+
+    if (hasCourses || hasCharges) {
+      return res.status(400).json({
+        error: 'Suppression impossible',
+        message: 'La feuille de route contient des courses ou des charges',
+        timestamp: new Date().toISOString()
+      });
+    }
+
+    await prisma.feuille_route.delete({
+      where: { id: parseInt(id) }
+    });
+
+    res.json({
+      success: true,
+      message: 'Feuille de route supprimée avec succès'
+    });
+  } catch (error) {
+    console.error('Erreur lors de la suppression de la feuille de route:', error.message);
+    res.status(500).json({
+      error: 'Erreur lors de la suppression de la feuille de route',
+      details: error.message,
+      timestamp: new Date().toISOString()
+    });
   }
 });
 
@@ -872,6 +1677,1100 @@ router.post('/charges', async (req, res) => {
   } catch (error) {
     console.error('Erreur lors de la création de la charge:', error);
     res.status(500).json({ error: 'Erreur serveur' });
+  }
+});
+
+// Route pour récupérer une charge par ID
+router.get('/charges/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const charge = await prisma.charge.findUnique({
+      where: { id: parseInt(id) },
+      include: { mode_paiement: true }
+    });
+
+    if (!charge) {
+      return res.status(404).json({
+        error: 'Charge non trouvée',
+        timestamp: new Date().toISOString()
+      });
+    }
+
+    res.json(charge);
+  } catch (error) {
+    console.error('Erreur lors de la récupération de la charge:', error);
+    res.status(500).json({
+      error: 'Erreur lors de la récupération de la charge',
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
+// Route pour mettre à jour une charge
+router.put('/charges/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const updateData = req.body;
+
+    const charge = await prisma.charge.update({
+      where: { id: parseInt(id) },
+      data: {
+        ...updateData,
+        montant: updateData.montant ? parseFloat(updateData.montant) : undefined,
+        date: updateData.date ? new Date(updateData.date) : undefined,
+        updated_at: new Date()
+      },
+      include: { mode_paiement: true }
+    });
+
+    res.json({
+      success: true,
+      data: charge,
+      message: 'Charge mise à jour avec succès'
+    });
+  } catch (error) {
+    console.error('Erreur lors de la mise à jour de la charge:', error.message);
+    res.status(500).json({
+      error: 'Erreur lors de la mise à jour de la charge',
+      details: error.message,
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
+// Route pour supprimer une charge
+router.delete('/charges/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Vérifier que la charge existe
+    const charge = await prisma.charge.findUnique({
+      where: { id: parseInt(id) }
+    });
+
+    if (!charge) {
+      return res.status(404).json({
+        error: 'Charge non trouvée',
+        timestamp: new Date().toISOString()
+      });
+    }
+
+    await prisma.charge.delete({
+      where: { id: parseInt(id) }
+    });
+
+    res.json({
+      success: true,
+      message: 'Charge supprimée avec succès'
+    });
+  } catch (error) {
+    console.error('Erreur lors de la suppression de la charge:', error.message);
+    res.status(500).json({
+      error: 'Erreur lors de la suppression de la charge',
+      details: error.message,
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
+// Routes pour utilisateurs
+router.get('/utilisateurs', async (req, res) => {
+  try {
+    const { page = 1, limit = 50, search, type_utilisateur, actif = 'true' } = req.query;
+    const skip = (parseInt(page) - 1) * parseInt(limit);
+
+    const where = {
+      actif: actif === 'true',
+      ...(type_utilisateur && { type_utilisateur }),
+      ...(search && {
+        OR: [
+          { nom: { contains: search, mode: 'insensitive' } },
+          { prenom: { contains: search, mode: 'insensitive' } },
+          { email: { contains: search, mode: 'insensitive' } }
+        ]
+      })
+    };
+
+    const [utilisateurs, total] = await Promise.all([
+      prisma.utilisateur.findMany({
+        where,
+        orderBy: { nom: 'asc' },
+        skip,
+        take: parseInt(limit)
+      }),
+      prisma.utilisateur.count({ where })
+    ]);
+
+    res.json({
+      data: utilisateurs,
+      pagination: {
+        page: parseInt(page),
+        limit: parseInt(limit),
+        total,
+        pages: Math.ceil(total / parseInt(limit))
+      }
+    });
+  } catch (error) {
+    console.error('Erreur lors de la récupération des utilisateurs:', error);
+    res.status(500).json({
+      error: 'Erreur lors de la récupération des utilisateurs',
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
+router.get('/utilisateurs/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const utilisateur = await prisma.utilisateur.findUnique({
+      where: { id: parseInt(id) }
+    });
+
+    if (!utilisateur) {
+      return res.status(404).json({
+        error: 'Utilisateur non trouvé',
+        timestamp: new Date().toISOString()
+      });
+    }
+
+    res.json(utilisateur);
+  } catch (error) {
+    console.error('Erreur lors de la récupération de l\'utilisateur:', error);
+    res.status(500).json({
+      error: 'Erreur lors de la récupération de l\'utilisateur',
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
+router.post('/utilisateurs', async (req, res) => {
+  try {
+    const userData = req.body;
+
+    // Validation des données requises
+    if (!userData.type_utilisateur || !userData.nom || !userData.email || !userData.mot_de_passe) {
+      return res.status(400).json({
+        error: 'Données manquantes',
+        message: 'type_utilisateur, nom, email et mot_de_passe sont requis',
+        timestamp: new Date().toISOString()
+      });
+    }
+
+    // Vérifier que l'email est unique
+    const existingUser = await prisma.utilisateur.findUnique({
+      where: { email: userData.email }
+    });
+
+    if (existingUser) {
+      return res.status(400).json({
+        error: 'Email déjà utilisé',
+        message: 'Un utilisateur avec cet email existe déjà',
+        timestamp: new Date().toISOString()
+      });
+    }
+
+    const utilisateur = await prisma.utilisateur.create({
+      data: {
+        type_utilisateur: userData.type_utilisateur,
+        nom: userData.nom,
+        prenom: userData.prenom || null,
+        telephone: userData.telephone,
+        email: userData.email,
+        mot_de_passe: userData.mot_de_passe, // Note: devrait être hashé en production
+        adresse: userData.adresse || null,
+        ville: userData.ville || null,
+        code_postal: userData.code_postal || null,
+        pays: userData.pays || 'Belgique',
+        num_bce: userData.num_bce || null,
+        num_tva: userData.num_tva || null,
+        tva_applicable: userData.tva_applicable !== undefined ? userData.tva_applicable : true,
+        tva_percent: userData.tva_percent ? parseFloat(userData.tva_percent) : 21.00,
+        actif: userData.actif !== undefined ? userData.actif : true
+      }
+    });
+
+    res.status(201).json({
+      success: true,
+      data: utilisateur,
+      message: 'Utilisateur créé avec succès'
+    });
+  } catch (error) {
+    console.error('Erreur lors de la création de l\'utilisateur:', error.message);
+    res.status(500).json({
+      error: 'Erreur lors de la création de l\'utilisateur',
+      details: error.message,
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
+router.put('/utilisateurs/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const updateData = req.body;
+
+    const utilisateur = await prisma.utilisateur.update({
+      where: { id: parseInt(id) },
+      data: {
+        ...updateData,
+        updated_at: new Date()
+      }
+    });
+
+    res.json({
+      success: true,
+      data: utilisateur,
+      message: 'Utilisateur mis à jour avec succès'
+    });
+  } catch (error) {
+    console.error('Erreur lors de la mise à jour de l\'utilisateur:', error.message);
+    res.status(500).json({
+      error: 'Erreur lors de la mise à jour de l\'utilisateur',
+      details: error.message,
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
+router.delete('/utilisateurs/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Vérifier que l'utilisateur existe
+    const utilisateur = await prisma.utilisateur.findUnique({
+      where: { id: parseInt(id) },
+      include: {
+        chauffeur: true
+      }
+    });
+
+    if (!utilisateur) {
+      return res.status(404).json({
+        error: 'Utilisateur non trouvé',
+        timestamp: new Date().toISOString()
+      });
+    }
+
+    // Vérifier qu'il n'a pas de chauffeur associé
+    if (utilisateur.chauffeur) {
+      return res.status(400).json({
+        error: 'Suppression impossible',
+        message: 'L\'utilisateur a un chauffeur associé',
+        timestamp: new Date().toISOString()
+      });
+    }
+
+    // Désactiver l'utilisateur au lieu de le supprimer
+    await prisma.utilisateur.update({
+      where: { id: parseInt(id) },
+      data: {
+        actif: false,
+        updated_at: new Date()
+      }
+    });
+
+    res.json({
+      success: true,
+      message: 'Utilisateur désactivé avec succès'
+    });
+  } catch (error) {
+    console.error('Erreur lors de la suppression de l\'utilisateur:', error.message);
+    res.status(500).json({
+      error: 'Erreur lors de la suppression de l\'utilisateur',
+      details: error.message,
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
+// Routes pour alertes
+router.get('/alertes', async (req, res) => {
+  try {
+    const { page = 1, limit = 50, resolu, type_alerte } = req.query;
+    const skip = (parseInt(page) - 1) * parseInt(limit);
+
+    const where = {
+      ...(resolu !== undefined && { resolu: resolu === 'true' }),
+      ...(type_alerte && { type_alerte })
+    };
+
+    const [alertes, total] = await Promise.all([
+      prisma.alerte.findMany({
+        where,
+        include: {
+          course: true,
+          feuille_route: true,
+          utilisateur: {
+            select: {
+              id: true,
+              nom: true,
+              prenom: true
+            }
+          }
+        },
+        orderBy: { date_alerte: 'desc' },
+        skip,
+        take: parseInt(limit)
+      }),
+      prisma.alerte.count({ where })
+    ]);
+
+    res.json({
+      data: alertes,
+      pagination: {
+        page: parseInt(page),
+        limit: parseInt(limit),
+        total,
+        pages: Math.ceil(total / parseInt(limit))
+      }
+    });
+  } catch (error) {
+    console.error('Erreur lors de la récupération des alertes:', error);
+    res.status(500).json({
+      error: 'Erreur lors de la récupération des alertes',
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
+router.get('/alertes/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const alerte = await prisma.alerte.findUnique({
+      where: { id: parseInt(id) },
+      include: {
+        course: true,
+        feuille_route: true,
+        utilisateur: {
+          select: {
+            id: true,
+            nom: true,
+            prenom: true
+          }
+        }
+      }
+    });
+
+    if (!alerte) {
+      return res.status(404).json({
+        error: 'Alerte non trouvée',
+        timestamp: new Date().toISOString()
+      });
+    }
+
+    res.json(alerte);
+  } catch (error) {
+    console.error('Erreur lors de la récupération de l\'alerte:', error);
+    res.status(500).json({
+      error: 'Erreur lors de la récupération de l\'alerte',
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
+router.post('/alertes', async (req, res) => {
+  try {
+    const alerteData = req.body;
+
+    // Validation des données requises
+    if (!alerteData.type_alerte || !alerteData.message) {
+      return res.status(400).json({
+        error: 'Données manquantes',
+        message: 'type_alerte et message sont requis',
+        timestamp: new Date().toISOString()
+      });
+    }
+
+    const alerte = await prisma.alerte.create({
+      data: {
+        feuille_route_id: alerteData.feuille_route_id || null,
+        course_id: alerteData.course_id || null,
+        type_alerte: alerteData.type_alerte,
+        severite: alerteData.severite || 'Moyenne',
+        message: alerteData.message,
+        resolu: alerteData.resolu || false,
+        resolu_par: alerteData.resolu_par || null
+      },
+      include: {
+        course: true,
+        feuille_route: true,
+        utilisateur: {
+          select: {
+            id: true,
+            nom: true,
+            prenom: true
+          }
+        }
+      }
+    });
+
+    res.status(201).json({
+      success: true,
+      data: alerte,
+      message: 'Alerte créée avec succès'
+    });
+  } catch (error) {
+    console.error('Erreur lors de la création de l\'alerte:', error.message);
+    res.status(500).json({
+      error: 'Erreur lors de la création de l\'alerte',
+      details: error.message,
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
+router.put('/alertes/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const updateData = req.body;
+
+    const alerte = await prisma.alerte.update({
+      where: { id: parseInt(id) },
+      data: {
+        ...updateData,
+        date_resolution: updateData.resolu ? new Date() : undefined,
+        updated_at: new Date()
+      },
+      include: {
+        course: true,
+        feuille_route: true,
+        utilisateur: {
+          select: {
+            id: true,
+            nom: true,
+            prenom: true
+          }
+        }
+      }
+    });
+
+    res.json({
+      success: true,
+      data: alerte,
+      message: 'Alerte mise à jour avec succès'
+    });
+  } catch (error) {
+    console.error('Erreur lors de la mise à jour de l\'alerte:', error.message);
+    res.status(500).json({
+      error: 'Erreur lors de la mise à jour de l\'alerte',
+      details: error.message,
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
+// Routes pour factures
+router.get('/factures', async (req, res) => {
+  try {
+    const { page = 1, limit = 50, statut, client_id } = req.query;
+    const skip = (parseInt(page) - 1) * parseInt(limit);
+
+    const where = {
+      ...(statut && { statut }),
+      ...(client_id && { client_id: parseInt(client_id) })
+    };
+
+    const [factures, total] = await Promise.all([
+      prisma.facture.findMany({
+        where,
+        include: {
+          client: {
+            select: {
+              id: true,
+              nom: true,
+              prenom: true
+            }
+          },
+          facture_course: {
+            include: {
+              course: true
+            }
+          }
+        },
+        orderBy: { date_emission: 'desc' },
+        skip,
+        take: parseInt(limit)
+      }),
+      prisma.facture.count({ where })
+    ]);
+
+    res.json({
+      data: factures,
+      pagination: {
+        page: parseInt(page),
+        limit: parseInt(limit),
+        total,
+        pages: Math.ceil(total / parseInt(limit))
+      }
+    });
+  } catch (error) {
+    console.error('Erreur lors de la récupération des factures:', error);
+    res.status(500).json({
+      error: 'Erreur lors de la récupération des factures',
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
+router.get('/factures/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const facture = await prisma.facture.findUnique({
+      where: { id: parseInt(id) },
+      include: {
+        client: true,
+        facture_course: {
+          include: {
+            course: {
+              include: {
+                feuille_route: {
+                  include: {
+                    chauffeur: { include: { utilisateur: true } },
+                    vehicule: true
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    });
+
+    if (!facture) {
+      return res.status(404).json({
+        error: 'Facture non trouvée',
+        timestamp: new Date().toISOString()
+      });
+    }
+
+    res.json(facture);
+  } catch (error) {
+    console.error('Erreur lors de la récupération de la facture:', error);
+    res.status(500).json({
+      error: 'Erreur lors de la récupération de la facture',
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
+router.post('/factures', async (req, res) => {
+  try {
+    const factureData = req.body;
+
+    // Validation des données requises
+    if (!factureData.client_id || !factureData.montant_ht) {
+      return res.status(400).json({
+        error: 'Données manquantes',
+        message: 'client_id et montant_ht sont requis',
+        timestamp: new Date().toISOString()
+      });
+    }
+
+    const facture = await prisma.facture.create({
+      data: {
+        numero_facture: factureData.numero_facture || `F${Date.now()}`,
+        client_id: factureData.client_id,
+        date_emission: factureData.date_emission ? new Date(factureData.date_emission) : new Date(),
+        date_echeance: factureData.date_echeance ? new Date(factureData.date_echeance) : null,
+        montant_ht: parseFloat(factureData.montant_ht),
+        tva_percent: factureData.tva_percent ? parseFloat(factureData.tva_percent) : 21.00,
+        statut: factureData.statut || 'En attente',
+        mode_paiement: factureData.mode_paiement || null,
+        notes: factureData.notes || null
+      },
+      include: {
+        client: {
+          select: {
+            id: true,
+            nom: true,
+            prenom: true
+          }
+        }
+      }
+    });
+
+    res.status(201).json({
+      success: true,
+      data: facture,
+      message: 'Facture créée avec succès'
+    });
+  } catch (error) {
+    console.error('Erreur lors de la création de la facture:', error.message);
+    res.status(500).json({
+      error: 'Erreur lors de la création de la facture',
+      details: error.message,
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
+router.put('/factures/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const updateData = req.body;
+
+    const facture = await prisma.facture.update({
+      where: { id: parseInt(id) },
+      data: {
+        ...updateData,
+        montant_ht: updateData.montant_ht ? parseFloat(updateData.montant_ht) : undefined,
+        tva_percent: updateData.tva_percent ? parseFloat(updateData.tva_percent) : undefined,
+        date_emission: updateData.date_emission ? new Date(updateData.date_emission) : undefined,
+        date_echeance: updateData.date_echeance ? new Date(updateData.date_echeance) : undefined,
+        date_paiement: updateData.date_paiement ? new Date(updateData.date_paiement) : undefined,
+        updated_at: new Date()
+      },
+      include: {
+        client: {
+          select: {
+            id: true,
+            nom: true,
+            prenom: true
+          }
+        }
+      }
+    });
+
+    res.json({
+      success: true,
+      data: facture,
+      message: 'Facture mise à jour avec succès'
+    });
+  } catch (error) {
+    console.error('Erreur lors de la mise à jour de la facture:', error.message);
+    res.status(500).json({
+      error: 'Erreur lors de la mise à jour de la facture',
+      details: error.message,
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
+// Routes pour paiements de salaire
+router.get('/paiements-salaire', async (req, res) => {
+  try {
+    const { page = 1, limit = 50, chauffeur_id, statut } = req.query;
+    const skip = (parseInt(page) - 1) * parseInt(limit);
+
+    const where = {
+      ...(chauffeur_id && { chauffeur_id: parseInt(chauffeur_id) }),
+      ...(statut && { statut })
+    };
+
+    const [paiements, total] = await Promise.all([
+      prisma.paiement_salaire.findMany({
+        where,
+        include: {
+          chauffeur: { include: { utilisateur: true } },
+          feuille_route: true,
+          mode_paiement: true
+        },
+        orderBy: { date_paiement: 'desc' },
+        skip,
+        take: parseInt(limit)
+      }),
+      prisma.paiement_salaire.count({ where })
+    ]);
+
+    res.json({
+      data: paiements,
+      pagination: {
+        page: parseInt(page),
+        limit: parseInt(limit),
+        total,
+        pages: Math.ceil(total / parseInt(limit))
+      }
+    });
+  } catch (error) {
+    console.error('Erreur lors de la récupération des paiements de salaire:', error);
+    res.status(500).json({
+      error: 'Erreur lors de la récupération des paiements de salaire',
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
+router.get('/paiements-salaire/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const paiement = await prisma.paiement_salaire.findUnique({
+      where: { id: parseInt(id) },
+      include: {
+        chauffeur: { include: { utilisateur: true } },
+        feuille_route: true,
+        mode_paiement: true
+      }
+    });
+
+    if (!paiement) {
+      return res.status(404).json({
+        error: 'Paiement de salaire non trouvé',
+        timestamp: new Date().toISOString()
+      });
+    }
+
+    res.json(paiement);
+  } catch (error) {
+    console.error('Erreur lors de la récupération du paiement de salaire:', error);
+    res.status(500).json({
+      error: 'Erreur lors de la récupération du paiement de salaire',
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
+router.post('/paiements-salaire', async (req, res) => {
+  try {
+    const paiementData = req.body;
+
+    // Validation des données requises
+    if (!paiementData.chauffeur_id || !paiementData.periode_debut || !paiementData.periode_fin || !paiementData.montant_total) {
+      return res.status(400).json({
+        error: 'Données manquantes',
+        message: 'chauffeur_id, periode_debut, periode_fin et montant_total sont requis',
+        timestamp: new Date().toISOString()
+      });
+    }
+
+    const paiement = await prisma.paiement_salaire.create({
+      data: {
+        chauffeur_id: paiementData.chauffeur_id,
+        feuille_route_id: paiementData.feuille_route_id || null,
+        periode_debut: new Date(paiementData.periode_debut),
+        periode_fin: new Date(paiementData.periode_fin),
+        montant_total: parseFloat(paiementData.montant_total),
+        montant_fixe: paiementData.montant_fixe ? parseFloat(paiementData.montant_fixe) : 0.00,
+        montant_variable: paiementData.montant_variable ? parseFloat(paiementData.montant_variable) : 0.00,
+        montant_paye: parseFloat(paiementData.montant_total),
+        mode_paiement_id: paiementData.mode_paiement_id || null,
+        statut: paiementData.statut || 'Payé',
+        notes: paiementData.notes || null
+      },
+      include: {
+        chauffeur: { include: { utilisateur: true } },
+        feuille_route: true,
+        mode_paiement: true
+      }
+    });
+
+    res.status(201).json({
+      success: true,
+      data: paiement,
+      message: 'Paiement de salaire créé avec succès'
+    });
+  } catch (error) {
+    console.error('Erreur lors de la création du paiement de salaire:', error.message);
+    res.status(500).json({
+      error: 'Erreur lors de la création du paiement de salaire',
+      details: error.message,
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
+// Routes pour paramètres système
+router.get('/parametres-systeme', async (req, res) => {
+  try {
+    const { categorie } = req.query;
+
+    const where = categorie ? { categorie } : {};
+
+    const parametres = await prisma.parametres_systeme.findMany({
+      where,
+      orderBy: { categorie: 'asc' }
+    });
+
+    res.json(parametres);
+  } catch (error) {
+    console.error('Erreur lors de la récupération des paramètres système:', error);
+    res.status(500).json({
+      error: 'Erreur lors de la récupération des paramètres système',
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
+router.get('/parametres-systeme/:cle', async (req, res) => {
+  try {
+    const { cle } = req.params;
+    const parametre = await prisma.parametres_systeme.findUnique({
+      where: { cle }
+    });
+
+    if (!parametre) {
+      return res.status(404).json({
+        error: 'Paramètre système non trouvé',
+        timestamp: new Date().toISOString()
+      });
+    }
+
+    res.json(parametre);
+  } catch (error) {
+    console.error('Erreur lors de la récupération du paramètre système:', error);
+    res.status(500).json({
+      error: 'Erreur lors de la récupération du paramètre système',
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
+router.put('/parametres-systeme/:cle', async (req, res) => {
+  try {
+    const { cle } = req.params;
+    const { valeur } = req.body;
+
+    const parametre = await prisma.parametres_systeme.upsert({
+      where: { cle },
+      update: {
+        valeur,
+        updated_at: new Date()
+      },
+      create: {
+        cle,
+        valeur,
+        description: `Paramètre ${cle}`,
+        categorie: 'general'
+      }
+    });
+
+    res.json({
+      success: true,
+      data: parametre,
+      message: 'Paramètre système mis à jour avec succès'
+    });
+  } catch (error) {
+    console.error('Erreur lors de la mise à jour du paramètre système:', error.message);
+    res.status(500).json({
+      error: 'Erreur lors de la mise à jour du paramètre système',
+      details: error.message,
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
+// Routes pour performances chauffeur
+router.get('/performances-chauffeur', async (req, res) => {
+  try {
+    const { chauffeur_id, date_debut, date_fin } = req.query;
+
+    const where = {
+      ...(chauffeur_id && { chauffeur_id: parseInt(chauffeur_id) }),
+      ...(date_debut && { date_debut: { gte: new Date(date_debut) } }),
+      ...(date_fin && { date_fin: { lte: new Date(date_fin) } })
+    };
+
+    const performances = await prisma.performance_chauffeur.findMany({
+      where,
+      include: {
+        chauffeur: { include: { utilisateur: true } }
+      },
+      orderBy: { date_debut: 'desc' }
+    });
+
+    res.json(performances);
+  } catch (error) {
+    console.error('Erreur lors de la récupération des performances chauffeur:', error);
+    res.status(500).json({
+      error: 'Erreur lors de la récupération des performances chauffeur',
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
+router.post('/performances-chauffeur', async (req, res) => {
+  try {
+    const performanceData = req.body;
+
+    // Validation des données requises
+    if (!performanceData.chauffeur_id || !performanceData.date_debut || !performanceData.date_fin) {
+      return res.status(400).json({
+        error: 'Données manquantes',
+        message: 'chauffeur_id, date_debut et date_fin sont requis',
+        timestamp: new Date().toISOString()
+      });
+    }
+
+    const performance = await prisma.performance_chauffeur.create({
+      data: {
+        chauffeur_id: performanceData.chauffeur_id,
+        date_debut: new Date(performanceData.date_debut),
+        date_fin: new Date(performanceData.date_fin),
+        nombre_courses: performanceData.nombre_courses || 0,
+        km_parcourus: performanceData.km_parcourus || 0,
+        recette_totale: performanceData.recette_totale ? parseFloat(performanceData.recette_totale) : 0.00,
+        salaire_total: performanceData.salaire_total ? parseFloat(performanceData.salaire_total) : 0.00,
+        charges_total: performanceData.charges_total ? parseFloat(performanceData.charges_total) : 0.00
+      },
+      include: {
+        chauffeur: { include: { utilisateur: true } }
+      }
+    });
+
+    res.status(201).json({
+      success: true,
+      data: performance,
+      message: 'Performance chauffeur créée avec succès'
+    });
+  } catch (error) {
+    console.error('Erreur lors de la création de la performance chauffeur:', error.message);
+    res.status(500).json({
+      error: 'Erreur lors de la création de la performance chauffeur',
+      details: error.message,
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
+// Routes pour associations chauffeur-véhicule
+router.get('/chauffeur-vehicule', async (req, res) => {
+  try {
+    const { chauffeur_id, vehicule_id, actif = 'true' } = req.query;
+
+    const where = {
+      actif: actif === 'true',
+      ...(chauffeur_id && { chauffeur_id: parseInt(chauffeur_id) }),
+      ...(vehicule_id && { vehicule_id: parseInt(vehicule_id) })
+    };
+
+    const associations = await prisma.chauffeur_vehicule.findMany({
+      where,
+      include: {
+        chauffeur: { include: { utilisateur: true } },
+        vehicule: true
+      },
+      orderBy: { date_assignation: 'desc' }
+    });
+
+    res.json(associations);
+  } catch (error) {
+    console.error('Erreur lors de la récupération des associations chauffeur-véhicule:', error);
+    res.status(500).json({
+      error: 'Erreur lors de la récupération des associations chauffeur-véhicule',
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
+router.post('/chauffeur-vehicule', async (req, res) => {
+  try {
+    const associationData = req.body;
+
+    // Validation des données requises
+    if (!associationData.chauffeur_id || !associationData.vehicule_id) {
+      return res.status(400).json({
+        error: 'Données manquantes',
+        message: 'chauffeur_id et vehicule_id sont requis',
+        timestamp: new Date().toISOString()
+      });
+    }
+
+    // Vérifier que l'association n'existe pas déjà
+    const existingAssociation = await prisma.chauffeur_vehicule.findUnique({
+      where: {
+        chauffeur_id_vehicule_id: {
+          chauffeur_id: associationData.chauffeur_id,
+          vehicule_id: associationData.vehicule_id
+        }
+      }
+    });
+
+    if (existingAssociation) {
+      return res.status(400).json({
+        error: 'Association déjà existante',
+        message: 'Ce chauffeur est déjà associé à ce véhicule',
+        timestamp: new Date().toISOString()
+      });
+    }
+
+    const association = await prisma.chauffeur_vehicule.create({
+      data: {
+        chauffeur_id: associationData.chauffeur_id,
+        vehicule_id: associationData.vehicule_id,
+        actif: associationData.actif !== undefined ? associationData.actif : true,
+        notes: associationData.notes || null
+      },
+      include: {
+        chauffeur: { include: { utilisateur: true } },
+        vehicule: true
+      }
+    });
+
+    res.status(201).json({
+      success: true,
+      data: association,
+      message: 'Association chauffeur-véhicule créée avec succès'
+    });
+  } catch (error) {
+    console.error('Erreur lors de la création de l\'association chauffeur-véhicule:', error.message);
+    res.status(500).json({
+      error: 'Erreur lors de la création de l\'association chauffeur-véhicule',
+      details: error.message,
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
+router.put('/chauffeur-vehicule/:chauffeur_id/:vehicule_id', async (req, res) => {
+  try {
+    const { chauffeur_id, vehicule_id } = req.params;
+    const updateData = req.body;
+
+    const association = await prisma.chauffeur_vehicule.update({
+      where: {
+        chauffeur_id_vehicule_id: {
+          chauffeur_id: parseInt(chauffeur_id),
+          vehicule_id: parseInt(vehicule_id)
+        }
+      },
+      data: {
+        ...updateData,
+        updated_at: new Date()
+      },
+      include: {
+        chauffeur: { include: { utilisateur: true } },
+        vehicule: true
+      }
+    });
+
+    res.json({
+      success: true,
+      data: association,
+      message: 'Association chauffeur-véhicule mise à jour avec succès'
+    });
+  } catch (error) {
+    console.error('Erreur lors de la mise à jour de l\'association chauffeur-véhicule:', error.message);
+    res.status(500).json({
+      error: 'Erreur lors de la mise à jour de l\'association chauffeur-véhicule',
+      details: error.message,
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
+router.delete('/chauffeur-vehicule/:chauffeur_id/:vehicule_id', async (req, res) => {
+  try {
+    const { chauffeur_id, vehicule_id } = req.params;
+
+    await prisma.chauffeur_vehicule.delete({
+      where: {
+        chauffeur_id_vehicule_id: {
+          chauffeur_id: parseInt(chauffeur_id),
+          vehicule_id: parseInt(vehicule_id)
+        }
+      }
+    });
+
+    res.json({
+      success: true,
+      message: 'Association chauffeur-véhicule supprimée avec succès'
+    });
+  } catch (error) {
+    console.error('Erreur lors de la suppression de l\'association chauffeur-véhicule:', error.message);
+    res.status(500).json({
+      error: 'Erreur lors de la suppression de l\'association chauffeur-véhicule',
+      details: error.message,
+      timestamp: new Date().toISOString()
+    });
   }
 });
 
@@ -1183,6 +3082,15 @@ router.post('/charges', async (req, res) => {
     // Monter le router sur /api
     app.use('/api', router);
 
+    // Middleware de logging des requêtes
+    app.use(requestLogger);
+
+    // Middleware pour les routes non trouvées
+    app.use(notFoundHandler);
+
+    // Middleware de gestion globale des erreurs (doit être le dernier)
+    app.use(errorHandler);
+
     // Fonction de démarrage du serveur
     const startServer = async () => {
       try {
@@ -1226,6 +3134,9 @@ router.post('/charges', async (req, res) => {
       }
     };
 
-startServer();
+startServer().catch((error) => {
+  console.error('❌ Erreur fatale lors du démarrage du serveur:', error);
+  process.exit(1);
+});
 
 export default app;
