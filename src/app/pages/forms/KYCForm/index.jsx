@@ -495,7 +495,7 @@ const TxAppAdmin = () => {
             <div className="flex justify-between items-center">
               <div>
                 <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
-                  🚕 TxApp - Administration
+                  TxApp - Administration
                 </h1>
                 <p className="text-gray-600 dark:text-gray-400">
                   Gestion complète de votre flotte de taxis
