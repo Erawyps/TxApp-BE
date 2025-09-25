@@ -4,7 +4,7 @@ import { Navigate } from "react-router";
 // Local Imports
 import { AppLayout } from "app/layouts/AppLayout";
 import { DynamicLayout } from "app/layouts/DynamicLayout";
-import AuthGuard from "middleware/AuthGuard";
+import AuthGuard from "../../components/guards/AuthGuard";
 
 // ----------------------------------------------------------------------
 

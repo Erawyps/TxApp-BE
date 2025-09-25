@@ -1,4 +1,5 @@
 import prisma from '../configs/database.config.js';
+import jwt from 'jsonwebtoken';
 
 /**
  * Service Prisma unifié pour toutes les opérations de base de données
@@ -1411,6 +1412,204 @@ export async function createIntervention(interventionData) {
     });
   } catch (error) {
     console.error('Erreur lors de la création de l\'intervention:', error);
+    throw error;
+  }
+}
+
+// ==================== AUTHENTIFICATION ====================
+
+/**
+ * Fonction de hashage des mots de passe (SHA-256 avec salt)
+ * @param {string} password - Mot de passe en clair
+ * @returns {string} - Hash du mot de passe
+ */
+export async function hashPassword(password) {
+  const encoder = new TextEncoder();
+  const data = encoder.encode(password + 'TxApp-Salt-2025');
+  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+/**
+ * Authentifie un utilisateur et retourne un token JWT
+ * @param {string} email - Email de l'utilisateur
+ * @param {string} password - Mot de passe en clair
+ * @returns {Object} - Token JWT et informations utilisateur
+ */
+export async function login(email, password) {
+  try {
+    // Recherche de l'utilisateur par email
+    const utilisateur = await prisma.utilisateur.findUnique({
+      where: { email: email },
+      include: {
+        societe_taxi: true,
+        chauffeur: {
+          include: {
+            regle_salaire: true
+          }
+        }
+      }
+    });
+
+    if (!utilisateur) {
+      throw new Error('Utilisateur non trouvé');
+    }
+
+    // Vérification du mot de passe
+    // Certains utilisateurs ont des mots de passe en clair, d'autres sont hashés
+    let isPasswordValid = false;
+    if (utilisateur.mot_de_passe_hashe === password) {
+      // Mot de passe en clair
+      isPasswordValid = true;
+    } else {
+      // Mot de passe hashé
+      const hashedInput = await hashPassword(password);
+      isPasswordValid = hashedInput === utilisateur.mot_de_passe_hashe;
+    }
+
+    if (!isPasswordValid) {
+      throw new Error('Mot de passe incorrect');
+    }
+
+    // Génération du token JWT
+    const token = jwt.sign(
+      {
+        userId: utilisateur.user_id,
+        email: utilisateur.email,
+        role: utilisateur.role,
+        societeId: utilisateur.societe_id
+      },
+      process.env.JWT_SECRET || 'txapp-secret-key-2025',
+      {
+        expiresIn: process.env.JWT_EXPIRES_IN || '24h',
+        issuer: 'txapp-api',
+        audience: 'txapp-client'
+      }
+    );
+
+    // Retour des informations utilisateur (sans le mot de passe hashé)
+    const { mot_de_passe_hashe, ...userWithoutPassword } = utilisateur;
+
+    return {
+      token,
+      user: userWithoutPassword,
+      expiresIn: process.env.JWT_EXPIRES_IN || '24h'
+    };
+  } catch (error) {
+    console.error('Erreur lors de l\'authentification:', error);
+    throw error;
+  }
+}
+
+/**
+ * Vérifie la validité d'un token JWT
+ * @param {string} token - Token JWT à vérifier
+ * @returns {Object} - Informations du token décodé
+ */
+export async function verifyToken(token) {
+  try {
+    // Vérification du token
+    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'txapp-secret-key-2025', {
+      issuer: 'txapp-api',
+      audience: 'txapp-client'
+    });
+
+    // Récupération des informations utilisateur à jour
+    const utilisateur = await prisma.utilisateur.findUnique({
+      where: { user_id: decoded.userId },
+      include: {
+        societe_taxi: true,
+        chauffeur: {
+          include: {
+            regle_salaire: true
+          }
+        }
+      }
+    });
+
+    if (!utilisateur) {
+      throw new Error('Utilisateur non trouvé');
+    }
+
+    // Retour des informations utilisateur (sans le mot de passe hashé)
+    const { mot_de_passe_hashe, ...userWithoutPassword } = utilisateur;
+
+    return {
+      valid: true,
+      user: userWithoutPassword,
+      tokenData: decoded
+    };
+  } catch (error) {
+    console.error('Erreur lors de la vérification du token:', error);
+    if (error.name === 'JsonWebTokenError') {
+      throw new Error('Token invalide');
+    }
+    if (error.name === 'TokenExpiredError') {
+      throw new Error('Token expiré');
+    }
+    throw error;
+  }
+}
+
+/**
+ * Change le mot de passe d'un utilisateur
+ * @param {number} userId - ID de l'utilisateur
+ * @param {string} oldPassword - Ancien mot de passe
+ * @param {string} newPassword - Nouveau mot de passe
+ * @returns {Object} - Confirmation du changement
+ */
+export async function changePassword(userId, oldPassword, newPassword) {
+  try {
+    // Récupération de l'utilisateur
+    const utilisateur = await prisma.utilisateur.findUnique({
+      where: { user_id: parseInt(userId) }
+    });
+
+    if (!utilisateur) {
+      throw new Error('Utilisateur non trouvé');
+    }
+
+    // Vérification de l'ancien mot de passe
+    // Certains utilisateurs ont des mots de passe en clair, d'autres sont hashés
+    let isOldPasswordValid = false;
+    if (utilisateur.mot_de_passe_hashe === oldPassword) {
+      // Mot de passe en clair
+      isOldPasswordValid = true;
+    } else {
+      // Mot de passe hashé
+      const hashedInput = await hashPassword(oldPassword);
+      isOldPasswordValid = hashedInput === utilisateur.mot_de_passe_hashe;
+    }
+
+    if (!isOldPasswordValid) {
+      throw new Error('Ancien mot de passe incorrect');
+    }
+
+    // Validation du nouveau mot de passe
+    if (newPassword.length < 8) {
+      throw new Error('Le nouveau mot de passe doit contenir au moins 8 caractères');
+    }
+
+    // Hashage du nouveau mot de passe avec SHA-256
+    const hashedNewPassword = await hashPassword(newPassword);
+
+    // Mise à jour du mot de passe
+    await prisma.utilisateur.update({
+      where: { user_id: parseInt(userId) },
+      data: {
+        mot_de_passe_hashe: hashedNewPassword,
+        updated_at: new Date()
+      }
+    });
+
+    return {
+      success: true,
+      message: 'Mot de passe changé avec succès',
+      changedAt: new Date().toISOString()
+    };
+  } catch (error) {
+    console.error('Erreur lors du changement de mot de passe:', error);
     throw error;
   }
 }

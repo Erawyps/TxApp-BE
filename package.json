@@ -59,6 +59,7 @@
     "cors": "^2.8.5",
     "date-fns": "^4.1.0",
     "dayjs": "^1.11.13",
+    "dotenv": "^17.2.2",
     "drizzle-orm": "^0.43.1",
     "eslint-config-prettier": "^10.1.1",
     "eslint-define-config": "^2.1.0",

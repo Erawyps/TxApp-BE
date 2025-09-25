@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import { Page } from 'components/shared/Page';
+import ErrorBoundary from 'components/shared/ErrorBoundary';
+import LoadingSpinner from 'components/ui/LoadingSpinner';
 import {
   ClockIcon,
   TruckIcon,
@@ -251,44 +253,54 @@ export default function DriverDashboard() {
 
           {/* Current Shift Information */}
           {currentShift && (
-            <ShiftInfo
-              shift={currentShift}
-              onUpdate={updateShift}
-            />
+            <ErrorBoundary fallback={<div className="bg-red-50 p-4 rounded-lg">Erreur de chargement des informations de shift</div>}>
+              <ShiftInfo
+                shift={currentShift}
+                onUpdate={updateShift}
+              />
+            </ErrorBoundary>
           )}
 
           {/* Financial Summary */}
           {currentShift && (
-            <FinancialSummary
-              courses={courses}
-              expenses={expenses}
-            />
+            <ErrorBoundary fallback={<div className="bg-red-50 p-4 rounded-lg">Erreur de chargement du résumé financier</div>}>
+              <FinancialSummary
+                courses={courses}
+                expenses={expenses}
+              />
+            </ErrorBoundary>
           )}
 
           {/* Chauffeur Statistics */}
           {chauffeurId && (
-            <ChauffeurStats
-              chauffeurId={chauffeurId}
-            />
+            <ErrorBoundary fallback={<div className="bg-red-50 p-4 rounded-lg">Erreur de chargement des statistiques chauffeur</div>}>
+              <ChauffeurStats
+                chauffeurId={chauffeurId}
+              />
+            </ErrorBoundary>
           )}
 
           {/* Interventions Management */}
           {chauffeurId && (
-            <InterventionsManager
-              chauffeurId={chauffeurId}
-            />
+            <ErrorBoundary fallback={<div className="bg-red-50 p-4 rounded-lg">Erreur de chargement de la gestion des interventions</div>}>
+              <InterventionsManager
+                chauffeurId={chauffeurId}
+              />
+            </ErrorBoundary>
           )}
 
           {/* Course Management */}
           {currentShift && (
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               <div className="lg:col-span-2">
-                <CourseList
-                  courses={courses}
-                  onUpdateCourse={updateCourse}
-                  onCancelCourse={cancelCourse}
-                  isLoading={coursesLoading}
-                />
+                <ErrorBoundary fallback={<div className="bg-red-50 p-4 rounded-lg">Erreur de chargement de la liste des courses</div>}>
+                  <CourseList
+                    courses={courses}
+                    onUpdateCourse={updateCourse}
+                    onCancelCourse={cancelCourse}
+                    isLoading={coursesLoading}
+                  />
+                </ErrorBoundary>
               </div>
               <div className="space-y-4">
                 <button

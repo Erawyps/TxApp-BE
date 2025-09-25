@@ -50,7 +50,10 @@ import {
   encodeFeuilleRouteAdmin,
   getInterventions,
   getInterventionsByChauffeur,
-  createIntervention
+  createIntervention,
+  login,
+  verifyToken,
+  changePassword
 } from '../services/prismaService.js';
 
 const app = new Hono();
@@ -624,6 +627,117 @@ app.post('/admin/feuille-route/encode', async (c) => {
   } catch (error) {
     console.error('Erreur API encodage admin feuille de route:', error);
     return c.json({ error: 'Erreur lors de l\'encodage admin' }, 500);
+  }
+});
+
+// ==================== AUTHENTIFICATION ====================
+
+app.post('/auth/login', async (c) => {
+  try {
+    const { email, password } = await c.req.json();
+
+    if (!email || !password) {
+      return c.json({
+        success: false,
+        error: 'Email et mot de passe requis'
+      }, 400);
+    }
+
+    const result = await login(email, password);
+
+    return c.json({
+      success: true,
+      token: result.token,
+      user: result.user,
+      expiresIn: result.expiresIn
+    });
+  } catch (error) {
+    console.error('Erreur API login:', error);
+
+    let statusCode = 500;
+    let errorMessage = 'Erreur interne du serveur';
+
+    if (error.message === 'Utilisateur non trouvé' || error.message === 'Mot de passe incorrect') {
+      statusCode = 401;
+      errorMessage = 'Email ou mot de passe incorrect';
+    }
+
+    return c.json({
+      success: false,
+      error: errorMessage
+    }, statusCode);
+  }
+});
+
+app.post('/auth/verify', async (c) => {
+  try {
+    const { token } = await c.req.json();
+
+    if (!token) {
+      return c.json({
+        success: false,
+        error: 'Token requis'
+      }, 400);
+    }
+
+    const result = await verifyToken(token);
+
+    return c.json({
+      success: true,
+      valid: result.valid,
+      user: result.user
+    });
+  } catch (error) {
+    console.error('Erreur API verify token:', error);
+
+    let statusCode = 500;
+    let errorMessage = 'Erreur interne du serveur';
+
+    if (error.message === 'Token invalide' || error.message === 'Token expiré') {
+      statusCode = 401;
+      errorMessage = error.message;
+    }
+
+    return c.json({
+      success: false,
+      error: errorMessage
+    }, statusCode);
+  }
+});
+
+app.post('/auth/change-password', async (c) => {
+  try {
+    const { userId, oldPassword, newPassword } = await c.req.json();
+
+    if (!userId || !oldPassword || !newPassword) {
+      return c.json({
+        success: false,
+        error: 'userId, oldPassword et newPassword requis'
+      }, 400);
+    }
+
+    const result = await changePassword(userId, oldPassword, newPassword);
+
+    return c.json({
+      success: true,
+      message: result.message,
+      changedAt: result.changedAt
+    });
+  } catch (error) {
+    console.error('Erreur API change password:', error);
+
+    let statusCode = 500;
+    let errorMessage = 'Erreur interne du serveur';
+
+    if (error.message.includes('Mot de passe') || error.message === 'Utilisateur non trouvé') {
+      statusCode = 400;
+      errorMessage = error.message;
+    }
+
+    return c.json({
+      success: false,
+      error: errorMessage
+    }, statusCode);
   }
 });
 

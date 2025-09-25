@@ -14,7 +14,27 @@ export async function fetchCourses(feuilleRouteId = null) {
     return response.data.map(mapFromDb);
   } catch (error) {
     console.error('Erreur lors de la récupération des courses:', error);
-    throw error;
+
+    // Gestion spécifique des erreurs
+    if (error.response) {
+      const status = error.response.status;
+      switch (status) {
+        case 401:
+          throw new Error('Authentification requise pour accéder aux courses');
+        case 403:
+          throw new Error('Accès non autorisé aux données des courses');
+        case 404:
+          throw new Error('Service de courses non trouvé');
+        case 500:
+          throw new Error('Erreur lors de la récupération des courses');
+        default:
+          throw new Error(`Erreur serveur (${status}) lors de la récupération des courses`);
+      }
+    } else if (error.request) {
+      throw new Error('Erreur de connexion réseau - impossible de récupérer les courses');
+    } else {
+      throw new Error('Erreur inconnue lors de la récupération des données de courses');
+    }
   }
 }
 
@@ -26,7 +46,31 @@ export async function createCourse(courseData) {
     return mapFromDb(response.data);
   } catch (error) {
     console.error('Erreur lors de la création de la course:', error);
-    throw error;
+
+    // Gestion spécifique des erreurs
+    if (error.response) {
+      const status = error.response.status;
+      switch (status) {
+        case 400:
+          throw new Error('Données de course invalides ou chauffeur non disponible');
+        case 401:
+          throw new Error('Authentification requise pour créer une course');
+        case 403:
+          throw new Error('Accès non autorisé à la création de courses');
+        case 404:
+          throw new Error('Service de création de courses non trouvé');
+        case 409:
+          throw new Error('Conflit: chauffeur déjà occupé à cette heure');
+        case 500:
+          throw new Error('Erreur lors de la création de la course');
+        default:
+          throw new Error(`Erreur serveur (${status}) lors de la création de la course`);
+      }
+    } else if (error.request) {
+      throw new Error('Erreur de connexion réseau - impossible de créer la course');
+    } else {
+      throw new Error('Erreur inconnue lors de la création de la course');
+    }
   }
 }
 
@@ -38,7 +82,31 @@ export async function updateCourse(courseId, courseData) {
     return mapFromDb(response.data);
   } catch (error) {
     console.error('Erreur lors de la mise à jour de la course:', error);
-    throw error;
+
+    // Gestion spécifique des erreurs
+    if (error.response) {
+      const status = error.response.status;
+      switch (status) {
+        case 400:
+          throw new Error('Données de mise à jour invalides ou chauffeur non disponible');
+        case 401:
+          throw new Error('Authentification requise pour modifier une course');
+        case 403:
+          throw new Error('Accès non autorisé à la modification de courses');
+        case 404:
+          throw new Error('Course non trouvée ou service non disponible');
+        case 409:
+          throw new Error('Conflit: chauffeur déjà occupé à cette heure');
+        case 500:
+          throw new Error('Erreur lors de la mise à jour de la course');
+        default:
+          throw new Error(`Erreur serveur (${status}) lors de la mise à jour de la course`);
+      }
+    } else if (error.request) {
+      throw new Error('Erreur de connexion réseau - impossible de modifier la course');
+    } else {
+      throw new Error('Erreur inconnue lors de la mise à jour de la course');
+    }
   }
 }
 
@@ -50,7 +118,7 @@ export async function autoSaveCourse(courseId, courseData) {
     return mapFromDb(response.data);
   } catch (error) {
     console.error('Erreur lors de la sauvegarde automatique:', error);
-    throw error;
+    throw new Error(`Erreur lors de la sauvegarde automatique: ${error.message}`);
   }
 }
 
@@ -64,7 +132,7 @@ export async function cancelCourse(courseId, motif = null) {
     return mapFromDb(response.data);
   } catch (error) {
     console.error('Erreur lors de l\'annulation de la course:', error);
-    throw error;
+    throw new Error(`Erreur lors de l'annulation de la course: ${error.message}`);
   }
 }
 
@@ -80,7 +148,7 @@ export async function upsertCourse(courseData) {
     }
   } catch (error) {
     console.error('Erreur lors de l\'upsert de la course:', error);
-    throw error;
+    throw new Error(`Erreur lors de l'opération sur la course: ${error.message}`);
   }
 }
 

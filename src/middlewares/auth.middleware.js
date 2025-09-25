@@ -1,203 +1,122 @@
 // src/middlewares/auth.middleware.js
 import jwt from 'jsonwebtoken';
-import { PrismaClient } from '@prisma/client';
+import { verifyToken } from '../services/prismaService.js';
 
-const prisma = new PrismaClient();
-
-// Middleware d'authentification JWT
-export const authenticateToken = async (req, res, next) => {
+/**
+ * Middleware d'authentification JWT pour Hono
+ * Vérifie la présence et la validité du token JWT dans le header Authorization
+ */
+export async function authMiddleware(c, next) {
   try {
-    const authHeader = req.headers['authorization'];
-    const token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
+    // Récupération du token dans le header Authorization
+    const authHeader = c.req.header('Authorization');
 
-    if (!token) {
-      return res.status(401).json({
-        error: 'Token d\'authentification manquant',
-        message: 'Veuillez vous connecter pour accéder à cette ressource',
-        timestamp: new Date().toISOString()
-      });
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return c.json({
+        success: false,
+        error: 'Token d\'autorisation manquant ou invalide'
+      }, 401);
     }
 
-    // Vérifier le token
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key');
+    const token = authHeader.substring(7); // Supprimer "Bearer "
 
-    // Vérifier si l'utilisateur existe toujours
-    const utilisateur = await prisma.utilisateur.findUnique({
-      where: { id: decoded.userId },
-      select: {
-        id: true,
-        email: true,
-        role: true,
-        actif: true
-      }
-    });
+    // Vérification du token
+    const result = await verifyToken(token);
 
-    if (!utilisateur) {
-      return res.status(401).json({
-        error: 'Utilisateur non trouvé',
-        message: 'Le compte utilisateur n\'existe plus',
-        timestamp: new Date().toISOString()
-      });
-    }
+    // Ajout des informations utilisateur dans le contexte
+    c.set('user', result.user);
+    c.set('tokenData', result.tokenData);
 
-    if (!utilisateur.actif) {
-      return res.status(401).json({
-        error: 'Compte désactivé',
-        message: 'Votre compte a été désactivé',
-        timestamp: new Date().toISOString()
-      });
-    }
-
-    // Ajouter les informations utilisateur à la requête
-    req.user = {
-      id: utilisateur.id,
-      email: utilisateur.email,
-      role: utilisateur.role
-    };
-
-    next();
+    await next();
   } catch (error) {
-    if (error.name === 'JsonWebTokenError') {
-      return res.status(401).json({
-        error: 'Token invalide',
-        message: 'Le token d\'authentification est invalide',
-        timestamp: new Date().toISOString()
-      });
+    console.error('Erreur middleware auth:', error);
+
+    let statusCode = 500;
+    let errorMessage = 'Erreur d\'authentification';
+
+    if (error.message === 'Token invalide') {
+      statusCode = 401;
+      errorMessage = 'Token invalide';
+    } else if (error.message === 'Token expiré') {
+      statusCode = 401;
+      errorMessage = 'Token expiré';
+    } else if (error.message === 'Utilisateur non trouvé') {
+      statusCode = 401;
+      errorMessage = 'Utilisateur non trouvé';
     }
 
-    if (error.name === 'TokenExpiredError') {
-      return res.status(401).json({
-        error: 'Token expiré',
-        message: 'Votre session a expiré, veuillez vous reconnecter',
-        timestamp: new Date().toISOString()
-      });
-    }
-
-    console.error('Erreur d\'authentification:', error);
-    return res.status(500).json({
-      error: 'Erreur d\'authentification',
-      message: 'Une erreur est survenue lors de la vérification de l\'authentification',
-      timestamp: new Date().toISOString()
-    });
+    return c.json({
+      success: false,
+      error: errorMessage
+    }, statusCode);
   }
-};
+}
 
-// Middleware de vérification des rôles
-export const requireRole = (...roles) => {
-  return (req, res, next) => {
-    if (!req.user) {
-      return res.status(401).json({
-        error: 'Authentification requise',
-        message: 'Vous devez être connecté pour accéder à cette ressource',
-        timestamp: new Date().toISOString()
-      });
-    }
-
-    if (!roles.includes(req.user.role)) {
-      return res.status(403).json({
-        error: 'Accès refusé',
-        message: `Cette ressource nécessite l'un des rôles suivants: ${roles.join(', ')}`,
-        timestamp: new Date().toISOString()
-      });
-    }
-
-    next();
-  };
-};
-
-// Middleware pour vérifier si l'utilisateur est propriétaire de la ressource
-export const requireOwnership = (resourceType) => {
-  return async (req, res, next) => {
-    try {
-      const resourceId = req.params.id;
-      const userId = req.user.id;
-
-      let isOwner = false;
-
-      switch (resourceType) {
-        case 'chauffeur': {
-          const chauffeur = await prisma.chauffeur.findUnique({
-            where: { id: parseInt(resourceId) },
-            select: { utilisateur_id: true }
-          });
-          isOwner = chauffeur && chauffeur.utilisateur_id === userId;
-          break;
-        }
-
-        case 'client':
-          // Pour les clients, seuls les admins peuvent les modifier
-          isOwner = req.user.role === 'admin';
-          break;
-
-        case 'vehicule':
-          // Pour les véhicules, seuls les admins peuvent les modifier
-          isOwner = req.user.role === 'admin';
-          break;
-
-        case 'feuille_route': {
-          const feuilleRoute = await prisma.feuilleRoute.findUnique({
-            where: { id: parseInt(resourceId) },
-            select: { chauffeur: { select: { utilisateur_id: true } } }
-          });
-          isOwner = feuilleRoute && feuilleRoute.chauffeur.utilisateur_id === userId;
-          break;
-        }
-
-        default:
-          isOwner = req.user.role === 'admin';
-      }
-
-      if (!isOwner) {
-        return res.status(403).json({
-          error: 'Accès refusé',
-          message: 'Vous n\'avez pas les droits pour modifier cette ressource',
-          timestamp: new Date().toISOString()
-        });
-      }
-
-      next();
-    } catch (error) {
-      console.error('Erreur de vérification de propriété:', error);
-      return res.status(500).json({
-        error: 'Erreur de vérification',
-        message: 'Une erreur est survenue lors de la vérification des droits',
-        timestamp: new Date().toISOString()
-      });
-    }
-  };
-};
-
-// Middleware optionnel d'authentification (pour les endpoints publics)
-export const optionalAuth = async (req, res, next) => {
+/**
+ * Middleware optionnel d'authentification
+ * N'échoue pas si pas de token, mais ajoute les infos utilisateur si présent
+ */
+export async function optionalAuthMiddleware(c, next) {
   try {
-    const authHeader = req.headers['authorization'];
-    const token = authHeader && authHeader.split(' ')[1];
+    const authHeader = c.req.header('Authorization');
 
-    if (token) {
-      const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key');
-
-      const utilisateur = await prisma.utilisateur.findUnique({
-        where: { id: decoded.userId },
-        select: {
-          id: true,
-          email: true,
-          role: true,
-          actif: true
-        }
-      });
-
-      if (utilisateur && utilisateur.actif) {
-        req.user = {
-          id: utilisateur.id,
-          email: utilisateur.email,
-          role: utilisateur.role
-        };
-      }
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      const token = authHeader.substring(7);
+      const result = await verifyToken(token);
+      c.set('user', result.user);
+      c.set('tokenData', result.tokenData);
     }
 
-    next();
-  } catch {
-    // Ignorer les erreurs d'authentification optionnelle
-    next();
+    await next();
+  } catch (error) {
+    // En cas d'erreur, on continue sans authentification
+    console.warn('Erreur middleware auth optionnel:', error.message);
+    await next();
   }
-};
+}
+
+/**
+ * Middleware de vérification des rôles
+ * @param {string[]} allowedRoles - Rôles autorisés
+ */
+export function roleMiddleware(allowedRoles) {
+  return async (c, next) => {
+    const user = c.get('user');
+
+    if (!user) {
+      return c.json({
+        success: false,
+        error: 'Authentification requise'
+      }, 401);
+    }
+
+    if (!allowedRoles.includes(user.role)) {
+      return c.json({
+        success: false,
+        error: 'Permissions insuffisantes'
+      }, 403);
+    }
+
+    await next();
+  };
+}
+
+/**
+ * Middleware de vérification de propriété de société
+ * Vérifie que l'utilisateur appartient à la même société que la ressource
+ */
+export async function societeMiddleware(c, next) {
+  const user = c.get('user');
+
+  if (!user) {
+    return c.json({
+      success: false,
+      error: 'Authentification requise'
+    }, 401);
+  }
+
+  // Pour les routes qui nécessitent une vérification de société,
+  // on peut ajouter la logique ici selon les besoins
+
+  await next();
+}

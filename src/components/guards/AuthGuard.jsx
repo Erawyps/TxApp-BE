@@ -1,6 +1,6 @@
 import { Navigate, useLocation, useOutlet } from "react-router";
 import { useAuthContext } from "app/contexts/auth/context";
-import { GHOST_ENTRY_PATH, REDIRECT_URL_KEY } from "../constants/app.constant";
+import { GHOST_ENTRY_PATH, REDIRECT_URL_KEY } from "constants/app.constant";
 import { SplashScreen } from "components/template/SplashScreen";
 
 export default function AuthGuard() {

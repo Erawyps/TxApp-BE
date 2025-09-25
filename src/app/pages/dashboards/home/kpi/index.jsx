@@ -3,6 +3,8 @@ import ErrorBoundary from "components/shared/ErrorBoundary";
 import KpiCards from './KpiCards';
 import RevenuesChart from './RevenuesChart';
 import TripsCountChart from './TripsCountChart';
+import PaymentMethodChart from './PaymentMethodChart';
+import DriverPerformanceChart from './DriverPerformanceChart';
 
 // Import des services
 import { getKPIs, getChartData, defaultKPIs } from './data';
@@ -77,6 +79,14 @@ const KPISection = () => {
 
         <ErrorBoundary fallback={<div>Erreur dans le graphique des courses</div>}>
           <TripsCountChart data={chartData.dailyTripsCount} loading={loading} />
+        </ErrorBoundary>
+
+        <ErrorBoundary fallback={<div>Erreur dans le graphique des paiements</div>}>
+          <PaymentMethodChart data={chartData.paymentMethodDistribution} loading={loading} />
+        </ErrorBoundary>
+
+        <ErrorBoundary fallback={<div>Erreur dans le graphique des performances</div>}>
+          <DriverPerformanceChart data={chartData.driverPerformance} loading={loading} />
         </ErrorBoundary>
       </div>
     </div>

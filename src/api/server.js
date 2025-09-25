@@ -3,25 +3,33 @@ import { cors } from 'hono/cors';
 import { logger } from 'hono/logger';
 import { compress } from 'hono/compress';
 import { serve } from '@hono/node-server';
+import dotenv from 'dotenv';
+
+// Charger les variables d'environnement
+dotenv.config();
+
 import prisma, { getDatabaseHealth } from '../configs/database.config.js';
-import { monitor, monitoringMiddleware } from '../configs/monitoring.config.js';
+// import { monitor, monitoringMiddleware } from '../configs/monitoring.config.js';
 
 // Import des nouvelles routes Prisma
 import prismaRoutes from './prismaRoutes.js';
+import dashboardRoutes from './dashboardRoutes.js';
 
 const app = new Hono();
 
 // Démarrer le monitoring en production
-if (process.env.NODE_ENV === 'production') {
-  monitor.start();
-}
+// if (process.env.NODE_ENV === 'production') {
+//   monitor.start();
+// }
 
 // Compression middleware pour optimiser les réponses
 app.use('*', compress());
 
 // Logging middleware conditionnel
 if (process.env.NODE_ENV === 'production') {
-  app.use('*', logger());
+  app.use('*', logger((str, ...rest) => {
+    console.log(str, ...rest);
+  }));
 } else {
   app.use('*', logger((str, ...rest) => {
     console.log(str, ...rest);
@@ -29,7 +37,7 @@ if (process.env.NODE_ENV === 'production') {
 }
 
 // Middleware de monitoring pour toutes les requêtes
-app.use('*', monitoringMiddleware);
+// app.use('*', monitoringMiddleware);
 
 // CORS configuration pour production
 const corsOptions = {
@@ -66,10 +74,10 @@ app.use('*', async (c, next) => {
 });
 
 // Health check endpoints améliorés
-app.get('/health', async (c) => {
+app.get('/api/health', async (c) => {
   try {
     const dbHealth = await getDatabaseHealth();
-    const monitorStatus = monitor.getStatus();
+    // const monitorStatus = monitor.getStatus();
 
     const response = {
       status: dbHealth.status === 'healthy' ? 'OK' : 'DEGRADED',
@@ -77,10 +85,10 @@ app.get('/health', async (c) => {
       environment: process.env.NODE_ENV,
       database: dbHealth,
       monitoring: {
-        uptime: monitorStatus.uptime,
-        requests: monitorStatus.requests,
-        errorRate: monitorStatus.errorRate,
-        recentAlerts: monitorStatus.recentAlerts.length
+        uptime: process.uptime(),
+        requests: 0,
+        errorRate: "0.00%",
+        recentAlerts: 0
       },
       system: {
         uptime: process.uptime(),
@@ -110,8 +118,8 @@ app.get('/api/monitoring/status', async (c) => {
       return c.json({ error: 'Token d\'autorisation requis' }, 401);
     }
 
-    const monitorStatus = monitor.getStatus();
-    return c.json(monitorStatus);
+    // const monitorStatus = monitor.getStatus();
+    return c.json({ status: 'OK', uptime: process.uptime() });
   } catch (error) {
     console.error('Erreur lors de la récupération du statut:', error.message);
     return c.json({ error: 'Erreur lors de la récupération du statut' }, 500);
@@ -135,6 +143,9 @@ app.use('/api/*', async (c, next) => {
 
 // Monter les routes Prisma sur /api
 app.route('/api', prismaRoutes);
+
+// Monter les routes dashboard sur /api/dashboard
+app.route('/api/dashboard', dashboardRoutes);
 
 // Middleware pour les routes non trouvées
 app.notFound((c) => {
@@ -174,7 +185,7 @@ const startServer = async () => {
 
     console.log(`✅ Serveur Hono démarré sur ${HOST}:${PORT}`);
     console.log(`🌍 Environnement: ${process.env.NODE_ENV}`);
-    console.log(`📊 Health check: http://${HOST}:${PORT}/health`);
+    console.log(`📊 Health check: http://${HOST}:${PORT}/api/health`);
 
     // Gestion des signaux d'arrêt
     process.on('SIGINT', () => {

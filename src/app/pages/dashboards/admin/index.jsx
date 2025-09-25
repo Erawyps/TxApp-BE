@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Page } from 'components/shared/Page';
+import ErrorBoundary from 'components/shared/ErrorBoundary';
 import {
   UserGroupIcon,
   TruckIcon,
@@ -102,7 +103,9 @@ export default function AdminDashboard() {
         {/* Contenu principal */}
         <div className="flex-1 overflow-hidden">
           <div className="h-full overflow-y-auto">
-            {ActiveComponent && <ActiveComponent />}
+            <ErrorBoundary fallback={<div className="p-8 text-center text-red-600">Erreur de chargement de la section sélectionnée</div>}>
+              {ActiveComponent && <ActiveComponent />}
+            </ErrorBoundary>
           </div>
         </div>
       </div>

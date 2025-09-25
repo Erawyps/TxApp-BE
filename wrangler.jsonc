@@ -30,10 +30,6 @@
 
   "routes": [
     {
-      "pattern": "txapp.be/api/*",
-      "zone_name": "txapp.be"
-    },
-    {
       "pattern": "api.txapp.be/*",
       "zone_name": "txapp.be"
     }

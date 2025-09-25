@@ -23,16 +23,8 @@ export const kpiService = {
       };
     } catch (error) {
       console.error('Erreur lors du calcul des KPIs:', error);
-      // Retourner des valeurs par défaut en cas d'erreur
-      return {
-        totalCourses: 0,
-        totalRevenue: 0,
-        totalDistance: 0,
-        chauffeursActifs: 0,
-        vehiculesUtilises: 0,
-        averageEarningsPerTrip: 0,
-        averageDistancePerTrip: 0,
-      };
+      // Propager l'erreur avec un message spécifique pour les KPIs
+      throw new Error(`Erreur lors du calcul des indicateurs de performance: ${error.message}`);
     }
   },
 
@@ -43,17 +35,17 @@ export const kpiService = {
     try {
       const chartData = await tripsService.getTripsChartData({
         ...options,
-        type: 'daily'
+        type: 'dailyRevenues'
       });
 
       // Transformer pour retourner seulement les revenus
       return chartData.data.map(item => ({
         date: item.date,
-        revenue: item.revenue
+        revenue: parseFloat(item.revenue) || 0
       })) || [];
     } catch (error) {
       console.error('Erreur lors de la récupération des revenus quotidiens:', error);
-      return [];
+      throw new Error(`Erreur lors de la récupération des données de revenus quotidiens: ${error.message}`);
     }
   },
 
@@ -64,7 +56,7 @@ export const kpiService = {
     try {
       const chartData = await tripsService.getTripsChartData({
         ...options,
-        type: 'daily'
+        type: 'dailyTripsCount'
       });
 
       // Transformer pour retourner seulement le nombre de courses
@@ -74,7 +66,7 @@ export const kpiService = {
       })) || [];
     } catch (error) {
       console.error('Erreur lors de la récupération du nombre de courses quotidiennes:', error);
-      return [];
+      throw new Error(`Erreur lors de la récupération des données de courses quotidiennes: ${error.message}`);
     }
   },
 
@@ -85,16 +77,19 @@ export const kpiService = {
     try {
       // Pour la distribution des paiements, on récupère toutes les courses
       // et on groupe par mode de paiement
-      const trips = await tripsService.getTrips(options);
+      const tripsResponse = await tripsService.getTrips(options);
+      const trips = tripsResponse.data || tripsResponse;
       const paymentDistribution = {};
 
-      trips.courses.forEach(course => {
-        const paymentMethod = course.mode_paiement_libelle || 'Non spécifié';
-        if (!paymentDistribution[paymentMethod]) {
-          paymentDistribution[paymentMethod] = 0;
-        }
-        paymentDistribution[paymentMethod] += 1;
-      });
+      if (trips && Array.isArray(trips)) {
+        trips.forEach(course => {
+          const paymentMethod = course.mode_paiement?.libelle || 'Non spécifié';
+          if (!paymentDistribution[paymentMethod]) {
+            paymentDistribution[paymentMethod] = 0;
+          }
+          paymentDistribution[paymentMethod] += 1;
+        });
+      }
 
       return Object.entries(paymentDistribution).map(([method, count]) => ({
         method,
@@ -102,7 +97,7 @@ export const kpiService = {
       }));
     } catch (error) {
       console.error('Erreur lors de la récupération de la distribution des paiements:', error);
-      return [];
+      throw new Error(`Erreur lors de l'analyse des méthodes de paiement: ${error.message}`);
     }
   },
 
@@ -111,28 +106,20 @@ export const kpiService = {
    */
   async getDriverPerformance(options = {}) {
     try {
-      // Pour les performances des chauffeurs, on récupère toutes les courses
-      // et on groupe par chauffeur
-      const trips = await tripsService.getTrips(options);
-      const driverPerformance = {};
-
-      trips.courses.forEach(course => {
-        const driverName = `${course.chauffeur_prenom} ${course.chauffeur_nom}`.trim();
-        if (!driverPerformance[driverName]) {
-          driverPerformance[driverName] = {
-            name: driverName,
-            trips: 0,
-            revenue: 0
-          };
-        }
-        driverPerformance[driverName].trips += 1;
-        driverPerformance[driverName].revenue += course.prix_course || 0;
+      const chartData = await tripsService.getTripsChartData({
+        ...options,
+        type: 'driverPerformance'
       });
 
-      return Object.values(driverPerformance);
+      // Transformer les données pour le graphique
+      return chartData.data.map(item => ({
+        name: item.driver,
+        trips: item.trips,
+        revenue: parseFloat(item.revenue) || 0
+      })) || [];
     } catch (error) {
       console.error('Erreur lors de la récupération des performances des chauffeurs:', error);
-      return [];
+      throw new Error(`Erreur lors de l'analyse des performances des chauffeurs: ${error.message}`);
     }
   }
 };
