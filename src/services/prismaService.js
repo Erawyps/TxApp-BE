@@ -1347,6 +1347,76 @@ export async function encodeFeuilleRouteAdmin(feuilleData) {
   }
 }
 
+// ==================== GESTION DES INTERVENTIONS ====================
+
+export async function getInterventions() {
+  try {
+    return await prisma.intervention.findMany({
+      include: {
+        chauffeur: {
+          include: {
+            utilisateur: true
+          }
+        }
+      },
+      orderBy: {
+        date: 'desc'
+      }
+    });
+  } catch (error) {
+    console.error('Erreur lors de la récupération des interventions:', error);
+    throw error;
+  }
+}
+
+export async function getInterventionsByChauffeur(chauffeurId) {
+  try {
+    return await prisma.intervention.findMany({
+      where: {
+        chauffeur_id: parseInt(chauffeurId)
+      },
+      include: {
+        chauffeur: {
+          include: {
+            utilisateur: true
+          }
+        }
+      },
+      orderBy: {
+        date: 'desc'
+      }
+    });
+  } catch (error) {
+    console.error('Erreur lors de la récupération des interventions du chauffeur:', error);
+    throw error;
+  }
+}
+
+export async function createIntervention(interventionData) {
+  try {
+    return await prisma.intervention.create({
+      data: {
+        chauffeur_id: parseInt(interventionData.chauffeurId),
+        type: interventionData.type,
+        description: interventionData.description,
+        date: new Date(interventionData.date),
+        location: interventionData.location || null,
+        created_by: interventionData.createdBy
+      },
+      include: {
+        chauffeur: {
+          include: {
+            utilisateur: true
+          }
+        }
+      }
+    });
+  } catch (error) {
+    console.error('Erreur lors de la création de l\'intervention:', error);
+    throw error;
+  }
+}
+
 // ==================== UTILITAIRES ====================
 
 export async function disconnect() {

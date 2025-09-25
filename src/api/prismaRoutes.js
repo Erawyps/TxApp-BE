@@ -47,7 +47,10 @@ import {
   getSocietesTaxi,
   findChauffeurByDate,
   findVehiculeByChauffeurAndDate,
-  encodeFeuilleRouteAdmin
+  encodeFeuilleRouteAdmin,
+  getInterventions,
+  getInterventionsByChauffeur,
+  createIntervention
 } from '../services/prismaService.js';
 
 const router = express.Router();
@@ -159,6 +162,38 @@ router.delete('/chauffeurs/:id', async (req, res) => {
   } catch (error) {
     console.error('Erreur API suppression chauffeur:', error);
     res.status(500).json({ error: 'Erreur lors de la suppression du chauffeur' });
+  }
+});
+
+// ==================== INTERVENTIONS ====================
+
+router.get('/interventions', async (req, res) => {
+  try {
+    const interventions = await getInterventions();
+    res.json(interventions);
+  } catch (error) {
+    console.error('Erreur API interventions:', error);
+    res.status(500).json({ error: 'Erreur lors de la récupération des interventions' });
+  }
+});
+
+router.get('/chauffeurs/:chauffeurId/interventions', async (req, res) => {
+  try {
+    const interventions = await getInterventionsByChauffeur(req.params.chauffeurId);
+    res.json(interventions);
+  } catch (error) {
+    console.error('Erreur API interventions chauffeur:', error);
+    res.status(500).json({ error: 'Erreur lors de la récupération des interventions du chauffeur' });
+  }
+});
+
+router.post('/interventions', async (req, res) => {
+  try {
+    const intervention = await createIntervention(req.body);
+    res.status(201).json(intervention);
+  } catch (error) {
+    console.error('Erreur API création intervention:', error);
+    res.status(500).json({ error: 'Erreur lors de la création de l\'intervention' });
   }
 });
 
