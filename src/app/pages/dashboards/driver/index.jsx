@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { Page } from 'components/shared/Page';
 import ErrorBoundary from 'components/shared/ErrorBoundary';
-import LoadingSpinner from 'components/ui/LoadingSpinner';
 import {
   ClockIcon,
   TruckIcon,

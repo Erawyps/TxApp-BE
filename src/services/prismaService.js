@@ -1489,7 +1489,7 @@ export async function login(email, password) {
     );
 
     // Retour des informations utilisateur (sans le mot de passe hashé)
-    const { mot_de_passe_hashe, ...userWithoutPassword } = utilisateur;
+    const { ...userWithoutPassword } = utilisateur;
 
     return {
       token,
@@ -1533,7 +1533,7 @@ export async function verifyToken(token) {
     }
 
     // Retour des informations utilisateur (sans le mot de passe hashé)
-    const { mot_de_passe_hashe, ...userWithoutPassword } = utilisateur;
+    const { ...userWithoutPassword } = utilisateur;
 
     return {
       valid: true,
