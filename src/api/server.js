@@ -10,31 +10,6 @@ import { monitor, monitoringMiddleware } from '../configs/monitoring.config.js';
 // Import des nouvelles routes Prisma
 import prismaRoutes from './prismaRoutes.js';
 
-// Import des middlewares personnalisés
-import {
-  authenticateToken,
-  requireRole,
-  requireOwnership,
-  optionalAuth
-} from '../middlewares/auth.middleware.js';
-import {
-  validateRequest,
-  validateParams,
-  chauffeurValidation,
-  vehiculeValidation,
-  clientValidation,
-  courseValidation,
-  chargeValidation,
-  feuilleRouteValidation,
-  paramValidation
-} from '../middlewares/validation.middleware.js';
-import {
-  errorHandler,
-  notFoundHandler,
-  requestLogger,
-  rateLimiter
-} from '../middlewares/error.middleware.js';
-
 const app = new Hono();
 
 // Démarrer le monitoring en production
@@ -71,8 +46,6 @@ app.use('*', cors(corsOptions));
 // Rate limiting (simplifié pour Hono)
 app.use('*', async (c, next) => {
   // Rate limiting basique - à améliorer avec un vrai rate limiter pour Hono
-  const clientIP = c.req.header('CF-Connecting-IP') || c.req.header('X-Forwarded-For') || 'unknown';
-  // Pour l'instant, pas de rate limiting complexe, juste un check basique
   await next();
 });
 
@@ -163,115 +136,6 @@ app.use('/api/*', async (c, next) => {
 
 // Monter les routes Prisma sur /api
 app.route('/api', prismaRoutes);
-
-// Fonction pour calculer les métriques d'un chauffeur
-async function calculateChauffeurMetrics(chauffeur) {
-  try {
-    const feuillesRoute = chauffeur.feuille_route || [];
-
-    // Calculer les métriques
-    let totalCourses = 0;
-    let totalChiffreAffaires = 0;
-    let totalTaximetre = 0;
-    let totalKmParcourus = 0;
-    let totalDepenses = 0;
-    let totalPourboires = 0;
-    let courses = [];
-
-    feuillesRoute.forEach(feuille => {
-      // Calculer les km parcourus depuis la feuille de route (km_fin - km_debut)
-      if (feuille.km_fin && feuille.km_debut) {
-        totalKmParcourus += (feuille.km_fin - feuille.km_debut);
-      }
-
-      // Courses de cette feuille de route
-      if (feuille.course && Array.isArray(feuille.course)) {
-        feuille.course.forEach(course => {
-          // Ne compter que les courses non annulées
-          if (course.statut !== 'Annulee') {
-            totalCourses++;
-            const sommePercue = parseFloat(course.somme_percue || 0);
-            const prixTaximetre = parseFloat(course.prix_taximetre || 0);
-            const pourboire = parseFloat(course.pourboire || 0);
-
-            totalChiffreAffaires += sommePercue;
-            totalTaximetre += prixTaximetre;
-            totalPourboires += pourboire;
-
-            courses.push({
-              id: course.id,
-              date: course.heure_embarquement,
-              depart: course.lieu_embarquement,
-              arrivee: course.lieu_debarquement,
-              index_depart: course.index_depart,
-              index_arrivee: course.index_arrivee,
-              prix_taximetre: prixTaximetre,
-              somme_percue: sommePercue,
-              pourboire: pourboire,
-              statut: course.statut,
-              client: course.client ? `${course.client.prenom} ${course.client.nom}` : null,
-              mode_paiement: course.mode_paiement ? course.mode_paiement.libelle : null
-            });
-          }
-        });
-      }
-
-      // Charges de cette feuille de route
-      if (feuille.charge && Array.isArray(feuille.charge)) {
-        feuille.charge.forEach(charge => {
-          totalDepenses += parseFloat(charge.montant || 0);
-        });
-      }
-    });
-
-    // Calculs supplémentaires
-    const differenceRecettes = totalChiffreAffaires - totalTaximetre;
-    const beneficeNet = totalChiffreAffaires - totalDepenses;
-    const ratioEuroKm = totalKmParcourus > 0 ? totalChiffreAffaires / totalKmParcourus : 0;
-
-    // Trouver l'index km début de la feuille active
-    const feuilleActive = feuillesRoute.find(f => f.statut === 'En cours');
-    const indexKmDebut = feuilleActive ? feuilleActive.km_debut : null;
-
-    return {
-      chiffre_affaires_total: totalChiffreAffaires,
-      nombre_total_courses: totalCourses,
-      km_parcourus: totalKmParcourus,
-      ratio_euro_km: Math.round(ratioEuroKm * 100) / 100, // Arrondi à 2 décimales
-      index_km_debut: indexKmDebut,
-      verification_taximetre: totalTaximetre,
-      total_taximetre: totalTaximetre,
-      total_feuille_route: totalChiffreAffaires,
-      difference_total_recettes: differenceRecettes,
-      total_depenses: totalDepenses,
-      benefice_net: beneficeNet,
-      total_pourboires: totalPourboires,
-      nb_courses: totalCourses,
-      courses: courses
-    };
-  } catch (error) {
-    console.error('Erreur lors du calcul des métriques:', error);
-    return {
-      chiffre_affaires_total: 0,
-      nombre_total_courses: 0,
-      km_parcourus: 0,
-      ratio_euro_km: 0,
-      index_km_debut: null,
-      verification_taximetre: 0,
-      total_taximetre: 0,
-      total_feuille_route: 0,
-      difference_total_recettes: 0,
-      total_depenses: 0,
-      benefice_net: 0,
-      nb_courses: 0,
-      courses: []
-    };
-  }
-}
-
-
-// Middleware de logging des requêtes
-app.use('*', requestLogger);
 
 // Middleware pour les routes non trouvées
 app.notFound((c) => {
