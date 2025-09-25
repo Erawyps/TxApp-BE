@@ -1,62 +1,64 @@
 // Import Dependencies
-import { apiCall } from "services/api";
+import axios from 'axios';
 
 /**
- * Service pour récupérer les données des courses depuis la base de données
+ * Service pour récupérer les données des courses depuis l'API HTTP
  */
 export const tripsService = {
   /**
-   * Récupère toutes les courses avec pagination et filtres
+   * Récupère la liste des courses avec pagination et filtres
    */
-  async getTrips(options = {}) {
-    const {
-      page = 1,
-      limit = 50,
-      search,
-      status,
-      dateFrom,
-      dateTo,
-      chauffeurId,
-      clientId
-    } = options;
-
-    const params = new URLSearchParams({
-      page: page.toString(),
-      limit: limit.toString(),
-    });
-
-    if (search) params.append('search', search);
-    if (status) params.append('status', status);
-    if (dateFrom) params.append('dateFrom', dateFrom);
-    if (dateTo) params.append('dateTo', dateTo);
-    if (chauffeurId) params.append('chauffeurId', chauffeurId.toString());
-    if (clientId) params.append('clientId', clientId.toString());
-
+  async getTrips(page = 1, limit = 10, filters = {}) {
     try {
-      const response = await apiCall(`/dashboard/courses?${params.toString()}`);
-      
-      // Transformer les données pour correspondre au format attendu par les composants
-      const transformedCourses = response.courses.map(course => ({
-        ...course,
-        chauffeur_nom: course.feuille_route?.chauffeur?.utilisateur?.nom || '',
-        chauffeur_prenom: course.feuille_route?.chauffeur?.utilisateur?.prenom || '',
-        vehicule_immatriculation: course.feuille_route?.vehicule?.plaque_immatriculation || '',
-        vehicule_marque: course.feuille_route?.vehicule?.marque || '',
-        vehicule_modele: course.feuille_route?.vehicule?.modele || '',
-        client_nom: course.client?.nom || '',
-        client_prenom: course.client?.prenom || '',
-        mode_paiement_libelle: course.mode_paiement?.libelle || '',
-        prix_course: course.somme_percue,
-        statut: 'Terminée', // Par défaut, nous pouvons déterminer le statut basé sur les données
-      }));
+      const params = new URLSearchParams({
+        page: page.toString(),
+        limit: limit.toString(),
+        ...filters
+      });
+
+      const response = await axios.get(`/api/courses?${params}`, {
+        withCredentials: true,
+        timeout: 10000
+      });
 
       return {
-        ...response,
-        courses: transformedCourses
+        data: response.data,
+        pagination: {
+          page,
+          limit,
+          total: response.data.length || 0,
+          totalPages: Math.ceil((response.data.length || 0) / limit)
+        }
       };
     } catch (error) {
       console.error('Erreur lors de la récupération des courses:', error);
-      throw error;
+
+      if (error.response) {
+        // Erreur de réponse du serveur
+        const status = error.response.status;
+        const message = error.response.data?.error || error.response.data?.message || 'Erreur serveur';
+
+        switch (status) {
+          case 400:
+            throw new Error(`Données invalides: ${message}`);
+          case 401:
+            throw new Error('Authentification requise pour accéder aux courses');
+          case 403:
+            throw new Error('Accès refusé aux données des courses');
+          case 404:
+            throw new Error('Service de courses non trouvé');
+          case 500:
+            throw new Error('Erreur interne du serveur lors de la récupération des courses');
+          default:
+            throw new Error(`Erreur serveur (${status}): ${message}`);
+        }
+      } else if (error.request) {
+        // Erreur de réseau
+        throw new Error('Erreur de connexion réseau lors de la récupération des courses');
+      } else {
+        // Erreur inconnue
+        throw new Error(`Erreur inattendue: ${error.message}`);
+      }
     }
   },
 
@@ -66,17 +68,39 @@ export const tripsService = {
   async getTripsStats(options = {}) {
     const { dateFrom, dateTo, chauffeurId } = options;
 
-    const params = new URLSearchParams();
-    if (dateFrom) params.append('dateFrom', dateFrom);
-    if (dateTo) params.append('dateTo', dateTo);
-    if (chauffeurId) params.append('chauffeurId', chauffeurId.toString());
-
     try {
-      const response = await apiCall(`/dashboard/courses/stats?${params.toString()}`);
-      return response;
+      let url = '/api/dashboard/courses/stats';
+      const params = [];
+      if (dateFrom) params.push(`dateFrom=${encodeURIComponent(dateFrom)}`);
+      if (dateTo) params.push(`dateTo=${encodeURIComponent(dateTo)}`);
+      if (chauffeurId) params.push(`chauffeurId=${chauffeurId}`);
+      if (params.length > 0) url += `?${params.join('&')}`;
+
+      const response = await axios.get(url);
+      return response.data;
     } catch (error) {
       console.error('Erreur lors de la récupération des statistiques:', error);
-      throw error;
+
+      // Gestion spécifique des erreurs
+      if (error.response) {
+        const status = error.response.status;
+        switch (status) {
+          case 401:
+            throw new Error('Authentification requise pour accéder aux statistiques');
+          case 403:
+            throw new Error('Accès non autorisé aux statistiques');
+          case 404:
+            throw new Error('Service de statistiques non trouvé');
+          case 500:
+            throw new Error('Erreur lors du calcul des statistiques');
+          default:
+            throw new Error(`Erreur serveur (${status}) lors de la récupération des statistiques`);
+        }
+      } else if (error.request) {
+        throw new Error('Erreur de connexion réseau - impossible de récupérer les statistiques');
+      } else {
+        throw new Error('Erreur inconnue lors de la récupération des statistiques');
+      }
     }
   },
 
@@ -86,19 +110,38 @@ export const tripsService = {
   async getTripsChartData(options = {}) {
     const { dateFrom, dateTo, type = 'daily' } = options;
 
-    const params = new URLSearchParams({
-      type,
-    });
-
-    if (dateFrom) params.append('dateFrom', dateFrom);
-    if (dateTo) params.append('dateTo', dateTo);
-
     try {
-      const response = await apiCall(`/dashboard/courses/chart-data?${params.toString()}`);
-      return response;
+      let url = `/api/dashboard/courses/chart-data?type=${type}`;
+      if (dateFrom) url += `&dateFrom=${encodeURIComponent(dateFrom)}`;
+      if (dateTo) url += `&dateTo=${encodeURIComponent(dateTo)}`;
+
+      const response = await axios.get(url);
+      return response.data;
     } catch (error) {
       console.error('Erreur lors de la récupération des données de graphique:', error);
-      throw error;
+
+      // Gestion spécifique des erreurs
+      if (error.response) {
+        const status = error.response.status;
+        switch (status) {
+          case 400:
+            throw new Error(`Type de graphique invalide: ${type}`);
+          case 401:
+            throw new Error('Authentification requise pour accéder aux graphiques');
+          case 403:
+            throw new Error('Accès non autorisé aux données de graphiques');
+          case 404:
+            throw new Error('Service de graphiques non trouvé');
+          case 500:
+            throw new Error('Erreur lors du calcul des données de graphique');
+          default:
+            throw new Error(`Erreur serveur (${status}) lors de la récupération des graphiques`);
+        }
+      } else if (error.request) {
+        throw new Error('Erreur de connexion réseau - impossible de récupérer les graphiques');
+      } else {
+        throw new Error('Erreur inconnue lors de la récupération des données de graphique');
+      }
     }
   }
 };

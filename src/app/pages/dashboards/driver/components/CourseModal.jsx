@@ -3,7 +3,7 @@ import { Dialog } from '@headlessui/react';
 import { XMarkIcon, MapPinIcon } from '@heroicons/react/24/outline';
 import { supabase } from 'utils/supabase';
 
-export function CourseModal({ isOpen, onClose, onSubmit, shiftId, course = null }) {
+export function CourseModal({ isOpen, onClose, onSubmit, shiftId, course = null, autoSaveCourse = null }) {
   const [formData, setFormData] = useState({
     index_depart: '',
     lieu_embarquement: '',
@@ -24,6 +24,7 @@ export function CourseModal({ isOpen, onClose, onSubmit, shiftId, course = null 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errors, setErrors] = useState({});
   const [autoSaveTimeout, setAutoSaveTimeout] = useState(null);
+  const [pourboire, setPourboire] = useState(0);
 
   useEffect(() => {
     if (isOpen) {
@@ -88,6 +89,14 @@ export function CourseModal({ isOpen, onClose, onSubmit, shiftId, course = null 
     }
   };
 
+  // Calculer le pourboire automatiquement
+  useEffect(() => {
+    const prix = parseFloat(formData.prix_taximetre) || 0;
+    const percu = parseFloat(formData.somme_percue) || 0;
+    const calculatedPourboire = percu > prix ? percu - prix : 0;
+    setPourboire(calculatedPourboire);
+  }, [formData.prix_taximetre, formData.somme_percue]);
+
   // Auto-save functionality for real-time updates
   const handleFieldChange = (fieldName, value) => {
     setFormData(prev => ({ ...prev, [fieldName]: value }));
@@ -107,15 +116,28 @@ export function CourseModal({ isOpen, onClose, onSubmit, shiftId, course = null 
   };
 
   const autoSaveField = async (fieldName, value) => {
-    if (!course) return;
+    if (!course || !autoSaveCourse) return;
 
     try {
-      await supabase
-        .from('course')
-        .update({ [fieldName]: value })
-        .eq('id', course.id);
+      // Préparer les données pour la sauvegarde automatique
+      const autoSaveData = {
+        [fieldName]: value
+      };
+
+      // Calculer le pourboire si nécessaire
+      if (fieldName === 'prix_taximetre' || fieldName === 'somme_percue') {
+        const prix = fieldName === 'prix_taximetre' ? parseFloat(value) : parseFloat(formData.prix_taximetre);
+        const percu = fieldName === 'somme_percue' ? parseFloat(value) : parseFloat(formData.somme_percue);
+        if (prix && percu && percu > prix) {
+          autoSaveData.pourboire = percu - prix;
+        }
+      }
+
+      // Utiliser le service de sauvegarde automatique
+      await autoSaveCourse(course.id, autoSaveData);
     } catch (err) {
       console.error('Auto-save error:', err);
+      // Ne pas afficher d'erreur à l'utilisateur pour la sauvegarde automatique
     }
   };
 
@@ -398,6 +420,27 @@ export function CourseModal({ isOpen, onClose, onSubmit, shiftId, course = null 
                   {errors.somme_percue && (
                     <p className="text-red-500 text-sm mt-1">{errors.somme_percue}</p>
                   )}
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Pourboire (€)
+                  </label>
+                  <div className="relative">
+                    <input
+                      type="number"
+                      step="0.01"
+                      value={pourboire.toFixed(2)}
+                      readOnly
+                      className="w-full px-3 py-2 bg-gray-50 border border-gray-300 rounded-lg text-gray-700"
+                    />
+                    <div className="absolute inset-y-0 right-0 flex items-center pr-3">
+                      <span className="text-xs text-gray-500">Auto-calculé</span>
+                    </div>
+                  </div>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Calculé automatiquement : Montant perçu - Prix taximètre
+                  </p>
                 </div>
 
                 <div>

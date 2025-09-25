@@ -1,13 +1,14 @@
-import { apiCall } from './api.js';
+import axios from 'axios';
 
 /**
- * Service pour gérer les modes de paiement via API
+ * Service pour gérer les modes de paiement via API HTTP
  */
 
 // Récupérer tous les modes de paiement actifs
 export async function getModesPaiement() {
   try {
-    return await apiCall('/modes-paiement');
+    const response = await axios.get('/api/modes-paiement');
+    return response.data;
   } catch (error) {
     console.error('Erreur lors de la récupération des modes de paiement:', error);
     throw error;
@@ -17,8 +18,8 @@ export async function getModesPaiement() {
 // Récupérer un mode de paiement par code
 export async function getModePaiementByCode(code) {
   try {
-    const modes = await apiCall('/modes-paiement');
-    return modes.find(mode => mode.code === code);
+    const response = await axios.get(`/api/modes-paiement/${code}`);
+    return response.data;
   } catch (error) {
     console.error('Erreur lors de la récupération du mode de paiement:', error);
     throw error;

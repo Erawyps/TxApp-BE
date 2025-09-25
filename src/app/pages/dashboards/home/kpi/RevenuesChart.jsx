@@ -8,7 +8,7 @@ const CustomTooltip = ({ active, payload, label }) => {
         <p className="font-semibold text-gray-900 dark:text-white mb-1">{label}</p>
         <p className="text-primary-600 dark:text-primary-400">
           <span className="text-gray-600 dark:text-gray-300">Revenus: </span>
-          <span className="font-medium">{(payload[0].value || 0).toFixed(2)} €</span>
+          <span className="font-medium">{(parseFloat(payload[0].value) || 0).toFixed(2)} €</span>
         </p>
       </div>
     );

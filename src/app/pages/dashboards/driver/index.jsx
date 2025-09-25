@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import { Page } from 'components/shared/Page';
+import ErrorBoundary from 'components/shared/ErrorBoundary';
+import LoadingSpinner from 'components/ui/LoadingSpinner';
 import {
   ClockIcon,
   TruckIcon,
@@ -23,6 +25,9 @@ import { AdminOversightModal } from './components/AdminOversightModal';
 import { FinancialSummary } from './components/FinancialSummary';
 import { CourseList } from './components/CourseList';
 import { ShiftInfo } from './components/ShiftInfo';
+import ChauffeurStats from './components/ChauffeurStats';
+import InterventionsManager from './components/InterventionsManager';
+import InterventionModal from './components/InterventionModal';
 import { useDriverShift } from 'hooks/useDriverShift';
 import { useCourses } from 'hooks/useCourses';
 import { useExpenses } from 'hooks/useExpenses';
@@ -37,7 +42,8 @@ export default function DriverDashboard() {
     endShift: false,
     print: false,
     history: false,
-    adminOversight: false
+    adminOversight: false,
+    intervention: false
   });
 
   // Correction: utiliser user?.chauffeur?.id au lieu de user?.chauffeur_id
@@ -56,7 +62,8 @@ export default function DriverDashboard() {
     isLoading: coursesLoading,
     createCourse,
     updateCourse,
-    deleteCourse
+    autoSaveCourse,
+    cancelCourse
   } = useCourses(currentShift?.id);
 
   const {
@@ -122,7 +129,7 @@ export default function DriverDashboard() {
       label: 'Contrôle',
       icon: ShieldCheckIcon,
       color: 'bg-purple-500 hover:bg-purple-600',
-      onClick: () => openModal('print'),
+      onClick: () => openModal('intervention'),
       disabled: !currentShift
     },
     {
@@ -246,30 +253,54 @@ export default function DriverDashboard() {
 
           {/* Current Shift Information */}
           {currentShift && (
-            <ShiftInfo
-              shift={currentShift}
-              onUpdate={updateShift}
-            />
+            <ErrorBoundary fallback={<div className="bg-red-50 p-4 rounded-lg">Erreur de chargement des informations de shift</div>}>
+              <ShiftInfo
+                shift={currentShift}
+                onUpdate={updateShift}
+              />
+            </ErrorBoundary>
           )}
 
           {/* Financial Summary */}
           {currentShift && (
-            <FinancialSummary
-              courses={courses}
-              expenses={expenses}
-            />
+            <ErrorBoundary fallback={<div className="bg-red-50 p-4 rounded-lg">Erreur de chargement du résumé financier</div>}>
+              <FinancialSummary
+                courses={courses}
+                expenses={expenses}
+              />
+            </ErrorBoundary>
+          )}
+
+          {/* Chauffeur Statistics */}
+          {chauffeurId && (
+            <ErrorBoundary fallback={<div className="bg-red-50 p-4 rounded-lg">Erreur de chargement des statistiques chauffeur</div>}>
+              <ChauffeurStats
+                chauffeurId={chauffeurId}
+              />
+            </ErrorBoundary>
+          )}
+
+          {/* Interventions Management */}
+          {chauffeurId && (
+            <ErrorBoundary fallback={<div className="bg-red-50 p-4 rounded-lg">Erreur de chargement de la gestion des interventions</div>}>
+              <InterventionsManager
+                chauffeurId={chauffeurId}
+              />
+            </ErrorBoundary>
           )}
 
           {/* Course Management */}
           {currentShift && (
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               <div className="lg:col-span-2">
-                <CourseList
-                  courses={courses}
-                  onUpdateCourse={updateCourse}
-                  onDeleteCourse={deleteCourse}
-                  isLoading={coursesLoading}
-                />
+                <ErrorBoundary fallback={<div className="bg-red-50 p-4 rounded-lg">Erreur de chargement de la liste des courses</div>}>
+                  <CourseList
+                    courses={courses}
+                    onUpdateCourse={updateCourse}
+                    onCancelCourse={cancelCourse}
+                    isLoading={coursesLoading}
+                  />
+                </ErrorBoundary>
               </div>
               <div className="space-y-4">
                 <button
@@ -323,6 +354,7 @@ export default function DriverDashboard() {
         onClose={() => closeModal('newCourse')}
         onSubmit={handleCourseCreate}
         shiftId={currentShift?.id}
+        autoSaveCourse={autoSaveCourse}
       />
 
       <ExpenseModal
@@ -367,6 +399,12 @@ export default function DriverDashboard() {
           onClose={() => closeModal('adminOversight')}
         />
       )}
+
+      <InterventionModal
+        isOpen={activeModals.intervention}
+        onClose={() => closeModal('intervention')}
+        chauffeurId={chauffeurId}
+      />
     </Page>
   );
 }

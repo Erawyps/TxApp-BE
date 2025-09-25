@@ -1,123 +1,175 @@
-import { supabase } from "../utils/supabase.js";
-
 /**
  * Script de test pour vérifier la connexion à la base de données
- * et le bon fonctionnement des services d'authentification
+ * et le bon fonctionnement des services d'authentification via l'API backend
  */
 
-// Test de connexion à Supabase
-export const testSupabaseConnection = async () => {
-  console.log("🔍 Test de connexion à Supabase...");
+// Configuration de l'API
+const API_BASE_URL = (typeof import.meta !== 'undefined' && import.meta.env) 
+  ? import.meta.env.VITE_API_URL || ''
+  : process.env.VITE_API_URL || 'http://localhost:3001';
+
+// Préfixes pour les endpoints (toujours /api car tous les endpoints sont sous /api)
+const API_PREFIX = '/api';
+
+// Test de connexion à l'API backend
+export const testAPIConnection = async () => {
+  console.log("🔍 Test de connexion à l'API backend...");
 
   try {
-    if (!supabase) {
-      throw new Error("Client Supabase non initialisé");
+    const response = await fetch(`${API_BASE_URL}${API_PREFIX}/health`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
     }
 
-    // Test simple de connexion
-    const { error } = await supabase
-      .from('utilisateur')
-      .select('count')
-      .limit(1);
+    const data = await response.json();
 
-    if (error) {
-      console.error("❌ Erreur de connexion Supabase:", error);
-      return false;
+    if (data.status === 'OK') {
+      console.log("✅ Connexion API backend réussie");
+      return true;
+    } else {
+      throw new Error(`Statut invalide: ${data.status}`);
     }
-
-    console.log("✅ Connexion Supabase réussie");
-    return true;
   } catch (error) {
     console.error("❌ Erreur lors du test de connexion:", error);
     return false;
   }
 };
 
-// Test de structure de la table utilisateur
-export const testUserTableStructure = async () => {
-  console.log("🔍 Test de la structure de la table utilisateur...");
+// Test de structure de la base de données via l'API
+export const testDatabaseStructure = async () => {
+  console.log("🔍 Test de la structure de la base de données...");
 
   try {
-    // Essayer de récupérer la structure en faisant une requête avec limit 0
-    const { error } = await supabase
-      .from('utilisateur')
-      .select('*')
-      .limit(0);
+    const response = await fetch(`${API_BASE_URL}${API_PREFIX}/health`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    });
 
-    if (error) {
-      console.error("❌ Erreur lors du test de structure:", error);
-      return false;
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
     }
 
-    console.log("✅ Structure de la table utilisateur accessible");
-    return true;
+    const data = await response.json();
+
+    if (data.status === 'OK') {
+      console.log("✅ Structure de la base de données valide");
+      return true;
+    } else {
+      throw new Error(`Statut invalide: ${data.status}`);
+    }
   } catch (error) {
     console.error("❌ Erreur lors du test de structure:", error);
     return false;
   }
 };
 
-// Test de création d'un utilisateur de test
-export const testCreateTestUser = async () => {
-  console.log("🔍 Test de création d'utilisateur...");
+// Test d'authentification
+export const testAuthentication = async () => {
+  console.log("🔍 Test d'authentification...");
 
   try {
-    const testEmail = `test-${Date.now()}@txapp.test`;
+    // Test de login avec des credentials de test
+    const loginResponse = await fetch(`${API_BASE_URL}${API_PREFIX}/auth/login`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        email: 'marie.martin@txapp.be',
+        password: 'admin456'
+      })
+    });
 
-    const { data, error } = await supabase
-      .from('utilisateur')
-      .insert([{
-        type_utilisateur: 'ADMIN', // Corrigé: utilise 'ADMIN' en majuscules
-        nom: 'Test',
-        prenom: 'User',
-        email: testEmail,
-        telephone: '+32123456789',
-        mot_de_passe: '$2a$12$test.hash.password', // Hash factice pour le test
-        actif: true,
-        date_creation: new Date().toISOString()
-      }])
-      .select()
-      .single();
-
-    if (error) {
-      console.error("❌ Erreur lors de la création d'utilisateur:", error);
-      return false;
+    if (!loginResponse.ok) {
+      throw new Error(`Login failed: HTTP ${loginResponse.status}`);
     }
 
-    console.log("✅ Création d'utilisateur réussie:", data.email);
+    const loginData = await loginResponse.json();
 
-    // Nettoyer - supprimer l'utilisateur de test
-    await supabase
-      .from('utilisateur')
-      .delete()
-      .eq('id', data.id);
+    if (loginData.token) {
+      console.log("✅ Authentification réussie");
 
-    console.log("🧹 Utilisateur de test supprimé");
-    return true;
+      // Test de vérification du token
+      const verifyResponse = await fetch(`${API_BASE_URL}${API_PREFIX}/auth/verify`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          token: loginData.token
+        })
+      });
+
+      if (verifyResponse.ok) {
+        console.log("✅ Vérification du token réussie");
+        return true;
+      } else {
+        console.log("❌ Vérification du token échouée");
+        return false;
+      }
+    } else {
+      throw new Error("Token non reçu");
+    }
   } catch (error) {
-    console.error("❌ Erreur lors du test de création:", error);
+    console.error("❌ Erreur lors du test d'authentification:", error);
     return false;
   }
 };
 
-// Test de récupération d'utilisateurs
+// Test de récupération d'utilisateurs via l'API
 export const testGetUsers = async () => {
   console.log("🔍 Test de récupération d'utilisateurs...");
 
   try {
-    const { data, error } = await supabase
-      .from('utilisateur')
-      .select('id, email, nom, prenom, type_utilisateur, actif')
-      .eq('actif', true)
-      .limit(5);
+    // D'abord s'authentifier pour obtenir un token
+    const loginResponse = await fetch(`${API_BASE_URL}${API_PREFIX}/auth/login`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        email: 'marie.martin@txapp.be',
+        password: 'admin456'
+      })
+    });
 
-    if (error) {
-      console.error("❌ Erreur lors de la récupération:", error);
-      return false;
+    if (!loginResponse.ok) {
+      throw new Error("Authentication failed for user retrieval test");
     }
 
-    console.log(`✅ Récupération réussie: ${data.length} utilisateur(s) trouvé(s)`);
-    return true;
+    const loginData = await loginResponse.json();
+    const token = loginData.token;
+
+    // Test de récupération des utilisateurs
+    const usersResponse = await fetch(`${API_BASE_URL}${API_PREFIX}/utilisateurs`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      }
+    });
+
+    if (!usersResponse.ok) {
+      throw new Error(`HTTP ${usersResponse.status}: ${usersResponse.statusText}`);
+    }
+
+    const usersData = await usersResponse.json();
+
+    if (Array.isArray(usersData) && usersData.length > 0) {
+      console.log(`✅ Récupération réussie: ${usersData.length} utilisateur(s) trouvé(s)`);
+      return true;
+    } else {
+      console.log("⚠️ Aucun utilisateur trouvé ou format invalide");
+      return false;
+    }
   } catch (error) {
     console.error("❌ Erreur lors du test de récupération:", error);
     return false;
@@ -129,9 +181,9 @@ export const runAllTests = async () => {
   console.log("🚀 Démarrage des tests du système d'authentification...\n");
 
   const tests = [
-    { name: "Connexion Supabase", fn: testSupabaseConnection },
-    { name: "Structure table utilisateur", fn: testUserTableStructure },
-    { name: "Création utilisateur", fn: testCreateTestUser },
+    { name: "Connexion API Backend", fn: testAPIConnection },
+    { name: "Structure base de données", fn: testDatabaseStructure },
+    { name: "Authentification", fn: testAuthentication },
     { name: "Récupération utilisateurs", fn: testGetUsers }
   ];
 

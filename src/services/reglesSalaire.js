@@ -1,7 +1,7 @@
-import { apiCall } from './api.js';
+import axios from 'axios';
 
 /**
- * Service pour gérer les règles de salaire via API
+ * Service pour gérer les règles de salaire via API HTTP
  */
 
 /**
@@ -10,8 +10,8 @@ import { apiCall } from './api.js';
  */
 export async function getReglesSalaireForDropdown() {
   try {
-    const response = await apiCall('/regles-salaire?actif=true&limit=100');
-    return response.data || [];
+    const response = await axios.get('/api/regles-salaire?dropdown=true');
+    return response.data.slice(0, 100);
   } catch (error) {
     console.error('Erreur lors de la récupération des règles de salaire:', error);
     throw error;
@@ -31,17 +31,13 @@ export const getReglesSalaire = async (options = {}) => {
   try {
     const { page = 1, limit = 50, search, actif = true } = options;
 
-    const params = new URLSearchParams({
-      page: page.toString(),
-      limit: limit.toString(),
-      actif: actif.toString()
-    });
-
+    let url = `/api/regles-salaire?page=${page}&limit=${limit}&actif=${actif}`;
     if (search) {
-      params.append('search', search);
+      url += `&search=${encodeURIComponent(search)}`;
     }
 
-    return await apiCall(`/regles-salaire?${params.toString()}`);
+    const response = await axios.get(url);
+    return response.data;
   } catch (error) {
     console.error('Erreur lors de la récupération des règles de salaire:', error);
     throw error;
@@ -55,14 +51,13 @@ export const getReglesSalaire = async (options = {}) => {
  */
 export async function getRegleSalaireById(id) {
   try {
-    return await apiCall(`/regles-salaire/${id}`);
+    const response = await axios.get(`/api/regles-salaire/${id}`);
+    return response.data;
   } catch (error) {
     console.error('Erreur lors de la récupération de la règle de salaire:', error);
     throw error;
   }
-}
-
-/**
+}/**
  * Formate une règle de salaire pour l'affichage dans un dropdown
  * @param {Object} regle - Règle de salaire
  * @returns {Object} Règle formatée pour le dropdown

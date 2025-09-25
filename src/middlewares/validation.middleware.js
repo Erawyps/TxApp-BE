@@ -114,7 +114,15 @@ export const courseValidation = {
     prix_taximetre: Joi.number().min(0).required(),
     somme_percue: Joi.number().min(0).required(),
     hors_creneau: Joi.boolean().optional(),
+    statut: Joi.string().valid('Active', 'Annulee').optional(),
+    pourboire: Joi.number().min(0).optional(),
     notes: Joi.string().optional()
+  }).custom((value, helpers) => {
+    // Validation métier : index_arrivee doit être supérieur à index_depart
+    if (value.index_arrivee <= value.index_depart) {
+      return helpers.error('any.custom', { message: 'L\'index d\'arrivée doit être supérieur à l\'index de départ' });
+    }
+    return value;
   }),
 
   update: Joi.object({
@@ -130,7 +138,39 @@ export const courseValidation = {
     prix_taximetre: Joi.number().min(0).optional(),
     somme_percue: Joi.number().min(0).optional(),
     hors_creneau: Joi.boolean().optional(),
+    statut: Joi.string().valid('Active', 'Annulee').optional(),
+    pourboire: Joi.number().min(0).optional(),
     notes: Joi.string().optional()
+  }).custom((value, helpers) => {
+    // Validation métier : si index_arrivee et index_depart sont fournis, vérifier la règle
+    if (value.index_arrivee !== undefined && value.index_depart !== undefined && value.index_arrivee <= value.index_depart) {
+      return helpers.error('any.custom', { message: 'L\'index d\'arrivée doit être supérieur à l\'index de départ' });
+    }
+    return value;
+  }),
+
+  chauffeur: Joi.object({
+    client_id: Joi.number().integer().optional(),
+    mode_paiement_id: Joi.number().integer().required(),
+    numero_ordre: Joi.number().integer().min(1).required(),
+    index_depart: Joi.number().integer().min(0).required(),
+    lieu_embarquement: Joi.string().min(1).required(),
+    heure_embarquement: Joi.date().required(),
+    index_arrivee: Joi.number().integer().min(0).required(),
+    lieu_debarquement: Joi.string().min(1).required(),
+    heure_debarquement: Joi.date().required(),
+    prix_taximetre: Joi.number().min(0).required(),
+    somme_percue: Joi.number().min(0).required(),
+    hors_creneau: Joi.boolean().optional(),
+    statut: Joi.string().valid('Active', 'Annulee').optional(),
+    pourboire: Joi.number().min(0).optional(),
+    notes: Joi.string().optional()
+  }).custom((value, helpers) => {
+    // Validation métier stricte pour les chauffeurs
+    if (value.index_arrivee <= value.index_depart) {
+      return helpers.error('any.custom', { message: 'L\'index d\'arrivée doit être supérieur à l\'index de départ' });
+    }
+    return value;
   })
 };
 
@@ -166,6 +206,8 @@ export const feuilleRouteValidation = {
     km_debut: Joi.number().integer().min(0).required(),
     prise_en_charge_debut: Joi.number().min(0).optional(),
     chutes_debut: Joi.number().min(0).optional(),
+    km_en_charge_debut: Joi.number().integer().min(0).optional(),
+    compteur_total_debut: Joi.number().integer().min(0).optional(),
     notes: Joi.string().optional()
   }),
 
@@ -178,6 +220,10 @@ export const feuilleRouteValidation = {
     prise_en_charge_fin: Joi.number().min(0).optional(),
     chutes_debut: Joi.number().min(0).optional(),
     chutes_fin: Joi.number().min(0).optional(),
+    km_en_charge_debut: Joi.number().integer().min(0).optional(),
+    km_en_charge_fin: Joi.number().integer().min(0).optional(),
+    compteur_total_debut: Joi.number().integer().min(0).optional(),
+    compteur_total_fin: Joi.number().integer().min(0).optional(),
     notes: Joi.string().optional()
   }),
 
@@ -186,7 +232,13 @@ export const feuilleRouteValidation = {
     km_fin: Joi.number().integer().min(0).required(),
     prise_en_charge_fin: Joi.number().min(0).optional(),
     chutes_fin: Joi.number().min(0).optional(),
+    km_en_charge_fin: Joi.number().integer().min(0).optional(),
+    compteur_total_fin: Joi.number().integer().min(0).optional(),
     notes: Joi.string().optional()
+  }),
+
+  validate: Joi.object({
+    valide_par: Joi.number().integer().required()
   })
 };
 

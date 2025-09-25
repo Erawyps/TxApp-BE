@@ -1,41 +1,224 @@
 # TxApp-BE
 
-Stack: React (Vite) + Hono + Cloudflare Workers + Supabase + Clerk Auth
+Stack: React (Vite) + Express + Cloudflare Workers + Supabase + Prisma + JWT Auth
 
-Overview
-- Frontend: React built with Vite. Build output is served automatically via Wrangler assets binding (with SPA fallback configured).
-- Backend: Hono-based API in a single Worker (see worker.js). Static assets are served by Wrangler assets routing. Example routes: GET /api/health, GET /api/profile.
-- Database: Supabase (Postgres). Use @supabase/supabase-js from the Worker for server-side calls, or from React for client-side.
+Application de gestion complète pour sociétés de taxi avec interface web moderne et API REST.
 
-Prisma vs Supabase on Workers
-- Prisma is not required for this stack. Cloudflare Workers do not support native Node engines used by Prisma without Prisma Accelerate (HTTP). Given Supabase is used and @supabase/supabase-js works natively on Workers, Prisma is unnecessary and has been removed from package.json. Database access should be done via Supabase queries or an edge-friendly ORM (e.g., Drizzle with HTTP/Supabase driver) if desired.
-- Note: The repository still contains prisma/ and src/generated/prisma/ as legacy artifacts. They are not used at runtime. You can remove them safely to reduce repo size; they are kept temporarily for reference/migration.
+## Vue d'ensemble
 
-Local development
-1. Install deps: npm install
-2. Run Vite dev for the frontend: npm run dev
-3. Run the Worker (serves built assets or APIs):
-   - Build the app once: npm run build
-   - Start worker: npm run dev:worker
-   Note: For full-stack dev with live assets under Wrangler, you can run Vite dev on a separate port and proxy, or use a two-terminal workflow (Vite for UI, Wrangler for APIs). The worker serves built assets from dist.
+- **Frontend**: React avec Vite, interface moderne et responsive
+- **Backend**: API REST Express.js déployée sur Cloudflare Workers
+- **Base de données**: PostgreSQL via Supabase avec Prisma ORM
+- **Authentification**: JWT avec gestion des rôles (Admin, Controleur, Driver)
+- **Déploiement**: Cloudflare Workers avec Hyperdrive pour optimisation DB
 
-Environment variables (Wrangler)
-Set these as Wrangler secrets or vars:
-- SUPABASE_URL
-- SUPABASE_ANON_KEY (or SERVICE_ROLE_KEY if you need elevated access)
-- CLERK_SECRET_KEY (server-side token verification for /api/me)
-Note: Do not expose SERVICE_ROLE_KEY or CLERK_SECRET_KEY to the browser. Keep them only in the Worker environment.
+## Architecture
 
-CORS
-- Default CORS is permissive (*) in worker.js for /api/* during development. In production, set origin to your real frontend domain(s).
+### Migration Prisma Complète ✅
 
-Example
-- Health: GET /api/health -> { ok: true }
-- Sample Supabase call: GET /api/profile (expects a 'profiles' table). Replace with your own routes.
+L'application utilise désormais une architecture moderne avec séparation claire frontend/backend:
 
-Build and deploy
-- Build: npm run build
-- Deploy: npm run deploy
+- **Frontend**: Services utilisant exclusivement des appels HTTP axios vers l'API
+- **Backend**: API REST avec Prisma pour l'accès aux données
+- **Base de données**: PostgreSQL avec modèles relationnels complets
 
-Notes
-- Hyperdrive binding is present in wrangler.jsonc but not used by the Worker. It’s optional and only needed if you plan to connect directly to Postgres over Cloudflare’s network. With Supabase via @supabase/supabase-js, it’s not required.
+### Fonctionnalités Principales
+
+- 👥 Gestion des utilisateurs et rôles
+- 🚗 Gestion des chauffeurs et véhicules
+- 👨‍💼 Gestion des clients et sociétés
+- 📋 Gestion des feuilles de route et courses
+- 💰 Gestion des charges et paiements
+- 📊 Statistiques et rapports
+- 🚨 Système d'interventions (nouveau)
+
+## Démarrage Rapide
+
+### Prérequis
+
+- Node.js 18+
+- npm ou yarn
+- Compte Supabase
+
+### Installation
+
+```bash
+# Cloner le repository
+git clone <repository-url>
+cd TxApp-BE
+
+# Installer les dépendances
+npm install
+
+# Configurer les variables d'environnement
+cp .env.example .env
+# Éditer .env avec vos valeurs Supabase
+```
+
+### Développement Local
+
+```bash
+# Démarrer le serveur API
+npm run dev:api
+
+# Dans un autre terminal, démarrer le frontend
+npm run dev
+
+# Ou démarrage complet (frontend + API)
+npm run dev:full
+```
+
+### Build et Déploiement
+
+```bash
+# Build pour la production
+npm run build
+
+# Déploiement sur Cloudflare Workers
+npm run deploy
+```
+
+## API Documentation
+
+📖 **[Documentation API complète](./API.md)**
+
+L'API REST fournit des endpoints pour toutes les entités métier :
+
+- **Utilisateurs**: `/api/utilisateurs`
+- **Chauffeurs**: `/api/chauffeurs`
+- **Véhicules**: `/api/vehicules`
+- **Clients**: `/api/clients`
+- **Feuilles de route**: `/api/feuilles-route`
+- **Courses**: `/api/courses`
+- **Charges**: `/api/charges`
+- **Interventions**: `/api/interventions`
+- **Modes de paiement**: `/api/modes-paiement`
+- **Règles**: `/api/regles-salaire`, `/api/regles-facturation`
+
+### Authentification
+
+```javascript
+// Header requis pour les requêtes authentifiées
+Authorization: Bearer <jwt_token>
+```
+
+## Configuration
+
+### Variables d'environnement
+
+```env
+# Base de données
+DATABASE_URL=postgresql://...
+DIRECT_URL=postgresql://...
+
+# Supabase
+VITE_SUPABASE_URL=https://your-project.supabase.co
+VITE_SUPABASE_ANON_KEY=your-anon-key
+
+# Authentification
+JWT_SECRET=your-jwt-secret
+SESSION_SECRET=your-session-secret
+
+# Application
+NODE_ENV=development|production
+CORS_ORIGIN=https://your-domain.com
+PORT=3001
+HOST=0.0.0.0
+```
+
+### Collections Postman
+
+Des collections Postman sont disponibles dans le dossier `postman/` :
+- `TxApp-API.postman_collection.json` : Collection complète des endpoints
+- `TxApp-Dev.postman_environment.json` : Environnement développement
+- `TxApp-Prod.postman_environment.json` : Environnement production
+
+## Scripts Disponibles
+
+```bash
+# Développement
+npm run dev              # Frontend Vite
+npm run dev:api          # Serveur API Express
+npm run dev:full         # Frontend + API simultanément
+
+# Build
+npm run build            # Build production
+npm run preview          # Prévisualisation build
+
+# Déploiement
+npm run deploy           # Déploiement Cloudflare Workers
+npm run deploy:production # Script déploiement production personnalisé
+
+# Base de données
+npm run db:generate      # Générer client Prisma
+npm run db:push          # Push schéma vers DB
+npm run db:migrate       # Créer et appliquer migration
+npm run db:reset         # Reset complet DB
+npm run db:seed          # Seeder DB
+npm run db:studio        # Interface Prisma Studio
+
+# Tests et qualité
+npm run lint             # ESLint
+npm run test:prod-config # Test configuration production
+```
+
+## Structure du Projet
+
+```
+TxApp-BE/
+├── src/
+│   ├── api/             # Routes API Express
+│   ├── services/        # Services métier (HTTP calls)
+│   ├── app/             # Composants React
+│   ├── components/      # Composants UI réutilisables
+│   ├── hooks/           # Hooks React personnalisés
+│   └── utils/           # Utilitaires
+├── prisma/
+│   ├── schema.prisma    # Schéma base de données
+│   └── migrations/      # Migrations DB
+├── postman/             # Collections Postman
+├── scripts/             # Scripts utilitaires
+├── public/              # Assets statiques
+└── API.md               # Documentation API
+```
+
+## Technologies
+
+- **Frontend**: React 18, Vite, Tailwind CSS, React Router
+- **Backend**: Express.js, Node.js, Cloudflare Workers
+- **Base de données**: PostgreSQL, Prisma ORM, Supabase
+- **Authentification**: JWT, bcrypt
+- **Déploiement**: Cloudflare Workers, Hyperdrive
+- **Qualité**: ESLint, Prettier
+- **Tests**: Scripts de validation manuels
+
+## Migration Prisma
+
+L'application a récemment été migrée vers une architecture moderne :
+
+### ✅ Avant (Legacy)
+- Services frontend avec imports Prisma directs
+- Couplage fort entre frontend et base de données
+- Difficultés de déploiement et maintenance
+
+### ✅ Après (Moderne)
+- Services frontend utilisant exclusivement des appels HTTP
+- API REST indépendante et testable
+- Séparation claire des responsabilités
+- Déploiement simplifié sur Cloudflare Workers
+
+## Contribution
+
+1. Fork le projet
+2. Créer une branche feature (`git checkout -b feature/nouvelle-fonctionnalite`)
+3. Commit les changements (`git commit -am 'Ajout nouvelle fonctionnalité'`)
+4. Push vers la branche (`git push origin feature/nouvelle-fonctionnalite`)
+5. Créer une Pull Request
+
+## Licence
+
+MIT - voir le fichier [LICENSE](LICENSE) pour plus de détails.
+
+---
+
+*TxApp - Solution moderne de gestion pour taxis* 🚕
