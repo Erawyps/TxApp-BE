@@ -1,4 +1,4 @@
-import express from 'express';
+import { Hono } from 'hono';
 import {
   getUtilisateurs,
   getUtilisateurById,
@@ -53,567 +53,578 @@ import {
   createIntervention
 } from '../services/prismaService.js';
 
-const router = express.Router();
+const app = new Hono();
 
 // ==================== UTILISATEURS ====================
 
-router.get('/utilisateurs', async (req, res) => {
+app.get('/utilisateurs', async (c) => {
   try {
     const utilisateurs = await getUtilisateurs();
-    res.json(utilisateurs);
+    return c.json(utilisateurs);
   } catch (error) {
     console.error('Erreur API utilisateurs:', error);
-    res.status(500).json({ error: 'Erreur lors de la récupération des utilisateurs' });
+    return c.json({ error: 'Erreur lors de la récupération des utilisateurs' }, 500);
   }
 });
 
-router.get('/utilisateurs/:id', async (req, res) => {
+app.get('/utilisateurs/:id', async (c) => {
   try {
-    const utilisateur = await getUtilisateurById(req.params.id);
+    const utilisateur = await getUtilisateurById(c.req.param('id'));
     if (!utilisateur) {
-      return res.status(404).json({ error: 'Utilisateur non trouvé' });
+      return c.json({ error: 'Utilisateur non trouvé' }, 404);
     }
-    res.json(utilisateur);
+    return c.json(utilisateur);
   } catch (error) {
     console.error('Erreur API utilisateur:', error);
-    res.status(500).json({ error: 'Erreur lors de la récupération de l\'utilisateur' });
+    return c.json({ error: 'Erreur lors de la récupération de l\'utilisateur' }, 500);
   }
 });
 
-router.post('/utilisateurs', async (req, res) => {
+app.post('/utilisateurs', async (c) => {
   try {
-    const utilisateur = await createUtilisateur(req.body);
-    res.status(201).json(utilisateur);
+    const body = await c.req.json();
+    const utilisateur = await createUtilisateur(body);
+    return c.json(utilisateur, 201);
   } catch (error) {
     console.error('Erreur API création utilisateur:', error);
-    res.status(500).json({ error: 'Erreur lors de la création de l\'utilisateur' });
+    return c.json({ error: 'Erreur lors de la création de l\'utilisateur' }, 500);
   }
 });
 
-router.put('/utilisateurs/:id', async (req, res) => {
+app.put('/utilisateurs/:id', async (c) => {
   try {
-    const utilisateur = await updateUtilisateur(req.params.id, req.body);
-    res.json(utilisateur);
+    const body = await c.req.json();
+    const utilisateur = await updateUtilisateur(c.req.param('id'), body);
+    return c.json(utilisateur);
   } catch (error) {
     console.error('Erreur API mise à jour utilisateur:', error);
-    res.status(500).json({ error: 'Erreur lors de la mise à jour de l\'utilisateur' });
+    return c.json({ error: 'Erreur lors de la mise à jour de l\'utilisateur' }, 500);
   }
 });
 
-router.delete('/utilisateurs/:id', async (req, res) => {
+app.delete('/utilisateurs/:id', async (c) => {
   try {
-    await deleteUtilisateur(req.params.id);
-    res.status(204).send();
+    await deleteUtilisateur(c.req.param('id'));
+    return new Response(null, { status: 204 });
   } catch (error) {
     console.error('Erreur API suppression utilisateur:', error);
-    res.status(500).json({ error: 'Erreur lors de la suppression de l\'utilisateur' });
+    return c.json({ error: 'Erreur lors de la suppression de l\'utilisateur' }, 500);
   }
 });
 
 // ==================== CHAUFFEURS ====================
 
-router.get('/chauffeurs', async (req, res) => {
+app.get('/chauffeurs', async (c) => {
   try {
     const chauffeurs = await getChauffeurs();
-    res.json(chauffeurs);
+    return c.json(chauffeurs);
   } catch (error) {
     console.error('Erreur API chauffeurs:', error);
-    res.status(500).json({ error: 'Erreur lors de la récupération des chauffeurs' });
+    return c.json({ error: 'Erreur lors de la récupération des chauffeurs' }, 500);
   }
 });
 
-router.get('/chauffeurs/:id', async (req, res) => {
+app.get('/chauffeurs/:id', async (c) => {
   try {
-    const chauffeur = await getChauffeurById(req.params.id);
+    const chauffeur = await getChauffeurById(c.req.param('id'));
     if (!chauffeur) {
-      return res.status(404).json({ error: 'Chauffeur non trouvé' });
+      return c.json({ error: 'Chauffeur non trouvé' }, 404);
     }
-    res.json(chauffeur);
+    return c.json(chauffeur);
   } catch (error) {
     console.error('Erreur API chauffeur:', error);
-    res.status(500).json({ error: 'Erreur lors de la récupération du chauffeur' });
+    return c.json({ error: 'Erreur lors de la récupération du chauffeur' }, 500);
   }
 });
 
-router.post('/chauffeurs', async (req, res) => {
+app.post('/chauffeurs', async (c) => {
   try {
-    const chauffeur = await createChauffeur(req.body);
-    res.status(201).json(chauffeur);
+    const body = await c.req.json();
+    const chauffeur = await createChauffeur(body);
+    return c.json(chauffeur, 201);
   } catch (error) {
     console.error('Erreur API création chauffeur:', error);
-    res.status(500).json({ error: 'Erreur lors de la création du chauffeur' });
+    return c.json({ error: 'Erreur lors de la création du chauffeur' }, 500);
   }
 });
 
-router.put('/chauffeurs/:id', async (req, res) => {
+app.put('/chauffeurs/:id', async (c) => {
   try {
-    const chauffeur = await updateChauffeur(req.params.id, req.body);
-    res.json(chauffeur);
+    const body = await c.req.json();
+    const chauffeur = await updateChauffeur(c.req.param('id'), body);
+    return c.json(chauffeur);
   } catch (error) {
     console.error('Erreur API mise à jour chauffeur:', error);
-    res.status(500).json({ error: 'Erreur lors de la mise à jour du chauffeur' });
+    return c.json({ error: 'Erreur lors de la mise à jour du chauffeur' }, 500);
   }
 });
 
-router.delete('/chauffeurs/:id', async (req, res) => {
+app.delete('/chauffeurs/:id', async (c) => {
   try {
-    await deleteChauffeur(req.params.id);
-    res.status(204).send();
+    await deleteChauffeur(c.req.param('id'));
+    return new Response(null, { status: 204 });
   } catch (error) {
     console.error('Erreur API suppression chauffeur:', error);
-    res.status(500).json({ error: 'Erreur lors de la suppression du chauffeur' });
+    return c.json({ error: 'Erreur lors de la suppression du chauffeur' }, 500);
   }
 });
 
 // ==================== INTERVENTIONS ====================
 
-router.get('/interventions', async (req, res) => {
+app.get('/interventions', async (c) => {
   try {
     const interventions = await getInterventions();
-    res.json(interventions);
+    return c.json(interventions);
   } catch (error) {
     console.error('Erreur API interventions:', error);
-    res.status(500).json({ error: 'Erreur lors de la récupération des interventions' });
+    return c.json({ error: 'Erreur lors de la récupération des interventions' }, 500);
   }
 });
 
-router.get('/chauffeurs/:chauffeurId/interventions', async (req, res) => {
+app.get('/chauffeurs/:chauffeurId/interventions', async (c) => {
   try {
-    const interventions = await getInterventionsByChauffeur(req.params.chauffeurId);
-    res.json(interventions);
+    const interventions = await getInterventionsByChauffeur(c.req.param('chauffeurId'));
+    return c.json(interventions);
   } catch (error) {
     console.error('Erreur API interventions chauffeur:', error);
-    res.status(500).json({ error: 'Erreur lors de la récupération des interventions du chauffeur' });
+    return c.json({ error: 'Erreur lors de la récupération des interventions du chauffeur' }, 500);
   }
 });
 
-router.post('/interventions', async (req, res) => {
+app.post('/interventions', async (c) => {
   try {
-    const intervention = await createIntervention(req.body);
-    res.status(201).json(intervention);
+    const body = await c.req.json();
+    const intervention = await createIntervention(body);
+    return c.json(intervention, 201);
   } catch (error) {
     console.error('Erreur API création intervention:', error);
-    res.status(500).json({ error: 'Erreur lors de la création de l\'intervention' });
+    return c.json({ error: 'Erreur lors de la création de l\'intervention' }, 500);
   }
 });
 
 // ==================== VÉHICULES ====================
 
-router.get('/vehicules', async (req, res) => {
+app.get('/vehicules', async (c) => {
   try {
     const vehicules = await getVehicules();
-    res.json(vehicules);
+    return c.json(vehicules);
   } catch (error) {
     console.error('Erreur API véhicules:', error);
-    res.status(500).json({ error: 'Erreur lors de la récupération des véhicules' });
+    return c.json({ error: 'Erreur lors de la récupération des véhicules' }, 500);
   }
 });
 
-router.get('/vehicules/:id', async (req, res) => {
+app.get('/vehicules/:id', async (c) => {
   try {
-    const vehicule = await getVehiculeById(req.params.id);
+    const vehicule = await getVehiculeById(c.req.param('id'));
     if (!vehicule) {
-      return res.status(404).json({ error: 'Véhicule non trouvé' });
+      return c.json({ error: 'Véhicule non trouvé' }, 404);
     }
-    res.json(vehicule);
+    return c.json(vehicule);
   } catch (error) {
     console.error('Erreur API véhicule:', error);
-    res.status(500).json({ error: 'Erreur lors de la récupération du véhicule' });
+    return c.json({ error: 'Erreur lors de la récupération du véhicule' }, 500);
   }
 });
 
-router.post('/vehicules', async (req, res) => {
+app.post('/vehicules', async (c) => {
   try {
-    const vehicule = await createVehicule(req.body);
-    res.status(201).json(vehicule);
+    const body = await c.req.json();
+    const vehicule = await createVehicule(body);
+    return c.json(vehicule, 201);
   } catch (error) {
     console.error('Erreur API création véhicule:', error);
-    res.status(500).json({ error: 'Erreur lors de la création du véhicule' });
+    return c.json({ error: 'Erreur lors de la création du véhicule' }, 500);
   }
 });
 
-router.put('/vehicules/:id', async (req, res) => {
+app.put('/vehicules/:id', async (c) => {
   try {
-    const vehicule = await updateVehicule(req.params.id, req.body);
-    res.json(vehicule);
+    const body = await c.req.json();
+    const vehicule = await updateVehicule(c.req.param('id'), body);
+    return c.json(vehicule);
   } catch (error) {
     console.error('Erreur API mise à jour véhicule:', error);
-    res.status(500).json({ error: 'Erreur lors de la mise à jour du véhicule' });
+    return c.json({ error: 'Erreur lors de la mise à jour du véhicule' }, 500);
   }
 });
 
-router.delete('/vehicules/:id', async (req, res) => {
+app.delete('/vehicules/:id', async (c) => {
   try {
-    await deleteVehicule(req.params.id);
-    res.status(204).send();
+    await deleteVehicule(c.req.param('id'));
+    return new Response(null, { status: 204 });
   } catch (error) {
     console.error('Erreur API suppression véhicule:', error);
-    res.status(500).json({ error: 'Erreur lors de la suppression du véhicule' });
+    return c.json({ error: 'Erreur lors de la suppression du véhicule' }, 500);
   }
 });
 
 // ==================== CLIENTS ====================
 
-router.get('/clients', async (req, res) => {
+app.get('/clients', async (c) => {
   try {
     const clients = await getClients();
-    res.json(clients);
+    return c.json(clients);
   } catch (error) {
     console.error('Erreur API clients:', error);
-    res.status(500).json({ error: 'Erreur lors de la récupération des clients' });
+    return c.json({ error: 'Erreur lors de la récupération des clients' }, 500);
   }
 });
 
-router.get('/clients/:id', async (req, res) => {
+app.get('/clients/:id', async (c) => {
   try {
-    const client = await getClientById(req.params.id);
+    const client = await getClientById(c.req.param('id'));
     if (!client) {
-      return res.status(404).json({ error: 'Client non trouvé' });
+      return c.json({ error: 'Client non trouvé' }, 404);
     }
-    res.json(client);
+    return c.json(client);
   } catch (error) {
     console.error('Erreur API client:', error);
-    res.status(500).json({ error: 'Erreur lors de la récupération du client' });
+    return c.json({ error: 'Erreur lors de la récupération du client' }, 500);
   }
 });
 
-router.post('/clients', async (req, res) => {
+app.post('/clients', async (c) => {
   try {
-    const client = await createClient(req.body);
-    res.status(201).json(client);
+    const body = await c.req.json();
+    const client = await createClient(body);
+    return c.json(client, 201);
   } catch (error) {
     console.error('Erreur API création client:', error);
-    res.status(500).json({ error: 'Erreur lors de la création du client' });
+    return c.json({ error: 'Erreur lors de la création du client' }, 500);
   }
 });
 
-router.put('/clients/:id', async (req, res) => {
+app.put('/clients/:id', async (c) => {
   try {
-    const client = await updateClient(req.params.id, req.body);
-    res.json(client);
+    const body = await c.req.json();
+    const client = await updateClient(c.req.param('id'), body);
+    return c.json(client);
   } catch (error) {
     console.error('Erreur API mise à jour client:', error);
-    res.status(500).json({ error: 'Erreur lors de la mise à jour du client' });
+    return c.json({ error: 'Erreur lors de la mise à jour du client' }, 500);
   }
 });
 
-router.delete('/clients/:id', async (req, res) => {
+app.delete('/clients/:id', async (c) => {
   try {
-    await deleteClient(req.params.id);
-    res.status(204).send();
+    await deleteClient(c.req.param('id'));
+    return new Response(null, { status: 204 });
   } catch (error) {
     console.error('Erreur API suppression client:', error);
-    res.status(500).json({ error: 'Erreur lors de la suppression du client' });
+    return c.json({ error: 'Erreur lors de la suppression du client' }, 500);
   }
 });
 
 // ==================== FEUILLES DE ROUTE ====================
 
-router.get('/feuilles-route', async (req, res) => {
+app.get('/feuilles-route', async (c) => {
   try {
     const feuilles = await getFeuillesRoute();
-    res.json(feuilles);
+    return c.json(feuilles);
   } catch (error) {
     console.error('Erreur API feuilles de route:', error);
-    res.status(500).json({ error: 'Erreur lors de la récupération des feuilles de route' });
+    return c.json({ error: 'Erreur lors de la récupération des feuilles de route' }, 500);
   }
 });
 
-router.get('/feuilles-route/:id', async (req, res) => {
+app.get('/feuilles-route/:id', async (c) => {
   try {
-    const feuille = await getFeuilleRouteById(req.params.id);
+    const feuille = await getFeuilleRouteById(c.req.param('id'));
     if (!feuille) {
-      return res.status(404).json({ error: 'Feuille de route non trouvée' });
+      return c.json({ error: 'Feuille de route non trouvée' }, 404);
     }
-    res.json(feuille);
+    return c.json(feuille);
   } catch (error) {
     console.error('Erreur API feuille de route:', error);
-    res.status(500).json({ error: 'Erreur lors de la récupération de la feuille de route' });
+    return c.json({ error: 'Erreur lors de la récupération de la feuille de route' }, 500);
   }
 });
 
-router.get('/chauffeurs/:chauffeurId/feuilles-route', async (req, res) => {
+app.get('/chauffeurs/:chauffeurId/feuilles-route', async (c) => {
   try {
-    const feuilles = await getFeuillesRouteByChauffeur(req.params.chauffeurId, req.query.date);
-    res.json(feuilles);
+    const feuilles = await getFeuillesRouteByChauffeur(c.req.param('chauffeurId'), c.req.query('date'));
+    return c.json(feuilles);
   } catch (error) {
     console.error('Erreur API feuilles de route chauffeur:', error);
-    res.status(500).json({ error: 'Erreur lors de la récupération des feuilles de route du chauffeur' });
+    return c.json({ error: 'Erreur lors de la récupération des feuilles de route du chauffeur' }, 500);
   }
 });
 
-router.post('/feuilles-route', async (req, res) => {
+app.post('/feuilles-route', async (c) => {
   try {
-    const feuille = await createFeuilleRoute(req.body);
-    res.status(201).json(feuille);
+    const body = await c.req.json();
+    const feuille = await createFeuilleRoute(body);
+    return c.json(feuille, 201);
   } catch (error) {
     console.error('Erreur API création feuille de route:', error);
-    res.status(500).json({ error: 'Erreur lors de la création de la feuille de route' });
+    return c.json({ error: 'Erreur lors de la création de la feuille de route' }, 500);
   }
 });
 
-router.put('/feuilles-route/:id', async (req, res) => {
+app.put('/feuilles-route/:id', async (c) => {
   try {
-    const feuille = await updateFeuilleRoute(req.params.id, req.body);
-    res.json(feuille);
+    const body = await c.req.json();
+    const feuille = await updateFeuilleRoute(c.req.param('id'), body);
+    return c.json(feuille);
   } catch (error) {
     console.error('Erreur API mise à jour feuille de route:', error);
-    res.status(500).json({ error: 'Erreur lors de la mise à jour de la feuille de route' });
+    return c.json({ error: 'Erreur lors de la mise à jour de la feuille de route' }, 500);
   }
 });
 
-router.delete('/feuilles-route/:id', async (req, res) => {
+app.delete('/feuilles-route/:id', async (c) => {
   try {
-    await deleteFeuilleRoute(req.params.id);
-    res.status(204).send();
+    await deleteFeuilleRoute(c.req.param('id'));
+    return new Response(null, { status: 204 });
   } catch (error) {
     console.error('Erreur API suppression feuille de route:', error);
-    res.status(500).json({ error: 'Erreur lors de la suppression de la feuille de route' });
+    return c.json({ error: 'Erreur lors de la suppression de la feuille de route' }, 500);
   }
 });
 
 // ==================== COURSES ====================
 
-router.get('/courses', async (req, res) => {
+app.get('/courses', async (c) => {
   try {
     const courses = await getCourses();
-    res.json(courses);
+    return c.json(courses);
   } catch (error) {
     console.error('Erreur API courses:', error);
-    res.status(500).json({ error: 'Erreur lors de la récupération des courses' });
+    return c.json({ error: 'Erreur lors de la récupération des courses' }, 500);
   }
 });
 
-router.get('/feuilles-route/:feuilleId/courses', async (req, res) => {
+app.get('/feuilles-route/:feuilleId/courses', async (c) => {
   try {
-    const courses = await getCoursesByFeuille(req.params.feuilleId);
-    res.json(courses);
+    const courses = await getCoursesByFeuille(c.req.param('feuilleId'));
+    return c.json(courses);
   } catch (error) {
     console.error('Erreur API courses de la feuille:', error);
-    res.status(500).json({ error: 'Erreur lors de la récupération des courses de la feuille' });
+    return c.json({ error: 'Erreur lors de la récupération des courses de la feuille' }, 500);
   }
 });
 
-router.post('/courses', async (req, res) => {
+app.post('/courses', async (c) => {
   try {
-    const course = await createCourse(req.body);
-    res.status(201).json(course);
+    const course = await createCourse(await c.req.json());
+    return c.json(course, 201);
   } catch (error) {
     console.error('Erreur API création course:', error);
-    res.status(500).json({ error: 'Erreur lors de la création de la course' });
+    return c.json({ error: 'Erreur lors de la création de la course' }, 500);
   }
 });
 
-router.put('/courses/:id', async (req, res) => {
+app.put('/courses/:id', async (c) => {
   try {
-    const course = await updateCourse(req.params.id, req.body);
-    res.json(course);
+    const course = await updateCourse(c.req.param('id'), await c.req.json());
+    return c.json(course);
   } catch (error) {
     console.error('Erreur API mise à jour course:', error);
-    res.status(500).json({ error: 'Erreur lors de la mise à jour de la course' });
+    return c.json({ error: 'Erreur lors de la mise à jour de la course' }, 500);
   }
 });
 
-router.delete('/courses/:id', async (req, res) => {
+app.delete('/courses/:id', async (c) => {
   try {
-    await deleteCourse(req.params.id);
-    res.status(204).send();
+    await deleteCourse(c.req.param('id'));
+    new Response(null, { status: 204 });
   } catch (error) {
     console.error('Erreur API suppression course:', error);
-    res.status(500).json({ error: 'Erreur lors de la suppression de la course' });
+    return c.json({ error: 'Erreur lors de la suppression de la course' }, 500);
   }
 });
 
 // ==================== CHARGES ====================
 
-router.get('/charges', async (req, res) => {
+app.get('/charges', async (c) => {
   try {
     const charges = await getCharges();
-    res.json(charges);
+    return c.json(charges);
   } catch (error) {
     console.error('Erreur API charges:', error);
-    res.status(500).json({ error: 'Erreur lors de la récupération des charges' });
+    return c.json({ error: 'Erreur lors de la récupération des charges' }, 500);
   }
 });
 
-router.get('/feuilles-route/:feuilleId/charges', async (req, res) => {
+app.get('/feuilles-route/:feuilleId/charges', async (c) => {
   try {
-    const charges = await getChargesByFeuille(req.params.feuilleId);
-    res.json(charges);
+    const charges = await getChargesByFeuille(c.req.param('feuilleId'));
+    return c.json(charges);
   } catch (error) {
     console.error('Erreur API charges de la feuille:', error);
-    res.status(500).json({ error: 'Erreur lors de la récupération des charges de la feuille' });
+    return c.json({ error: 'Erreur lors de la récupération des charges de la feuille' }, 500);
   }
 });
 
-router.post('/charges', async (req, res) => {
+app.post('/charges', async (c) => {
   try {
-    const charge = await createCharge(req.body);
-    res.status(201).json(charge);
+    const charge = await createCharge(await c.req.json());
+    return c.json(charge, 201);
   } catch (error) {
     console.error('Erreur API création charge:', error);
-    res.status(500).json({ error: 'Erreur lors de la création de la charge' });
+    return c.json({ error: 'Erreur lors de la création de la charge' }, 500);
   }
 });
 
-router.put('/charges/:id', async (req, res) => {
+app.put('/charges/:id', async (c) => {
   try {
-    const charge = await updateCharge(req.params.id, req.body);
-    res.json(charge);
+    const charge = await updateCharge(c.req.param('id'), await c.req.json());
+    return c.json(charge);
   } catch (error) {
     console.error('Erreur API mise à jour charge:', error);
-    res.status(500).json({ error: 'Erreur lors de la mise à jour de la charge' });
+    return c.json({ error: 'Erreur lors de la mise à jour de la charge' }, 500);
   }
 });
 
-router.delete('/charges/:id', async (req, res) => {
+app.delete('/charges/:id', async (c) => {
   try {
-    await deleteCharge(req.params.id);
-    res.status(204).send();
+    await deleteCharge(c.req.param('id'));
+    new Response(null, { status: 204 });
   } catch (error) {
     console.error('Erreur API suppression charge:', error);
-    res.status(500).json({ error: 'Erreur lors de la suppression de la charge' });
+    return c.json({ error: 'Erreur lors de la suppression de la charge' }, 500);
   }
 });
 
 // ==================== MODES DE PAIEMENT ====================
 
-router.get('/modes-paiement', async (req, res) => {
+app.get('/modes-paiement', async (c) => {
   try {
     const modes = await getModesPaiement();
-    res.json(modes);
+    return c.json(modes);
   } catch (error) {
     console.error('Erreur API modes de paiement:', error);
-    res.status(500).json({ error: 'Erreur lors de la récupération des modes de paiement' });
+    return c.json({ error: 'Erreur lors de la récupération des modes de paiement' }, 500);
   }
 });
 
-router.post('/modes-paiement', async (req, res) => {
+app.post('/modes-paiement', async (c) => {
   try {
-    const mode = await createModePaiement(req.body);
-    res.status(201).json(mode);
+    const mode = await createModePaiement(await c.req.json());
+    return c.json(mode, 201);
   } catch (error) {
     console.error('Erreur API création mode de paiement:', error);
-    res.status(500).json({ error: 'Erreur lors de la création du mode de paiement' });
+    return c.json({ error: 'Erreur lors de la création du mode de paiement' }, 500);
   }
 });
 
 // ==================== RÈGLES DE SALAIRE ====================
 
-router.get('/regles-salaire', async (req, res) => {
+app.get('/regles-salaire', async (c) => {
   try {
     const regles = await getReglesSalaire();
-    res.json(regles);
+    return c.json(regles);
   } catch (error) {
     console.error('Erreur API règles de salaire:', error);
-    res.status(500).json({ error: 'Erreur lors de la récupération des règles de salaire' });
+    return c.json({ error: 'Erreur lors de la récupération des règles de salaire' }, 500);
   }
 });
 
-router.post('/regles-salaire', async (req, res) => {
+app.post('/regles-salaire', async (c) => {
   try {
-    const regle = await createRegleSalaire(req.body);
-    res.status(201).json(regle);
+    const regle = await createRegleSalaire(await c.req.json());
+    return c.json(regle, 201);
   } catch (error) {
     console.error('Erreur API création règle de salaire:', error);
-    res.status(500).json({ error: 'Erreur lors de la création de la règle de salaire' });
+    return c.json({ error: 'Erreur lors de la création de la règle de salaire' }, 500);
   }
 });
 
 // ==================== RÈGLES DE FACTURATION ====================
 
-router.get('/regles-facturation', async (req, res) => {
+app.get('/regles-facturation', async (c) => {
   try {
     const regles = await getReglesFacturation();
-    res.json(regles);
+    return c.json(regles);
   } catch (error) {
     console.error('Erreur API règles de facturation:', error);
-    res.status(500).json({ error: 'Erreur lors de la récupération des règles de facturation' });
+    return c.json({ error: 'Erreur lors de la récupération des règles de facturation' }, 500);
   }
 });
 
-router.post('/regles-facturation', async (req, res) => {
+app.post('/regles-facturation', async (c) => {
   try {
-    const regle = await createRegleFacturation(req.body);
-    res.status(201).json(regle);
+    const regle = await createRegleFacturation(await c.req.json());
+    return c.json(regle, 201);
   } catch (error) {
     console.error('Erreur API création règle de facturation:', error);
-    res.status(500).json({ error: 'Erreur lors de la création de la règle de facturation' });
+    return c.json({ error: 'Erreur lors de la création de la règle de facturation' }, 500);
   }
 });
 
 // ==================== PARTENAIRES ====================
 
-router.get('/partenaires', async (req, res) => {
+app.get('/partenaires', async (c) => {
   try {
     const partenaires = await getPartenaires();
-    res.json(partenaires);
+    return c.json(partenaires);
   } catch (error) {
     console.error('Erreur API partenaires:', error);
-    res.status(500).json({ error: 'Erreur lors de la récupération des partenaires' });
+    return c.json({ error: 'Erreur lors de la récupération des partenaires' }, 500);
   }
 });
 
-router.post('/partenaires', async (req, res) => {
+app.post('/partenaires', async (c) => {
   try {
-    const partenaire = await createPartenaire(req.body);
-    res.status(201).json(partenaire);
+    const partenaire = await createPartenaire(await c.req.json());
+    return c.json(partenaire, 201);
   } catch (error) {
     console.error('Erreur API création partenaire:', error);
-    res.status(500).json({ error: 'Erreur lors de la création du partenaire' });
+    return c.json({ error: 'Erreur lors de la création du partenaire' }, 500);
   }
 });
 
 // ==================== SOCIÉTÉS TAXI ====================
 
-router.get('/societes-taxi', async (req, res) => {
+app.get('/societes-taxi', async (c) => {
   try {
     const societes = await getSocietesTaxi();
-    res.json(societes);
+    return c.json(societes);
   } catch (error) {
     console.error('Erreur API sociétés taxi:', error);
-    res.status(500).json({ error: 'Erreur lors de la récupération des sociétés taxi' });
+    return c.json({ error: 'Erreur lors de la récupération des sociétés taxi' }, 500);
   }
 });
 
 // ==================== ADMIN - REQUÊTES SPÉCIFIQUES ====================
 
-router.get('/admin/chauffeur-by-date', async (req, res) => {
+app.get('/admin/chauffeur-by-date', async (c) => {
   try {
     const { date } = req.query;
     if (!date) {
-      return res.status(400).json({ error: 'Date requise' });
+      return c.json({ error: 'Date requise' }, 400);
     }
     const result = await findChauffeurByDate(date);
-    res.json(result);
+    return c.json(result);
   } catch (error) {
     console.error('Erreur API recherche chauffeur par date:', error);
-    res.status(500).json({ error: 'Erreur lors de la recherche' });
+    return c.json({ error: 'Erreur lors de la recherche' }, 500);
   }
 });
 
-router.get('/admin/vehicule-by-chauffeur-date', async (req, res) => {
+app.get('/admin/vehicule-by-chauffeur-date', async (c) => {
   try {
     const { chauffeurId, date } = req.query;
     if (!chauffeurId || !date) {
-      return res.status(400).json({ error: 'Chauffeur ID et date requis' });
+      return c.json({ error: 'Chauffeur ID et date requis' }, 400);
     }
     const result = await findVehiculeByChauffeurAndDate(chauffeurId, date);
-    res.json(result);
+    return c.json(result);
   } catch (error) {
     console.error('Erreur API recherche véhicule par chauffeur et date:', error);
-    res.status(500).json({ error: 'Erreur lors de la recherche' });
+    return c.json({ error: 'Erreur lors de la recherche' }, 500);
   }
 });
 
-router.post('/admin/feuille-route/encode', async (req, res) => {
+app.post('/admin/feuille-route/encode', async (c) => {
   try {
-    const feuille = await encodeFeuilleRouteAdmin(req.body);
-    res.status(201).json(feuille);
+    const feuille = await encodeFeuilleRouteAdmin(await c.req.json());
+    return c.json(feuille, 201);
   } catch (error) {
     console.error('Erreur API encodage admin feuille de route:', error);
-    res.status(500).json({ error: 'Erreur lors de l\'encodage admin' });
+    return c.json({ error: 'Erreur lors de l\'encodage admin' }, 500);
   }
 });
 
-export default router;
+export default app;

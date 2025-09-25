@@ -20,14 +20,14 @@ export async function getUtilisateurs() {
             feuille_route: {
               include: {
                 vehicule: true,
-                courses: {
+                course: {
                   include: {
                     client: true,
                     mode_paiement: true,
                     detail_facture_complexe: true
                   }
                 },
-                charges: {
+                charge: {
                   include: {
                     vehicule: true,
                     mode_paiement: true
