@@ -1,0 +1,1338 @@
+{
+  "info": {
+    "name": "TxApp API",
+    "description": "Collection complète des endpoints API pour TxApp - Application de gestion de taxis",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Utilisateurs",
+      "item": [
+        {
+          "name": "GET - Liste des utilisateurs",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/utilisateurs",
+              "host": ["{{base_url}}"],
+              "path": ["utilisateurs"]
+            },
+            "description": "Récupère la liste de tous les utilisateurs avec leurs informations détaillées"
+          }
+        },
+        {
+          "name": "GET - Utilisateur par ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/utilisateurs/:id",
+              "host": ["{{base_url}}"],
+              "path": ["utilisateurs", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1",
+                  "description": "ID de l'utilisateur"
+                }
+              ]
+            },
+            "description": "Récupère un utilisateur spécifique par son ID"
+          }
+        },
+        {
+          "name": "POST - Créer utilisateur",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"newuser@example.com\",\n  \"mot_de_passe_hashe\": \"hashed_password\",\n  \"nom\": \"Martin\",\n  \"prenom\": \"Marie\",\n  \"role\": \"Driver\",\n  \"societe_id\": 1\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/utilisateurs",
+              "host": ["{{base_url}}"],
+              "path": ["utilisateurs"]
+            },
+            "description": "Crée un nouvel utilisateur"
+          }
+        },
+        {
+          "name": "PUT - Modifier utilisateur",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nom\": \"Dupont\",\n  \"prenom\": \"Jean-Marie\",\n  \"role\": \"Admin\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/utilisateurs/:id",
+              "host": ["{{base_url}}"],
+              "path": ["utilisateurs", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1",
+                  "description": "ID de l'utilisateur à modifier"
+                }
+              ]
+            },
+            "description": "Met à jour un utilisateur existant"
+          }
+        },
+        {
+          "name": "DELETE - Supprimer utilisateur",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/utilisateurs/:id",
+              "host": ["{{base_url}}"],
+              "path": ["utilisateurs", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1",
+                  "description": "ID de l'utilisateur à supprimer"
+                }
+              ]
+            },
+            "description": "Supprime un utilisateur"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Chauffeurs",
+      "item": [
+        {
+          "name": "GET - Liste des chauffeurs",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/chauffeurs",
+              "host": ["{{base_url}}"],
+              "path": ["chauffeurs"]
+            },
+            "description": "Récupère la liste de tous les chauffeurs"
+          }
+        },
+        {
+          "name": "GET - Chauffeur par ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/chauffeurs/:id",
+              "host": ["{{base_url}}"],
+              "path": ["chauffeurs", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1",
+                  "description": "ID du chauffeur"
+                }
+              ]
+            },
+            "description": "Récupère un chauffeur spécifique par son ID"
+          }
+        },
+        {
+          "name": "GET - Feuilles de route du chauffeur",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/chauffeurs/:chauffeurId/feuilles-route?date=2025-01-15",
+              "host": ["{{base_url}}"],
+              "path": ["chauffeurs", ":chauffeurId", "feuilles-route"],
+              "query": [
+                {
+                  "key": "date",
+                  "value": "2025-01-15",
+                  "description": "Date au format YYYY-MM-DD (optionnel)"
+                }
+              ],
+              "variable": [
+                {
+                  "key": "chauffeurId",
+                  "value": "1",
+                  "description": "ID du chauffeur"
+                }
+              ]
+            },
+            "description": "Récupère les feuilles de route d'un chauffeur pour une date donnée"
+          }
+        },
+        {
+          "name": "GET - Interventions du chauffeur",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/chauffeurs/:chauffeurId/interventions",
+              "host": ["{{base_url}}"],
+              "path": ["chauffeurs", ":chauffeurId", "interventions"],
+              "variable": [
+                {
+                  "key": "chauffeurId",
+                  "value": "1",
+                  "description": "ID du chauffeur"
+                }
+              ]
+            },
+            "description": "Récupère les interventions d'un chauffeur"
+          }
+        },
+        {
+          "name": "POST - Créer chauffeur",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"chauffeur_id\": 1,\n  \"societe_id\": 1,\n  \"statut\": \"Actif\",\n  \"regle_salaire_defaut_id\": 1\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/chauffeurs",
+              "host": ["{{base_url}}"],
+              "path": ["chauffeurs"]
+            },
+            "description": "Crée un nouveau chauffeur"
+          }
+        },
+        {
+          "name": "PUT - Modifier chauffeur",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"statut\": \"Non Actif\",\n  \"regle_salaire_defaut_id\": 2\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/chauffeurs/:id",
+              "host": ["{{base_url}}"],
+              "path": ["chauffeurs", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1",
+                  "description": "ID du chauffeur à modifier"
+                }
+              ]
+            },
+            "description": "Met à jour un chauffeur existant"
+          }
+        },
+        {
+          "name": "DELETE - Supprimer chauffeur",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/chauffeurs/:id",
+              "host": ["{{base_url}}"],
+              "path": ["chauffeurs", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1",
+                  "description": "ID du chauffeur à supprimer"
+                }
+              ]
+            },
+            "description": "Supprime un chauffeur"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Interventions",
+      "item": [
+        {
+          "name": "GET - Liste des interventions",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/interventions",
+              "host": ["{{base_url}}"],
+              "path": ["interventions"]
+            },
+            "description": "Récupère la liste de toutes les interventions"
+          }
+        },
+        {
+          "name": "POST - Créer intervention",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"chauffeurId\": 1,\n  \"type\": \"police\",\n  \"description\": \"Contrôle de routine\",\n  \"date\": \"2025-01-15\",\n  \"location\": \"Paris Centre\",\n  \"createdBy\": \"admin\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/interventions",
+              "host": ["{{base_url}}"],
+              "path": ["interventions"]
+            },
+            "description": "Crée une nouvelle intervention"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Véhicules",
+      "item": [
+        {
+          "name": "GET - Liste des véhicules",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/vehicules",
+              "host": ["{{base_url}}"],
+              "path": ["vehicules"]
+            },
+            "description": "Récupère la liste de tous les véhicules"
+          }
+        },
+        {
+          "name": "GET - Véhicule par ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/vehicules/:id",
+              "host": ["{{base_url}}"],
+              "path": ["vehicules", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1",
+                  "description": "ID du véhicule"
+                }
+              ]
+            },
+            "description": "Récupère un véhicule spécifique par son ID"
+          }
+        },
+        {
+          "name": "POST - Créer véhicule",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"societe_id\": 1,\n  \"plaque_immatriculation\": \"AA-123-BB\",\n  \"marque\": \"Peugeot\",\n  \"modele\": \"208\",\n  \"annee\": 2020,\n  \"est_actif\": true\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/vehicules",
+              "host": ["{{base_url}}"],
+              "path": ["vehicules"]
+            },
+            "description": "Crée un nouveau véhicule"
+          }
+        },
+        {
+          "name": "PUT - Modifier véhicule",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"marque\": \"Renault\",\n  \"modele\": \"Clio\",\n  \"est_actif\": false\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/vehicules/:id",
+              "host": ["{{base_url}}"],
+              "path": ["vehicules", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1",
+                  "description": "ID du véhicule à modifier"
+                }
+              ]
+            },
+            "description": "Met à jour un véhicule existant"
+          }
+        },
+        {
+          "name": "DELETE - Supprimer véhicule",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/vehicules/:id",
+              "host": ["{{base_url}}"],
+              "path": ["vehicules", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1",
+                  "description": "ID du véhicule à supprimer"
+                }
+              ]
+            },
+            "description": "Supprime un véhicule"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Clients",
+      "item": [
+        {
+          "name": "GET - Liste des clients",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/clients",
+              "host": ["{{base_url}}"],
+              "path": ["clients"]
+            },
+            "description": "Récupère la liste de tous les clients"
+          }
+        },
+        {
+          "name": "GET - Client par ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/clients/:id",
+              "host": ["{{base_url}}"],
+              "path": ["clients", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1",
+                  "description": "ID du client"
+                }
+              ]
+            },
+            "description": "Récupère un client spécifique par son ID"
+          }
+        },
+        {
+          "name": "POST - Créer client",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"societe_id\": 1,\n  \"nom_societe\": \"Entreprise ABC\",\n  \"num_tva\": \"BE0123456789\",\n  \"adresse\": \"123 Rue de la Paix, 1000 Bruxelles\",\n  \"telephone\": \"+32 2 123 45 67\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/clients",
+              "host": ["{{base_url}}"],
+              "path": ["clients"]
+            },
+            "description": "Crée un nouveau client"
+          }
+        },
+        {
+          "name": "PUT - Modifier client",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nom_societe\": \"Entreprise XYZ\",\n  \"telephone\": \"+32 2 987 65 43\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/clients/:id",
+              "host": ["{{base_url}}"],
+              "path": ["clients", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1",
+                  "description": "ID du client à modifier"
+                }
+              ]
+            },
+            "description": "Met à jour un client existant"
+          }
+        },
+        {
+          "name": "DELETE - Supprimer client",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/clients/:id",
+              "host": ["{{base_url}}"],
+              "path": ["clients", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1",
+                  "description": "ID du client à supprimer"
+                }
+              ]
+            },
+            "description": "Supprime un client"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Feuilles de Route",
+      "item": [
+        {
+          "name": "GET - Liste des feuilles de route",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/feuilles-route",
+              "host": ["{{base_url}}"],
+              "path": ["feuilles-route"]
+            },
+            "description": "Récupère la liste de toutes les feuilles de route"
+          }
+        },
+        {
+          "name": "GET - Feuille de route par ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/feuilles-route/:id",
+              "host": ["{{base_url}}"],
+              "path": ["feuilles-route", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1",
+                  "description": "ID de la feuille de route"
+                }
+              ]
+            },
+            "description": "Récupère une feuille de route spécifique par son ID"
+          }
+        },
+        {
+          "name": "POST - Créer feuille de route",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"chauffeur_id\": 1,\n  \"vehicule_id\": 1,\n  \"date_feuille\": \"2025-01-15\",\n  \"courses\": [\n    {\n      \"num_ordre\": 1,\n      \"index_depart\": 1000,\n      \"index_embarquement\": 1005,\n      \"lieu_embarquement\": \"Gare Centrale\",\n      \"heure_embarquement\": \"2025-01-15T08:00:00Z\",\n      \"index_debarquement\": 1020,\n      \"lieu_debarquement\": \"Aéroport\",\n      \"heure_debarquement\": \"2025-01-15T08:30:00Z\",\n      \"prix_taximetre\": 25.50,\n      \"sommes_percues\": 30.00,\n      \"mode_paiement_id\": 1,\n      \"client_id\": 1\n    }\n  ],\n  \"charges\": [\n    {\n      \"description\": \"Carburant\",\n      \"montant\": 45.00,\n      \"mode_paiement_id\": 2\n    }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/feuilles-route",
+              "host": ["{{base_url}}"],
+              "path": ["feuilles-route"]
+            },
+            "description": "Crée une nouvelle feuille de route avec courses et charges"
+          }
+        },
+        {
+          "name": "PUT - Modifier feuille de route",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"date_feuille\": \"2025-01-16\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/feuilles-route/:id",
+              "host": ["{{base_url}}"],
+              "path": ["feuilles-route", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1",
+                  "description": "ID de la feuille de route à modifier"
+                }
+              ]
+            },
+            "description": "Met à jour une feuille de route existante"
+          }
+        },
+        {
+          "name": "DELETE - Supprimer feuille de route",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/feuilles-route/:id",
+              "host": ["{{base_url}}"],
+              "path": ["feuilles-route", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1",
+                  "description": "ID de la feuille de route à supprimer"
+                }
+              ]
+            },
+            "description": "Supprime une feuille de route"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Courses",
+      "item": [
+        {
+          "name": "GET - Liste des courses",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/courses",
+              "host": ["{{base_url}}"],
+              "path": ["courses"]
+            },
+            "description": "Récupère la liste de toutes les courses"
+          }
+        },
+        {
+          "name": "GET - Courses par feuille",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/courses/feuille/:feuilleId",
+              "host": ["{{base_url}}"],
+              "path": ["courses", "feuille", ":feuilleId"],
+              "variable": [
+                {
+                  "key": "feuilleId",
+                  "value": "1",
+                  "description": "ID de la feuille de route"
+                }
+              ]
+            },
+            "description": "Récupère les courses d'une feuille de route spécifique"
+          }
+        },
+        {
+          "name": "POST - Créer course",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"feuille_id\": 1,\n  \"num_ordre\": 1,\n  \"index_depart\": 1000,\n  \"index_embarquement\": 1005,\n  \"lieu_embarquement\": \"Gare Centrale\",\n  \"heure_embarquement\": \"2025-01-15T08:00:00Z\",\n  \"index_debarquement\": 1020,\n  \"lieu_debarquement\": \"Aéroport\",\n  \"heure_debarquement\": \"2025-01-15T08:30:00Z\",\n  \"prix_taximetre\": 25.50,\n  \"sommes_percues\": 30.00,\n  \"mode_paiement_id\": 1,\n  \"client_id\": 1\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/courses",
+              "host": ["{{base_url}}"],
+              "path": ["courses"]
+            },
+            "description": "Crée une nouvelle course"
+          }
+        },
+        {
+          "name": "PUT - Modifier course",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"prix_taximetre\": 28.00,\n  \"sommes_percues\": 32.00\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/courses/:id",
+              "host": ["{{base_url}}"],
+              "path": ["courses", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1",
+                  "description": "ID de la course à modifier"
+                }
+              ]
+            },
+            "description": "Met à jour une course existante"
+          }
+        },
+        {
+          "name": "DELETE - Supprimer course",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/courses/:id",
+              "host": ["{{base_url}}"],
+              "path": ["courses", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1",
+                  "description": "ID de la course à supprimer"
+                }
+              ]
+            },
+            "description": "Supprime une course"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Charges",
+      "item": [
+        {
+          "name": "GET - Liste des charges",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/charges",
+              "host": ["{{base_url}}"],
+              "path": ["charges"]
+            },
+            "description": "Récupère la liste de toutes les charges"
+          }
+        },
+        {
+          "name": "GET - Charges par feuille",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/charges/feuille/:feuilleId",
+              "host": ["{{base_url}}"],
+              "path": ["charges", "feuille", ":feuilleId"],
+              "variable": [
+                {
+                  "key": "feuilleId",
+                  "value": "1",
+                  "description": "ID de la feuille de route"
+                }
+              ]
+            },
+            "description": "Récupère les charges d'une feuille de route spécifique"
+          }
+        },
+        {
+          "name": "POST - Créer charge",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"feuille_id\": 1,\n  \"chauffeur_id\": 1,\n  \"vehicule_id\": 1,\n  \"description\": \"Carburant\",\n  \"montant\": 45.00,\n  \"mode_paiement_charge\": 2,\n  \"date_charge\": \"2025-01-15\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/charges",
+              "host": ["{{base_url}}"],
+              "path": ["charges"]
+            },
+            "description": "Crée une nouvelle charge"
+          }
+        },
+        {
+          "name": "PUT - Modifier charge",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"description\": \"Carburant + Lavage\",\n  \"montant\": 65.00\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/charges/:id",
+              "host": ["{{base_url}}"],
+              "path": ["charges", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1",
+                  "description": "ID de la charge à modifier"
+                }
+              ]
+            },
+            "description": "Met à jour une charge existante"
+          }
+        },
+        {
+          "name": "DELETE - Supprimer charge",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/charges/:id",
+              "host": ["{{base_url}}"],
+              "path": ["charges", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1",
+                  "description": "ID de la charge à supprimer"
+                }
+              ]
+            },
+            "description": "Supprime une charge"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Modes de Paiement",
+      "item": [
+        {
+          "name": "GET - Liste des modes de paiement",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/modes-paiement",
+              "host": ["{{base_url}}"],
+              "path": ["modes-paiement"]
+            },
+            "description": "Récupère la liste de tous les modes de paiement"
+          }
+        },
+        {
+          "name": "POST - Créer mode de paiement",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nom_mode\": \"Virement bancaire\",\n  \"description\": \"Paiement par virement bancaire\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/modes-paiement",
+              "host": ["{{base_url}}"],
+              "path": ["modes-paiement"]
+            },
+            "description": "Crée un nouveau mode de paiement"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Règles de Salaire",
+      "item": [
+        {
+          "name": "GET - Liste des règles de salaire",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/regles-salaire",
+              "host": ["{{base_url}}"],
+              "path": ["regles-salaire"]
+            },
+            "description": "Récupère la liste de toutes les règles de salaire"
+          }
+        },
+        {
+          "name": "POST - Créer règle de salaire",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nom_regle\": \"Temps plein\",\n  \"description\": \"Salaire pour chauffeur temps plein\",\n  \"salaire_base\": 2500.00,\n  \"pourcentage_course\": 15.0\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/regles-salaire",
+              "host": ["{{base_url}}"],
+              "path": ["regles-salaire"]
+            },
+            "description": "Crée une nouvelle règle de salaire"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Règles de Facturation",
+      "item": [
+        {
+          "name": "GET - Liste des règles de facturation",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/regles-facturation",
+              "host": ["{{base_url}}"],
+              "path": ["regles-facturation"]
+            },
+            "description": "Récupère la liste de toutes les règles de facturation"
+          }
+        },
+        {
+          "name": "POST - Créer règle de facturation",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nom_regle\": \"Standard\",\n  \"description\": \"Tarification standard\",\n  \"prix_km\": 2.50,\n  \"prix_minute\": 0.50\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/regles-facturation",
+              "host": ["{{base_url}}"],
+              "path": ["regles-facturation"]
+            },
+            "description": "Crée une nouvelle règle de facturation"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Partenaires",
+      "item": [
+        {
+          "name": "GET - Liste des partenaires",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/partenaires",
+              "host": ["{{base_url}}"],
+              "path": ["partenaires"]
+            },
+            "description": "Récupère la liste de tous les partenaires"
+          }
+        },
+        {
+          "name": "POST - Créer partenaire",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nom_partenaire\": \"Hôtel Central\",\n  \"description\": \"Partenaire hôtelier\",\n  \"contact_email\": \"contact@hotel-central.com\",\n  \"contact_telephone\": \"+32 2 123 45 67\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/partenaires",
+              "host": ["{{base_url}}"],
+              "path": ["partenaires"]
+            },
+            "description": "Crée un nouveau partenaire"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Sociétés de Taxi",
+      "item": [
+        {
+          "name": "GET - Liste des sociétés",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/societes-taxi",
+              "host": ["{{base_url}}"],
+              "path": ["societes-taxi"]
+            },
+            "description": "Récupère la liste de toutes les sociétés de taxi"
+          }
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "https://txapp.be/api",
+      "type": "string"
+    },
+    {
+      "key": "jwt_token",
+      "value": "",
+      "type": "string",
+      "description": "Token JWT d'authentification"
+    }
+  ]
+}
