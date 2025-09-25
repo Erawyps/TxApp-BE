@@ -223,20 +223,18 @@ export class ProductionMonitor {
 // Instance globale du monitor
 export const monitor = new ProductionMonitor();
 
-// Middleware Express pour le monitoring
-export const monitoringMiddleware = (req, res, next) => {
+// Middleware Hono pour le monitoring
+export const monitoringMiddleware = async (c, next) => {
   const startTime = Date.now();
 
-  res.on('finish', () => {
-    const responseTime = Date.now() - startTime;
-    const success = res.statusCode < 400;
+  await next();
 
-    monitor.recordRequest(success);
+  const responseTime = Date.now() - startTime;
+  const success = c.res.status < 400;
 
-    if (responseTime > monitoringConfig.thresholds.responseTime) {
-      monitor.createAlert('SLOW_RESPONSE', `Requête lente: ${req.path} - ${responseTime}ms`);
-    }
-  });
+  monitor.recordRequest(success);
 
-  next();
+  if (responseTime > monitoringConfig.thresholds.responseTime) {
+    monitor.createAlert('SLOW_RESPONSE', `Requête lente: ${c.req.path} - ${responseTime}ms`);
+  }
 };

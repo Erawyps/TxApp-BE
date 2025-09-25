@@ -11,6 +11,7 @@
   },
 
   "vars": {
+    "DATABASE_URL": "postgresql://postgres.jfrhzwtkfotsrjkacrns:rKcnNJbacyLF3TQd@aws-0-eu-central-1.pooler.supabase.com:6543/postgres?pgbouncer=true",
     "JWT_SECRET": "TxApp-2025-Super-Secure-JWT-Secret-Key-Change-In-Production-9f8e7d6c5b4a3",
     "USERS_TABLE": "utilisateur",
     "NODE_ENV": "production",
@@ -28,10 +29,6 @@
   ],
 
   "routes": [
-    {
-      "pattern": "txapp.be/api/*",
-      "zone_name": "txapp.be"
-    },
     {
       "pattern": "api.txapp.be/*",
       "zone_name": "txapp.be"

@@ -73,7 +73,7 @@ import {
           setLoading(true);
           setError(null);
           const response = await tripsService.getTrips();
-          setTrips(response.courses || []);
+          setTrips(response.data || []);
         } catch (err) {
           console.error('Erreur lors du chargement des courses:', err);
           setError(err.message);

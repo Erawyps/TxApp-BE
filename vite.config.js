@@ -16,6 +16,16 @@ export default defineConfig({
     }),
     tailwindcss()
   ],
+  server: {
+    proxy: {
+      '/api': {
+        target: 'http://localhost:3001',
+        changeOrigin: true,
+        secure: false,
+        rewrite: (path) => path.replace(/^\/api/, '/api')
+      }
+    }
+  },
   // Exclure les fichiers serveur de la compilation frontend
   build: {
     rollupOptions: {

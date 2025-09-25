@@ -1,4 +1,4 @@
-import GhostGuard from "middleware/GhostGuard";
+import GhostGuard from "../../components/guards/GhostGuard";
 
 const ghostRoutes = {
   id: "ghost",
