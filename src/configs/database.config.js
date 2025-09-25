@@ -1,6 +1,4 @@
-import { createRequire } from 'module';
-const require = createRequire(import.meta.url);
-const { PrismaClient } = require('./../../prisma/node_modules/.prisma/client');
+import { PrismaClient } from '@prisma/client';
 
 // Configuration de pool de connexions pour la production
 const getDatabaseConfig = () => {
@@ -17,14 +15,9 @@ const getDatabaseConfig = () => {
       db: {
         url: process.env.DATABASE_URL
       }
-    },
+    }
 
-    // Configuration d'optimisation pour la production
-    ...(isProduction && {
-      errorFormat: 'minimal',
-      // Configuration de pool pour Supabase/PostgreSQL
-      datasourceUrl: process.env.DATABASE_URL + '&connection_limit=10&pool_timeout=20'
-    })
+    // Supprimé la configuration datasourceUrl qui causait des problèmes
   };
 };
 

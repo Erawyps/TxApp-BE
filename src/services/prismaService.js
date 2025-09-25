@@ -1,6 +1,4 @@
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import prisma from '../configs/database.config.js';
 
 /**
  * Service Prisma unifié pour toutes les opérations de base de données

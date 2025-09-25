@@ -3,8 +3,7 @@ import { cors } from 'hono/cors';
 import { logger } from 'hono/logger';
 import { compress } from 'hono/compress';
 import { serve } from '@hono/node-server';
-import Joi from 'joi';
-import prisma, { testDatabaseConnection, getDatabaseHealth } from '../configs/database.config.js';
+import prisma, { getDatabaseHealth } from '../configs/database.config.js';
 import { monitor, monitoringMiddleware } from '../configs/monitoring.config.js';
 
 // Import des nouvelles routes Prisma

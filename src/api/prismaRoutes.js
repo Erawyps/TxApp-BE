@@ -591,7 +591,7 @@ app.get('/societes-taxi', async (c) => {
 
 app.get('/admin/chauffeur-by-date', async (c) => {
   try {
-    const { date } = req.query;
+    const { date } = c.req.query;
     if (!date) {
       return c.json({ error: 'Date requise' }, 400);
     }
@@ -605,7 +605,7 @@ app.get('/admin/chauffeur-by-date', async (c) => {
 
 app.get('/admin/vehicule-by-chauffeur-date', async (c) => {
   try {
-    const { chauffeurId, date } = req.query;
+    const { chauffeurId, date } = c.req.query;
     if (!chauffeurId || !date) {
       return c.json({ error: 'Chauffeur ID et date requis' }, 400);
     }
