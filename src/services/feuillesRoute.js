@@ -1,16 +1,14 @@
-import { apiCall } from './api.js';
+import axios from 'axios';
 
 /**
- * Service pour gérer les feuilles de route via API
+ * Service pour gérer les feuilles de route via API HTTP
  */
 
 // Créer une nouvelle feuille de route
 export async function createFeuilleRoute(data) {
   try {
-    return await apiCall('/feuilles-route', {
-      method: 'POST',
-      body: data
-    });
+    const response = await axios.post('/api/feuilles-route', data);
+    return response.data;
   } catch (error) {
     console.error('Erreur lors de la création de la feuille de route:', error);
     throw error;
@@ -20,10 +18,8 @@ export async function createFeuilleRoute(data) {
 // Terminer une feuille de route
 export async function endFeuilleRoute(id, data) {
   try {
-    return await apiCall(`/feuilles-route/${id}/end`, {
-      method: 'PUT',
-      body: data
-    });
+    const response = await axios.put(`/api/feuilles-route/${id}/end`, data);
+    return response.data;
   } catch (error) {
     console.error('Erreur lors de la finalisation de la feuille de route:', error);
     throw error;
@@ -33,7 +29,8 @@ export async function endFeuilleRoute(id, data) {
 // Récupérer la feuille de route active pour un chauffeur
 export async function getActiveFeuilleRoute(chauffeurId) {
   try {
-    return await apiCall(`/feuilles-route/active/${chauffeurId}`);
+    const response = await axios.get(`/api/feuilles-route/active/${chauffeurId}`);
+    return response.data;
   } catch (error) {
     console.error('Erreur lors de la récupération de la feuille de route active:', error);
     throw error;
@@ -43,7 +40,8 @@ export async function getActiveFeuilleRoute(chauffeurId) {
 // Récupérer l'historique des feuilles de route
 export async function getFeuillesRouteHistory(chauffeurId, limit = 10) {
   try {
-    return await apiCall(`/feuilles-route/history/${chauffeurId}?limit=${limit}`);
+    const response = await axios.get(`/api/feuilles-route/history/${chauffeurId}?limit=${limit}`);
+    return response.data;
   } catch (error) {
     console.error('Erreur lors de la récupération de l\'historique:', error);
     throw error;

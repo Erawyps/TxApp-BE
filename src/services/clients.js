@@ -1,13 +1,14 @@
-import { apiCall } from './api.js';
+import axios from '../utils/axios.js';
 
 /**
- * Service pour gérer les clients via API
+ * Service pour gérer les clients
  */
 
 // Récupérer tous les clients actifs
 export async function getClients() {
   try {
-    return await apiCall('/clients');
+    const response = await axios.get('/clients');
+    return response.data;
   } catch (error) {
     console.error('Erreur lors de la récupération des clients:', error);
     throw error;
@@ -17,7 +18,8 @@ export async function getClients() {
 // Récupérer un client par ID
 export async function getClientById(id) {
   try {
-    return await apiCall(`/clients/${id}`);
+    const response = await axios.get(`/clients/${id}`);
+    return response.data;
   } catch (error) {
     console.error('Erreur lors de la récupération du client:', error);
     throw error;
@@ -27,10 +29,8 @@ export async function getClientById(id) {
 // Créer un nouveau client
 export async function createClient(clientData) {
   try {
-    return await apiCall('/clients', {
-      method: 'POST',
-      body: clientData
-    });
+    const response = await axios.post('/clients', clientData);
+    return response.data;
   } catch (error) {
     console.error('Erreur lors de la création du client:', error);
     throw error;
@@ -40,13 +40,8 @@ export async function createClient(clientData) {
 // Rechercher des clients par nom/téléphone
 export async function searchClients(query) {
   try {
-    const clients = await apiCall('/clients');
-    return clients.filter(client =>
-      client.nom.toLowerCase().includes(query.toLowerCase()) ||
-      (client.prenom && client.prenom.toLowerCase().includes(query.toLowerCase())) ||
-      client.telephone.includes(query) ||
-      (client.email && client.email.toLowerCase().includes(query.toLowerCase()))
-    ).slice(0, 10);
+    const response = await axios.get(`/clients/search?q=${encodeURIComponent(query)}`);
+    return response.data;
   } catch (error) {
     console.error('Erreur lors de la recherche de clients:', error);
     throw error;

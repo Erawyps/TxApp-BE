@@ -1,8 +1,8 @@
 // Import Dependencies
-import { apiCall } from "services/api";
+import axios from 'axios';
 
 /**
- * Service pour récupérer les données des courses depuis la base de données
+ * Service pour récupérer les données des courses depuis l'API HTTP
  */
 export const tripsService = {
   /**
@@ -20,40 +20,17 @@ export const tripsService = {
       clientId
     } = options;
 
-    const params = new URLSearchParams({
-      page: page.toString(),
-      limit: limit.toString(),
-    });
-
-    if (search) params.append('search', search);
-    if (status) params.append('status', status);
-    if (dateFrom) params.append('dateFrom', dateFrom);
-    if (dateTo) params.append('dateTo', dateTo);
-    if (chauffeurId) params.append('chauffeurId', chauffeurId.toString());
-    if (clientId) params.append('clientId', clientId.toString());
-
     try {
-      const response = await apiCall(`/dashboard/courses?${params.toString()}`);
-      
-      // Transformer les données pour correspondre au format attendu par les composants
-      const transformedCourses = response.courses.map(course => ({
-        ...course,
-        chauffeur_nom: course.feuille_route?.chauffeur?.utilisateur?.nom || '',
-        chauffeur_prenom: course.feuille_route?.chauffeur?.utilisateur?.prenom || '',
-        vehicule_immatriculation: course.feuille_route?.vehicule?.plaque_immatriculation || '',
-        vehicule_marque: course.feuille_route?.vehicule?.marque || '',
-        vehicule_modele: course.feuille_route?.vehicule?.modele || '',
-        client_nom: course.client?.nom || '',
-        client_prenom: course.client?.prenom || '',
-        mode_paiement_libelle: course.mode_paiement?.libelle || '',
-        prix_course: course.somme_percue,
-        statut: 'Terminée', // Par défaut, nous pouvons déterminer le statut basé sur les données
-      }));
+      let url = `/api/courses?page=${page}&limit=${limit}`;
+      if (search) url += `&search=${encodeURIComponent(search)}`;
+      if (status) url += `&status=${encodeURIComponent(status)}`;
+      if (dateFrom) url += `&dateFrom=${encodeURIComponent(dateFrom)}`;
+      if (dateTo) url += `&dateTo=${encodeURIComponent(dateTo)}`;
+      if (chauffeurId) url += `&chauffeurId=${chauffeurId}`;
+      if (clientId) url += `&clientId=${clientId}`;
 
-      return {
-        ...response,
-        courses: transformedCourses
-      };
+      const response = await axios.get(url);
+      return response.data;
     } catch (error) {
       console.error('Erreur lors de la récupération des courses:', error);
       throw error;
@@ -66,14 +43,16 @@ export const tripsService = {
   async getTripsStats(options = {}) {
     const { dateFrom, dateTo, chauffeurId } = options;
 
-    const params = new URLSearchParams();
-    if (dateFrom) params.append('dateFrom', dateFrom);
-    if (dateTo) params.append('dateTo', dateTo);
-    if (chauffeurId) params.append('chauffeurId', chauffeurId.toString());
-
     try {
-      const response = await apiCall(`/dashboard/courses/stats?${params.toString()}`);
-      return response;
+      let url = '/api/courses/stats';
+      const params = [];
+      if (dateFrom) params.push(`dateFrom=${encodeURIComponent(dateFrom)}`);
+      if (dateTo) params.push(`dateTo=${encodeURIComponent(dateTo)}`);
+      if (chauffeurId) params.push(`chauffeurId=${chauffeurId}`);
+      if (params.length > 0) url += '?' + params.join('&');
+
+      const response = await axios.get(url);
+      return response.data;
     } catch (error) {
       console.error('Erreur lors de la récupération des statistiques:', error);
       throw error;
@@ -86,16 +65,13 @@ export const tripsService = {
   async getTripsChartData(options = {}) {
     const { dateFrom, dateTo, type = 'daily' } = options;
 
-    const params = new URLSearchParams({
-      type,
-    });
-
-    if (dateFrom) params.append('dateFrom', dateFrom);
-    if (dateTo) params.append('dateTo', dateTo);
-
     try {
-      const response = await apiCall(`/dashboard/courses/chart-data?${params.toString()}`);
-      return response;
+      let url = `/api/courses/chart?type=${type}`;
+      if (dateFrom) url += `&dateFrom=${encodeURIComponent(dateFrom)}`;
+      if (dateTo) url += `&dateTo=${encodeURIComponent(dateTo)}`;
+
+      const response = await axios.get(url);
+      return response.data;
     } catch (error) {
       console.error('Erreur lors de la récupération des données de graphique:', error);
       throw error;

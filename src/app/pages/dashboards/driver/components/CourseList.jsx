@@ -9,7 +9,7 @@ import {
   ExclamationTriangleIcon
 } from '@heroicons/react/24/outline';
 
-export function CourseList({ courses = [], onUpdateCourse, onDeleteCourse, isLoading }) {
+export function CourseList({ courses = [], onUpdateCourse, onCancelCourse, isLoading }) {
   const [editingCourse, setEditingCourse] = useState(null);
   const [editData, setEditData] = useState({});
 
@@ -140,7 +140,7 @@ export function CourseList({ courses = [], onUpdateCourse, onDeleteCourse, isLoa
                             <PencilSquareIcon className="h-5 w-5" />
                           </button>
                           <button
-                            onClick={() => onDeleteCourse(course.id)}
+                            onClick={() => onCancelCourse(course.id)}
                             className="text-gray-400 hover:text-red-600 transition-colors"
                             title="Supprimer"
                           >

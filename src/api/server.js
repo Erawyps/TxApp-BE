@@ -4,8 +4,12 @@ import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import compression from 'compression';
 import morgan from 'morgan';
+import Joi from 'joi';
 import prisma, { testDatabaseConnection, getDatabaseHealth } from '../configs/database.config.js';
 import { monitor, monitoringMiddleware } from '../configs/monitoring.config.js';
+
+// Import des nouvelles routes Prisma
+import prismaRoutes from './prismaRoutes.js';
 
 // Import des middlewares personnalisés
 import {
@@ -211,31 +215,44 @@ async function calculateChauffeurMetrics(chauffeur) {
     let totalTaximetre = 0;
     let totalKmParcourus = 0;
     let totalDepenses = 0;
+    let totalPourboires = 0;
     let courses = [];
 
     feuillesRoute.forEach(feuille => {
+      // Calculer les km parcourus depuis la feuille de route (km_fin - km_debut)
+      if (feuille.km_fin && feuille.km_debut) {
+        totalKmParcourus += (feuille.km_fin - feuille.km_debut);
+      }
+
       // Courses de cette feuille de route
       if (feuille.course && Array.isArray(feuille.course)) {
         feuille.course.forEach(course => {
-          totalCourses++;
-          totalChiffreAffaires += parseFloat(course.somme_percue || 0);
-          totalTaximetre += parseFloat(course.prix_taximetre || 0);
-          totalKmParcourus += parseInt(course.distance_km || 0);
+          // Ne compter que les courses non annulées
+          if (course.statut !== 'Annulee') {
+            totalCourses++;
+            const sommePercue = parseFloat(course.somme_percue || 0);
+            const prixTaximetre = parseFloat(course.prix_taximetre || 0);
+            const pourboire = parseFloat(course.pourboire || 0);
 
-          courses.push({
-            id: course.id,
-            date: course.heure_embarquement,
-            depart: course.lieu_embarquement,
-            arrivee: course.lieu_debarquement,
-            index_depart: course.index_depart, // Ajouter l'index de départ
-            index_arrivee: course.index_arrivee, // Ajouter l'index d'arrivée
-            prix_taximetre: parseFloat(course.prix_taximetre || 0),
-            somme_percue: parseFloat(course.somme_percue || 0),
-            distance_km: parseInt(course.distance_km || 0),
-            ratio_euro_km: parseFloat(course.ratio_euro_km || 0),
-            client: course.client ? `${course.client.prenom} ${course.client.nom}` : null,
-            mode_paiement: course.mode_paiement ? course.mode_paiement.libelle : null
-          });
+            totalChiffreAffaires += sommePercue;
+            totalTaximetre += prixTaximetre;
+            totalPourboires += pourboire;
+
+            courses.push({
+              id: course.id,
+              date: course.heure_embarquement,
+              depart: course.lieu_embarquement,
+              arrivee: course.lieu_debarquement,
+              index_depart: course.index_depart,
+              index_arrivee: course.index_arrivee,
+              prix_taximetre: prixTaximetre,
+              somme_percue: sommePercue,
+              pourboire: pourboire,
+              statut: course.statut,
+              client: course.client ? `${course.client.prenom} ${course.client.nom}` : null,
+              mode_paiement: course.mode_paiement ? course.mode_paiement.libelle : null
+            });
+          }
         });
       }
 
@@ -244,11 +261,6 @@ async function calculateChauffeurMetrics(chauffeur) {
         feuille.charge.forEach(charge => {
           totalDepenses += parseFloat(charge.montant || 0);
         });
-      }
-
-      // Km parcourus de la feuille de route (si pas déjà compté dans les courses)
-      if (feuille.km_parcourus && totalKmParcourus === 0) {
-        totalKmParcourus = parseInt(feuille.km_parcourus);
       }
     });
 
@@ -265,7 +277,7 @@ async function calculateChauffeurMetrics(chauffeur) {
       chiffre_affaires_total: totalChiffreAffaires,
       nombre_total_courses: totalCourses,
       km_parcourus: totalKmParcourus,
-      ratio_euro_km: ratioEuroKm,
+      ratio_euro_km: Math.round(ratioEuroKm * 100) / 100, // Arrondi à 2 décimales
       index_km_debut: indexKmDebut,
       verification_taximetre: totalTaximetre,
       total_taximetre: totalTaximetre,
@@ -273,6 +285,7 @@ async function calculateChauffeurMetrics(chauffeur) {
       difference_total_recettes: differenceRecettes,
       total_depenses: totalDepenses,
       benefice_net: beneficeNet,
+      total_pourboires: totalPourboires,
       nb_courses: totalCourses,
       courses: courses
     };
@@ -585,6 +598,140 @@ router.delete('/chauffeurs/:id',
     console.error('Erreur lors de la suppression du chauffeur:', error.message);
     res.status(500).json({
       error: 'Erreur lors de la suppression du chauffeur',
+      details: error.message,
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
+// Route pour récupérer les statistiques d'un chauffeur (avec ratio €/km)
+router.get('/chauffeurs/:id/stats',
+  authenticateToken,
+  validateParams(paramValidation.id),
+  async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { startDate, endDate } = req.query;
+
+    // Construire les filtres de date
+    const dateFilter = {};
+    if (startDate && endDate) {
+      dateFilter.date = {
+        gte: new Date(startDate),
+        lte: new Date(endDate)
+      };
+    } else if (startDate) {
+      dateFilter.date = {
+        gte: new Date(startDate)
+      };
+    } else if (endDate) {
+      dateFilter.date = {
+        lte: new Date(endDate)
+      };
+    }
+
+    // Récupérer le chauffeur avec ses feuilles de route et courses
+    const chauffeur = await prisma.chauffeur.findUnique({
+      where: { id: parseInt(id) },
+      include: {
+        utilisateur: {
+          select: {
+            id: true,
+            nom: true,
+            prenom: true
+          }
+        },
+        feuille_route: {
+          where: dateFilter,
+          include: {
+            course: {
+              where: {
+                statut: { not: 'Annulee' } // Exclure les courses annulées
+              },
+              include: {
+                mode_paiement: true
+              }
+            },
+            charge: true
+          }
+        }
+      }
+    });
+
+    if (!chauffeur) {
+      return res.status(404).json({
+        error: 'Chauffeur non trouvé',
+        timestamp: new Date().toISOString()
+      });
+    }
+
+    // Calculer les statistiques
+    let totalRecettes = 0;
+    let totalKm = 0;
+    let totalCourses = 0;
+    let totalPourboires = 0;
+    let totalDepenses = 0;
+
+    chauffeur.feuille_route.forEach(fe => {
+      // Calculer les km parcourus (km_fin - km_debut)
+      if (fe.km_fin && fe.km_debut) {
+        totalKm += (fe.km_fin - fe.km_debut);
+      }
+
+      // Calculer les recettes des courses
+      fe.course.forEach(course => {
+        totalRecettes += course.somme_percue || 0;
+        totalPourboires += course.pourboire || 0;
+        totalCourses++;
+      });
+
+      // Calculer les dépenses (charges)
+      fe.charge.forEach(charge => {
+        totalDepenses += charge.montant || 0;
+      });
+    });
+
+    // Calculer le ratio €/km
+    const ratioEuroParKm = totalKm > 0 ? totalRecettes / totalKm : 0;
+
+    // Calculer le bénéfice net
+    const beneficeNet = totalRecettes - totalDepenses;
+
+    const stats = {
+      chauffeur: {
+        id: chauffeur.id,
+        nom: chauffeur.utilisateur.nom,
+        prenom: chauffeur.utilisateur.prenom,
+        numero_badge: chauffeur.numero_badge
+      },
+      periode: {
+        startDate: startDate || null,
+        endDate: endDate || null
+      },
+      metriques: {
+        total_recettes: totalRecettes,
+        total_km: totalKm,
+        ratio_euro_par_km: Math.round(ratioEuroParKm * 100) / 100, // Arrondi à 2 décimales
+        nombre_courses: totalCourses,
+        total_pourboires: totalPourboires,
+        total_depenses: totalDepenses,
+        benefice_net: beneficeNet
+      },
+      details: {
+        feuilles_route_analysees: chauffeur.feuille_route.length,
+        courses_valides: totalCourses
+      }
+    };
+
+    res.json({
+      success: true,
+      data: stats,
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    console.error('Erreur lors de la récupération des statistiques chauffeur:', error);
+    res.status(500).json({
+      error: 'Erreur lors de la récupération des statistiques chauffeur',
       details: error.message,
       timestamp: new Date().toISOString()
     });
@@ -1346,18 +1493,39 @@ router.get('/feuilles-route/active/:chauffeurId', async (req, res) => {
   }
 });
 
-router.post('/feuilles-route', async (req, res) => {
+router.post('/feuilles-route',
+  authenticateToken,
+  async (req, res) => {
   try {
     const data = req.body;
+    const userRole = req.user.role;
+
+    // Utiliser la validation chauffeur si c'est un chauffeur, sinon validation standard
+    const validationSchema = userRole === 'chauffeur' ? feuilleRouteValidation.chauffeur : feuilleRouteValidation.create;
+    const { error } = validationSchema.validate(data, { abortEarly: false });
+
+    if (error) {
+      return res.status(400).json({
+        error: 'Données de validation invalides',
+        details: error.details.map(detail => ({
+          field: detail.path.join('.'),
+          message: detail.message
+        })),
+        timestamp: new Date().toISOString()
+      });
+    }
+
     const feuilleRoute = await prisma.feuille_route.create({
       data: {
         chauffeur_id: data.chauffeur_id,
         vehicule_id: data.vehicule_id,
         date: new Date(data.date),
         heure_debut: data.heure_debut,
-        km_debut: parseInt(data.km_debut),
-        prise_en_charge_debut: data.prise_en_charge_debut ? parseFloat(data.prise_en_charge_debut) : null,
-        chutes_debut: data.chutes_debut ? parseFloat(data.chutes_debut) : null,
+        km_debut: data.km_debut,
+        km_en_charge_debut: data.km_en_charge_debut || null,
+        compteur_total_debut: data.compteur_total_debut || null,
+        prise_en_charge_debut: data.prise_en_charge_debut || null,
+        chutes_debut: data.chutes_debut || null,
         statut: 'En cours',
         saisie_mode: 'chauffeur',
         notes: data.notes || null
@@ -1367,24 +1535,54 @@ router.post('/feuilles-route', async (req, res) => {
         vehicule: true
       }
     });
-    res.json(feuilleRoute);
+
+    res.status(201).json({
+      success: true,
+      data: feuilleRoute,
+      message: 'Feuille de route créée avec succès'
+    });
   } catch (error) {
     console.error('Erreur lors de la création de la feuille de route:', error);
-    res.status(500).json({ error: 'Erreur serveur' });
+    res.status(500).json({
+      error: 'Erreur lors de la création de la feuille de route',
+      details: error.message,
+      timestamp: new Date().toISOString()
+    });
   }
 });
 
-router.put('/feuilles-route/:id/end', async (req, res) => {
+router.put('/feuilles-route/:id/end',
+  authenticateToken,
+  async (req, res) => {
   try {
     const { id } = req.params;
     const data = req.body;
+    const userRole = req.user.role;
+
+    // Utiliser la validation chauffeur si c'est un chauffeur, sinon validation standard
+    const validationSchema = userRole === 'chauffeur' ? feuilleRouteValidation.chauffeur : feuilleRouteValidation.end;
+    const { error } = validationSchema.validate(data, { abortEarly: false });
+
+    if (error) {
+      return res.status(400).json({
+        error: 'Données de validation invalides',
+        details: error.details.map(detail => ({
+          field: detail.path.join('.'),
+          message: detail.message
+        })),
+        timestamp: new Date().toISOString()
+      });
+    }
+
     const feuilleRoute = await prisma.feuille_route.update({
       where: { id: parseInt(id) },
       data: {
         heure_fin: data.heure_fin,
-        km_fin: parseInt(data.km_fin),
-        prise_en_charge_fin: data.prise_en_charge_fin ? parseFloat(data.prise_en_charge_fin) : null,
-        chutes_fin: data.chutes_fin ? parseFloat(data.chutes_fin) : null,
+        km_fin: data.km_fin,
+        km_en_charge_fin: data.km_en_charge_fin || null,
+        compteur_total_fin: data.compteur_total_fin || null,
+        prise_en_charge_fin: data.prise_en_charge_fin || null,
+        chutes_fin: data.chutes_fin || null,
         statut: 'Terminé',
         notes: data.notes,
         updated_at: new Date()
@@ -1395,10 +1593,25 @@ router.put('/feuilles-route/:id/end', async (req, res) => {
         course: { include: { client: true, mode_paiement: true } }
       }
     });
-    res.json(feuilleRoute);
+
+    res.json({
+      success: true,
+      data: feuilleRoute,
+      message: 'Feuille de route finalisée avec succès'
+    });
   } catch (error) {
     console.error('Erreur lors de la finalisation de la feuille de route:', error);
-    res.status(500).json({ error: 'Erreur serveur' });
+    if (error.code === 'P2025') {
+      return res.status(404).json({
+        error: 'Feuille de route non trouvée',
+        timestamp: new Date().toISOString()
+      });
+    }
+    res.status(500).json({
+      error: 'Erreur lors de la finalisation de la feuille de route',
+      details: error.message,
+      timestamp: new Date().toISOString()
+    });
   }
 });
 
@@ -1554,84 +1767,573 @@ router.get('/courses', async (req, res) => {
   }
 });
 
-router.post('/courses', async (req, res) => {
+router.post('/courses',
+  authenticateToken,
+  async (req, res) => {
   try {
     const data = req.body;
+    const userRole = req.user.role;
+
+    // Utiliser la validation chauffeur si c'est un chauffeur, sinon validation standard
+    const validationSchema = userRole === 'chauffeur' ? courseValidation.chauffeur : courseValidation.create;
+    const { error } = validationSchema.validate(data, { abortEarly: false });
+
+    if (error) {
+      return res.status(400).json({
+        error: 'Données de validation invalides',
+        details: error.details.map(detail => ({
+          field: detail.path.join('.'),
+          message: detail.message
+        })),
+        timestamp: new Date().toISOString()
+      });
+    }
+
+    // Calculer le pourboire si la somme perçue dépasse le prix taximètre
+    const pourboire = data.somme_percue > data.prix_taximetre ? data.somme_percue - data.prix_taximetre : 0;
+
     const course = await prisma.course.create({
       data: {
         feuille_route_id: data.feuille_route_id,
         client_id: data.client_id || null,
         mode_paiement_id: data.mode_paiement_id || null,
         numero_ordre: data.numero_ordre,
-        index_depart: parseInt(data.index_embarquement) || 0,
+        index_depart: data.index_depart,
         lieu_embarquement: data.lieu_embarquement,
         heure_embarquement: new Date(data.heure_embarquement),
-        index_arrivee: parseInt(data.index_debarquement) || 0,
+        index_arrivee: data.index_arrivee,
         lieu_debarquement: data.lieu_debarquement,
         heure_debarquement: data.heure_debarquement ? new Date(data.heure_debarquement) : null,
-        prix_taximetre: parseFloat(data.prix_taximetre) || 0,
-        somme_percue: parseFloat(data.sommes_percues) || 0,
+        prix_taximetre: data.prix_taximetre,
+        somme_percue: data.somme_percue,
+        pourboire: pourboire,
         hors_creneau: data.hors_creneau || false,
+        statut: data.statut || 'Active',
         notes: data.notes || null
       },
       include: {
         client: true,
         mode_paiement: true,
-        feuille_route: true
+        feuille_route: {
+          include: {
+            chauffeur: {
+              include: { utilisateur: true }
+            },
+            vehicule: true
+          }
+        }
       }
     });
-    res.json(course);
+
+    res.status(201).json({
+      success: true,
+      data: course,
+      message: 'Course créée avec succès'
+    });
   } catch (error) {
-    console.error('Erreur serveur:', error.message);
-    res.status(500).json({ error: 'Erreur serveur' });
+    console.error('Erreur lors de la création de la course:', error);
+    res.status(500).json({
+      error: 'Erreur lors de la création de la course',
+      details: error.message,
+      timestamp: new Date().toISOString()
+    });
   }
 });
 
-router.put('/courses/:id', async (req, res) => {
+router.put('/courses/:id',
+  authenticateToken,
+  async (req, res) => {
   try {
     const { id } = req.params;
     const data = req.body;
+    const userRole = req.user.role;
+
+    // Utiliser la validation chauffeur si c'est un chauffeur, sinon validation standard
+    const validationSchema = userRole === 'chauffeur' ? courseValidation.chauffeur : courseValidation.update;
+    const { error } = validationSchema.validate(data, { abortEarly: false });
+
+    if (error) {
+      return res.status(400).json({
+        error: 'Données de validation invalides',
+        details: error.details.map(detail => ({
+          field: detail.path.join('.'),
+          message: detail.message
+        })),
+        timestamp: new Date().toISOString()
+      });
+    }
+
+    // Calculer le pourboire si la somme perçue dépasse le prix taximètre
+    const pourboire = data.somme_percue > data.prix_taximetre ? data.somme_percue - data.prix_taximetre : 0;
+
     const course = await prisma.course.update({
       where: { id: parseInt(id) },
       data: {
         client_id: data.client_id || null,
         mode_paiement_id: data.mode_paiement_id || null,
         numero_ordre: data.numero_ordre,
-        index_depart: parseInt(data.index_embarquement) || 0,
+        index_depart: data.index_depart,
         lieu_embarquement: data.lieu_embarquement,
         heure_embarquement: new Date(data.heure_embarquement),
-        index_arrivee: parseInt(data.index_debarquement) || 0,
+        index_arrivee: data.index_arrivee,
         lieu_debarquement: data.lieu_debarquement,
         heure_debarquement: data.heure_debarquement ? new Date(data.heure_debarquement) : null,
-        prix_taximetre: parseFloat(data.prix_taximetre) || 0,
-        somme_percue: parseFloat(data.sommes_percues) || 0,
+        prix_taximetre: data.prix_taximetre,
+        somme_percue: data.somme_percue,
+        pourboire: pourboire,
         hors_creneau: data.hors_creneau || false,
+        statut: data.statut || 'Active',
         notes: data.notes || null,
         updated_at: new Date()
       },
       include: {
         client: true,
         mode_paiement: true,
-        feuille_route: true
+        feuille_route: {
+          include: {
+            chauffeur: {
+              include: { utilisateur: true }
+            },
+            vehicule: true
+          }
+        }
       }
     });
-    res.json(course);
+
+    res.json({
+      success: true,
+      data: course,
+      message: 'Course mise à jour avec succès'
+    });
   } catch (error) {
     console.error('Erreur lors de la mise à jour de la course:', error);
-    res.status(500).json({ error: 'Erreur serveur' });
+    if (error.code === 'P2025') {
+      return res.status(404).json({
+        error: 'Course non trouvée',
+        timestamp: new Date().toISOString()
+      });
+    }
+    res.status(500).json({
+      error: 'Erreur lors de la mise à jour de la course',
+      details: error.message,
+      timestamp: new Date().toISOString()
+    });
   }
 });
 
-router.delete('/courses/:id', async (req, res) => {
+// Récupérer les interventions d'un chauffeur
+router.get('/chauffeurs/:id/interventions',
+  authenticateToken,
+  validateParams(paramValidation.id),
+  async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { startDate, endDate, type } = req.query;
+
+    // Vérifier que l'utilisateur a accès à ce chauffeur
+    if (req.user.role !== 'admin' && req.user.chauffeurId !== parseInt(id)) {
+      return res.status(403).json({
+        error: 'Accès non autorisé',
+        timestamp: new Date().toISOString()
+      });
+    }
+
+    // Construire les filtres
+    const where = {
+      chauffeur_id: parseInt(id)
+    };
+
+    if (startDate || endDate) {
+      where.feuille_route = {
+        date: {}
+      };
+      if (startDate) where.feuille_route.date.gte = new Date(startDate);
+      if (endDate) where.feuille_route.date.lte = new Date(endDate);
+    }
+
+    if (type) {
+      where.type = type;
+    }
+
+    // Essayer de récupérer depuis la table intervention
+    let interventions = [];
+    try {
+      interventions = await prisma.intervention.findMany({
+        where,
+        include: {
+          feuille_route: {
+            include: {
+              vehicule: true
+            }
+          }
+        },
+        orderBy: { date_heure: 'desc' }
+      });
+    } catch (error) {
+      // Si la table intervention n'existe pas, récupérer depuis les notes des feuilles de route
+      const feuillesRoute = await prisma.feuille_route.findMany({
+        where: {
+          chauffeur_id: parseInt(id),
+          ...(startDate || endDate ? {
+            date: {
+              ...(startDate && { gte: new Date(startDate) }),
+              ...(endDate && { lte: new Date(endDate) })
+            }
+          } : {})
+        },
+        select: {
+          id: true,
+          date: true,
+          notes: true,
+          vehicule: {
+            select: {
+              plaque_immatriculation: true,
+              marque: true,
+              modele: true
+            }
+          }
+        },
+        orderBy: { date: 'desc' }
+      });
+
+      // Parser les interventions depuis les notes
+      interventions = [];
+      feuillesRoute.forEach(fe => {
+        if (fe.notes && fe.notes.includes('INTERVENTION')) {
+          const lines = fe.notes.split('\n');
+          lines.forEach(line => {
+            if (line.startsWith('INTERVENTION')) {
+              const parts = line.split(' - ');
+              if (parts.length >= 3) {
+                interventions.push({
+                  id: `note-${fe.id}-${interventions.length}`,
+                  type: parts[1],
+                  date_heure: new Date(parts[2]),
+                  lieu: parts[3] || 'Non spécifié',
+                  motif: parts[4] || null,
+                  feuille_route: {
+                    id: fe.id,
+                    date: fe.date,
+                    vehicule: fe.vehicule
+                  },
+                  stored_as_note: true
+                });
+              }
+            }
+          });
+        }
+      });
+    }
+
+    res.json({
+      success: true,
+      data: interventions,
+      count: interventions.length,
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    console.error('Erreur lors de la récupération des interventions:', error);
+    res.status(500).json({
+      error: 'Erreur lors de la récupération des interventions',
+      details: error.message,
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
+// Créer une intervention (contrôle police/SP)
+router.post('/interventions',
+  authenticateToken,
+  requireRole('chauffeur'),
+  async (req, res) => {
+  try {
+    const data = req.body;
+
+    // Validation de l'intervention
+    const interventionSchema = Joi.object({
+      feuille_route_id: Joi.number().integer().required(),
+      type_intervention: Joi.string().valid('Police', 'SP', 'Gendarmerie', 'Douane').required(),
+      date_heure: Joi.date().required(),
+      lieu: Joi.string().trim().required(),
+      motif: Joi.string().trim().optional(),
+      observations: Joi.string().trim().optional(),
+      duree_minutes: Joi.number().integer().min(0).optional(),
+      suite_donnee: Joi.string().trim().optional()
+    });
+
+    const { error } = interventionSchema.validate(data, { abortEarly: false });
+    if (error) {
+      return res.status(400).json({
+        error: 'Données de validation invalides',
+        details: error.details.map(detail => ({
+          field: detail.path.join('.'),
+          message: detail.message
+        })),
+        timestamp: new Date().toISOString()
+      });
+    }
+
+    // Vérifier que la feuille de route appartient au chauffeur connecté
+    const feuilleRoute = await prisma.feuille_route.findUnique({
+      where: { id: data.feuille_route_id },
+      include: { chauffeur: true }
+    });
+
+    if (!feuilleRoute) {
+      return res.status(404).json({
+        error: 'Feuille de route non trouvée',
+        timestamp: new Date().toISOString()
+      });
+    }
+
+    if (feuilleRoute.chauffeur_id !== req.user.chauffeurId) {
+      return res.status(403).json({
+        error: 'Accès non autorisé à cette feuille de route',
+        timestamp: new Date().toISOString()
+      });
+    }
+
+    // Créer l'intervention (on peut utiliser une table dédiée ou stocker dans les notes)
+    // Pour l'instant, on va créer une entrée dans une table intervention si elle existe,
+    // sinon on ajoute une note spéciale à la feuille de route
+    const interventionData = {
+      type: data.type_intervention,
+      date_heure: new Date(data.date_heure),
+      lieu: data.lieu,
+      motif: data.motif || null,
+      observations: data.observations || null,
+      duree_minutes: data.duree_minutes || null,
+      suite_donnee: data.suite_donnee || null,
+      created_by: req.user.chauffeurId
+    };
+
+    // Essayer d'insérer dans une table intervention si elle existe
+    let intervention;
+    try {
+      intervention = await prisma.intervention.create({
+        data: {
+          feuille_route_id: data.feuille_route_id,
+          ...interventionData
+        }
+      });
+    } catch (error) {
+      // Si la table intervention n'existe pas, ajouter aux notes de la feuille de route
+      const noteIntervention = `INTERVENTION ${data.type_intervention} - ${data.date_heure.toISOString()} - ${data.lieu}`;
+      const notesExistantes = feuilleRoute.notes || '';
+      const nouvellesNotes = notesExistantes ? `${notesExistantes}\n${noteIntervention}` : noteIntervention;
+
+      await prisma.feuille_route.update({
+        where: { id: data.feuille_route_id },
+        data: {
+          notes: nouvellesNotes,
+          updated_at: new Date()
+        }
+      });
+
+      intervention = {
+        id: `note-${Date.now()}`,
+        feuille_route_id: data.feuille_route_id,
+        ...interventionData,
+        stored_as_note: true
+      };
+    }
+
+    res.status(201).json({
+      success: true,
+      data: intervention,
+      message: 'Intervention enregistrée avec succès',
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    console.error('Erreur lors de la création de l\'intervention:', error);
+    res.status(500).json({
+      error: 'Erreur lors de la création de l\'intervention',
+      details: error.message,
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
+// Sauvegarde automatique d'une course (pour les chauffeurs)
+router.put('/courses/:id/auto-save',
+  authenticateToken,
+  requireRole('chauffeur'),
+  validateParams(paramValidation.id),
+  async (req, res) => {
+  try {
+    const { id } = req.params;
+    const data = req.body;
+
+    // Validation légère pour la sauvegarde automatique (champs optionnels)
+    const autoSaveSchema = Joi.object({
+      numero_ordre: Joi.number().integer().min(1).optional(),
+      index_depart: Joi.number().integer().min(0).optional(),
+      lieu_embarquement: Joi.string().trim().optional(),
+      heure_embarquement: Joi.date().optional(),
+      index_arrivee: Joi.number().integer().min(0).optional(),
+      lieu_debarquement: Joi.string().trim().optional(),
+      heure_debarquement: Joi.date().optional(),
+      prix_taximetre: Joi.number().min(0).optional(),
+      somme_percue: Joi.number().min(0).optional(),
+      hors_creneau: Joi.boolean().optional(),
+      notes: Joi.string().trim().allow('').optional()
+    });
+
+    const { error } = autoSaveSchema.validate(data, { abortEarly: false });
+    if (error) {
+      return res.status(400).json({
+        error: 'Données de validation invalides pour la sauvegarde automatique',
+        details: error.details.map(detail => ({
+          field: detail.path.join('.'),
+          message: detail.message
+        })),
+        timestamp: new Date().toISOString()
+      });
+    }
+
+    // Vérifier que la course appartient au chauffeur connecté
+    const course = await prisma.course.findUnique({
+      where: { id: parseInt(id) },
+      include: {
+        feuille_route: {
+          include: {
+            chauffeur: true
+          }
+        }
+      }
+    });
+
+    if (!course) {
+      return res.status(404).json({
+        error: 'Course non trouvée',
+        timestamp: new Date().toISOString()
+      });
+    }
+
+    if (course.feuille_route.chauffeur_id !== req.user.chauffeurId) {
+      return res.status(403).json({
+        error: 'Accès non autorisé à cette course',
+        timestamp: new Date().toISOString()
+      });
+    }
+
+    // Calculer le pourboire si les données sont présentes
+    const updateData = { ...data };
+    if (data.somme_percue !== undefined && data.prix_taximetre !== undefined) {
+      updateData.pourboire = data.somme_percue > data.prix_taximetre ? data.somme_percue - data.prix_taximetre : 0;
+    }
+
+    // Mettre à jour la course avec les données partielles
+    const updatedCourse = await prisma.course.update({
+      where: { id: parseInt(id) },
+      data: {
+        ...updateData,
+        updated_at: new Date()
+      },
+      include: {
+        client: true,
+        mode_paiement: true,
+        feuille_route: {
+          include: {
+            chauffeur: {
+              include: { utilisateur: true }
+            },
+            vehicule: true
+          }
+        }
+      }
+    });
+
+    res.json({
+      success: true,
+      data: updatedCourse,
+      message: 'Course sauvegardée automatiquement',
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    console.error('Erreur lors de la sauvegarde automatique de la course:', error);
+    if (error.code === 'P2025') {
+      return res.status(404).json({
+        error: 'Course non trouvée',
+        timestamp: new Date().toISOString()
+      });
+    }
+    res.status(500).json({
+      error: 'Erreur lors de la sauvegarde automatique de la course',
+      details: error.message,
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
+// Annuler une course (remplace la suppression)
+router.put('/courses/:id/cancel',
+  authenticateToken,
+  validateParams(paramValidation.id),
+  async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { motif } = req.body;
+
+    const course = await prisma.course.update({
+      where: { id: parseInt(id) },
+      data: {
+        statut: 'Annulee',
+        somme_percue: 0,
+        notes: motif ? `ANNULÉ: ${motif}` : 'ANNULÉ',
+        updated_at: new Date()
+      },
+      include: {
+        client: true,
+        mode_paiement: true,
+        feuille_route: {
+          include: {
+            chauffeur: {
+              include: { utilisateur: true }
+            },
+            vehicule: true
+          }
+        }
+      }
+    });
+
+    res.json({
+      success: true,
+      data: course,
+      message: 'Course annulée avec succès'
+    });
+  } catch (error) {
+    console.error('Erreur lors de l\'annulation de la course:', error);
+    res.status(500).json({
+      error: 'Erreur lors de l\'annulation de la course',
+      details: error.message,
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
+// Suppression physique d'une course (réservé aux admins)
+router.delete('/courses/:id',
+  authenticateToken,
+  requireRole('admin'),
+  validateParams(paramValidation.id),
+  async (req, res) => {
   try {
     const { id } = req.params;
     await prisma.course.delete({
       where: { id: parseInt(id) }
     });
-    res.json({ success: true });
+    res.json({
+      success: true,
+      message: 'Course supprimée définitivement'
+    });
   } catch (error) {
     console.error('Erreur lors de la suppression de la course:', error);
-    res.status(500).json({ error: 'Erreur serveur' });
+    res.status(500).json({
+      error: 'Erreur lors de la suppression de la course',
+      details: error.message,
+      timestamp: new Date().toISOString()
+    });
   }
 });
 
@@ -3079,7 +3781,11 @@ router.delete('/chauffeur-vehicule/:chauffeur_id/:vehicule_id', async (req, res)
       }
     });
 
-    // Monter le router sur /api
+    // Monter les nouvelles routes Prisma sur /api
+    app.use('/api', prismaRoutes);
+
+    // Garder les anciennes routes pour compatibilité temporaire
+    // TODO: Supprimer les anciennes routes une fois la migration terminée
     app.use('/api', router);
 
     // Middleware de logging des requêtes

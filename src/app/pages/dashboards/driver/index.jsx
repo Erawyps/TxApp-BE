@@ -23,6 +23,9 @@ import { AdminOversightModal } from './components/AdminOversightModal';
 import { FinancialSummary } from './components/FinancialSummary';
 import { CourseList } from './components/CourseList';
 import { ShiftInfo } from './components/ShiftInfo';
+import ChauffeurStats from './components/ChauffeurStats';
+import InterventionsManager from './components/InterventionsManager';
+import InterventionModal from './components/InterventionModal';
 import { useDriverShift } from 'hooks/useDriverShift';
 import { useCourses } from 'hooks/useCourses';
 import { useExpenses } from 'hooks/useExpenses';
@@ -37,7 +40,8 @@ export default function DriverDashboard() {
     endShift: false,
     print: false,
     history: false,
-    adminOversight: false
+    adminOversight: false,
+    intervention: false
   });
 
   // Correction: utiliser user?.chauffeur?.id au lieu de user?.chauffeur_id
@@ -56,7 +60,8 @@ export default function DriverDashboard() {
     isLoading: coursesLoading,
     createCourse,
     updateCourse,
-    deleteCourse
+    autoSaveCourse,
+    cancelCourse
   } = useCourses(currentShift?.id);
 
   const {
@@ -122,7 +127,7 @@ export default function DriverDashboard() {
       label: 'Contrôle',
       icon: ShieldCheckIcon,
       color: 'bg-purple-500 hover:bg-purple-600',
-      onClick: () => openModal('print'),
+      onClick: () => openModal('intervention'),
       disabled: !currentShift
     },
     {
@@ -260,6 +265,20 @@ export default function DriverDashboard() {
             />
           )}
 
+          {/* Chauffeur Statistics */}
+          {chauffeurId && (
+            <ChauffeurStats
+              chauffeurId={chauffeurId}
+            />
+          )}
+
+          {/* Interventions Management */}
+          {chauffeurId && (
+            <InterventionsManager
+              chauffeurId={chauffeurId}
+            />
+          )}
+
           {/* Course Management */}
           {currentShift && (
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -267,7 +286,7 @@ export default function DriverDashboard() {
                 <CourseList
                   courses={courses}
                   onUpdateCourse={updateCourse}
-                  onDeleteCourse={deleteCourse}
+                  onCancelCourse={cancelCourse}
                   isLoading={coursesLoading}
                 />
               </div>
@@ -323,6 +342,7 @@ export default function DriverDashboard() {
         onClose={() => closeModal('newCourse')}
         onSubmit={handleCourseCreate}
         shiftId={currentShift?.id}
+        autoSaveCourse={autoSaveCourse}
       />
 
       <ExpenseModal
@@ -367,6 +387,12 @@ export default function DriverDashboard() {
           onClose={() => closeModal('adminOversight')}
         />
       )}
+
+      <InterventionModal
+        isOpen={activeModals.intervention}
+        onClose={() => closeModal('intervention')}
+        chauffeurId={chauffeurId}
+      />
     </Page>
   );
 }
