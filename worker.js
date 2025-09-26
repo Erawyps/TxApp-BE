@@ -24,7 +24,7 @@ const cloudflareChallengeMiddleware = async (c, next) => {
   }
 
   // Détecter si la requête vient de Cloudflare avec un challenge
-  const cfRay = c.req.header('CF-RAY');
+  // Removed unused variable 'cfRay'
   const cfMitigated = c.req.header('CF-Mitigated');
 
   if (cfMitigated === 'challenge') {

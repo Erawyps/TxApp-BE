@@ -59,12 +59,12 @@ export default function DriverDashboard() {
 
   if (isUserChauffeur) {
     // Chauffeur : ne voit que ses propres données
-    chauffeurIdToShow = user?.chauffeur?.id;
+    chauffeurIdToShow = user?.chauffeur?.chauffeur_id;
     canViewData = !!chauffeurIdToShow;
   } else if (isUserAdmin) {
     // Admin : peut voir tous les chauffeurs (sera géré dans l'interface)
     canViewData = true;
-    chauffeurIdToShow = user?.chauffeur?.id; // Par défaut ses propres données, mais peut changer
+    chauffeurIdToShow = user?.chauffeur?.chauffeur_id; // Par défaut ses propres données, mais peut changer
   } else if (isUserControleur) {
     // Contrôleur : doit s'authentifier pour voir les données
     canViewData = false; // Sera activé après authentification

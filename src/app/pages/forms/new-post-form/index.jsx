@@ -120,7 +120,7 @@ export default function TxApp() {
 
     if (!authLoading && isAuthenticated && user) {
       console.log('Utilisateur connecté:', {
-        id: user.id,
+        id: user?.chauffeur?.chauffeur_id,
         nom: user.nom,
         prenom: user.prenom,
         role: user.role
@@ -146,7 +146,7 @@ export default function TxApp() {
   useEffect(() => {
     if (isAuthenticated && user && currentChauffeur) {
       // Vérifier que le chauffeur actuel correspond bien à l'utilisateur connecté
-      if (currentChauffeur.utilisateur_id !== user.id) {
+      if (currentChauffeur.chauffeur_id !== (user?.user_id || user?.id)) {
         console.log('🔄 Synchronisation: Rechargement des données pour le nouvel utilisateur');
 
         // Recharger les données pour le bon utilisateur
@@ -162,40 +162,43 @@ export default function TxApp() {
             );
 
             // Trouver le chauffeur correspondant à l'utilisateur connecté
-            const userChauffeur = validChauffeurs.find(ch => ch.utilisateur_id === user.id);
+            // Selon le schéma Prisma: chauffeur.chauffeur_id = utilisateur.user_id
+            const userChauffeur = validChauffeurs.find(ch => ch.chauffeur_id === (user?.user_id || user?.id));
 
             if (userChauffeur) {
               console.log('✅ Chauffeur synchronisé pour l\'utilisateur connecté');
               setCurrentChauffeur(userChauffeur);
 
-              // Recharger les courses du chauffeur
-              if (userChauffeur.metrics && userChauffeur.metrics.courses) {
-                const chauffeurCourses = userChauffeur.metrics.courses.map((course, index) => ({
-                  id: course.id,
-                  numero_ordre: index + 1,
-                  index_embarquement: course.index_depart || 0,
-                  index_debarquement: course.index_arrivee || 0,
-                  lieu_embarquement: course.depart || 'Point de départ non spécifié',
-                  lieu_debarquement: course.arrivee || 'Point d\'arrivée non spécifié',
-                  heure_embarquement: course.date ? new Date(course.date).toLocaleTimeString('fr-FR', {
-                    hour: '2-digit',
-                    minute: '2-digit'
-                  }) : '00:00',
-                  heure_debarquement: course.date ? new Date(course.date).toLocaleTimeString('fr-FR', {
-                    hour: '2-digit',
-                    minute: '2-digit'
-                  }) : '00:00',
-                  prix_taximetre: parseFloat(course.prix_taximetre) || 0,
-                  sommes_percues: parseFloat(course.somme_percue) || 0,
-                  mode_paiement: course.mode_paiement || 'CASH',
-                  client: course.client || '',
-                  distance_km: parseInt(course.distance_km) || 0,
-                  ratio_euro_km: parseFloat(course.ratio_euro_km) || 0,
-                  status: 'completed',
-                  notes: `Course du ${new Date(course.date).toLocaleDateString('fr-FR')} - ${course.depart} → ${course.arrivee}`,
-                  chauffeur_id: userChauffeur.id,
-                  utilisateur_id: userChauffeur.utilisateur_id
-                }));
+              // Recharger les courses du chauffeur depuis feuille_route
+              if (userChauffeur.feuille_route && userChauffeur.feuille_route.length > 0) {
+                const chauffeurCourses = userChauffeur.feuille_route.flatMap(feuille =>
+                  (feuille.course || []).map((course) => ({
+                    id: course.course_id,
+                    numero_ordre: course.num_ordre,
+                    index_embarquement: course.index_embarquement || 0,
+                    index_debarquement: course.index_debarquement || 0,
+                    lieu_embarquement: course.lieu_embarquement || 'Point de départ non spécifié',
+                    lieu_debarquement: course.lieu_debarquement || 'Point d\'arrivée non spécifié',
+                    heure_embarquement: course.heure_embarquement ? new Date(course.heure_embarquement).toLocaleTimeString('fr-FR', {
+                      hour: '2-digit',
+                      minute: '2-digit'
+                    }) : '00:00',
+                    heure_debarquement: course.heure_debarquement ? new Date(course.heure_debarquement).toLocaleTimeString('fr-FR', {
+                      hour: '2-digit',
+                      minute: '2-digit'
+                    }) : '00:00',
+                    prix_taximetre: parseFloat(course.prix_taximetre) || 0,
+                    sommes_percues: parseFloat(course.sommes_percues) || 0,
+                    mode_paiement: course.mode_paiement?.libelle || 'CASH',
+                    client: course.client?.nom_societe || '',
+                    distance_km: 0, // Calculé plus tard si nécessaire
+                    ratio_euro_km: 0, // Calculé plus tard si nécessaire
+                    status: 'completed',
+                    notes: `Course ${course.num_ordre} - ${course.lieu_embarquement || 'Départ'} → ${course.lieu_debarquement || 'Arrivée'}`,
+                    chauffeur_id: userChauffeur.chauffeur_id,
+                    utilisateur_id: userChauffeur.chauffeur_id // chauffeur_id corresponds to user_id in Prisma
+                  }))
+                );
 
                 setCourses(chauffeurCourses);
                 console.log('✅ Courses synchronisées pour l\'utilisateur connecté:', chauffeurCourses.length);
@@ -340,11 +343,11 @@ export default function TxApp() {
           // Afficher tous les chauffeurs valides disponibles
           validChauffeurs.forEach((ch, index) => {
             console.log(`Chauffeur ${index + 1}:`, {
-              id: ch.id,
+              id: ch.chauffeur_id,
               nom: ch.utilisateur?.nom,
               prenom: ch.utilisateur?.prenom,
-              actif: ch.actif,
-              courses: ch.metrics?.courses?.length || 0
+              actif: ch.statut === 'Actif',
+              courses: ch.feuille_route?.reduce((total, feuille) => total + (feuille.course?.length || 0), 0) || 0
             });
           });
 
@@ -353,13 +356,13 @@ export default function TxApp() {
           // Si l'utilisateur est connecté, chercher le chauffeur correspondant
           if (isAuthenticated && user) {
             console.log('🔍 Recherche du chauffeur pour l\'utilisateur connecté:', {
-              userId: user.id,
+              userId: user?.user_id || user?.id,
               userNom: user.nom,
               userPrenom: user.prenom
             });
 
             // Chercher par ID utilisateur d'abord
-            chauffeur = validChauffeurs.find(ch => ch.utilisateur_id === user.id);
+            chauffeur = validChauffeurs.find(ch => ch.chauffeur_id === (user?.user_id || user?.id));
 
             if (chauffeur) {
               console.log('✅ Chauffeur trouvé par ID utilisateur');
@@ -374,10 +377,10 @@ export default function TxApp() {
                 console.log('✅ Chauffeur trouvé par nom/prénom');
               } else {
                 console.log('❌ Aucun chauffeur trouvé pour l\'utilisateur connecté');
-                console.log('Utilisateurs connecté:', { id: user.id, nom: user.nom, prenom: user.prenom });
+                console.log('Utilisateurs connecté:', { id: user?.user_id || user?.id, nom: user.nom, prenom: user.prenom });
                 console.log('Chauffeurs disponibles:', validChauffeurs.map(c => ({
-                  id: c.id,
-                  utilisateur_id: c.utilisateur_id,
+                  chauffeur_id: c.chauffeur_id,
+                  utilisateur_id: c.chauffeur_id, // chauffeur_id corresponds to user_id in Prisma
                   nom: c.utilisateur?.nom,
                   prenom: c.utilisateur?.prenom
                 })));
@@ -416,31 +419,35 @@ export default function TxApp() {
           }
 
           console.log('Chauffeurs disponibles:', chauffeursList.map(c => ({
-            id: c.id,
+            id: c.chauffeur_id,
             nom: c.utilisateur?.nom,
             prenom: c.utilisateur?.prenom,
-            actif: c.actif
+            actif: c.statut === 'Actif'
           })));
           console.log('Chauffeur sélectionné:', chauffeur?.utilisateur?.prenom, chauffeur?.utilisateur?.nom);
-          console.log('Métriques du chauffeur:', chauffeur?.metrics);
+          console.log('Données du chauffeur:', {
+            chauffeur_id: chauffeur?.chauffeur_id,
+            courses_count: chauffeur?.feuille_route?.reduce((total, feuille) => total + (feuille.course?.length || 0), 0) || 0
+          });
 
           // Vérifier que le chauffeur a des données utilisateur valides
           if (chauffeur && chauffeur.utilisateur) {
             console.log('🎯 Chauffeur sélectionné:', {
-              id: chauffeur.id,
+              id: chauffeur.chauffeur_id,
               nom: chauffeur.utilisateur?.nom,
               prenom: chauffeur.utilisateur?.prenom,
-              actif: chauffeur.actif,
-              courses_count: chauffeur.metrics?.courses?.length || 0,
-              utilisateur_id: chauffeur.utilisateur_id,
-              user_connecte_id: user?.id
+              actif: chauffeur.statut === 'Actif',
+              courses_count: chauffeur.feuille_route?.reduce((total, feuille) => total + (feuille.course?.length || 0), 0) || 0,
+              utilisateur_id: chauffeur.chauffeur_id, // chauffeur_id corresponds to user_id in Prisma
+              user_connecte_id: user?.user_id || user?.id
             });
 
             // Vérifier la cohérence entre l'utilisateur connecté et le chauffeur
-            if (isAuthenticated && user && chauffeur.utilisateur_id !== user.id) {
+            // Selon le schéma Prisma: chauffeur.chauffeur_id doit correspondre à user.user_id
+            if (isAuthenticated && user && chauffeur.chauffeur_id !== (user?.user_id || user?.id)) {
               console.warn('⚠️ Incohérence détectée: Le chauffeur sélectionné ne correspond pas à l\'utilisateur connecté');
-              console.log('Utilisateur connecté:', { id: user.id, nom: user.nom, prenom: user.prenom });
-              console.log('Chauffeur sélectionné:', { utilisateur_id: chauffeur.utilisateur_id, nom: chauffeur.utilisateur.nom, prenom: chauffeur.utilisateur.prenom });
+              console.log('Utilisateur connecté:', { id: user?.user_id || user?.id, nom: user.nom, prenom: user.prenom });
+              console.log('Chauffeur sélectionné:', { chauffeur_id: chauffeur.chauffeur_id, nom: chauffeur.utilisateur.nom, prenom: chauffeur.utilisateur.prenom });
 
               // En mode production, on pourrait empêcher l'accès ou afficher un message d'erreur
               // Pour l'instant, on continue mais on log l'incohérence
@@ -448,38 +455,40 @@ export default function TxApp() {
 
             setCurrentChauffeur(chauffeur);
 
-            // Charger les courses depuis les métriques du chauffeur (uniquement celles du chauffeur connecté)
-            if (chauffeur.metrics && chauffeur.metrics.courses) {
-              console.log('📋 Chargement des courses depuis métriques du chauffeur connecté...');
+            // Charger les courses depuis les feuilles de route du chauffeur (uniquement celles du chauffeur connecté)
+            if (chauffeur.feuille_route && chauffeur.feuille_route.length > 0) {
+              console.log('📋 Chargement des courses depuis feuilles de route du chauffeur connecté...');
 
-              // Transformer les courses des métriques pour correspondre au format attendu
-              const chauffeurCourses = chauffeur.metrics.courses.map((course, index) => ({
-                id: course.id,
-                numero_ordre: index + 1, // Numéro séquentiel basé sur l'index
-                index_embarquement: course.index_depart || 0,
-                index_debarquement: course.index_arrivee || 0,
-                lieu_embarquement: course.depart || 'Point de départ non spécifié',
-                lieu_debarquement: course.arrivee || 'Point d\'arrivée non spécifié',
-                heure_embarquement: course.date ? new Date(course.date).toLocaleTimeString('fr-FR', {
-                  hour: '2-digit',
-                  minute: '2-digit'
-                }) : '00:00',
-                heure_debarquement: course.date ? new Date(course.date).toLocaleTimeString('fr-FR', {
-                  hour: '2-digit',
-                  minute: '2-digit'
-                }) : '00:00',
-                prix_taximetre: parseFloat(course.prix_taximetre) || 0,
-                sommes_percues: parseFloat(course.somme_percue) || 0,
-                mode_paiement: course.mode_paiement || 'CASH',
-                client: course.client || '',
-                distance_km: parseInt(course.distance_km) || 0,
-                ratio_euro_km: parseFloat(course.ratio_euro_km) || 0,
-                status: 'completed',
-                notes: `Course du ${new Date(course.date).toLocaleDateString('fr-FR')} - ${course.depart} → ${course.arrivee}`,
-                // Marquer que ces données appartiennent au chauffeur connecté
-                chauffeur_id: chauffeur.id,
-                utilisateur_id: chauffeur.utilisateur_id
-              }));
+              // Transformer les courses des feuilles de route pour correspondre au format attendu
+              const chauffeurCourses = chauffeur.feuille_route.flatMap(feuille =>
+                (feuille.course || []).map((course) => ({
+                  id: course.course_id,
+                  numero_ordre: course.num_ordre,
+                  index_embarquement: course.index_embarquement || 0,
+                  index_debarquement: course.index_debarquement || 0,
+                  lieu_embarquement: course.lieu_embarquement || 'Point de départ non spécifié',
+                  lieu_debarquement: course.lieu_debarquement || 'Point d\'arrivée non spécifié',
+                  heure_embarquement: course.heure_embarquement ? new Date(course.heure_embarquement).toLocaleTimeString('fr-FR', {
+                    hour: '2-digit',
+                    minute: '2-digit'
+                  }) : '00:00',
+                  heure_debarquement: course.heure_debarquement ? new Date(course.heure_debarquement).toLocaleTimeString('fr-FR', {
+                    hour: '2-digit',
+                    minute: '2-digit'
+                  }) : '00:00',
+                  prix_taximetre: parseFloat(course.prix_taximetre) || 0,
+                  sommes_percues: parseFloat(course.sommes_percues) || 0,
+                  mode_paiement: course.mode_paiement?.libelle || 'CASH',
+                  client: course.client?.nom_societe || '',
+                  distance_km: 0, // Calculé plus tard si nécessaire
+                  ratio_euro_km: 0, // Calculé plus tard si nécessaire
+                  status: 'completed',
+                  notes: `Course ${course.num_ordre} - ${course.lieu_embarquement || 'Départ'} → ${course.lieu_debarquement || 'Arrivée'}`,
+                  // Marquer que ces données appartiennent au chauffeur connecté
+                  chauffeur_id: chauffeur.chauffeur_id,
+                  utilisateur_id: chauffeur.chauffeur_id // chauffeur_id corresponds to user_id in Prisma
+                }))
+              );
 
               setCourses(chauffeurCourses);
               console.log('✅ Courses du chauffeur connecté chargées:', chauffeurCourses.length);
@@ -507,7 +516,7 @@ export default function TxApp() {
 
             // Vérifier s'il y a une feuille de route active
             try {
-              const activeSheet = await getActiveFeuilleRoute(chauffeur.id);
+              const activeSheet = await getActiveFeuilleRoute(chauffeur.chauffeur_id);
               if (activeSheet) {
                 console.log('Feuille de route active trouvée:', activeSheet.id);
                 setCurrentFeuilleRoute(activeSheet);
@@ -707,7 +716,7 @@ export default function TxApp() {
 
       // Créer une nouvelle feuille de route
       const feuilleRouteData = {
-        chauffeur_id: currentChauffeur.id,
+        chauffeur_id: currentChauffeur.chauffeur_id,
         vehicule_id: shiftFormData.vehicule_id,
         date: shiftFormData.date,
         heure_debut: shiftFormData.heure_debut,
