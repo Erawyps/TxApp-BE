@@ -1,7 +1,7 @@
 // Import jsPDF
 import jsPDF from 'jspdf';
 
-export const generateAndDownloadReport = (shiftData, courses, driver, vehicle) => {
+export const generateAndDownloadReport = (shiftData, courses, driver, vehicle, expenses = [], externalCourses = []) => {
   try {
     // Créer un nouveau document PDF en format A4
     const doc = new jsPDF('p', 'mm', 'a4');
@@ -34,6 +34,62 @@ export const generateAndDownloadReport = (shiftData, courses, driver, vehicle) =
       if (amount === null || amount === undefined || amount === '') return '';
       return Number(amount).toFixed(2);
     };
+
+    // Fonction d'agrégation des données financières
+    const aggregateFinancialData = () => {
+      const coursesData = courses || [];
+      const expensesData = expenses || [];
+      const externalCoursesData = externalCourses || [];
+
+      // Calculs des courses
+      const totalCourses = coursesData.length;
+      const totalRecettesCourses = coursesData.reduce((sum, course) => sum + (Number(course.sommes_percues) || 0), 0);
+      const totalPrixTaximetre = coursesData.reduce((sum, course) => sum + (Number(course.prix_taximetre) || 0), 0);
+
+      // Calculs des dépenses
+      const totalDepenses = expensesData.reduce((sum, expense) => sum + (Number(expense.montant) || 0), 0);
+
+      // Calculs des courses externes
+      const totalCoursesExternes = externalCoursesData.length;
+      const totalRecettesExternes = externalCoursesData.reduce((sum, course) => sum + (Number(course.montant) || 0), 0);
+
+      // Totaux globaux
+      const totalRecettes = totalRecettesCourses + totalRecettesExternes;
+      const totalBenefice = totalRecettes - totalDepenses;
+
+      // Statistiques par mode de paiement
+      const paymentStats = {};
+      coursesData.forEach(course => {
+        const mode = course.mode_paiement || 'Non spécifié';
+        if (!paymentStats[mode]) paymentStats[mode] = 0;
+        paymentStats[mode] += Number(course.sommes_percues) || 0;
+      });
+
+      return {
+        courses: {
+          count: totalCourses,
+          recettes: totalRecettesCourses,
+          taximetre: totalPrixTaximetre
+        },
+        expenses: {
+          total: totalDepenses,
+          count: expensesData.length
+        },
+        externalCourses: {
+          count: totalCoursesExternes,
+          recettes: totalRecettesExternes
+        },
+        totals: {
+          recettes: totalRecettes,
+          depenses: totalDepenses,
+          benefice: totalBenefice
+        },
+        paymentStats
+      };
+    };
+
+    // Obtenir les données agrégées
+    const financialData = aggregateFinancialData();
 
     // Fonction pour dessiner du texte avec alignement et troncature
     const drawText = (text, x, y, align = 'left', maxWidth = null) => {
@@ -528,6 +584,76 @@ export const generateAndDownloadReport = (shiftData, courses, driver, vehicle) =
     drawText('Signature du chauffeur :', margin, yPos);
     doc.line(margin + 55, yPos + 3, margin + 130, yPos + 3);
 
+    // ============ RÉSUMÉ FINANCIER ============
+    yPos += 15;
+    doc.setFontSize(11);
+    doc.setFont('times', 'bold');
+    drawText('RÉSUMÉ FINANCIER', pageWidth/2, yPos, 'center');
+    doc.line(pageWidth/2 - 40, yPos + 1, pageWidth/2 + 40, yPos + 1);
+    yPos += 8;
+
+    doc.setFontSize(9);
+    doc.setFont('times', 'normal');
+
+    // Statistiques des courses
+    const statsY = yPos;
+    const statsX1 = margin;
+    const statsX2 = margin + 80;
+    const statsX3 = margin + 140;
+
+    drawText('Courses réalisées:', statsX1, statsY);
+    drawText(`${financialData.courses.count}`, statsX2, statsY);
+
+    drawText('Recettes courses:', statsX1, statsY + 5);
+    drawText(`${formatCurrency(financialData.courses.recettes)} €`, statsX2, statsY + 5);
+
+    drawText('Prix taximètre:', statsX1, statsY + 10);
+    drawText(`${formatCurrency(financialData.courses.taximetre)} €`, statsX2, statsY + 10);
+
+    // Dépenses
+    drawText('Dépenses:', statsX1, statsY + 17);
+    drawText(`${formatCurrency(financialData.expenses.total)} €`, statsX2, statsY + 17);
+    drawText(`(${financialData.expenses.count} éléments)`, statsX3, statsY + 17);
+
+    // Courses externes
+    if (financialData.externalCourses.count > 0) {
+      drawText('Courses externes:', statsX1, statsY + 22);
+      drawText(`${financialData.externalCourses.count}`, statsX2, statsY + 22);
+      drawText(`${formatCurrency(financialData.externalCourses.recettes)} €`, statsX3, statsY + 22);
+    }
+
+    // Totaux
+    yPos = statsY + 30;
+    doc.setFont('times', 'bold');
+    doc.setFontSize(10);
+
+    drawText('TOTAL RECETTES:', statsX1, yPos);
+    drawText(`${formatCurrency(financialData.totals.recettes)} €`, statsX2, yPos);
+
+    drawText('TOTAL DÉPENSES:', statsX1, yPos + 6);
+    drawText(`${formatCurrency(financialData.totals.depenses)} €`, statsX2, yPos + 6);
+
+    // Bénéfice net
+    const beneficeColor = financialData.totals.benefice >= 0 ? [0, 128, 0] : [255, 0, 0]; // Vert ou rouge
+    doc.setTextColor(...beneficeColor);
+    drawText('BÉNÉFICE NET:', statsX1, yPos + 12);
+    drawText(`${formatCurrency(financialData.totals.benefice)} €`, statsX2, yPos + 12);
+    doc.setTextColor(0, 0, 0); // Reset couleur
+
+    // Statistiques par mode de paiement
+    yPos += 20;
+    doc.setFontSize(9);
+    doc.setFont('times', 'bold');
+    drawText('RÉPARTITION PAR MODE DE PAIEMENT:', margin, yPos);
+    yPos += 5;
+
+    doc.setFont('times', 'normal');
+    Object.entries(financialData.paymentStats).forEach(([mode, montant]) => {
+      drawText(`${mode}:`, margin + 5, yPos);
+      drawText(`${formatCurrency(montant)} €`, margin + 60, yPos);
+      yPos += 4;
+    });
+
     yPos += 10;
     drawText('*', margin, yPos);
     drawText('Après déduction d\'une remise commerciale éventuelle.', margin + 5, yPos);
@@ -635,21 +761,21 @@ export const validateDataForPDF = (shiftData, courses, driver, vehicle) => {
 };
 
 // Fonction principale pour générer le PDF avec vérifications
-export const generateFeuilleDeRoutePDF = async (feuilleId) => {
+export const generateFeuilleDeRoutePDF = async (feuilleId, expenses = [], externalCourses = []) => {
   try {
     // 1. Récupérer les données depuis la BD
     const data = await fetchDataForPDF(feuilleId);
-    
+
     // 2. Valider les données
     const validation = validateDataForPDF(data.shiftData, data.courses, data.driver, data.vehicle);
-    
+
     if (!validation.isValid) {
       throw new Error('Données invalides: ' + validation.errors.join(', '));
     }
-    
-    // 3. Générer le PDF
-    return generateAndDownloadReport(data.shiftData, data.courses, data.driver, data.vehicle);
-    
+
+    // 3. Générer le PDF avec les données agrégées
+    return generateAndDownloadReport(data.shiftData, data.courses, data.driver, data.vehicle, expenses, externalCourses);
+
   } catch (error) {
     console.error('Erreur génération feuille de route:', error);
     throw error;

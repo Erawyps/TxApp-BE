@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Card, Button, Table, THead, TBody, Tr, Th, Td, Modal, Form, Input, Select, Badge } from 'components/ui';
+import { Card, Button, Table, THead, TBody, Tr, Th, Td, Modal, Input, Select, Badge } from 'components/ui';
 import {
   CurrencyEuroIcon,
   PlusIcon,
@@ -327,7 +327,7 @@ export default function SalaryRulesManagement() {
             </div>
           </div>
         ) : (
-          <Form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-4">
             <Input
               label="Nom de la règle"
               value={formData.nom_regle}
@@ -387,7 +387,7 @@ export default function SalaryRulesManagement() {
                 {modalMode === 'create' ? 'Créer' : 'Modifier'}
               </Button>
             </div>
-          </Form>
+          </form>
         )}
       </Modal>
     </div>

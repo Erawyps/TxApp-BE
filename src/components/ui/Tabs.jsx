@@ -97,3 +97,17 @@ export const MobileTabSelect = ({ tabs, selectedIndex, onChange }) => {
     </div>
   );
 };
+
+// Export as a compound component
+const Tabs = {
+  TabGroup,
+  TabList,
+  Tab,
+  TabPanels,
+  TabPanel,
+  TabNav: Tab, // Alias for Tab
+  MobileTabSelect
+};
+
+export default Tabs;
+export { Tabs };

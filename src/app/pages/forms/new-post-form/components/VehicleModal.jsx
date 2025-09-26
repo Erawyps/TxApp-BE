@@ -1,11 +1,9 @@
 // Import Dependencies
-import { Fragment } from "react";
-import { Dialog, Transition, TransitionChild, DialogPanel, DialogTitle } from "@headlessui/react";
-import { XMarkIcon } from "@heroicons/react/24/outline";
 import PropTypes from "prop-types";
 
 // Local Imports
-import { Button } from "components/ui";
+import { Modal, Button, Badge } from "components/ui";
+import { CalendarIcon, CogIcon, MapPinIcon } from "@heroicons/react/24/outline";
 
 // ----------------------------------------------------------------------
 
@@ -13,107 +11,132 @@ export function VehicleModal({ isOpen, onClose, vehicle }) {
   if (!vehicle) return null;
 
   return (
-    <Transition show={isOpen} as={Fragment}>
-      <Dialog as="div" className="relative z-50" onClose={onClose}>
-        <TransitionChild
-          as={Fragment}
-          enter="ease-out duration-300"
-          enterFrom="opacity-0"
-          enterTo="opacity-100"
-          leave="ease-in duration-200"
-          leaveFrom="opacity-100"
-          leaveTo="opacity-0"
-        >
-          <div className="fixed inset-0 bg-black/50" />
-        </TransitionChild>
-
-        <div className="fixed inset-0 overflow-y-auto">
-          <div className="flex min-h-full items-center justify-center p-4 text-center">
-            <TransitionChild
-              as={Fragment}
-              enter="ease-out duration-300"
-              enterFrom="opacity-0 scale-95"
-              enterTo="opacity-100 scale-100"
-              leave="ease-in duration-200"
-              leaveFrom="opacity-100 scale-100"
-              leaveTo="opacity-0 scale-95"
-            >
-              <DialogPanel className="w-full max-w-md transform overflow-hidden rounded-lg bg-white dark:bg-dark-700 p-6 text-left align-middle shadow-xl transition-all">
-                <div className="flex items-center justify-between mb-4">
-                  <DialogTitle
-                    as="h3"
-                    className="text-lg font-medium leading-6 text-gray-800 dark:text-dark-100"
-                  >
-                    Informations du véhicule
-                  </DialogTitle>
-                  <Button
-                    variant="ghost"
-                    className="h-8 w-8 p-0"
-                    onClick={onClose}
-                  >
-                    <XMarkIcon className="h-5 w-5" />
-                  </Button>
-                </div>
-
-                <div className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <p className="text-sm text-gray-500 dark:text-gray-400">
-                        Plaque
-                      </p>
-                      <p className="font-medium text-gray-800 dark:text-dark-100">
-                        {vehicle.plaque_immatriculation}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-gray-500 dark:text-gray-400">
-                        N° Identification
-                      </p>
-                      <p className="font-medium text-gray-800 dark:text-dark-100">
-                        {vehicle.numero_identification}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-gray-500 dark:text-gray-400">
-                        Marque/Modèle
-                      </p>
-                      <p className="font-medium text-gray-800 dark:text-dark-100">
-                        {vehicle.marque} {vehicle.modele}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-gray-500 dark:text-gray-400">
-                        Type
-                      </p>
-                      <p className="font-medium text-gray-800 dark:text-dark-100">
-                        {vehicle.type_vehicule}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="mt-6 flex justify-end">
-                  <Button variant="outlined" onClick={onClose}>
-                    Fermer
-                  </Button>
-                </div>
-              </DialogPanel>
-            </TransitionChild>
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      title="Informations du véhicule"
+    >
+      <div className="space-y-6">
+        {/* Informations générales */}
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+              Immatriculation
+            </label>
+            <p className="mt-1 text-lg font-mono font-semibold text-gray-900 dark:text-white">
+              {vehicle.immatriculation}
+            </p>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+              Statut
+            </label>
+            <div className="mt-1">
+              <Badge className={vehicle.est_actif ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}>
+                {vehicle.est_actif ? 'Actif' : 'Inactif'}
+              </Badge>
+            </div>
           </div>
         </div>
-      </Dialog>
-    </Transition>
+
+        {/* Détails du véhicule */}
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+              Marque
+            </label>
+            <p className="mt-1 text-sm text-gray-900 dark:text-white">
+              {vehicle.marque || 'Non spécifiée'}
+            </p>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+              Modèle
+            </label>
+            <p className="mt-1 text-sm text-gray-900 dark:text-white">
+              {vehicle.modele || 'Non spécifié'}
+            </p>
+          </div>
+        </div>
+
+        {/* Informations techniques */}
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+              Année
+            </label>
+            <p className="mt-1 text-sm text-gray-900 dark:text-white">
+              {vehicle.annee || 'Non spécifiée'}
+            </p>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+              Couleur
+            </label>
+            <p className="mt-1 text-sm text-gray-900 dark:text-white">
+              {vehicle.couleur || 'Non spécifiée'}
+            </p>
+          </div>
+        </div>
+
+        {/* Kilométrage */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 flex items-center gap-2">
+            <MapPinIcon className="w-4 h-4" />
+            Kilométrage actuel
+          </label>
+          <p className="mt-1 text-lg font-semibold text-gray-900 dark:text-white">
+            {vehicle.kilometrage_actuel ? `${vehicle.kilometrage_actuel.toLocaleString()} km` : 'Non spécifié'}
+          </p>
+        </div>
+
+        {/* Dates importantes */}
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 flex items-center gap-2">
+              <CalendarIcon className="w-4 h-4" />
+              Date d&apos;achat
+            </label>
+            <p className="mt-1 text-sm text-gray-900 dark:text-white">
+              {vehicle.date_achat ? new Date(vehicle.date_achat).toLocaleDateString('fr-BE') : 'Non spécifiée'}
+            </p>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 flex items-center gap-2">
+              <CogIcon className="w-4 h-4" />
+              Dernière révision
+            </label>
+            <p className="mt-1 text-sm text-gray-900 dark:text-white">
+              {vehicle.derniere_revision ? new Date(vehicle.derniere_revision).toLocaleDateString('fr-BE') : 'Non spécifiée'}
+            </p>
+          </div>
+        </div>
+
+        {/* Notes */}
+        {vehicle.notes && (
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+              Notes
+            </label>
+            <p className="mt-1 text-sm text-gray-900 dark:text-white bg-gray-50 dark:bg-gray-800 p-3 rounded-md">
+              {vehicle.notes}
+            </p>
+          </div>
+        )}
+
+        {/* Actions */}
+        <div className="flex justify-end pt-4 border-t">
+          <Button onClick={onClose}>
+            Fermer
+          </Button>
+        </div>
+      </div>
+    </Modal>
   );
 }
 
 VehicleModal.propTypes = {
   isOpen: PropTypes.bool.isRequired,
   onClose: PropTypes.func.isRequired,
-  vehicle: PropTypes.shape({
-    plaque_immatriculation: PropTypes.string.isRequired,
-    numero_identification: PropTypes.string.isRequired,
-    marque: PropTypes.string.isRequired,
-    modele: PropTypes.string.isRequired,
-    type_vehicule: PropTypes.string.isRequired
-  })
+  vehicle: PropTypes.object
 };

@@ -27,9 +27,13 @@ export const registerSchema = Yup.object().shape({
     .min(2, 'Le nom doit contenir au moins 2 caractères')
     .required('Le nom est requis'),
   prenom: Yup.string()
-    .min(2, 'Le prénom doit contenir au moins 2 caractères'),
+    .min(2, 'Le prénom doit contenir au moins 2 caractères')
+    .required('Le prénom est requis'),
   telephone: Yup.string()
     .matches(/^\+?[0-9\s\-()]{10,}$/, 'Format de téléphone invalide'),
+  role: Yup.string()
+    .oneOf(['Admin', 'Controleur', 'Chauffeur'], 'Rôle invalide')
+    .required('Le rôle est requis'),
 });
 
 // Pour compatibilité avec l'ancien code

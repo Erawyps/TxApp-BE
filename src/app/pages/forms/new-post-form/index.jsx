@@ -83,6 +83,33 @@ export default function TxApp() {
   // Vérifier s'il y a un shift actif
   const hasActiveShift = Boolean(currentFeuilleRoute && currentFeuilleRoute.statut === 'En cours');
 
+  // Fonction de validation des changements d'onglet
+  const handleTabChange = (newTab) => {
+    // Validation pour l'onglet "courses" - nécessite un shift actif
+    if (newTab === 'courses' && !hasActiveShift) {
+      toast.error('Vous devez d\'abord démarrer un shift avant de pouvoir gérer les courses');
+      return;
+    }
+
+    // Validation pour l'onglet "end" - nécessite un shift actif et au moins une course
+    if (newTab === 'end' && !hasActiveShift) {
+      toast.error('Vous devez avoir un shift actif pour pouvoir le terminer');
+      return;
+    }
+
+    if (newTab === 'end' && courses.length === 0) {
+      toast.warning('Attention: Vous n\'avez enregistré aucune course. Souhaitez-vous vraiment terminer le shift ?');
+      // On permet quand même le changement mais avec un avertissement
+    }
+
+    // Validation pour l'onglet "shift" - avertir si shift déjà actif
+    if (newTab === 'shift' && hasActiveShift) {
+      toast.info('Vous avez déjà un shift actif. Démarrer un nouveau shift terminera automatiquement l\'actuel.');
+    }
+
+    setActiveTab(newTab);
+  };
+
   // Vérification d'authentification et permissions
   useEffect(() => {
     if (!authLoading && !isAuthenticated) {
@@ -96,14 +123,14 @@ export default function TxApp() {
         id: user.id,
         nom: user.nom,
         prenom: user.prenom,
-        type: user.type_utilisateur
+        role: user.role
       });
 
       // Vérifier que l'utilisateur est un chauffeur
-      if (user.type_utilisateur !== 'CHAUFFEUR') {
+      if (user.role !== 'Chauffeur') {
         console.warn('❌ Accès refusé: L\'utilisateur connecté n\'est pas un chauffeur');
-        console.log('Type utilisateur:', user.type_utilisateur);
-        console.log('Types autorisés: CHAUFFEUR');
+        console.log('Rôle utilisateur:', user.role);
+        console.log('Rôles autorisés: Chauffeur');
 
         // Afficher un message d'erreur et empêcher l'accès
         toast.error('Accès refusé: Cette interface est réservée aux chauffeurs');
@@ -129,7 +156,7 @@ export default function TxApp() {
 
             // Recharger les chauffeurs pour s'assurer d'avoir les données à jour
             const chauffeursResponse = await getChauffeurs();
-            const chauffeursList = chauffeursResponse?.data || [];
+            const chauffeursList = chauffeursResponse || [];
             const validChauffeurs = chauffeursList.filter(ch =>
               ch && ch.utilisateur && ch.utilisateur.nom && ch.utilisateur.prenom
             );
@@ -216,10 +243,10 @@ export default function TxApp() {
               status: err.status,
               stack: err.stack
             });
-            return { data: [] };
+            return [];
           });
 
-          chauffeursList = chauffeursResponse?.data || [];
+          chauffeursList = chauffeursResponse || [];
           console.log('✅ Chauffeurs récupérés:', chauffeursList.length);
 
         } catch (apiError) {
@@ -280,9 +307,9 @@ export default function TxApp() {
 
             if (directResponse.ok) {
               const directData = await directResponse.json();
-              console.log('✅ Récupération directe réussie:', directData.data?.length || 0, 'chauffeurs');
-              if (directData.data && directData.data.length > 0) {
-                chauffeursList = directData.data;
+              console.log('✅ Récupération directe réussie:', directData?.length || 0, 'chauffeurs');
+              if (directData && directData.length > 0) {
+                chauffeursList = directData;
                 console.log('🔄 Utilisation des données de récupération directe');
               }
             } else {
@@ -822,7 +849,7 @@ export default function TxApp() {
                     return (
                       <button
                         key={tab.key}
-                        onClick={() => setActiveTab(tab.key)}
+                        onClick={() => handleTabChange(tab.key)}
                         className={`flex items-center gap-2 py-2 px-1 border-b-2 font-medium text-sm whitespace-nowrap transition-colors ${
                           activeTab === tab.key
                             ? 'border-blue-500 text-blue-600 dark:text-blue-400'

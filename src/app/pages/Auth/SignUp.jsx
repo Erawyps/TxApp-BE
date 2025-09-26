@@ -35,6 +35,7 @@ export default function SignUp() {
       nom: "",
       prenom: "",
       telephone: "",
+      role: "",
     },
   });
 
@@ -63,6 +64,7 @@ export default function SignUp() {
         nom: data.nom,
         prenom: data.prenom,
         telephone: data.telephone,
+        role: data.role,
       });
     } catch (error) {
       // L'erreur est déjà gérée par le contexte auth
@@ -190,6 +192,21 @@ export default function SignUp() {
                   }
                   {...register("telephone")}
                 />
+
+                <div className="space-y-2">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-dark-200">
+                    Rôle
+                  </label>
+                  <select
+                    className="w-full rounded-lg bg-gray-150 px-3 py-2 transition-colors focus:ring-3 focus:ring-primary-500/50 dark:bg-dark-900 dark:text-dark-100"
+                    {...register("role")}
+                  >
+                    <option value="">Sélectionnez votre rôle</option>
+                    <option value="Chauffeur">Chauffeur</option>
+                    <option value="Controleur">Contrôleur</option>
+                    <option value="Admin">Administrateur</option>
+                  </select>
+                </div>
 
                 <Input
                   unstyled

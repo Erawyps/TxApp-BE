@@ -27,9 +27,11 @@ import { ShiftInfo } from './components/ShiftInfo';
 import ChauffeurStats from './components/ChauffeurStats';
 import InterventionsManager from './components/InterventionsManager';
 import InterventionModal from './components/InterventionModal';
+import { ControlAuthModal } from './components/ControlAuthModal';
 import { useDriverShift } from 'hooks/useDriverShift';
 import { useCourses } from 'hooks/useCourses';
 import { useExpenses } from 'hooks/useExpenses';
+import { isAdmin, isControleur, isChauffeur } from 'utils/permissions';
 
 export default function DriverDashboard() {
   const { user } = useAuth();
@@ -42,15 +44,36 @@ export default function DriverDashboard() {
     print: false,
     history: false,
     adminOversight: false,
-    intervention: false
+    intervention: false,
+    controlAuth: false // Modal d'authentification pour les contrôleurs
   });
 
-  // Correction: utiliser user?.chauffeur?.id au lieu de user?.chauffeur_id
-  const chauffeurId = user?.chauffeur?.id;
+  // Vérification des permissions selon le rôle
+  const isUserAdmin = isAdmin(user);
+  const isUserControleur = isControleur(user);
+  const isUserChauffeur = isChauffeur(user);
+
+  // Déterminer l'ID du chauffeur à afficher selon le rôle
+  let chauffeurIdToShow = null;
+  let canViewData = false;
+
+  if (isUserChauffeur) {
+    // Chauffeur : ne voit que ses propres données
+    chauffeurIdToShow = user?.chauffeur?.id;
+    canViewData = !!chauffeurIdToShow;
+  } else if (isUserAdmin) {
+    // Admin : peut voir tous les chauffeurs (sera géré dans l'interface)
+    canViewData = true;
+    chauffeurIdToShow = user?.chauffeur?.id; // Par défaut ses propres données, mais peut changer
+  } else if (isUserControleur) {
+    // Contrôleur : doit s'authentifier pour voir les données
+    canViewData = false; // Sera activé après authentification
+  }
+
+  const chauffeurId = chauffeurIdToShow;
 
   const {
     currentShift,
-    isLoading: shiftLoading,
     createShift,
     endShift,
     updateShift
@@ -69,6 +92,70 @@ export default function DriverDashboard() {
     expenses,
     createExpense
   } = useExpenses(currentShift?.id);
+
+  // Vérifier les permissions d'accès au dashboard
+  if (!user) {
+    return (
+      <Page title="Accès refusé">
+        <div className="flex items-center justify-center h-64">
+          <div className="text-center">
+            <h2 className="text-2xl font-bold text-gray-800 dark:text-white mb-4">
+              Accès non autorisé
+            </h2>
+            <p className="text-gray-600 dark:text-gray-300">
+              Vous devez être connecté pour accéder à cette page.
+            </p>
+          </div>
+        </div>
+      </Page>
+    );
+  }
+
+  // Vérifier si l'utilisateur a le droit d'accéder au dashboard chauffeur
+  if (!isUserChauffeur && !isUserAdmin && !isUserControleur) {
+    return (
+      <Page title="Accès refusé">
+        <div className="flex items-center justify-center h-64">
+          <div className="text-center">
+            <h2 className="text-2xl font-bold text-gray-800 dark:text-white mb-4">
+              Accès refusé
+            </h2>
+            <p className="text-gray-600 dark:text-gray-300">
+              Vous n&apos;avez pas les permissions nécessaires pour accéder à cette page.
+            </p>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
+              Rôles autorisés : Chauffeur, Contrôleur, Administrateur
+            </p>
+          </div>
+        </div>
+      </Page>
+    );
+  }
+
+  // Pour les contrôleurs, afficher un message demandant l'authentification
+  if (isUserControleur && !canViewData) {
+    return (
+      <Page title="Authentification requise">
+        <div className="flex items-center justify-center h-64">
+          <div className="text-center max-w-md">
+            <ShieldCheckIcon className="mx-auto h-16 w-16 text-purple-500 mb-4" />
+            <h2 className="text-2xl font-bold text-gray-800 dark:text-white mb-4">
+              Authentification contrôleur requise
+            </h2>
+            <p className="text-gray-600 dark:text-gray-300 mb-6">
+              En tant que contrôleur, vous devez vous authentifier à nouveau pour accéder aux données des chauffeurs.
+            </p>
+            <button
+              onClick={() => openModal('controlAuth')}
+              className="bg-purple-500 hover:bg-purple-600 text-white px-6 py-2 rounded-lg font-medium transition-colors"
+            >
+              S&apos;authentifier
+            </button>
+          </div>
+        </div>
+      </Page>
+    );
+  }
 
   const openModal = (modalName) => {
     setActiveModals(prev => ({ ...prev, [modalName]: true }));
@@ -161,48 +248,10 @@ export default function DriverDashboard() {
     }
   ];
 
-  // Check if user has admin privileges (you may need to adjust this logic)
-  const isAdmin = user?.type_utilisateur === 'ADMIN';
-
-  // Vérifier si l'utilisateur est un chauffeur
-  const isChauffeur = user?.type_utilisateur === 'CHAUFFEUR';
-
-  if (shiftLoading) {
-    return (
-      <Page title="Tableau de bord chauffeur">
-        <div className="flex items-center justify-center h-64">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
-        </div>
-      </Page>
-    );
-  }
-
-  // Si l'utilisateur n'est pas un chauffeur et n'a pas de données chauffeur
-  if (!isChauffeur && !chauffeurId) {
-    return (
+  return (
+    <ErrorBoundary>
       <Page title="Tableau de bord chauffeur">
         <div className="transition-content mt-5 px-(--margin-x) pb-8 lg:mt-6">
-          <div className="bg-yellow-50 rounded-lg p-8 text-center">
-            <ShieldCheckIcon className="h-16 w-16 text-yellow-500 mx-auto mb-4" />
-            <h3 className="text-xl font-semibold text-gray-900 mb-2">
-              Accès limité
-            </h3>
-            <p className="text-gray-600 mb-6">
-              Vous n&apos;avez pas les permissions nécessaires pour accéder au tableau de bord chauffeur.
-              Veuillez contacter votre administrateur si vous pensez qu&apos;il s&apos;agit d&apos;une erreur.
-            </p>
-            <p className="text-sm text-gray-500">
-              Type d&apos;utilisateur: {user?.type_utilisateur || 'Non défini'}
-            </p>
-          </div>
-        </div>
-      </Page>
-    );
-  }
-
-  return (
-    <Page title="Tableau de bord chauffeur">
-      <div className="transition-content mt-5 px-(--margin-x) pb-8 lg:mt-6">
         <div className="space-y-6">
           {/* Quick Actions */}
           <div className="bg-white rounded-lg shadow p-6">
@@ -231,7 +280,7 @@ export default function DriverDashboard() {
             <h2 className="text-lg font-semibold text-gray-900 mb-4">Autres actions</h2>
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
               {secondaryActions
-                .filter(action => !action.adminOnly || isAdmin)
+                .filter(action => !action.adminOnly || isUserAdmin)
                 .map((action) => (
                 <button
                   key={action.id}
@@ -404,6 +453,17 @@ export default function DriverDashboard() {
         onClose={() => closeModal('intervention')}
         chauffeurId={chauffeurId}
       />
+
+      <ControlAuthModal
+        isOpen={activeModals.controlAuth}
+        onClose={() => closeModal('controlAuth')}
+        onSuccess={(user) => {
+          // Après authentification réussie du contrôleur, permettre l'accès aux données
+          console.log('Contrôleur authentifié:', user);
+          // Ici on pourrait mettre à jour l'état pour permettre l'accès
+        }}
+      />
     </Page>
+    </ErrorBoundary>
   );
 }

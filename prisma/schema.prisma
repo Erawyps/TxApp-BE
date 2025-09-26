@@ -302,7 +302,7 @@ enum regle_facturation_nom {
 enum role_type {
   Admin
   Controleur
-  Driver
+  Chauffeur
 }
 
 enum statut_actif {
