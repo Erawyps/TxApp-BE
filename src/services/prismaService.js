@@ -83,19 +83,45 @@ export async function getUtilisateurById(userId) {
 
 export async function createUtilisateur(userData) {
   try {
-    return await prisma.utilisateur.create({
-      data: {
-        societe_id: userData.societe_id,
-        email: userData.email,
-        mot_de_passe_hash: userData.mot_de_passe_hash,
-        nom: userData.nom,
-        prenom: userData.prenom,
-        telephone: userData.telephone,
-        role: userData.role
-      },
-      include: {
-        chauffeur: true
+    // Utiliser une transaction pour créer l'utilisateur et le chauffeur si nécessaire
+    return await prisma.$transaction(async (tx) => {
+      // Créer l'utilisateur
+      const utilisateur = await tx.utilisateur.create({
+        data: {
+          societe_id: userData.societe_id,
+          email: userData.email,
+          mot_de_passe_hash: userData.mot_de_passe_hash,
+          nom: userData.nom,
+          prenom: userData.prenom,
+          telephone: userData.telephone,
+          role: userData.role
+        }
+      });
+
+      // Si le rôle est Chauffeur, créer automatiquement l'enregistrement chauffeur
+      if (userData.role === 'Chauffeur') {
+        await tx.chauffeur.create({
+          data: {
+            chauffeur_id: utilisateur.user_id, // Le chauffeur_id est le même que user_id
+            societe_id: userData.societe_id,
+            statut: 'Actif',
+            regle_salaire_defaut_id: 2 // Règle par défaut
+          }
+        });
       }
+
+      // Récupérer l'utilisateur avec ses relations
+      return await tx.utilisateur.findUnique({
+        where: { user_id: utilisateur.user_id },
+        include: {
+          chauffeur: {
+            include: {
+              societe_taxi: true,
+              regle_salaire: true
+            }
+          }
+        }
+      });
     });
   } catch (error) {
     console.error('Erreur lors de la création de l\'utilisateur:', error);
@@ -642,7 +668,7 @@ export async function getFeuillesRouteByChauffeur(chauffeurId, date = null) {
       where,
       include: {
         vehicule: true,
-        courses: {
+        course: {
           include: {
             client: true,
             mode_paiement: true,
@@ -652,7 +678,7 @@ export async function getFeuillesRouteByChauffeur(chauffeurId, date = null) {
             num_ordre: 'asc'
           }
         },
-        charges: {
+        charge: {
           include: {
             vehicule: true,
             mode_paiement: true
