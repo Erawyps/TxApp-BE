@@ -46,7 +46,9 @@ const protectedRoutes = {
           children: [
             {
               index: true,
-              element: <Navigate to="/admin/oversight" />,
+              lazy: async () => ({
+                Component: (await import("app/pages/admin")).default,
+              }),
             },
             {
               path: "oversight",

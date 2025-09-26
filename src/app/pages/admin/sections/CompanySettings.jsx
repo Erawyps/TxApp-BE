@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Card, Button, Form, Input, Textarea, Badge } from 'components/ui';
+import { Card, Button, Input, Textarea, Badge } from 'components/ui';
 import {
   BuildingOfficeIcon,
   PencilIcon,
@@ -215,7 +215,7 @@ export default function CompanySettings() {
         </div>
 
         {isEditing ? (
-          <Form onSubmit={handleSubmit} className="space-y-6">
+          <form onSubmit={handleSubmit} className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <Input
                 label="Nom de l'exploitant"
@@ -292,7 +292,7 @@ export default function CompanySettings() {
                 Sauvegarder
               </Button>
             </div>
-          </Form>
+          </form>
         ) : (
           <div className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

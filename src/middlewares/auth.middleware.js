@@ -1,5 +1,5 @@
 // src/middlewares/auth.middleware.js
-// Removed unused jwt import
+import jwt from 'jsonwebtoken';
 import { verifyToken } from '../services/prismaService.js';
 
 /**

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Card, Button, Table, THead, TBody, Tr, Th, Td, Modal, Form, Input, Badge } from 'components/ui';
+import { Card, Button, Table, THead, TBody, Tr, Th, Td, Modal, Input, Badge } from 'components/ui';
 import {
   DocumentTextIcon,
   PlusIcon,
@@ -269,7 +269,7 @@ export default function BillingRulesManagement() {
             </div>
           </div>
         ) : (
-          <Form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-4">
             <Input
               label="Nom de la règle"
               value={formData.nom}
@@ -290,7 +290,7 @@ export default function BillingRulesManagement() {
                 {modalMode === 'create' ? 'Créer' : 'Modifier'}
               </Button>
             </div>
-          </Form>
+          </form>
         )}
       </Modal>
     </div>

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Card, Button, Table, THead, TBody, Tr, Th, Td, Modal, Form, Input, Select } from 'components/ui';
+import { Card, Button, Table, THead, TBody, Tr, Th, Td, Modal, Input, Select } from 'components/ui';
 import {
   UserGroupIcon,
   PlusIcon,
@@ -303,7 +303,7 @@ export default function UsersManagement() {
             </div>
           </div>
         ) : (
-          <Form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <Input
                 label="Prénom"
@@ -353,7 +353,7 @@ export default function UsersManagement() {
                 {modalMode === 'create' ? 'Créer' : 'Modifier'}
               </Button>
             </div>
-          </Form>
+          </form>
         )}
       </Modal>
     </div>

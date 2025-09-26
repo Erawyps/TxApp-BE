@@ -1,5 +1,8 @@
 /**
- * Configuration d'authentification pour TxApp - Production Ready
+// Configuration de production - plus d'API externe de test
+export const JWT_HOST_API = import.meta.env.PROD
+  ? "https://api.txapp.be/api"  // Production : utiliser le sous-domaine API Cloudflare
+  : "/api";  // Développement : utiliser le proxy Viteonfiguration d'authentification pour TxApp - Production Ready
  */
 
 // Configuration de production - plus d'API externe de test

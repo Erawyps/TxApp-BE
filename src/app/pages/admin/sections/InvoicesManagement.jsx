@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Card, Button, Table, THead, TBody, Tr, Th, Td, Modal, Form, Input, Select, Badge } from 'components/ui';
+import { Card, Button, Table, THead, TBody, Tr, Th, Td, Modal, Input, Select, Badge } from 'components/ui';
 import {
   DocumentTextIcon,
   PlusIcon,
@@ -402,7 +402,7 @@ export default function InvoicesManagement() {
             </div>
           </div>
         ) : (
-          <Form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <Input
                 label="Numéro de facture"
@@ -491,7 +491,7 @@ export default function InvoicesManagement() {
                 {modalMode === 'create' ? 'Créer' : 'Modifier'}
               </Button>
             </div>
-          </Form>
+          </form>
         )}
       </Modal>
     </div>

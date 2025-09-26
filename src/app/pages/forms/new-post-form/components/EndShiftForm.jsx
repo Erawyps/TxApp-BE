@@ -4,12 +4,45 @@ import { yupResolver } from "@hookform/resolvers/yup";
 import { toast } from "sonner";
 import { PrinterIcon } from "@heroicons/react/24/outline";
 import PropTypes from "prop-types";
+import { useCallback, useEffect } from "react";
 
 // Local Imports
 import { Card, Button, Input, Textarea } from "components/ui";
 import { endShiftSchema } from "../schema";
 
 // ----------------------------------------------------------------------
+
+// Hook personnalisé pour l'auto-sauvegarde
+const useAutoSave = (data, key, delay = 2000) => {
+  const saveData = useCallback((dataToSave) => {
+    try {
+      localStorage.setItem(key, JSON.stringify(dataToSave));
+    } catch (error) {
+      console.warn('Erreur lors de la sauvegarde automatique:', error);
+    }
+  }, [key]);
+
+  useEffect(() => {
+    if (!data || Object.keys(data).length === 0) return;
+
+    const timeoutId = setTimeout(() => {
+      saveData(data);
+    }, delay);
+
+    return () => clearTimeout(timeoutId);
+  }, [data, saveData, delay]);
+};
+
+// Fonction pour charger les données sauvegardées
+const loadSavedData = (key) => {
+  try {
+    const saved = localStorage.getItem(key);
+    return saved ? JSON.parse(saved) : null;
+  } catch (error) {
+    console.warn('Erreur lors du chargement des données sauvegardées:', error);
+    return null;
+  }
+};
 
 const initialEndShiftData = {
   heure_fin: '',
@@ -23,6 +56,9 @@ const initialEndShiftData = {
 };
 
 export function EndShiftForm({ onEndShift, shiftData, driver, onPrintReport }) {
+  // Charger les données sauvegardées
+  const savedData = loadSavedData('endShiftFormData');
+
   const {
     register,
     handleSubmit,
@@ -30,13 +66,16 @@ export function EndShiftForm({ onEndShift, shiftData, driver, onPrintReport }) {
     formState: { errors }
   } = useForm({
     resolver: yupResolver(endShiftSchema),
-    defaultValues: {
+    defaultValues: savedData || {
       ...initialEndShiftData,
       signature_chauffeur: `${driver?.prenom || 'Non défini'} ${driver?.nom || 'Non défini'}`
     }
   });
 
   const watchedData = watch();
+
+  // Auto-sauvegarde des données du formulaire
+  useAutoSave(watchedData, 'endShiftFormData');
 
   // Calculer la durée réelle du shift
   const calculateActualShiftDuration = () => {

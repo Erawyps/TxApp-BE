@@ -4,7 +4,7 @@ import { yupResolver } from "@hookform/resolvers/yup";
 import { InformationCircleIcon } from "@heroicons/react/24/outline";
 import { toast } from "sonner";
 import PropTypes from "prop-types";
-import { useEffect } from "react";
+import { useEffect, useCallback } from "react";
 
 // Local Imports
 import { Card, Button, Input } from "components/ui";
@@ -14,8 +14,42 @@ import { contractTypes } from "../data";
 
 // ----------------------------------------------------------------------
 
+// Hook personnalisé pour l'auto-sauvegarde
+const useAutoSave = (data, key, delay = 2000) => {
+  const saveData = useCallback((dataToSave) => {
+    try {
+      localStorage.setItem(key, JSON.stringify(dataToSave));
+    } catch (error) {
+      console.warn('Erreur lors de la sauvegarde automatique:', error);
+    }
+  }, [key]);
+
+  useEffect(() => {
+    if (!data || Object.keys(data).length === 0) return;
+
+    const timeoutId = setTimeout(() => {
+      saveData(data);
+    }, delay);
+
+    return () => clearTimeout(timeoutId);
+  }, [data, saveData, delay]);
+};
+
+// Fonction pour charger les données sauvegardées
+const loadSavedData = (key) => {
+  try {
+    const saved = localStorage.getItem(key);
+    return saved ? JSON.parse(saved) : null;
+  } catch (error) {
+    console.warn('Erreur lors du chargement des données sauvegardées:', error);
+    return null;
+  }
+};
 
 export function ShiftForm({ vehicles, onStartShift, onShowVehicleInfo, reglesSalaire = [] }) {
+  // Charger les données sauvegardées au montage du composant
+  const savedData = loadSavedData('shiftFormData');
+
   const {
     register,
     handleSubmit,
@@ -24,7 +58,7 @@ export function ShiftForm({ vehicles, onStartShift, onShowVehicleInfo, reglesSal
     formState: { errors }
   } = useForm({
     resolver: yupResolver(shiftSchema),
-    defaultValues: {
+    defaultValues: savedData || {
       date: new Date().toISOString().split('T')[0],
       heure_debut: '',
       heure_fin_estimee: '',
@@ -39,6 +73,10 @@ export function ShiftForm({ vehicles, onStartShift, onShowVehicleInfo, reglesSal
     }
   });
 
+  // Auto-sauvegarde des données du formulaire
+  const watchedData = watch();
+  useAutoSave(watchedData, 'shiftFormData');
+
   // Utiliser les règles de salaire de la base de données ou les types par défaut
   const remunerationTypes = reglesSalaire.length > 0
     ? reglesSalaire.map(regle => ({
@@ -46,14 +84,6 @@ export function ShiftForm({ vehicles, onStartShift, onShowVehicleInfo, reglesSal
         label: regle.nom
       }))
     : contractTypes;
-
-  // Forcer le re-rendu quand les véhicules changent
-  useEffect(() => {
-    console.log('ShiftForm - Vehicles updated:', vehicles?.length || 0);
-  }, [vehicles]);
-
-  // Surveiller les changements des champs du formulaire
-  const watchedData = watch();
 
   const calculateShiftDuration = () => {
     if (watchedData.heure_debut && watchedData.heure_fin_estimee) {
