@@ -1,5 +1,5 @@
 // components/ui/Tabs.jsx
-import { Fragment } from 'react';
+import React, { Fragment } from 'react';
 import { Tab as HeadlessTab } from '@headlessui/react';
 import clsx from 'clsx';
 import { ChevronDownIcon } from '@heroicons/react/20/solid';
@@ -98,8 +98,50 @@ export const MobileTabSelect = ({ tabs, selectedIndex, onChange }) => {
   );
 };
 
-// Export as a compound component
-const Tabs = {
+// Main Tabs component that accepts value and onChange
+export const Tabs = ({ value, onChange, children, className }) => {
+  // Find all TabNav components recursively and get their values
+  const findTabNavs = (children) => {
+    const tabNavs = [];
+    React.Children.forEach(children, (child) => {
+      if (React.isValidElement(child)) {
+        if (child.type === Tab) {
+          tabNavs.push(child);
+        } else if (child.props && child.props.children) {
+          tabNavs.push(...findTabNavs(child.props.children));
+        }
+      }
+    });
+    return tabNavs;
+  };
+
+  const tabNavs = findTabNavs(children);
+  const selectedIndex = tabNavs.findIndex(tab => tab.props.value === value);
+
+  return (
+    <HeadlessTab.Group 
+      selectedIndex={selectedIndex >= 0 ? selectedIndex : 0} 
+      onChange={(index) => {
+        const tabNav = tabNavs[index];
+        if (tabNav && tabNav.props.value && onChange) {
+          onChange(tabNav.props.value);
+        }
+      }}
+      className={className}
+    >
+      {children}
+    </HeadlessTab.Group>
+  );
+};
+
+// Add TabNav as an alias for Tab
+Tabs.TabList = TabList;
+Tabs.TabNav = Tab;
+Tabs.TabPanels = TabPanels;
+Tabs.TabPanel = TabPanel;
+
+// Export as a compound component for backward compatibility
+const TabsObject = {
   TabGroup,
   TabList,
   Tab,
@@ -109,5 +151,5 @@ const Tabs = {
   MobileTabSelect
 };
 
-export default Tabs;
-export { Tabs };
+export default TabsObject;
+export { TabsObject as TabsComponents };

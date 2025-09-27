@@ -19,11 +19,32 @@ export function buildShift(data, courses = [], chargesTotal = 0) {
   };
 }
 
-export function computeStats(drivers = [], vehicles = [], shifts = []) {
+export function computeStats(drivers = [], vehicles = [], shifts = [], clients = [], factures = [], partenaires = [], interventions = []) {
   const totalDrivers = drivers.length;
   const activeDrivers = drivers.filter((d) => d?.statut === 'Actif').length;
   const totalVehicles = vehicles.length;
   const activeVehicles = vehicles.filter((v) => v?.statut === 'En service').length;
   const todayRevenue = shifts.reduce((sum, s) => sum + (Number(s?.recettes) || 0), 0);
-  return { totalDrivers, activeDrivers, totalVehicles, activeVehicles, todayRevenue };
+  const totalClients = clients.length;
+  const activeClients = clients.filter((c) => c?.est_actif).length;
+  const totalFactures = factures.length;
+  const paidFactures = factures.filter((f) => f?.est_payee).length;
+  const totalPartenaires = partenaires.length;
+  const activePartenaires = partenaires.filter((p) => p?.est_actif).length;
+  const totalInterventions = interventions.length;
+
+  return {
+    totalDrivers,
+    activeDrivers,
+    totalVehicles,
+    activeVehicles,
+    todayRevenue,
+    totalClients,
+    activeClients,
+    totalFactures,
+    paidFactures,
+    totalPartenaires,
+    activePartenaires,
+    totalInterventions
+  };
 }

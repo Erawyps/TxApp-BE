@@ -1,4 +1,4 @@
-import { HomeIcon } from '@heroicons/react/24/outline';
+import { HomeIcon, Cog6ToothIcon } from '@heroicons/react/24/outline';
 import DashboardsIcon from 'assets/dualicons/dashboards.svg?react'
 import { NAV_TYPE_ROOT, NAV_TYPE_ITEM } from 'constants/app.constant'
 
@@ -21,6 +21,14 @@ export const dashboards = {
             title: 'Gestion des Taxis',
             //transKey: 'nav.dashboards.home',
             Icon: HomeIcon,
+        },
+        {
+            id: 'dashboards.admin',
+            path: '/admin',
+            type: NAV_TYPE_ITEM,
+            title: 'Administration',
+            //transKey: 'nav.dashboards.admin',
+            Icon: Cog6ToothIcon,
         },
 
     ]

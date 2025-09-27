@@ -44,7 +44,14 @@ import {
   createRegleFacturation,
   getPartenaires,
   createPartenaire,
+  getGestionFactures,
+  getGestionFactureById,
+  createGestionFacture,
+  updateGestionFacture,
+  deleteGestionFacture,
   getSocietesTaxi,
+  getCurrentSocieteTaxi,
+  getSocieteTaxiById,
   findChauffeurByDate,
   findVehiculeByChauffeurAndDate,
   encodeFeuilleRouteAdmin,
@@ -587,6 +594,102 @@ app.get('/societes-taxi', async (c) => {
   } catch (error) {
     console.error('Erreur API sociétés taxi:', error);
     return c.json({ error: 'Erreur lors de la récupération des sociétés taxi' }, 500);
+  }
+});
+
+app.get('/societe-taxi/current', async (c) => {
+  try {
+    const societe = await getCurrentSocieteTaxi();
+    if (!societe) {
+      return c.json({ error: 'Aucune société taxi trouvée' }, 404);
+    }
+    return c.json(societe);
+  } catch (error) {
+    console.error('Erreur API société taxi actuelle:', error);
+    return c.json({ error: 'Erreur lors de la récupération de la société taxi actuelle' }, 500);
+  }
+});
+
+app.get('/societe-taxi/:id', async (c) => {
+  try {
+    const societe = await getSocieteTaxiById(c.req.param('id'));
+    if (!societe) {
+      return c.json({ error: 'Société taxi non trouvée' }, 404);
+    }
+    return c.json(societe);
+  } catch (error) {
+    console.error('Erreur API société taxi par ID:', error);
+    return c.json({ error: 'Erreur lors de la récupération de la société taxi' }, 500);
+  }
+});
+
+// ==================== FACTURES ====================
+
+app.get('/factures', async (c) => {
+  try {
+    const factures = await getGestionFactures();
+    return c.json(factures);
+  } catch (error) {
+    console.error('Erreur API factures:', error);
+    return c.json({ error: 'Erreur lors de la récupération des factures' }, 500);
+  }
+});
+
+app.get('/gestion-factures', async (c) => {
+  try {
+    const factures = await getGestionFactures();
+    return c.json(factures);
+  } catch (error) {
+    console.error('Erreur API gestion factures:', error);
+    return c.json({ error: 'Erreur lors de la récupération des factures' }, 500);
+  }
+});
+
+app.get('/factures/:id', async (c) => {
+  try {
+    const factureId = c.req.param('id');
+    const facture = await getGestionFactureById(factureId);
+    if (!facture) {
+      return c.json({ error: 'Facture non trouvée' }, 404);
+    }
+    return c.json(facture);
+  } catch (error) {
+    console.error('Erreur API facture:', error);
+    return c.json({ error: 'Erreur lors de la récupération de la facture' }, 500);
+  }
+});
+
+app.post('/factures', async (c) => {
+  try {
+    const factureData = await c.req.json();
+    const facture = await createGestionFacture(factureData);
+    return c.json(facture, 201);
+  } catch (error) {
+    console.error('Erreur API création facture:', error);
+    return c.json({ error: 'Erreur lors de la création de la facture' }, 500);
+  }
+});
+
+app.put('/factures/:id', async (c) => {
+  try {
+    const factureId = c.req.param('id');
+    const factureData = await c.req.json();
+    const facture = await updateGestionFacture(factureId, factureData);
+    return c.json(facture);
+  } catch (error) {
+    console.error('Erreur API mise à jour facture:', error);
+    return c.json({ error: 'Erreur lors de la mise à jour de la facture' }, 500);
+  }
+});
+
+app.delete('/factures/:id', async (c) => {
+  try {
+    const factureId = c.req.param('id');
+    await deleteGestionFacture(factureId);
+    return c.json({ message: 'Facture supprimée avec succès' });
+  } catch (error) {
+    console.error('Erreur API suppression facture:', error);
+    return c.json({ error: 'Erreur lors de la suppression de la facture' }, 500);
   }
 });
 

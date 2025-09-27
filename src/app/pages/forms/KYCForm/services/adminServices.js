@@ -332,3 +332,292 @@ export const modePaiementService = {
     }
   }
 };
+
+// Service Factures
+export const factureService = {
+  async getAll() {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/factures`);
+      if (!response.ok) throw new Error('Erreur chargement factures');
+      const data = await response.json();
+      return data.data || [];
+    } catch (error) {
+      console.error('Erreur API factures:', error);
+      return [];
+    }
+  },
+
+  async create(factureData) {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/factures`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(factureData)
+      });
+      if (!response.ok) throw new Error('Erreur création facture');
+      return await response.json();
+    } catch (error) {
+      console.error('Erreur création facture:', error);
+      throw error;
+    }
+  },
+
+  async update(id, factureData) {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/factures/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(factureData)
+      });
+      if (!response.ok) throw new Error('Erreur mise à jour facture');
+      return await response.json();
+    } catch (error) {
+      console.error('Erreur mise à jour facture:', error);
+      throw error;
+    }
+  },
+
+  async delete(id) {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/factures/${id}`, {
+        method: 'DELETE'
+      });
+      if (!response.ok) throw new Error('Erreur suppression facture');
+      return true;
+    } catch (error) {
+      console.error('Erreur suppression facture:', error);
+      throw error;
+    }
+  }
+};
+
+// Service Partenaires
+export const partenaireService = {
+  async getAll() {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/partenaires`);
+      if (!response.ok) throw new Error('Erreur chargement partenaires');
+      const data = await response.json();
+      return data.data || [];
+    } catch (error) {
+      console.error('Erreur API partenaires:', error);
+      return [];
+    }
+  },
+
+  async create(partenaireData) {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/partenaires`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(partenaireData)
+      });
+      if (!response.ok) throw new Error('Erreur création partenaire');
+      return await response.json();
+    } catch (error) {
+      console.error('Erreur création partenaire:', error);
+      throw error;
+    }
+  },
+
+  async update(id, partenaireData) {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/partenaires/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(partenaireData)
+      });
+      if (!response.ok) throw new Error('Erreur mise à jour partenaire');
+      return await response.json();
+    } catch (error) {
+      console.error('Erreur mise à jour partenaire:', error);
+      throw error;
+    }
+  },
+
+  async delete(id) {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/partenaires/${id}`, {
+        method: 'DELETE'
+      });
+      if (!response.ok) throw new Error('Erreur suppression partenaire');
+      return true;
+    } catch (error) {
+      console.error('Erreur suppression partenaire:', error);
+      throw error;
+    }
+  }
+};
+
+// Service Interventions
+export const interventionService = {
+  async getAll() {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/interventions`);
+      if (!response.ok) throw new Error('Erreur chargement interventions');
+      const data = await response.json();
+      return data.data || [];
+    } catch (error) {
+      console.error('Erreur API interventions:', error);
+      return [];
+    }
+  },
+
+  async create(interventionData) {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/interventions`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(interventionData)
+      });
+      if (!response.ok) throw new Error('Erreur création intervention');
+      return await response.json();
+    } catch (error) {
+      console.error('Erreur création intervention:', error);
+      throw error;
+    }
+  },
+
+  async update(id, interventionData) {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/interventions/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(interventionData)
+      });
+      if (!response.ok) throw new Error('Erreur mise à jour intervention');
+      return await response.json();
+    } catch (error) {
+      console.error('Erreur mise à jour intervention:', error);
+      throw error;
+    }
+  },
+
+  async delete(id) {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/interventions/${id}`, {
+        method: 'DELETE'
+      });
+      if (!response.ok) throw new Error('Erreur suppression intervention');
+      return true;
+    } catch (error) {
+      console.error('Erreur suppression intervention:', error);
+      throw error;
+    }
+  }
+};
+
+// Service Règles de salaire
+export const regleSalaireService = {
+  async getAll() {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/regles-salaire`);
+      if (!response.ok) throw new Error('Erreur chargement règles de salaire');
+      const data = await response.json();
+      return data.data || [];
+    } catch (error) {
+      console.error('Erreur API règles de salaire:', error);
+      return [];
+    }
+  },
+
+  async create(regleData) {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/regles-salaire`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(regleData)
+      });
+      if (!response.ok) throw new Error('Erreur création règle de salaire');
+      return await response.json();
+    } catch (error) {
+      console.error('Erreur création règle de salaire:', error);
+      throw error;
+    }
+  },
+
+  async update(id, regleData) {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/regles-salaire/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(regleData)
+      });
+      if (!response.ok) throw new Error('Erreur mise à jour règle de salaire');
+      return await response.json();
+    } catch (error) {
+      console.error('Erreur mise à jour règle de salaire:', error);
+      throw error;
+    }
+  },
+
+  async delete(id) {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/regles-salaire/${id}`, {
+        method: 'DELETE'
+      });
+      if (!response.ok) throw new Error('Erreur suppression règle de salaire');
+      return true;
+    } catch (error) {
+      console.error('Erreur suppression règle de salaire:', error);
+      throw error;
+    }
+  }
+};
+
+// Service Règles de facturation
+export const regleFacturationService = {
+  async getAll() {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/regles-facturation`);
+      if (!response.ok) throw new Error('Erreur chargement règles de facturation');
+      const data = await response.json();
+      return data.data || [];
+    } catch (error) {
+      console.error('Erreur API règles de facturation:', error);
+      return [];
+    }
+  }
+};
+
+// Service Société de taxi
+export const societeTaxiService = {
+  async getAll() {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/societes-taxi`);
+      if (!response.ok) throw new Error('Erreur chargement sociétés de taxi');
+      const data = await response.json();
+      return data.data || [];
+    } catch (error) {
+      console.error('Erreur API sociétés de taxi:', error);
+      return [];
+    }
+  },
+
+  async getCurrent() {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/societe-taxi/current`);
+      if (!response.ok) throw new Error('Erreur chargement société actuelle');
+      const data = await response.json();
+      return data.data || null;
+    } catch (error) {
+      console.error('Erreur API société actuelle:', error);
+      return null;
+    }
+  },
+
+  async update(id, societeData) {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/societes-taxi/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(societeData)
+      });
+      if (!response.ok) throw new Error('Erreur mise à jour société de taxi');
+      return await response.json();
+    } catch (error) {
+      console.error('Erreur mise à jour société de taxi:', error);
+      throw error;
+    }
+  }
+};

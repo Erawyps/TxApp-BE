@@ -13,7 +13,13 @@ import {
   TrashIcon,
   MagnifyingGlassIcon,
   PrinterIcon,
-  ArrowPathIcon
+  ArrowPathIcon,
+  BuildingOfficeIcon,
+  ReceiptRefundIcon,
+  UserGroupIcon,
+  WrenchScrewdriverIcon,
+  Cog6ToothIcon,
+  BuildingStorefrontIcon
 } from '@heroicons/react/24/outline';
 import { generateAndDownloadReport } from 'app/pages/forms/new-post-form/utils/printUtils';
 import { mockData as newPostMock } from 'app/pages/forms/new-post-form/data';
@@ -23,6 +29,12 @@ import { VehicleModal } from './components/VehicleModal';
 import { CourseModal } from './components/CourseModal';
 import { ChargeModal } from './components/ChargeModal';
 import { NewShiftModal } from './components/NewShiftModal';
+import { ClientModal } from './components/ClientModal';
+import { FactureModal } from './components/FactureModal';
+import { PartenaireModal } from './components/PartenaireModal';
+import { InterventionModal } from './components/InterventionModal';
+import { ReglesModal } from './components/ReglesModal';
+import { SocieteModal } from './components/SocieteModal';
 import { calcChargesTotal, buildShift, computeStats } from './utils/helpers';
 import {
   chauffeurService,
@@ -31,7 +43,12 @@ import {
   chargeService,
   feuilleRouteService,
   clientService,
-  modePaiementService
+  factureService,
+  partenaireService,
+  interventionService,
+  regleSalaireService,
+  regleFacturationService,
+  societeTaxiService
 } from './services/adminServices';
 
 // Données mock pour l'administration (maintenant chargées depuis l'API)
@@ -50,8 +67,13 @@ const TxAppAdmin = () => {
   const [shifts, setShifts] = useState([]);
   const [courses, setCourses] = useState([]);
   const [charges, setCharges] = useState([]);
-  const [clients, setClients] = useState([]); // eslint-disable-line no-unused-vars
-  const [modesPaiement, setModesPaiement] = useState([]); // eslint-disable-line no-unused-vars
+  const [clients, setClients] = useState([]);
+  const [factures, setFactures] = useState([]);
+  const [partenaires, setPartenaires] = useState([]);
+  const [interventions, setInterventions] = useState([]);
+  const [reglesSalaire, setReglesSalaire] = useState([]);
+  const [reglesFacturation, setReglesFacturation] = useState([]);
+  const [societeTaxi, setSocieteTaxi] = useState(null);
 
   // États de chargement
   const [loading, setLoading] = useState({
@@ -61,7 +83,13 @@ const TxAppAdmin = () => {
     charges: false,
     shifts: false,
     clients: false,
-    modesPaiement: false
+    modesPaiement: false,
+    factures: false,
+    partenaires: false,
+    interventions: false,
+    reglesSalaire: false,
+    reglesFacturation: false,
+    societeTaxi: false
   });
 
   // États d'erreur
@@ -72,7 +100,13 @@ const TxAppAdmin = () => {
     charges: null,
     shifts: null,
     clients: null,
-    modesPaiement: null
+    modesPaiement: null,
+    factures: null,
+    partenaires: null,
+    interventions: null,
+    reglesSalaire: null,
+    reglesFacturation: null,
+    societeTaxi: null
   });
   
   const [showDriverModal, setShowDriverModal] = useState(false);
@@ -98,6 +132,20 @@ const TxAppAdmin = () => {
 
   // Shifts modal
   const [showNewShiftModal, setShowNewShiftModal] = useState(false);
+
+  // New modals states
+  const [showClientModal, setShowClientModal] = useState(false);
+  const [selectedClient, setSelectedClient] = useState(null);
+  const [showFactureModal, setShowFactureModal] = useState(false);
+  const [selectedFacture, setSelectedFacture] = useState(null);
+  const [showPartenaireModal, setShowPartenaireModal] = useState(false);
+  const [selectedPartenaire, setSelectedPartenaire] = useState(null);
+  const [showInterventionModal, setShowInterventionModal] = useState(false);
+  const [selectedIntervention, setSelectedIntervention] = useState(null);
+  const [showReglesModal, setShowReglesModal] = useState(false);
+  const [selectedRegle, setSelectedRegle] = useState(null);
+  const [reglesType, setReglesType] = useState('salaire');
+  const [showSocieteModal, setShowSocieteModal] = useState(false);
 
   // Charger les courses comme dans new-post-form pour la génération identique
   useEffect(() => {
@@ -142,15 +190,53 @@ const TxAppAdmin = () => {
       setShifts(shiftsData);
       setLoading(prev => ({ ...prev, shifts: false }));
 
-      // Charger les clients et modes de paiement
-      setLoading(prev => ({ ...prev, clients: true, modesPaiement: true }));
-      const [clientsData, modesPaiementData] = await Promise.all([
-        clientService.getAll(),
-        modePaiementService.getAll()
-      ]);
+      // Charger les clients
+      setLoading(prev => ({ ...prev, clients: true }));
+      const clientsData = await clientService.getAll();
       setClients(clientsData);
-      setModesPaiement(modesPaiementData);
-      setLoading(prev => ({ ...prev, clients: false, modesPaiement: false }));
+      setLoading(prev => ({ ...prev, clients: false }));
+
+      // Charger les factures
+      setLoading(prev => ({ ...prev, factures: true }));
+      setErrors(prev => ({ ...prev, factures: null }));
+      const facturesData = await factureService.getAll();
+      setFactures(facturesData);
+      setLoading(prev => ({ ...prev, factures: false }));
+
+      // Charger les partenaires
+      setLoading(prev => ({ ...prev, partenaires: true }));
+      setErrors(prev => ({ ...prev, partenaires: null }));
+      const partenairesData = await partenaireService.getAll();
+      setPartenaires(partenairesData);
+      setLoading(prev => ({ ...prev, partenaires: false }));
+
+      // Charger les interventions
+      setLoading(prev => ({ ...prev, interventions: true }));
+      setErrors(prev => ({ ...prev, interventions: null }));
+      const interventionsData = await interventionService.getAll();
+      setInterventions(interventionsData);
+      setLoading(prev => ({ ...prev, interventions: false }));
+
+      // Charger les règles de salaire
+      setLoading(prev => ({ ...prev, reglesSalaire: true }));
+      setErrors(prev => ({ ...prev, reglesSalaire: null }));
+      const reglesSalaireData = await regleSalaireService.getAll();
+      setReglesSalaire(reglesSalaireData);
+      setLoading(prev => ({ ...prev, reglesSalaire: false }));
+
+      // Charger les règles de facturation
+      setLoading(prev => ({ ...prev, reglesFacturation: true }));
+      setErrors(prev => ({ ...prev, reglesFacturation: null }));
+      const reglesFacturationData = await regleFacturationService.getAll();
+      setReglesFacturation(reglesFacturationData);
+      setLoading(prev => ({ ...prev, reglesFacturation: false }));
+
+      // Charger la société de taxi
+      setLoading(prev => ({ ...prev, societeTaxi: true }));
+      setErrors(prev => ({ ...prev, societeTaxi: null }));
+      const societeTaxiData = await societeTaxiService.getCurrent();
+      setSocieteTaxi(societeTaxiData);
+      setLoading(prev => ({ ...prev, societeTaxi: false }));
 
     } catch (error) {
       console.error('Erreur lors du chargement des données:', error);
@@ -163,7 +249,13 @@ const TxAppAdmin = () => {
         charges: false,
         shifts: false,
         clients: false,
-        modesPaiement: false
+        modesPaiement: false,
+        factures: false,
+        partenaires: false,
+        interventions: false,
+        reglesSalaire: false,
+        reglesFacturation: false,
+        societeTaxi: false
       });
     }
   };
@@ -249,7 +341,13 @@ const TxAppAdmin = () => {
     { key: 'vehicles', label: 'Véhicules', icon: TruckIcon },
     { key: 'shifts', label: 'Feuilles de route', icon: DocumentTextIcon },
     { key: 'courses', label: 'Courses', icon: MapPinIcon },
-    { key: 'charges', label: 'Charges', icon: CurrencyEuroIcon }
+    { key: 'charges', label: 'Charges', icon: CurrencyEuroIcon },
+    { key: 'clients', label: 'Clients', icon: BuildingOfficeIcon },
+    { key: 'factures', label: 'Factures', icon: ReceiptRefundIcon },
+    { key: 'partenaires', label: 'Partenaires', icon: UserGroupIcon },
+    { key: 'interventions', label: 'Interventions', icon: WrenchScrewdriverIcon },
+    { key: 'regles', label: 'Règles', icon: Cog6ToothIcon },
+    { key: 'societe', label: 'Société', icon: BuildingStorefrontIcon }
   ];
 
   const handleSaveDriver = async (driverData) => {
@@ -484,7 +582,252 @@ const TxAppAdmin = () => {
     return matchesSearch && matchesStatus;
   });
 
-  const stats = computeStats(drivers, vehicles, shifts);
+  const stats = computeStats(drivers, vehicles, shifts, clients, factures, partenaires, interventions);
+
+  // Handlers: Clients
+  const handleAddClient = () => {
+    setSelectedClient(null);
+    setShowClientModal(true);
+  };
+
+  const handleEditClient = (client) => {
+    setSelectedClient(client);
+    setShowClientModal(true);
+  };
+
+  const handleSaveClient = async (clientData) => {
+    try {
+      if (selectedClient) {
+        await clientService.update(selectedClient.id, clientData);
+        setClients(clients.map(c => c.id === selectedClient.id ? { ...clientData, id: selectedClient.id } : c));
+      } else {
+        const newClient = await clientService.create(clientData);
+        setClients([...clients, newClient]);
+      }
+      setSelectedClient(null);
+      setShowClientModal(false);
+      await loadAllData();
+    } catch (error) {
+      console.error('Erreur sauvegarde client:', error);
+      alert('Erreur lors de la sauvegarde du client: ' + error.message);
+    }
+  };
+
+  const handleDeleteClient = async (id) => {
+    if (!window.confirm('Êtes-vous sûr de vouloir supprimer ce client ?')) return;
+
+    try {
+      await clientService.delete(id);
+      setClients(clients.filter(c => c.id !== id));
+    } catch (error) {
+      console.error('Erreur suppression client:', error);
+      alert('Erreur lors de la suppression du client');
+    }
+  };
+
+  // Handlers: Factures
+  const handleAddFacture = () => {
+    setSelectedFacture(null);
+    setShowFactureModal(true);
+  };
+
+  const handleEditFacture = (facture) => {
+    setSelectedFacture(facture);
+    setShowFactureModal(true);
+  };
+
+  const handleSaveFacture = async (factureData) => {
+    try {
+      if (selectedFacture) {
+        await factureService.update(selectedFacture.id, factureData);
+        setFactures(factures.map(f => f.id === selectedFacture.id ? { ...factureData, id: selectedFacture.id } : f));
+      } else {
+        const newFacture = await factureService.create(factureData);
+        setFactures([...factures, newFacture]);
+      }
+      setSelectedFacture(null);
+      setShowFactureModal(false);
+      await loadAllData();
+    } catch (error) {
+      console.error('Erreur sauvegarde facture:', error);
+      alert('Erreur lors de la sauvegarde de la facture: ' + error.message);
+    }
+  };
+
+  const handleDeleteFacture = async (id) => {
+    if (!window.confirm('Êtes-vous sûr de vouloir supprimer cette facture ?')) return;
+
+    try {
+      await factureService.delete(id);
+      setFactures(factures.filter(f => f.id !== id));
+    } catch (error) {
+      console.error('Erreur suppression facture:', error);
+      alert('Erreur lors de la suppression de la facture');
+    }
+  };
+
+  // Handlers: Partenaires
+  const handleAddPartenaire = () => {
+    setSelectedPartenaire(null);
+    setShowPartenaireModal(true);
+  };
+
+  const handleEditPartenaire = (partenaire) => {
+    setSelectedPartenaire(partenaire);
+    setShowPartenaireModal(true);
+  };
+
+  const handleSavePartenaire = async (partenaireData) => {
+    try {
+      if (selectedPartenaire) {
+        await partenaireService.update(selectedPartenaire.id, partenaireData);
+        setPartenaires(partenaires.map(p => p.id === selectedPartenaire.id ? { ...partenaireData, id: selectedPartenaire.id } : p));
+      } else {
+        const newPartenaire = await partenaireService.create(partenaireData);
+        setPartenaires([...partenaires, newPartenaire]);
+      }
+      setSelectedPartenaire(null);
+      setShowPartenaireModal(false);
+      await loadAllData();
+    } catch (error) {
+      console.error('Erreur sauvegarde partenaire:', error);
+      alert('Erreur lors de la sauvegarde du partenaire: ' + error.message);
+    }
+  };
+
+  const handleDeletePartenaire = async (id) => {
+    if (!window.confirm('Êtes-vous sûr de vouloir supprimer ce partenaire ?')) return;
+
+    try {
+      await partenaireService.delete(id);
+      setPartenaires(partenaires.filter(p => p.id !== id));
+    } catch (error) {
+      console.error('Erreur suppression partenaire:', error);
+      alert('Erreur lors de la suppression du partenaire');
+    }
+  };
+
+  // Handlers: Interventions
+  const handleAddIntervention = () => {
+    setSelectedIntervention(null);
+    setShowInterventionModal(true);
+  };
+
+  const handleEditIntervention = (intervention) => {
+    setSelectedIntervention(intervention);
+    setShowInterventionModal(true);
+  };
+
+  const handleSaveIntervention = async (interventionData) => {
+    try {
+      if (selectedIntervention) {
+        await interventionService.update(selectedIntervention.id, interventionData);
+        setInterventions(interventions.map(i => i.id === selectedIntervention.id ? { ...interventionData, id: selectedIntervention.id } : i));
+      } else {
+        const newIntervention = await interventionService.create(interventionData);
+        setInterventions([...interventions, newIntervention]);
+      }
+      setSelectedIntervention(null);
+      setShowInterventionModal(false);
+      await loadAllData();
+    } catch (error) {
+      console.error('Erreur sauvegarde intervention:', error);
+      alert('Erreur lors de la sauvegarde de l\'intervention: ' + error.message);
+    }
+  };
+
+  const handleDeleteIntervention = async (id) => {
+    if (!window.confirm('Êtes-vous sûr de vouloir supprimer cette intervention ?')) return;
+
+    try {
+      await interventionService.delete(id);
+      setInterventions(interventions.filter(i => i.id !== id));
+    } catch (error) {
+      console.error('Erreur suppression intervention:', error);
+      alert('Erreur lors de la suppression de l\'intervention');
+    }
+  };
+
+  // Handlers: Règles
+  const handleAddRegleSalaire = () => {
+    setSelectedRegle(null);
+    setReglesType('salaire');
+    setShowReglesModal(true);
+  };
+
+  const handleAddRegleFacturation = () => {
+    setSelectedRegle(null);
+    setReglesType('facturation');
+    setShowReglesModal(true);
+  };
+
+  const handleEditRegle = (regle, type) => {
+    setSelectedRegle(regle);
+    setReglesType(type);
+    setShowReglesModal(true);
+  };
+
+  const handleSaveRegle = async (regleData) => {
+    try {
+      const service = reglesType === 'salaire' ? regleSalaireService : regleFacturationService;
+      const stateSetter = reglesType === 'salaire' ? setReglesSalaire : setReglesFacturation;
+      const currentList = reglesType === 'salaire' ? reglesSalaire : reglesFacturation;
+
+      if (selectedRegle) {
+        await service.update(selectedRegle.id, regleData);
+        stateSetter(currentList.map(r => r.id === selectedRegle.id ? { ...regleData, id: selectedRegle.id } : r));
+      } else {
+        const newRegle = await service.create(regleData);
+        stateSetter([...currentList, newRegle]);
+      }
+      setSelectedRegle(null);
+      setShowReglesModal(false);
+      await loadAllData();
+    } catch (error) {
+      console.error('Erreur sauvegarde règle:', error);
+      alert('Erreur lors de la sauvegarde de la règle: ' + error.message);
+    }
+  };
+
+  const handleDeleteRegle = async (id, type) => {
+    if (!window.confirm('Êtes-vous sûr de vouloir supprimer cette règle ?')) return;
+
+    try {
+      const service = type === 'salaire' ? regleSalaireService : regleFacturationService;
+      await service.delete(id);
+
+      if (type === 'salaire') {
+        setReglesSalaire(reglesSalaire.filter(r => r.id !== id));
+      } else {
+        setReglesFacturation(reglesFacturation.filter(r => r.id !== id));
+      }
+    } catch (error) {
+      console.error('Erreur suppression règle:', error);
+      alert('Erreur lors de la suppression de la règle');
+    }
+  };
+
+  // Handlers: Société
+  const handleEditSociete = () => {
+    setShowSocieteModal(true);
+  };
+
+  const handleSaveSociete = async (societeData) => {
+    try {
+      if (societeTaxi) {
+        await societeTaxiService.update(societeTaxi.id, societeData);
+        setSocieteTaxi({ ...societeData, id: societeTaxi.id });
+      } else {
+        const newSociete = await societeTaxiService.create(societeData);
+        setSocieteTaxi(newSociete);
+      }
+      setShowSocieteModal(false);
+      await loadAllData();
+    } catch (error) {
+      console.error('Erreur sauvegarde société:', error);
+      alert('Erreur lors de la sauvegarde de la société: ' + error.message);
+    }
+  };
 
   return (
     <Page title="TxApp - Administration">
@@ -543,7 +886,7 @@ const TxAppAdmin = () => {
           <div className="transition-content">
             {activeTab === 'dashboard' && (
               <div className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                   <Card className="p-6">
                     <div className="flex items-center">
                       <div className="p-2 rounded-lg bg-blue-100 dark:bg-blue-900/20">
@@ -578,6 +921,22 @@ const TxAppAdmin = () => {
 
                   <Card className="p-6">
                     <div className="flex items-center">
+                      <div className="p-2 rounded-lg bg-purple-100 dark:bg-purple-900/20">
+                        <BuildingOfficeIcon className="h-8 w-8 text-purple-600 dark:text-purple-400" />
+                      </div>
+                      <div className="ml-4">
+                        <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                          Clients actifs
+                        </p>
+                        <p className="text-2xl font-bold text-gray-900 dark:text-white">
+                          {stats.activeClients}/{stats.totalClients}
+                        </p>
+                      </div>
+                    </div>
+                  </Card>
+
+                  <Card className="p-6">
+                    <div className="flex items-center">
                       <div className="p-2 rounded-lg bg-gray-100 dark:bg-gray-800">
                         <CurrencyEuroIcon className="h-8 w-8 text-gray-700 dark:text-gray-300" />
                       </div>
@@ -587,6 +946,70 @@ const TxAppAdmin = () => {
                         </p>
                         <p className="text-2xl font-bold text-gray-900 dark:text-white">
                           {stats.todayRevenue ? stats.todayRevenue.toFixed(2) : '0.00'}€
+                        </p>
+                      </div>
+                    </div>
+                  </Card>
+
+                  <Card className="p-6">
+                    <div className="flex items-center">
+                      <div className="p-2 rounded-lg bg-orange-100 dark:bg-orange-900/20">
+                        <ReceiptRefundIcon className="h-8 w-8 text-orange-600 dark:text-orange-400" />
+                      </div>
+                      <div className="ml-4">
+                        <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                          Factures payées
+                        </p>
+                        <p className="text-2xl font-bold text-gray-900 dark:text-white">
+                          {stats.paidFactures}/{stats.totalFactures}
+                        </p>
+                      </div>
+                    </div>
+                  </Card>
+
+                  <Card className="p-6">
+                    <div className="flex items-center">
+                      <div className="p-2 rounded-lg bg-indigo-100 dark:bg-indigo-900/20">
+                        <UserGroupIcon className="h-8 w-8 text-indigo-600 dark:text-indigo-400" />
+                      </div>
+                      <div className="ml-4">
+                        <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                          Partenaires actifs
+                        </p>
+                        <p className="text-2xl font-bold text-gray-900 dark:text-white">
+                          {stats.activePartenaires}/{stats.totalPartenaires}
+                        </p>
+                      </div>
+                    </div>
+                  </Card>
+
+                  <Card className="p-6">
+                    <div className="flex items-center">
+                      <div className="p-2 rounded-lg bg-red-100 dark:bg-red-900/20">
+                        <WrenchScrewdriverIcon className="h-8 w-8 text-red-600 dark:text-red-400" />
+                      </div>
+                      <div className="ml-4">
+                        <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                          Interventions
+                        </p>
+                        <p className="text-2xl font-bold text-gray-900 dark:text-white">
+                          {stats.totalInterventions}
+                        </p>
+                      </div>
+                    </div>
+                  </Card>
+
+                  <Card className="p-6">
+                    <div className="flex items-center">
+                      <div className="p-2 rounded-lg bg-teal-100 dark:bg-teal-900/20">
+                        <MapPinIcon className="h-8 w-8 text-teal-600 dark:text-teal-400" />
+                      </div>
+                      <div className="ml-4">
+                        <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                          Courses du jour
+                        </p>
+                        <p className="text-2xl font-bold text-gray-900 dark:text-white">
+                          {courses.length}
                         </p>
                       </div>
                     </div>
@@ -1044,6 +1467,644 @@ const TxAppAdmin = () => {
                 </Card>
               </div>
             )}
+
+            {activeTab === 'clients' && (
+              <div className="space-y-6">
+                <Card className="p-6">
+                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                    <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
+                      Gestion des Clients
+                    </h2>
+                    <Button
+                      onClick={handleAddClient}
+                      variant="primary"
+                      className="flex items-center gap-2"
+                    >
+                      <PlusIcon className="h-5 w-5" />
+                      Nouveau client
+                    </Button>
+                  </div>
+                </Card>
+
+                <Card className="overflow-hidden">
+                  <div className="overflow-x-auto">
+                    <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                      <thead className="bg-gray-50 dark:bg-gray-700">
+                        <tr>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Société</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">N° TVA</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Téléphone</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Email</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Statut</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                        {clients.map((client) => (
+                          <tr key={client.client_id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
+                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
+                              {client.nom_societe}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                              {client.num_tva || '-'}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                              {client.telephone || '-'}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                              {client.email || '-'}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                                client.est_actif
+                                  ? 'bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100'
+                                  : 'bg-red-100 text-red-800 dark:bg-red-800 dark:text-red-100'
+                              }`}>
+                                {client.est_actif ? 'Actif' : 'Inactif'}
+                              </span>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                              <div className="flex gap-2">
+                                <Button
+                                  onClick={() => handleEditClient(client)}
+                                  variant="ghost"
+                                  size="sm"
+                                  title="Modifier"
+                                >
+                                  <PencilSquareIcon className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  onClick={() => handleDeleteClient(client.client_id)}
+                                  variant="ghost"
+                                  size="sm"
+                                  title="Supprimer"
+                                  className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300"
+                                >
+                                  <TrashIcon className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </Card>
+              </div>
+            )}
+
+            {activeTab === 'factures' && (
+              <div className="space-y-6">
+                <Card className="p-6">
+                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                    <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
+                      Gestion des Factures
+                    </h2>
+                    <Button
+                      onClick={handleAddFacture}
+                      variant="primary"
+                      className="flex items-center gap-2"
+                    >
+                      <PlusIcon className="h-5 w-5" />
+                      Nouvelle facture
+                    </Button>
+                  </div>
+                </Card>
+
+                <Card className="overflow-hidden">
+                  <div className="overflow-x-auto">
+                    <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                      <thead className="bg-gray-50 dark:bg-gray-700">
+                        <tr>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">N° Facture</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Client</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Date</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Montant TTC</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Statut</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                        {factures.map((facture) => {
+                          const client = clients.find(c => c.client_id === facture.client_id);
+                          return (
+                            <tr key={facture.facture_id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
+                              <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
+                                {facture.numero_facture}
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                                {client ? client.nom_societe : 'Client inconnu'}
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                                {new Date(facture.date_emission).toLocaleDateString('fr-FR')}
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                                {Number(facture.montant_total || 0).toFixed(2)}€
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap">
+                                <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                                  facture.est_payee
+                                    ? 'bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100'
+                                    : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-800 dark:text-yellow-100'
+                                }`}>
+                                  {facture.est_payee ? 'Payée' : 'En attente'}
+                                </span>
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                <div className="flex gap-2">
+                                  <Button
+                                    onClick={() => handleEditFacture(facture)}
+                                    variant="ghost"
+                                    size="sm"
+                                    title="Modifier"
+                                  >
+                                    <PencilSquareIcon className="h-4 w-4" />
+                                  </Button>
+                                  <Button
+                                    onClick={() => handleDeleteFacture(facture.facture_id)}
+                                    variant="ghost"
+                                    size="sm"
+                                    title="Supprimer"
+                                    className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300"
+                                  >
+                                    <TrashIcon className="h-4 w-4" />
+                                  </Button>
+                                </div>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                </Card>
+              </div>
+            )}
+
+            {activeTab === 'partenaires' && (
+              <div className="space-y-6">
+                <Card className="p-6">
+                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                    <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
+                      Gestion des Partenaires
+                    </h2>
+                    <Button
+                      onClick={handleAddPartenaire}
+                      variant="primary"
+                      className="flex items-center gap-2"
+                    >
+                      <PlusIcon className="h-5 w-5" />
+                      Nouveau partenaire
+                    </Button>
+                  </div>
+                </Card>
+
+                <Card className="overflow-hidden">
+                  <div className="overflow-x-auto">
+                    <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                      <thead className="bg-gray-50 dark:bg-gray-700">
+                        <tr>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Société</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">N° TVA</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Contact</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Adresse</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Statut</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                        {partenaires.map((partenaire) => (
+                          <tr key={partenaire.partenaire_id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
+                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
+                              {partenaire.nom_societe}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                              {partenaire.num_tva || '-'}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                              {partenaire.telephone || '-'}
+                              <br />
+                              <span className="text-xs text-gray-500 dark:text-gray-400">{partenaire.email || '-'}</span>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                              {partenaire.adresse || '-'}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                                partenaire.est_actif
+                                  ? 'bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100'
+                                  : 'bg-red-100 text-red-800 dark:bg-red-800 dark:text-red-100'
+                              }`}>
+                                {partenaire.est_actif ? 'Actif' : 'Inactif'}
+                              </span>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                              <div className="flex gap-2">
+                                <Button
+                                  onClick={() => handleEditPartenaire(partenaire)}
+                                  variant="ghost"
+                                  size="sm"
+                                  title="Modifier"
+                                >
+                                  <PencilSquareIcon className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  onClick={() => handleDeletePartenaire(partenaire.partenaire_id)}
+                                  variant="ghost"
+                                  size="sm"
+                                  title="Supprimer"
+                                  className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300"
+                                >
+                                  <TrashIcon className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </Card>
+              </div>
+            )}
+
+            {activeTab === 'interventions' && (
+              <div className="space-y-6">
+                <Card className="p-6">
+                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                    <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
+                      Gestion des Interventions
+                    </h2>
+                    <Button
+                      onClick={handleAddIntervention}
+                      variant="primary"
+                      className="flex items-center gap-2"
+                    >
+                      <PlusIcon className="h-5 w-5" />
+                      Nouvelle intervention
+                    </Button>
+                  </div>
+                </Card>
+
+                <Card className="overflow-hidden">
+                  <div className="overflow-x-auto">
+                    <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                      <thead className="bg-gray-50 dark:bg-gray-700">
+                        <tr>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Chauffeur</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Type</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Date</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Lieu</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Description</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                        {interventions.map((intervention) => {
+                          const chauffeur = drivers.find(d => d.chauffeur_id === intervention.chauffeur_id);
+                          return (
+                            <tr key={intervention.intervention_id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
+                              <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
+                                {chauffeur ? `${chauffeur.utilisateur?.nom} ${chauffeur.utilisateur?.prenom}` : 'Chauffeur inconnu'}
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                                {intervention.type}
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                                {new Date(intervention.date).toLocaleDateString('fr-FR')}
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                                {intervention.location || '-'}
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                                {intervention.description}
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                <div className="flex gap-2">
+                                  <Button
+                                    onClick={() => handleEditIntervention(intervention)}
+                                    variant="ghost"
+                                    size="sm"
+                                    title="Modifier"
+                                  >
+                                    <PencilSquareIcon className="h-4 w-4" />
+                                  </Button>
+                                  <Button
+                                    onClick={() => handleDeleteIntervention(intervention.intervention_id)}
+                                    variant="ghost"
+                                    size="sm"
+                                    title="Supprimer"
+                                    className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300"
+                                  >
+                                    <TrashIcon className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                      </tbody>
+                    </table>
+                  </div>
+                </Card>
+              </div>
+            )}
+
+            {activeTab === 'regles' && (
+              <div className="space-y-6">
+                <Card className="p-6">
+                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                    <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
+                      Gestion des Règles
+                    </h2>
+                    <div className="flex gap-2">
+                      <Button
+                        onClick={handleAddRegleSalaire}
+                        variant="primary"
+                        className="flex items-center gap-2"
+                      >
+                        <PlusIcon className="h-5 w-5" />
+                        Règle salaire
+                      </Button>
+                      <Button
+                        onClick={handleAddRegleFacturation}
+                        variant="outline"
+                        className="flex items-center gap-2"
+                      >
+                        <PlusIcon className="h-5 w-5" />
+                        Règle facturation
+                      </Button>
+                    </div>
+                  </div>
+                </Card>
+
+                {/* Règles de salaire */}
+                <Card className="p-6">
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                    Règles de salaire
+                  </h3>
+                  <div className="overflow-x-auto">
+                    <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                      <thead className="bg-gray-50 dark:bg-gray-700">
+                        <tr>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Nom</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Type</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Valeur</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Description</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                        {reglesSalaire.map((regle) => (
+                          <tr key={regle.regle_id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
+                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
+                              {regle.nom_regle}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                              {regle.est_variable ? 'Variable' : 'Fixe'}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                              {regle.seuil_recette ? `${Number(regle.seuil_recette).toFixed(2)}€` : '-'}
+                              {regle.pourcentage_base ? ` / ${Number(regle.pourcentage_base).toFixed(2)}%` : ''}
+                              {regle.pourcentage_au_dela ? ` (${Number(regle.pourcentage_au_dela).toFixed(2)}%)` : ''}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                              {regle.description || '-'}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                              <div className="flex gap-2">
+                                <Button
+                                  onClick={() => handleEditRegle(regle, 'salaire')}
+                                  variant="ghost"
+                                  size="sm"
+                                  title="Modifier"
+                                >
+                                  <PencilSquareIcon className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  onClick={() => handleDeleteRegle(regle.regle_id, 'salaire')}
+                                  variant="ghost"
+                                  size="sm"
+                                  title="Supprimer"
+                                  className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300"
+                                >
+                                  <TrashIcon className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </Card>
+
+                {/* Règles de facturation */}
+                <Card className="p-6">
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                    Règles de facturation
+                  </h3>
+                  <div className="overflow-x-auto">
+                    <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                      <thead className="bg-gray-50 dark:bg-gray-700">
+                        <tr>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Nom</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Type</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Valeur</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Conditions</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Statut</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                        {reglesFacturation.map((regle) => (
+                          <tr key={regle.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
+                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
+                              {regle.nom}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                              {regle.type_regle}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                              {regle.type_regle === 'au_km' ? `${regle.valeur}€/km` : `${regle.valeur}€`}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                              {regle.jour_semaine && `Le ${regle.jour_semaine}`}
+                              {regle.heure_debut && regle.heure_fin && ` de ${regle.heure_debut} à ${regle.heure_fin}`}
+                              {regle.type_course && ` - ${regle.type_course}`}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                                regle.est_actif
+                                  ? 'bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100'
+                                  : 'bg-red-100 text-red-800 dark:bg-red-800 dark:text-red-100'
+                              }`}>
+                                {regle.est_actif ? 'Active' : 'Inactive'}
+                              </span>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                              <div className="flex gap-2">
+                                <Button
+                                  onClick={() => handleEditRegle(regle, 'facturation')}
+                                  variant="ghost"
+                                  size="sm"
+                                  title="Modifier"
+                                >
+                                  <PencilSquareIcon className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  onClick={() => handleDeleteRegle(regle.id, 'facturation')}
+                                  variant="ghost"
+                                  size="sm"
+                                  title="Supprimer"
+                                  className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300"
+                                >
+                                  <TrashIcon className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </Card>
+              </div>
+            )}
+
+            {activeTab === 'societe' && (
+              <div className="space-y-6">
+                <Card className="p-6">
+                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                    <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
+                      Configuration de la Société
+                    </h2>
+                    <Button
+                      onClick={handleEditSociete}
+                      variant="primary"
+                      className="flex items-center gap-2"
+                    >
+                      <Cog6ToothIcon className="h-5 w-5" />
+                      {societeTaxi ? 'Modifier' : 'Configurer'}
+                    </Button>
+                  </div>
+                </Card>
+
+                {societeTaxi ? (
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <Card className="p-6">
+                      <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                        Informations générales
+                      </h3>
+                      <div className="space-y-3">
+                        <div>
+                          <label className="text-sm font-medium text-gray-500 dark:text-gray-400">Nom exploitant</label>
+                          <p className="text-sm text-gray-900 dark:text-white">{societeTaxi.nom_exploitant}</p>
+                        </div>
+                        <div>
+                          <label className="text-sm font-medium text-gray-500 dark:text-gray-400">Numéro TVA</label>
+                          <p className="text-sm text-gray-900 dark:text-white">{societeTaxi.num_tva}</p>
+                        </div>
+                        <div>
+                          <label className="text-sm font-medium text-gray-500 dark:text-gray-400">Taux TVA par défaut</label>
+                          <p className="text-sm text-gray-900 dark:text-white">{societeTaxi.taux_tva_defaut ? `${Number(societeTaxi.taux_tva_defaut).toFixed(2)}%` : '-'}</p>
+                        </div>
+                        <div>
+                          <label className="text-sm font-medium text-gray-500 dark:text-gray-400">Montant inclut TVA</label>
+                          <p className="text-sm text-gray-900 dark:text-white">{societeTaxi.montant_inclut_tva ? 'Oui' : 'Non'}</p>
+                        </div>
+                      </div>
+                    </Card>
+
+                    <Card className="p-6">
+                      <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                        Contact
+                      </h3>
+                      <div className="space-y-3">
+                        <div>
+                          <label className="text-sm font-medium text-gray-500 dark:text-gray-400">Téléphone</label>
+                          <p className="text-sm text-gray-900 dark:text-white">{societeTaxi.telephone}</p>
+                        </div>
+                        <div>
+                          <label className="text-sm font-medium text-gray-500 dark:text-gray-400">Email</label>
+                          <p className="text-sm text-gray-900 dark:text-white">{societeTaxi.email || '-'}</p>
+                        </div>
+                        <div>
+                          <label className="text-sm font-medium text-gray-500 dark:text-gray-400">Site web</label>
+                          <p className="text-sm text-gray-900 dark:text-white">{societeTaxi.site_web || '-'}</p>
+                        </div>
+                        <div>
+                          <label className="text-sm font-medium text-gray-500 dark:text-gray-400">N° licence taxi</label>
+                          <p className="text-sm text-gray-900 dark:text-white">{societeTaxi.numero_licence || '-'}</p>
+                        </div>
+                      </div>
+                    </Card>
+
+                    <Card className="p-6 lg:col-span-2">
+                      <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                        Adresse
+                      </h3>
+                      <div className="space-y-3">
+                        <div>
+                          <label className="text-sm font-medium text-gray-500 dark:text-gray-400">Adresse</label>
+                          <p className="text-sm text-gray-900 dark:text-white">{societeTaxi.adresse}</p>
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <label className="text-sm font-medium text-gray-500 dark:text-gray-400">Code postal</label>
+                            <p className="text-sm text-gray-900 dark:text-white">{societeTaxi.code_postal}</p>
+                          </div>
+                          <div>
+                            <label className="text-sm font-medium text-gray-500 dark:text-gray-400">Ville</label>
+                            <p className="text-sm text-gray-900 dark:text-white">{societeTaxi.ville}</p>
+                          </div>
+                        </div>
+                      </div>
+                    </Card>
+
+                    {societeTaxi.gérant_nom && (
+                      <Card className="p-6 lg:col-span-2">
+                        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                          Gérant
+                        </h3>
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <label className="text-sm font-medium text-gray-500 dark:text-gray-400">Nom</label>
+                            <p className="text-sm text-gray-900 dark:text-white">{societeTaxi.gérant_nom} {societeTaxi.gérant_prenom}</p>
+                          </div>
+                          <div>
+                            <label className="text-sm font-medium text-gray-500 dark:text-gray-400">Téléphone</label>
+                            <p className="text-sm text-gray-900 dark:text-white">{societeTaxi.gérant_telephone || '-'}</p>
+                          </div>
+                          <div>
+                            <label className="text-sm font-medium text-gray-500 dark:text-gray-400">Email</label>
+                            <p className="text-sm text-gray-900 dark:text-white">{societeTaxi.gérant_email || '-'}</p>
+                          </div>
+                        </div>
+                      </Card>
+                    )}
+                  </div>
+                ) : (
+                  <Card className="p-6">
+                    <div className="text-center py-8">
+                      <BuildingStorefrontIcon className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                      <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
+                        Aucune configuration trouvée
+                      </h3>
+                      <p className="text-gray-500 dark:text-gray-400 mb-4">
+                        Configurez les informations de votre société pour commencer.
+                      </p>
+                      <Button
+                        onClick={handleEditSociete}
+                        variant="primary"
+                      >
+                        Configurer la société
+                      </Button>
+                    </div>
+                  </Card>
+                )}
+              </div>
+            )}
           </div>
 
           <DriverModal
@@ -1085,6 +2146,51 @@ const TxAppAdmin = () => {
             drivers={drivers}
             vehicles={vehicles}
             onSave={handleCreateShift}
+          />
+
+          <ClientModal
+            isOpen={showClientModal}
+            onClose={() => { setShowClientModal(false); setSelectedClient(null); }}
+            client={selectedClient}
+            onSave={handleSaveClient}
+          />
+
+          <FactureModal
+            isOpen={showFactureModal}
+            onClose={() => { setShowFactureModal(false); setSelectedFacture(null); }}
+            facture={selectedFacture}
+            onSave={handleSaveFacture}
+            clients={clients}
+          />
+
+          <PartenaireModal
+            isOpen={showPartenaireModal}
+            onClose={() => { setShowPartenaireModal(false); setSelectedPartenaire(null); }}
+            partenaire={selectedPartenaire}
+            onSave={handleSavePartenaire}
+          />
+
+          <InterventionModal
+            isOpen={showInterventionModal}
+            onClose={() => { setShowInterventionModal(false); setSelectedIntervention(null); }}
+            intervention={selectedIntervention}
+            onSave={handleSaveIntervention}
+            vehicules={vehicles}
+          />
+
+          <ReglesModal
+            isOpen={showReglesModal}
+            onClose={() => { setShowReglesModal(false); setSelectedRegle(null); }}
+            regle={selectedRegle}
+            onSave={handleSaveRegle}
+            type={reglesType}
+          />
+
+          <SocieteModal
+            isOpen={showSocieteModal}
+            onClose={() => setShowSocieteModal(false)}
+            societe={societeTaxi}
+            onSave={handleSaveSociete}
           />
         </div>
       </div>
