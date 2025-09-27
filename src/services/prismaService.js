@@ -1144,9 +1144,7 @@ export async function getPartenaires() {
         societe_taxi: true,
         liaison_partenaire: {
           include: {
-            societe_emettrice: true,
-            mode_paiement: true,
-            client_prestation: true
+            societe_taxi: true
           }
         }
       }
@@ -1176,6 +1174,139 @@ export async function createPartenaire(partenaireData) {
   }
 }
 
+// ==================== GESTION DES FACTURES ====================
+
+export async function getGestionFactures() {
+  try {
+    return await prisma.gestion_facture.findMany({
+      include: {
+        client: {
+          include: {
+            societe_taxi: true
+          }
+        },
+        mode_paiement: true
+      },
+      orderBy: {
+        date_emission: 'desc'
+      }
+    });
+  } catch (error) {
+    console.error('Erreur lors de la récupération des factures:', error);
+    // Return empty array if table doesn't exist yet
+    if (error.code === 'PGRST116' || error.message.includes('gestion_facture')) {
+      return [];
+    }
+    throw error;
+  }
+}
+
+export async function getGestionFactureById(factureId) {
+  try {
+    return await prisma.gestion_facture.findUnique({
+      where: { facture_id: parseInt(factureId) },
+      include: {
+        client: {
+          include: {
+            societe_taxi: true
+          }
+        },
+        mode_paiement: true
+      }
+    });
+  } catch (error) {
+    console.error('Erreur lors de la récupération de la facture:', error);
+    // Return null if table doesn't exist yet
+    if (error.code === 'PGRST116' || error.message.includes('gestion_facture')) {
+      return null;
+    }
+    throw error;
+  }
+}
+
+export async function createGestionFacture(factureData) {
+  try {
+    return await prisma.gestion_facture.create({
+      data: {
+        client_id: factureData.client_id,
+        numero_facture: factureData.numero_facture,
+        date_emission: new Date(factureData.date_emission),
+        date_echeance: factureData.date_echeance ? new Date(factureData.date_echeance) : null,
+        montant_total: factureData.montant_total,
+        montant_tva: factureData.montant_tva || 0,
+        est_payee: factureData.est_payee || false,
+        date_paiement: factureData.date_paiement ? new Date(factureData.date_paiement) : null,
+        mode_paiement_id: factureData.mode_paiement_id,
+        notes: factureData.notes
+      },
+      include: {
+        client: {
+          include: {
+            societe_taxi: true
+          }
+        },
+        mode_paiement: true
+      }
+    });
+  } catch (error) {
+    console.error('Erreur lors de la création de la facture:', error);
+    // Throw error if table doesn't exist yet
+    if (error.code === 'PGRST116' || error.message.includes('gestion_facture')) {
+      throw new Error('Table gestion_facture n\'existe pas encore');
+    }
+    throw error;
+  }
+}
+
+export async function updateGestionFacture(factureId, factureData) {
+  try {
+    return await prisma.gestion_facture.update({
+      where: { facture_id: parseInt(factureId) },
+      data: {
+        numero_facture: factureData.numero_facture,
+        date_emission: new Date(factureData.date_emission),
+        date_echeance: factureData.date_echeance ? new Date(factureData.date_echeance) : null,
+        montant_total: factureData.montant_total,
+        montant_tva: factureData.montant_tva || 0,
+        est_payee: factureData.est_payee || false,
+        date_paiement: factureData.date_paiement ? new Date(factureData.date_paiement) : null,
+        mode_paiement_id: factureData.mode_paiement_id,
+        notes: factureData.notes
+      },
+      include: {
+        client: {
+          include: {
+            societe_taxi: true
+          }
+        },
+        mode_paiement: true
+      }
+    });
+  } catch (error) {
+    console.error('Erreur lors de la mise à jour de la facture:', error);
+    // Throw error if table doesn't exist yet
+    if (error.code === 'PGRST116' || error.message.includes('gestion_facture')) {
+      throw new Error('Table gestion_facture n\'existe pas encore');
+    }
+    throw error;
+  }
+}
+
+export async function deleteGestionFacture(factureId) {
+  try {
+    return await prisma.gestion_facture.delete({
+      where: { facture_id: parseInt(factureId) }
+    });
+  } catch (error) {
+    console.error('Erreur lors de la suppression de la facture:', error);
+    // Throw error if table doesn't exist yet
+    if (error.code === 'PGRST116' || error.message.includes('gestion_facture')) {
+      throw new Error('Table gestion_facture n\'existe pas encore');
+    }
+    throw error;
+  }
+}
+
 // ==================== GESTION DES SOCIÉTÉS TAXI ====================
 
 export async function getSocietesTaxi() {
@@ -1197,6 +1328,48 @@ export async function getSocietesTaxi() {
     });
   } catch (error) {
     console.error('Erreur lors de la récupération des sociétés taxi:', error);
+    throw error;
+  }
+}
+
+export async function getCurrentSocieteTaxi() {
+  try {
+    // For now, return the first societe_taxi as "current"
+    // This can be modified later to use a specific logic for determining the current one
+    const societes = await prisma.societe_taxi.findMany({
+      include: {
+        chauffeur: true,
+        client: true,
+        vehicule: true,
+        partenaire: true
+      },
+      take: 1
+    });
+    return societes.length > 0 ? societes[0] : null;
+  } catch (error) {
+    console.error('Erreur lors de la récupération de la société taxi actuelle:', error);
+    throw error;
+  }
+}
+
+export async function getSocieteTaxiById(id) {
+  try {
+    return await prisma.societe_taxi.findUnique({
+      where: { societe_id: parseInt(id) },
+      include: {
+        utilisateur: true,
+        chauffeur: {
+          include: {
+            utilisateur: true
+          }
+        },
+        client: true,
+        vehicule: true,
+        partenaire: true
+      }
+    });
+  } catch (error) {
+    console.error('Erreur lors de la récupération de la société taxi par ID:', error);
     throw error;
   }
 }

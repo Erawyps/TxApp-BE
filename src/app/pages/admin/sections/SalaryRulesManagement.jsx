@@ -231,13 +231,13 @@ export default function SalaryRulesManagement() {
                     </Badge>
                   </Td>
                   <Td>
-                    {rule.seuil_recette ? `${rule.seuil_recette.toFixed(2)} €` : '-'}
+                    {rule.seuil_recette ? `${Number(rule.seuil_recette).toFixed(2)} €` : '-'}
                   </Td>
                   <Td>
-                    {rule.pourcentage_base ? `${rule.pourcentage_base.toFixed(2)}%` : '-'}
+                    {rule.pourcentage_base ? `${Number(rule.pourcentage_base).toFixed(2)}%` : '-'}
                   </Td>
                   <Td>
-                    {rule.pourcentage_au_dela ? `${rule.pourcentage_au_dela.toFixed(2)}%` : '-'}
+                    {rule.pourcentage_au_dela ? `${Number(rule.pourcentage_au_dela).toFixed(2)}%` : '-'}
                   </Td>
                   <Td>{rule._count?.chauffeur || 0}</Td>
                   <Td>
@@ -299,7 +299,7 @@ export default function SalaryRulesManagement() {
               <div>
                 <label className="block text-sm font-medium text-gray-700">Seuil de recette</label>
                 <p className="mt-1 text-sm text-gray-900">
-                  {selectedRule?.seuil_recette ? `${selectedRule.seuil_recette.toFixed(2)} €` : 'N/A'}
+                  {selectedRule?.seuil_recette ? `${Number(selectedRule.seuil_recette).toFixed(2)} €` : 'N/A'}
                 </p>
               </div>
             </div>
@@ -307,13 +307,13 @@ export default function SalaryRulesManagement() {
               <div>
                 <label className="block text-sm font-medium text-gray-700">Pourcentage de base</label>
                 <p className="mt-1 text-sm text-gray-900">
-                  {selectedRule?.pourcentage_base ? `${selectedRule.pourcentage_base.toFixed(2)}%` : 'N/A'}
+                  {selectedRule?.pourcentage_base ? `${Number(selectedRule.pourcentage_base).toFixed(2)}%` : 'N/A'}
                 </p>
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700">Pourcentage au-delà</label>
                 <p className="mt-1 text-sm text-gray-900">
-                  {selectedRule?.pourcentage_au_dela ? `${selectedRule.pourcentage_au_dela.toFixed(2)}%` : 'N/A'}
+                  {selectedRule?.pourcentage_au_dela ? `${Number(selectedRule.pourcentage_au_dela).toFixed(2)}%` : 'N/A'}
                 </p>
               </div>
             </div>

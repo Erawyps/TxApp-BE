@@ -1,16 +1,140 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from 'utils/supabase';
 
 export function useAdminOversight() {
   const [activeShifts, setActiveShifts] = useState([]);
   const [realtimeUpdates, setRealtimeUpdates] = useState([]);
-  const [alerts, setAlerts] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
 
+  const fetchActiveShifts = useCallback(async () => {
+    try {
+      setIsLoading(true);
+      const { data, error } = await supabase
+        .from('feuille_route')
+        .select(`
+          *,
+          chauffeur!inner(
+            chauffeur_id,
+            statut,
+            utilisateur!chauffeur_id(
+              user_id,
+              nom,
+              prenom
+            )
+          ),
+          vehicule(plaque_immatriculation, marque, modele),
+          courses:course!feuille_id(
+            course_id, 
+            heure_embarquement, 
+            heure_debarquement, 
+            lieu_embarquement, 
+            lieu_debarquement,
+            sommes_percues,
+            prix_taximetre,
+            index_depart,
+            index_debarquement
+          ),
+          expenses:charge!feuille_id(charge_id, montant, description)
+        `)
+        .eq('chauffeur.statut', 'Actif')
+        .order('date_service', { ascending: false });
+
+      if (error) throw error;
+
+      // Calculate real-time statistics for each shift
+      const enrichedShifts = (data || []).map(shift => {
+        const activeCourses = shift.courses?.filter(c => !c.heure_debarquement) || [];
+        const completedCourses = shift.courses?.filter(c => c.heure_debarquement) || [];
+        const totalRevenue = completedCourses.reduce((sum, c) => sum + (parseFloat(c.sommes_percues) || 0), 0);
+        const totalExpenses = shift.expenses?.reduce((sum, e) => sum + (parseFloat(e.montant) || 0), 0) || 0;
+
+        // Calculate shift duration
+        const startTime = new Date(`${shift.date_service}T${shift.heure_debut}`);
+        const currentTime = new Date();
+        const durationHours = (currentTime - startTime) / (1000 * 60 * 60);
+
+        return {
+          ...shift,
+          stats: {
+            activeCourses: activeCourses.length,
+            completedCourses: completedCourses.length,
+            totalRevenue,
+            totalExpenses,
+            netRevenue: totalRevenue - totalExpenses,
+            durationHours: durationHours.toFixed(1),
+            lastActivity: getLastActivity(shift.courses)
+          }
+        };
+      });
+
+      setActiveShifts(enrichedShifts);
+    } catch (err) {
+      setError(err.message);
+      console.error('Error fetching active shifts:', err);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  const handleShiftUpdate = useCallback((payload) => {
+    const { eventType, new: newRecord, old: oldRecord } = payload;
+
+    setRealtimeUpdates(prev => [{
+      id: Date.now(),
+      type: 'shift',
+      event: eventType,
+      data: newRecord || oldRecord,
+      timestamp: new Date()
+    }, ...prev.slice(0, 49)]); // Keep last 50 updates
+
+    // Refresh active shifts when there's an update
+    fetchActiveShifts();
+  }, [fetchActiveShifts]);
+
+  const handleCourseUpdate = useCallback((payload) => {
+    const { eventType, new: newRecord } = payload;
+
+    setRealtimeUpdates(prev => [{
+      id: Date.now(),
+      type: 'course',
+      event: eventType,
+      data: newRecord,
+      timestamp: new Date()
+    }, ...prev.slice(0, 49)]);
+
+    // Check for potential alerts
+    if (newRecord && eventType === 'INSERT') {
+      // checkCourseAlerts(newRecord); // Commented out - alerte table doesn't exist
+    }
+
+    // Refresh active shifts
+    fetchActiveShifts();
+  }, [fetchActiveShifts]);
+
+  const handleExpenseUpdate = useCallback((payload) => {
+    const { eventType, new: newRecord } = payload;
+
+    setRealtimeUpdates(prev => [{
+      id: Date.now(),
+      type: 'expense',
+      event: eventType,
+      data: newRecord,
+      timestamp: new Date()
+    }, ...prev.slice(0, 49)]);
+
+    // Check for expense alerts
+    if (newRecord && eventType === 'INSERT') {
+      // checkExpenseAlerts(newRecord); // Commented out - alerte table doesn't exist
+    }
+
+    // Refresh active shifts
+    fetchActiveShifts();
+  }, [fetchActiveShifts]);
+
   useEffect(() => {
     fetchActiveShifts();
-    fetchAlerts();
+    // fetchAlerts(); // Commented out - alerte table doesn't exist
 
     // Set up real-time subscriptions for live monitoring
     const shiftsSubscription = supabase
@@ -61,70 +185,10 @@ export function useAdminOversight() {
       coursesSubscription.unsubscribe();
       expensesSubscription.unsubscribe();
     };
-  }, []);
+  }, [fetchActiveShifts, handleShiftUpdate, handleCourseUpdate, handleExpenseUpdate]);
 
-  const fetchActiveShifts = async () => {
-    try {
-      setIsLoading(true);
-      const { data, error } = await supabase
-        .from('feuille_route')
-        .select(`
-          *,
-          chauffeur:chauffeur_id(nom, prenom, numero_badge, telephone),
-          vehicule:vehicule_id(plaque_immatriculation, marque, modele),
-          courses:course(
-            id, 
-            heure_embarquement, 
-            heure_debarquement, 
-            lieu_embarquement, 
-            lieu_debarquement,
-            somme_percue,
-            prix_taximetre,
-            index_depart,
-            index_arrivee
-          ),
-          expenses:charge(id, montant, type_charge, description)
-        `)
-        .eq('statut', 'En cours')
-        .order('date', { ascending: false });
-
-      if (error) throw error;
-
-      // Calculate real-time statistics for each shift
-      const enrichedShifts = (data || []).map(shift => {
-        const activeCourses = shift.courses?.filter(c => !c.heure_debarquement) || [];
-        const completedCourses = shift.courses?.filter(c => c.heure_debarquement) || [];
-        const totalRevenue = completedCourses.reduce((sum, c) => sum + (parseFloat(c.somme_percue) || 0), 0);
-        const totalExpenses = shift.expenses?.reduce((sum, e) => sum + (parseFloat(e.montant) || 0), 0) || 0;
-
-        // Calculate shift duration
-        const startTime = new Date(`${shift.date}T${shift.heure_debut}`);
-        const currentTime = new Date();
-        const durationHours = (currentTime - startTime) / (1000 * 60 * 60);
-
-        return {
-          ...shift,
-          stats: {
-            activeCourses: activeCourses.length,
-            completedCourses: completedCourses.length,
-            totalRevenue,
-            totalExpenses,
-            netRevenue: totalRevenue - totalExpenses,
-            durationHours: durationHours.toFixed(1),
-            lastActivity: getLastActivity(shift.courses)
-          }
-        };
-      });
-
-      setActiveShifts(enrichedShifts);
-    } catch (err) {
-      setError(err.message);
-      console.error('Error fetching active shifts:', err);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
+  // Commented out - alerte table doesn't exist in schema
+  /*
   const fetchAlerts = async () => {
     try {
       const { data, error } = await supabase
@@ -152,6 +216,7 @@ export function useAdminOversight() {
       console.error('Error fetching alerts:', err);
     }
   };
+  */
 
   const getLastActivity = (courses) => {
     if (!courses || courses.length === 0) return null;
@@ -163,61 +228,8 @@ export function useAdminOversight() {
     return lastCourse ? new Date(lastCourse.heure_embarquement) : null;
   };
 
-  const handleShiftUpdate = (payload) => {
-    const { eventType, new: newRecord, old: oldRecord } = payload;
-
-    setRealtimeUpdates(prev => [{
-      id: Date.now(),
-      type: 'shift',
-      event: eventType,
-      data: newRecord || oldRecord,
-      timestamp: new Date()
-    }, ...prev.slice(0, 49)]); // Keep last 50 updates
-
-    // Refresh active shifts when there's an update
-    fetchActiveShifts();
-  };
-
-  const handleCourseUpdate = (payload) => {
-    const { eventType, new: newRecord } = payload;
-
-    setRealtimeUpdates(prev => [{
-      id: Date.now(),
-      type: 'course',
-      event: eventType,
-      data: newRecord,
-      timestamp: new Date()
-    }, ...prev.slice(0, 49)]);
-
-    // Check for potential alerts
-    if (newRecord && eventType === 'INSERT') {
-      checkCourseAlerts(newRecord);
-    }
-
-    // Refresh active shifts
-    fetchActiveShifts();
-  };
-
-  const handleExpenseUpdate = (payload) => {
-    const { eventType, new: newRecord } = payload;
-
-    setRealtimeUpdates(prev => [{
-      id: Date.now(),
-      type: 'expense',
-      event: eventType,
-      data: newRecord,
-      timestamp: new Date()
-    }, ...prev.slice(0, 49)]);
-
-    // Check for expense alerts
-    if (newRecord && eventType === 'INSERT') {
-      checkExpenseAlerts(newRecord);
-    }
-
-    // Refresh active shifts
-    fetchActiveShifts();
-  };
-
+  // Commented out - alerte table doesn't exist in schema
+  /*
   const checkCourseAlerts = async (course) => {
     const alerts = [];
 
@@ -261,13 +273,16 @@ export function useAdminOversight() {
     if (alerts.length > 0) {
       try {
         await supabase.from('alerte').insert(alerts);
-        fetchAlerts(); // Refresh alerts
+        // fetchAlerts(); // Refresh alerts
       } catch (err) {
         console.error('Error creating course alerts:', err);
       }
     }
   };
+  */
 
+  // Commented out - alerte table doesn't exist in schema
+  /*
   const checkExpenseAlerts = async (expense) => {
     try {
       // Alert for high expenses
@@ -280,7 +295,7 @@ export function useAdminOversight() {
         };
 
         await supabase.from('alerte').insert([alert]);
-        fetchAlerts();
+        // fetchAlerts();
       }
 
       // Alert for suspicious expense patterns
@@ -293,13 +308,16 @@ export function useAdminOversight() {
         };
 
         await supabase.from('alerte').insert([alert]);
-        fetchAlerts();
+        // fetchAlerts();
       }
     } catch (err) {
       console.error('Error creating expense alerts:', err);
     }
   };
+  */
 
+  // Commented out - alerte table doesn't exist in schema
+  /*
   const resolveAlert = async (alertId, resolvedBy) => {
     try {
       await supabase
@@ -311,12 +329,13 @@ export function useAdminOversight() {
         })
         .eq('id', alertId);
 
-      fetchAlerts(); // Refresh alerts
+      // fetchAlerts(); // Refresh alerts
     } catch (err) {
       console.error('Error resolving alert:', err);
       throw err;
     }
   };
+  */
 
   const getShiftPerformanceMetrics = () => {
     const totalRevenue = activeShifts.reduce((sum, s) => sum + s.stats.totalRevenue, 0);
@@ -333,7 +352,7 @@ export function useAdminOversight() {
       totalCourses,
       averageRevenuePerShift,
       averageCoursesPerShift,
-      alertsCount: alerts.length
+      alertsCount: 0 // alerts disabled - table doesn't exist
     };
   };
 
@@ -341,7 +360,7 @@ export function useAdminOversight() {
     try {
       const data = activeShifts.map(shift => ({
         date: shift.date,
-        chauffeur: `${shift.chauffeur?.prenom || ''} ${shift.chauffeur?.nom || ''}`,
+        chauffeur: `${shift.chauffeur?.utilisateur?.prenom || ''} ${shift.chauffeur?.utilisateur?.nom || ''}`,
         vehicule: shift.vehicule?.plaque_immatriculation || '',
         heure_debut: shift.heure_debut,
         duree_heures: shift.stats.durationHours,
@@ -389,17 +408,16 @@ export function useAdminOversight() {
 
   const refreshData = () => {
     fetchActiveShifts();
-    fetchAlerts();
+    // fetchAlerts(); // Commented out - alerte table doesn't exist
   };
 
   return {
     activeShifts,
     realtimeUpdates,
-    alerts,
     isLoading,
     error,
     fetchActiveShifts,
-    resolveAlert,
+    // resolveAlert, // Commented out - alerte table doesn't exist
     getShiftPerformanceMetrics,
     exportLiveData,
     getDriverPerformance,

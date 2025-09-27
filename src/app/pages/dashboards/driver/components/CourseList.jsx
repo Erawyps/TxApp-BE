@@ -266,7 +266,7 @@ export function CourseList({ courses = [], onUpdateCourse, onCancelCourse, isLoa
                             className="mt-1 w-full px-2 py-1 text-xs border border-gray-300 rounded"
                           />
                         ) : (
-                          <span className="font-medium">€{parseFloat(course.somme_percue || 0).toFixed(2)}</span>
+                          <span className="font-medium">€{parseFloat(course.sommes_percues || 0).toFixed(2)}</span>
                         )}
                       </div>
 

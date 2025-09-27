@@ -266,7 +266,7 @@ export default function InvoicesManagement() {
               </Tr>
             ) : (
               filteredInvoices.map((invoice) => (
-                <Tr key={invoice.gestion_facture_id}>
+                <Tr key={invoice.facture_id || invoice.gestion_facture_id}>
                   <Td className="font-medium font-mono">
                     {invoice.numero_facture}
                   </Td>
@@ -289,17 +289,19 @@ export default function InvoicesManagement() {
                     </div>
                   </Td>
                   <Td>
-                    {invoice.date_echeance && (
+                    {invoice.date_echeance ? (
                       <div className="flex items-center gap-1">
                         <CalendarIcon className="w-4 h-4 text-gray-400" />
                         {new Date(invoice.date_echeance).toLocaleDateString('fr-BE')}
                       </div>
+                    ) : (
+                      <span className="text-gray-400">-</span>
                     )}
                   </Td>
                   <Td>
                     <div className="flex items-center gap-1 font-medium">
                       <CurrencyEuroIcon className="w-4 h-4 text-gray-400" />
-                      {invoice.montant_ttc.toFixed(2)}
+                      {invoice.montant_ttc ? Number(invoice.montant_ttc).toFixed(2) : '0.00'}
                     </div>
                   </Td>
                   <Td>{getStatusBadge(invoice.statut)}</Td>
@@ -325,7 +327,7 @@ export default function InvoicesManagement() {
                       <Button
                         size="sm"
                         variant="ghost"
-                        onClick={() => handleDeleteInvoice(invoice.gestion_facture_id)}
+                        onClick={() => handleDeleteInvoice(invoice.facture_id || invoice.gestion_facture_id)}
                         className="p-1 text-red-600 hover:text-red-700"
                       >
                         <TrashIcon className="w-4 h-4" />
@@ -385,15 +387,15 @@ export default function InvoicesManagement() {
             <div className="grid grid-cols-3 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700">Montant HT</label>
-                <p className="mt-1 text-sm font-medium text-gray-900">€{selectedInvoice?.montant_ht.toFixed(2)}</p>
+                <p className="mt-1 text-sm font-medium text-gray-900">€{selectedInvoice?.montant_ht ? Number(selectedInvoice.montant_ht).toFixed(2) : '0.00'}</p>
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700">TVA (21%)</label>
-                <p className="mt-1 text-sm font-medium text-gray-900">€{selectedInvoice?.montant_tva.toFixed(2)}</p>
+                <p className="mt-1 text-sm font-medium text-gray-900">€{selectedInvoice?.montant_tva ? Number(selectedInvoice.montant_tva).toFixed(2) : '0.00'}</p>
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700">Montant TTC</label>
-                <p className="mt-1 text-sm font-bold text-gray-900">€{selectedInvoice?.montant_ttc.toFixed(2)}</p>
+                <p className="mt-1 text-sm font-bold text-gray-900">€{selectedInvoice?.montant_ttc ? Number(selectedInvoice.montant_ttc).toFixed(2) : '0.00'}</p>
               </div>
             </div>
             <div>
