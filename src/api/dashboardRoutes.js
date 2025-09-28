@@ -97,6 +97,8 @@ dashboardRoutes.get('/courses/chart-data', async (c) => {
     const dateTo = c.req.query('dateTo');
     const type = c.req.query('type');
 
+    console.log('Chart data request:', { type, dateFrom, dateTo });
+
     let data = [];
     const whereClause = {};
 
@@ -107,44 +109,51 @@ dashboardRoutes.get('/courses/chart-data', async (c) => {
       if (dateTo) whereClause.created_at.lte = new Date(dateTo);
     }
 
+    console.log('Where clause:', whereClause);
+
     switch (type) {
-      case 'dailyTripsCount': {
+      case 'trips-count': {
         // Nombre de courses par jour
-        const tripsData = await prisma.course.groupBy({
-          by: ['created_at'],
-          _count: {
-            course_id: true
-          },
+        const tripsData = await prisma.course.findMany({
           where: whereClause,
-          orderBy: {
-            created_at: 'asc'
+          select: {
+            created_at: true
           }
         });
 
-        data = tripsData.map(item => ({
-          date: item.created_at.toISOString().split('T')[0],
-          count: item._count.course_id
-        }));
+        // Grouper par date
+        const groupedData = {};
+        tripsData.forEach(item => {
+          const date = item.created_at.toISOString().split('T')[0];
+          groupedData[date] = (groupedData[date] || 0) + 1;
+        });
+
+        data = Object.entries(groupedData)
+          .map(([date, count]) => ({ date, count }))
+          .sort((a, b) => a.date.localeCompare(b.date));
         break;
       }
 
-      case 'dailyRevenues': {
+      case 'daily-revenue': {
         // Revenus quotidiens
-        const revenueData = await prisma.course.groupBy({
-          by: ['created_at'],
-          _sum: {
-            sommes_percues: true
-          },
+        const revenueData = await prisma.course.findMany({
           where: whereClause,
-          orderBy: {
-            created_at: 'asc'
+          select: {
+            created_at: true,
+            sommes_percues: true
           }
         });
 
-        data = revenueData.map(item => ({
-          date: item.created_at.toISOString().split('T')[0],
-          revenue: item._sum.sommes_percues || 0
-        }));
+        // Grouper par date
+        const groupedData = {};
+        revenueData.forEach(item => {
+          const date = item.created_at.toISOString().split('T')[0];
+          groupedData[date] = (groupedData[date] || 0) + (item.sommes_percues || 0);
+        });
+
+        data = Object.entries(groupedData)
+          .map(([date, revenue]) => ({ date, revenue }))
+          .sort((a, b) => a.date.localeCompare(b.date));
         break;
       }
 
@@ -175,7 +184,8 @@ dashboardRoutes.get('/courses/chart-data', async (c) => {
         break;
       }
 
-      case 'driverPerformance': {
+      case 'driver-performance': {
+        console.log('Processing driver-performance query');
         // Performance des chauffeurs
         const driverData = await prisma.course.findMany({
           where: {
@@ -200,10 +210,13 @@ dashboardRoutes.get('/courses/chart-data', async (c) => {
           }
         });
 
+        console.log('Driver data fetched:', driverData.length, 'records');
+
         // Grouper manuellement les données
         const performance = {};
         driverData.forEach(item => {
           const driverName = `${item.feuille_route?.chauffeur?.utilisateur?.prenom || ''} ${item.feuille_route?.chauffeur?.utilisateur?.nom || ''}`.trim();
+          console.log('Processing driver:', driverName, 'revenue:', item.sommes_percues);
           if (driverName && driverName !== '') {
             if (!performance[driverName]) {
               performance[driverName] = {
@@ -218,6 +231,7 @@ dashboardRoutes.get('/courses/chart-data', async (c) => {
         });
 
         data = Object.values(performance);
+        console.log('Driver performance data:', data);
         break;
       }
 
@@ -235,9 +249,12 @@ dashboardRoutes.get('/courses/chart-data', async (c) => {
     });
   } catch (error) {
     console.error('Error in chart data:', error);
+    console.error('Error stack:', error.stack);
+    console.error('Error message:', error.message);
     return c.json({
       error: 'Erreur lors de la récupération des données de graphique',
-      details: error.message
+      details: error.message,
+      stack: error.stack
     }, 500);
   }
 });
