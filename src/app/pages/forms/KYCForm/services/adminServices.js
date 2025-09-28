@@ -8,7 +8,7 @@ export const chauffeurService = {
       const response = await fetch(`${API_BASE_URL}/api/chauffeurs`);
       if (!response.ok) throw new Error('Erreur chargement chauffeurs');
       const data = await response.json();
-      return data.data || [];
+      return Array.isArray(data) ? data : (data.data || []);
     } catch (error) {
       console.error('Erreur API chauffeurs:', error);
       return [];
@@ -66,7 +66,7 @@ export const vehiculeService = {
       const response = await fetch(`${API_BASE_URL}/api/vehicules`);
       if (!response.ok) throw new Error('Erreur chargement véhicules');
       const data = await response.json();
-      return data.data || [];
+      return Array.isArray(data) ? data : (data.data || []);
     } catch (error) {
       console.error('Erreur API véhicules:', error);
       return [];
@@ -124,7 +124,7 @@ export const courseService = {
       const response = await fetch(`${API_BASE_URL}/api/courses`);
       if (!response.ok) throw new Error('Erreur chargement courses');
       const data = await response.json();
-      return data || [];
+      return Array.isArray(data) ? data : (data.data || []);
     } catch (error) {
       console.error('Erreur API courses:', error);
       return [];
@@ -182,7 +182,7 @@ export const chargeService = {
       const response = await fetch(`${API_BASE_URL}/api/charges`);
       if (!response.ok) throw new Error('Erreur chargement charges');
       const data = await response.json();
-      return data || [];
+      return Array.isArray(data) ? data : (data.data || []);
     } catch (error) {
       console.error('Erreur API charges:', error);
       return [];
@@ -240,7 +240,7 @@ export const feuilleRouteService = {
       const response = await fetch(`${API_BASE_URL}/api/feuilles-route`);
       if (!response.ok) throw new Error('Erreur chargement feuilles de route');
       const data = await response.json();
-      return data.data || [];
+      return Array.isArray(data) ? data : (data.data || []);
     } catch (error) {
       console.error('Erreur API feuilles de route:', error);
       return [];
@@ -252,7 +252,7 @@ export const feuilleRouteService = {
       const response = await fetch(`${API_BASE_URL}/api/feuilles-route/active/${chauffeurId}`);
       if (!response.ok) throw new Error('Erreur chargement feuille de route active');
       const data = await response.json();
-      return data.data || null;
+      return Array.isArray(data) ? data : (data.data || null);
     } catch (error) {
       console.error('Erreur API feuille de route active:', error);
       return null;
@@ -310,7 +310,7 @@ export const clientService = {
       const response = await fetch(`${API_BASE_URL}/api/clients`);
       if (!response.ok) throw new Error('Erreur chargement clients');
       const data = await response.json();
-      return data.data || [];
+      return Array.isArray(data) ? data : (data.data || []);
     } catch (error) {
       console.error('Erreur API clients:', error);
       return [];
@@ -325,7 +325,7 @@ export const modePaiementService = {
       const response = await fetch(`${API_BASE_URL}/api/modes-paiement`);
       if (!response.ok) throw new Error('Erreur chargement modes de paiement');
       const data = await response.json();
-      return data.data || [];
+      return Array.isArray(data) ? data : (data.data || []);
     } catch (error) {
       console.error('Erreur API modes de paiement:', error);
       return [];
@@ -340,7 +340,7 @@ export const factureService = {
       const response = await fetch(`${API_BASE_URL}/api/factures`);
       if (!response.ok) throw new Error('Erreur chargement factures');
       const data = await response.json();
-      return data.data || [];
+      return Array.isArray(data) ? data : (data.data || []);
     } catch (error) {
       console.error('Erreur API factures:', error);
       return [];
@@ -398,7 +398,7 @@ export const partenaireService = {
       const response = await fetch(`${API_BASE_URL}/api/partenaires`);
       if (!response.ok) throw new Error('Erreur chargement partenaires');
       const data = await response.json();
-      return data.data || [];
+      return Array.isArray(data) ? data : (data.data || []);
     } catch (error) {
       console.error('Erreur API partenaires:', error);
       return [];
@@ -456,7 +456,7 @@ export const interventionService = {
       const response = await fetch(`${API_BASE_URL}/api/interventions`);
       if (!response.ok) throw new Error('Erreur chargement interventions');
       const data = await response.json();
-      return data.data || [];
+      return Array.isArray(data) ? data : (data.data || []);
     } catch (error) {
       console.error('Erreur API interventions:', error);
       return [];
@@ -514,7 +514,7 @@ export const regleSalaireService = {
       const response = await fetch(`${API_BASE_URL}/api/regles-salaire`);
       if (!response.ok) throw new Error('Erreur chargement règles de salaire');
       const data = await response.json();
-      return data.data || [];
+      return Array.isArray(data) ? data : (data.data || []);
     } catch (error) {
       console.error('Erreur API règles de salaire:', error);
       return [];
@@ -572,7 +572,7 @@ export const regleFacturationService = {
       const response = await fetch(`${API_BASE_URL}/api/regles-facturation`);
       if (!response.ok) throw new Error('Erreur chargement règles de facturation');
       const data = await response.json();
-      return data.data || [];
+      return Array.isArray(data) ? data : (data.data || []);
     } catch (error) {
       console.error('Erreur API règles de facturation:', error);
       return [];
@@ -587,7 +587,7 @@ export const societeTaxiService = {
       const response = await fetch(`${API_BASE_URL}/api/societes-taxi`);
       if (!response.ok) throw new Error('Erreur chargement sociétés de taxi');
       const data = await response.json();
-      return data.data || [];
+      return Array.isArray(data) ? data : (data.data || []);
     } catch (error) {
       console.error('Erreur API sociétés de taxi:', error);
       return [];
@@ -599,7 +599,7 @@ export const societeTaxiService = {
       const response = await fetch(`${API_BASE_URL}/api/societe-taxi/current`);
       if (!response.ok) throw new Error('Erreur chargement société actuelle');
       const data = await response.json();
-      return data.data || null;
+      return Array.isArray(data) ? data : (data.data || null);
     } catch (error) {
       console.error('Erreur API société actuelle:', error);
       return null;

@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { Page } from 'components/shared/Page';
-import { Card } from 'components/ui';
-import { Tabs } from 'components/ui/Tabs';
+import { Button } from 'components/ui';
 import {
   UserGroupIcon,
   TruckIcon,
@@ -14,7 +13,8 @@ import {
   ClipboardDocumentListIcon,
   WrenchScrewdriverIcon,
   BuildingStorefrontIcon,
-  ChartBarIcon
+  ChartBarIcon,
+  ArrowPathIcon
 } from '@heroicons/react/24/outline';
 
 // Import admin section components
@@ -31,118 +31,151 @@ import InterventionsManagement from './sections/InterventionsManagement';
 import CompanySettings from './sections/CompanySettings';
 import OverviewDashboard from './sections/OverviewDashboard';
 
-const tabs = [
+const navigationSections = [
   {
-    label: 'Vue d\'ensemble',
-    value: 'overview',
-    icon: <ChartBarIcon className="w-5 h-5" />,
-    component: OverviewDashboard
+    title: 'Vue d\'ensemble',
+    items: [
+      { key: 'overview', label: 'Tableau de bord', icon: ChartBarIcon, component: OverviewDashboard }
+    ]
   },
   {
-    label: 'Utilisateurs',
-    value: 'users',
-    icon: <UserGroupIcon className="w-5 h-5" />,
-    component: UsersManagement
+    title: 'Opérations quotidiennes',
+    items: [
+      { key: 'drivers', label: 'Chauffeurs', icon: UserIcon, component: DriversManagement },
+      { key: 'vehicles', label: 'Véhicules', icon: TruckIcon, component: VehiclesManagement }
+    ]
   },
   {
-    label: 'Chauffeurs',
-    value: 'drivers',
-    icon: <UserIcon className="w-5 h-5" />,
-    component: DriversManagement
+    title: 'Gestion commerciale',
+    items: [
+      { key: 'users', label: 'Utilisateurs', icon: UserGroupIcon, component: UsersManagement },
+      { key: 'clients', label: 'Clients', icon: BuildingOfficeIcon, component: ClientsManagement },
+      { key: 'invoices', label: 'Factures', icon: ClipboardDocumentListIcon, component: InvoicesManagement },
+      { key: 'partners', label: 'Partenaires', icon: BuildingStorefrontIcon, component: PartnersManagement }
+    ]
   },
   {
-    label: 'Véhicules',
-    value: 'vehicles',
-    icon: <TruckIcon className="w-5 h-5" />,
-    component: VehiclesManagement
+    title: 'Maintenance',
+    items: [
+      { key: 'interventions', label: 'Interventions', icon: WrenchScrewdriverIcon, component: InterventionsManagement }
+    ]
   },
   {
-    label: 'Clients',
-    value: 'clients',
-    icon: <BuildingOfficeIcon className="w-5 h-5" />,
-    component: ClientsManagement
-  },
-  {
-    label: 'Modes de paiement',
-    value: 'payment-methods',
-    icon: <CreditCardIcon className="w-5 h-5" />,
-    component: PaymentMethodsManagement
-  },
-  {
-    label: 'Règles de salaire',
-    value: 'salary-rules',
-    icon: <CurrencyEuroIcon className="w-5 h-5" />,
-    component: SalaryRulesManagement
-  },
-  {
-    label: 'Règles de facturation',
-    value: 'billing-rules',
-    icon: <DocumentTextIcon className="w-5 h-5" />,
-    component: BillingRulesManagement
-  },
-  {
-    label: 'Partenaires',
-    value: 'partners',
-    icon: <BuildingStorefrontIcon className="w-5 h-5" />,
-    component: PartnersManagement
-  },
-  {
-    label: 'Gestion factures',
-    value: 'invoices',
-    icon: <ClipboardDocumentListIcon className="w-5 h-5" />,
-    component: InvoicesManagement
-  },
-  {
-    label: 'Interventions',
-    value: 'interventions',
-    icon: <WrenchScrewdriverIcon className="w-5 h-5" />,
-    component: InterventionsManagement
-  },
-  {
-    label: 'Paramètres société',
-    value: 'company-settings',
-    icon: <Cog6ToothIcon className="w-5 h-5" />,
-    component: CompanySettings
+    title: 'Configuration',
+    items: [
+      { key: 'payment-methods', label: 'Modes de paiement', icon: CreditCardIcon, component: PaymentMethodsManagement },
+      { key: 'salary-rules', label: 'Règles de salaire', icon: CurrencyEuroIcon, component: SalaryRulesManagement },
+      { key: 'billing-rules', label: 'Règles de facturation', icon: DocumentTextIcon, component: BillingRulesManagement },
+      { key: 'company-settings', label: 'Société', icon: Cog6ToothIcon, component: CompanySettings }
+    ]
   }
 ];
+
+// Flatten navigation items for backward compatibility
+const tabs = navigationSections.flatMap(section => section.items);
 
 export default function AdminDashboard() {
   const [activeTab, setActiveTab] = useState('overview');
 
-  const ActiveComponent = tabs.find(tab => tab.value === activeTab)?.component || OverviewDashboard;
+  const ActiveComponent = tabs.find(tab => tab.key === activeTab)?.component || OverviewDashboard;
+
+  const handleRefreshData = () => {
+    // Recharger les données des composants actifs
+    window.location.reload();
+  };
 
   return (
-    <Page title="Administration - TxApp" className="bg-gray-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">
-            Administration TxApp
-          </h1>
-          <p className="text-gray-600">
-            Gérez tous les aspects de votre société de taxi : utilisateurs, chauffeurs, véhicules, clients et paramètres système.
-          </p>
+    <Page title="Administration - TxApp" className="bg-gray-50 dark:bg-dark-900">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        {/* En-tête avec bouton d'actualisation */}
+        <div className="mb-6">
+          <div className="flex justify-between items-center">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
+                Administration TxApp
+              </h1>
+              <p className="text-gray-600 dark:text-gray-400">
+                Gérez tous les aspects de votre société de taxi : utilisateurs, chauffeurs, véhicules, clients et paramètres système.
+              </p>
+            </div>
+            <Button
+              onClick={handleRefreshData}
+              className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg"
+            >
+              <ArrowPathIcon className="h-4 w-4" />
+              Actualiser
+            </Button>
+          </div>
         </div>
 
-        <Card className="mb-6">
-          <Tabs value={activeTab} onChange={setActiveTab}>
-            <Tabs.TabList className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-2 p-4">
-              {tabs.map((tab) => (
-                <Tabs.TabNav
-                  key={tab.value}
-                  value={tab.value}
-                  className="flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-lg transition-colors"
-                >
-                  {tab.icon}
-                  <span className="hidden sm:inline">{tab.label}</span>
-                </Tabs.TabNav>
-              ))}
-            </Tabs.TabList>
-
-            <div className="p-6">
-              <ActiveComponent />
+        {/* Navigation verticale organisée en sections */}
+        <div className="mb-6">
+          <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+            {/* Navigation latérale */}
+            <div className="lg:col-span-1">
+              <div className="bg-white dark:bg-dark-800 rounded-lg shadow-sm border border-gray-200 dark:border-dark-600 p-4">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                  Administration
+                </h3>
+                <nav className="space-y-6">
+                  {navigationSections.map((section, sectionIndex) => (
+                    <div key={sectionIndex} className="space-y-2">
+                      <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                        {section.title}
+                      </h4>
+                      <div className="space-y-1">
+                        {section.items.map(item => {
+                          const Icon = item.icon;
+                          return (
+                            <button
+                              key={item.key}
+                              onClick={() => setActiveTab(item.key)}
+                              className={`w-full flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-md transition-colors ${
+                                activeTab === item.key
+                                  ? 'bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400 border-r-2 border-blue-500'
+                                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-dark-700'
+                              }`}
+                            >
+                              <Icon className="h-5 w-5 flex-shrink-0" />
+                              <span className="truncate">{item.label}</span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  ))}
+                </nav>
+              </div>
             </div>
-          </Tabs>
-        </Card>
+
+            {/* Contenu principal */}
+            <div className="lg:col-span-3">
+              <div className="bg-white dark:bg-dark-800 rounded-lg shadow-sm border border-gray-200 dark:border-dark-600 p-6">
+                {/* En-tête de la section active */}
+                <div className="mb-6">
+                  <div className="flex items-center gap-3">
+                    {(() => {
+                      const activeItem = tabs.find(tab => tab.key === activeTab);
+                      if (activeItem) {
+                        const Icon = activeItem.icon;
+                        return <Icon className="h-6 w-6 text-blue-600 dark:text-blue-400" />;
+                      }
+                      return null;
+                    })()}
+                    <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
+                      {tabs.find(tab => tab.key === activeTab)?.label || 'Section'}
+                    </h2>
+                  </div>
+                </div>
+
+                {/* Contenu de l'onglet */}
+                <div className="transition-content">
+                  <ActiveComponent />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </Page>
   );

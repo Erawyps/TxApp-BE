@@ -335,20 +335,48 @@ const TxAppAdmin = () => {
     return errors;
   };
 
-  const tabs = [
-    { key: 'dashboard', label: 'Tableau de bord', icon: ChartBarIcon },
-    { key: 'drivers', label: 'Chauffeurs', icon: UsersIcon },
-    { key: 'vehicles', label: 'Véhicules', icon: TruckIcon },
-    { key: 'shifts', label: 'Feuilles de route', icon: DocumentTextIcon },
-    { key: 'courses', label: 'Courses', icon: MapPinIcon },
-    { key: 'charges', label: 'Charges', icon: CurrencyEuroIcon },
-    { key: 'clients', label: 'Clients', icon: BuildingOfficeIcon },
-    { key: 'factures', label: 'Factures', icon: ReceiptRefundIcon },
-    { key: 'partenaires', label: 'Partenaires', icon: UserGroupIcon },
-    { key: 'interventions', label: 'Interventions', icon: WrenchScrewdriverIcon },
-    { key: 'regles', label: 'Règles', icon: Cog6ToothIcon },
-    { key: 'societe', label: 'Société', icon: BuildingStorefrontIcon }
+  const navigationSections = [
+    {
+      title: 'Vue d\'ensemble',
+      items: [
+        { key: 'dashboard', label: 'Tableau de bord', icon: ChartBarIcon }
+      ]
+    },
+    {
+      title: 'Opérations quotidiennes',
+      items: [
+        { key: 'drivers', label: 'Chauffeurs', icon: UsersIcon },
+        { key: 'vehicles', label: 'Véhicules', icon: TruckIcon },
+        { key: 'shifts', label: 'Feuilles de route', icon: DocumentTextIcon },
+        { key: 'courses', label: 'Courses', icon: MapPinIcon },
+        { key: 'charges', label: 'Charges', icon: CurrencyEuroIcon }
+      ]
+    },
+    {
+      title: 'Gestion commerciale',
+      items: [
+        { key: 'clients', label: 'Clients', icon: BuildingOfficeIcon },
+        { key: 'factures', label: 'Factures', icon: ReceiptRefundIcon },
+        { key: 'partenaires', label: 'Partenaires', icon: UserGroupIcon }
+      ]
+    },
+    {
+      title: 'Maintenance',
+      items: [
+        { key: 'interventions', label: 'Interventions', icon: WrenchScrewdriverIcon }
+      ]
+    },
+    {
+      title: 'Configuration',
+      items: [
+        { key: 'regles', label: 'Règles', icon: Cog6ToothIcon },
+        { key: 'societe', label: 'Société', icon: BuildingStorefrontIcon }
+      ]
+    }
   ];
+
+  // Flatten navigation items for backward compatibility
+  const tabs = navigationSections.flatMap(section => section.items);
 
   const handleSaveDriver = async (driverData) => {
     try {
@@ -855,35 +883,68 @@ const TxAppAdmin = () => {
             </div>
           </div>
 
-          {/* Navigation Tabs - exactement comme new-post-form */}
+          {/* Navigation verticale organisée en sections */}
           <div className="mb-6">
-            <div className="border-b border-gray-200 dark:border-dark-500">
-              <nav className="flex justify-center">
-                <div className="flex space-x-8 md:space-x-16">
-                  {tabs.map(tab => {
-                    const Icon = tab.icon;
-                    return (
-                      <button
-                        key={tab.key}
-                        onClick={() => setActiveTab(tab.key)}
-                        className={`flex items-center gap-2 py-2 px-1 border-b-2 font-medium text-sm whitespace-nowrap transition-colors ${
-                          activeTab === tab.key
-                            ? 'border-blue-500 text-blue-600 dark:text-blue-400'
-                            : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'
-                        }`}
-                      >
-                        <Icon className="h-5 w-5" />
-                        {tab.label}
-                      </button>
-                    );
-                  })}
+            <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+              {/* Navigation latérale */}
+              <div className="lg:col-span-1">
+                <div className="bg-white dark:bg-dark-800 rounded-lg shadow-sm border border-gray-200 dark:border-dark-600 p-4">
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                    Administration
+                  </h3>
+                  <nav className="space-y-6">
+                    {navigationSections.map((section, sectionIndex) => (
+                      <div key={sectionIndex} className="space-y-2">
+                        <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                          {section.title}
+                        </h4>
+                        <div className="space-y-1">
+                          {section.items.map(item => {
+                            const Icon = item.icon;
+                            return (
+                              <button
+                                key={item.key}
+                                onClick={() => setActiveTab(item.key)}
+                                className={`w-full flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-md transition-colors ${
+                                  activeTab === item.key
+                                    ? 'bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400 border-r-2 border-blue-500'
+                                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-dark-700'
+                                }`}
+                              >
+                                <Icon className="h-5 w-5 flex-shrink-0" />
+                                <span className="truncate">{item.label}</span>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    ))}
+                  </nav>
                 </div>
-              </nav>
-            </div>
-          </div>
+              </div>
 
-          {/* Tab Content - exactement comme new-post-form */}
-          <div className="transition-content">
+              {/* Contenu principal */}
+              <div className="lg:col-span-3">
+                <div className="bg-white dark:bg-dark-800 rounded-lg shadow-sm border border-gray-200 dark:border-dark-600 p-6">
+                  {/* En-tête de la section active */}
+                  <div className="mb-6">
+                    <div className="flex items-center gap-3">
+                      {(() => {
+                        const activeItem = tabs.find(tab => tab.key === activeTab);
+                        if (activeItem) {
+                          const Icon = activeItem.icon;
+                          return <Icon className="h-6 w-6 text-blue-600 dark:text-blue-400" />;
+                        }
+                        return null;
+                      })()}
+                      <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
+                        {tabs.find(tab => tab.key === activeTab)?.label || 'Section'}
+                      </h2>
+                    </div>
+                  </div>
+
+                  {/* Contenu de l'onglet */}
+                  <div className="transition-content">
             {activeTab === 'dashboard' && (
               <div className="space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -2105,6 +2166,9 @@ const TxAppAdmin = () => {
                 )}
               </div>
             )}
+                </div>
+              </div>
+            </div>
           </div>
 
           <DriverModal
@@ -2193,6 +2257,7 @@ const TxAppAdmin = () => {
             onSave={handleSaveSociete}
           />
         </div>
+      </div>
       </div>
     </Page>
   );
