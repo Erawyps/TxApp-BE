@@ -129,25 +129,21 @@ class AuthService {
    * Inscription utilisateur
    */
   async register(userData) {
-    try {
-      // Validation côté client
-      if (!userData.email || !userData.password) {
-        throw new Error('Email et mot de passe requis');
-      }
-
-      if (userData.password.length < SECURITY_CONFIG.passwordMinLength) {
-        throw new Error(`Le mot de passe doit contenir au moins ${SECURITY_CONFIG.passwordMinLength} caractères`);
-      }
-
-      const response = await this.makeRequest(AUTH_ENDPOINTS.REGISTER, {
-        method: 'POST',
-        body: userData
-      });
-
-      return response;
-    } catch (error) {
-      throw error;
+    // Validation côté client
+    if (!userData.email || !userData.password) {
+      throw new Error('Email et mot de passe requis');
     }
+
+    if (userData.password.length < SECURITY_CONFIG.passwordMinLength) {
+      throw new Error(`Le mot de passe doit contenir au moins ${SECURITY_CONFIG.passwordMinLength} caractères`);
+    }
+
+    const response = await this.makeRequest(AUTH_ENDPOINTS.REGISTER, {
+      method: 'POST',
+      body: userData
+    });
+
+    return response;
   }
 
   /**
@@ -222,16 +218,12 @@ class AuthService {
    * Changer le mot de passe
    */
   async changePassword(passwordData) {
-    try {
-      const response = await this.makeRequest(AUTH_ENDPOINTS.CHANGE_PASSWORD, {
-        method: 'POST',
-        body: passwordData
-      });
+    const response = await this.makeRequest(AUTH_ENDPOINTS.CHANGE_PASSWORD, {
+      method: 'POST',
+      body: passwordData
+    });
 
-      return response;
-    } catch (error) {
-      throw error;
-    }
+    return response;
   }
 
   /**

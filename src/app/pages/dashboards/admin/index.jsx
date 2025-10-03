@@ -8,7 +8,8 @@ import {
   CogIcon,
   HandshakeIcon,
   DocumentTextIcon,
-  MagnifyingGlassIcon
+  MagnifyingGlassIcon,
+  BellIcon
 } from '@heroicons/react/24/outline';
 
 // Import des composants admin
@@ -19,11 +20,18 @@ import PartenairesManagement from './components/PartenairesManagement';
 import ParametrageManagement from './components/ParametrageManagement';
 import FeuilleRouteEncoding from './components/FeuilleRouteEncoding';
 import RequetesSpecifiques from './components/RequetesSpecifiques';
+import NotificationsManagement from './components/NotificationsManagement';
 
 export default function AdminDashboard() {
   const [activeSection, setActiveSection] = useState('chauffeurs');
 
   const sections = [
+    {
+      id: 'notifications',
+      label: 'Notifications',
+      icon: BellIcon,
+      component: NotificationsManagement
+    },
     {
       id: 'feuille-route',
       label: 'Encodage Feuille de Route',

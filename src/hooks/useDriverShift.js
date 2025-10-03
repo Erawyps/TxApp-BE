@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from 'utils/supabase';
 
 export function useDriverShift(chauffeurId) {
@@ -7,7 +7,7 @@ export function useDriverShift(chauffeurId) {
   const [error, setError] = useState(null);
 
   // Charger la feuille de route active du chauffeur
-  const fetchCurrentShift = async () => {
+  const fetchCurrentShift = useCallback(async () => {
     if (!chauffeurId) {
       setCurrentShift(null);
       setIsLoading(false);
@@ -51,7 +51,7 @@ export function useDriverShift(chauffeurId) {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [chauffeurId]);
 
   // Créer une nouvelle feuille de route
   const createShift = async (shiftData) => {
@@ -133,18 +133,24 @@ export function useDriverShift(chauffeurId) {
       const { data, error } = await supabase
         .from('feuille_route')
         .update(updateData)
-        .eq('id', currentShift.id)
+        .eq('feuille_id', currentShift.feuille_id)
         .select(`
           *,
           chauffeur:chauffeur_id (
-            id,
+            chauffeur_id,
             nom,
             prenom,
             numero_badge,
-            telephone
+            telephone,
+            utilisateur:user_id (
+              user_id,
+              nom,
+              prenom,
+              email
+            )
           ),
           vehicule:vehicule_id (
-            id,
+            vehicule_id,
             plaque_immatriculation,
             marque,
             modele,
@@ -167,7 +173,7 @@ export function useDriverShift(chauffeurId) {
   // Charger la feuille de route au montage du composant
   useEffect(() => {
     fetchCurrentShift();
-  }, [chauffeurId]);
+  }, [chauffeurId, fetchCurrentShift]);
 
   // Écouter les changements en temps réel
   useEffect(() => {
@@ -192,7 +198,7 @@ export function useDriverShift(chauffeurId) {
     return () => {
       subscription.unsubscribe();
     };
-  }, [chauffeurId]);
+  }, [chauffeurId, fetchCurrentShift]);
 
   return {
     currentShift,

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from 'utils/supabase';
 
 export function useShiftHistory(chauffeurId, options = {}) {
@@ -12,7 +12,7 @@ export function useShiftHistory(chauffeurId, options = {}) {
     totalItems: 0
   });
 
-  const fetchShifts = async (filters = {}) => {
+  const fetchShifts = useCallback(async (filters = {}) => {
     try {
       setIsLoading(true);
       setError(null);
@@ -63,7 +63,7 @@ export function useShiftHistory(chauffeurId, options = {}) {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [chauffeurId, pagination.page, pagination.pageSize]);
 
   const getShiftDetails = async (shiftId) => {
     try {
@@ -154,7 +154,7 @@ export function useShiftHistory(chauffeurId, options = {}) {
     if (chauffeurId) {
       fetchShifts();
     }
-  }, [chauffeurId, pagination.page]);
+  }, [chauffeurId, pagination.page, fetchShifts]);
 
   return {
     shifts,

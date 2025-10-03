@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useProfile, useAuth } from 'hooks/useAuth';
 import { Button } from 'components/ui/Button';
 import { Input } from 'components/ui/Input';
@@ -41,7 +41,7 @@ export function UserProfile() {
       } else {
         toast.error(result.error || 'Erreur lors de la mise à jour');
       }
-    } catch (err) {
+    } catch {
       toast.error('Erreur lors de la mise à jour du profil');
     }
   };
@@ -195,7 +195,7 @@ export function UserProfile() {
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Type d'utilisateur
+                Type d&apos;utilisateur
               </label>
               <Input
                 type="text"

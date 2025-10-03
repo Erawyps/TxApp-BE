@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from 'utils/supabase';
 
 export function useExpenses(feuilleRouteId) {
@@ -30,9 +30,9 @@ export function useExpenses(feuilleRouteId) {
         subscription.unsubscribe();
       };
     }
-  }, [feuilleRouteId]);
+  }, [feuilleRouteId, fetchExpenses]);
 
-  const fetchExpenses = async () => {
+  const fetchExpenses = useCallback(async () => {
     try {
       setIsLoading(true);
       const { data, error } = await supabase
@@ -53,7 +53,7 @@ export function useExpenses(feuilleRouteId) {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [feuilleRouteId]);
 
   const handleRealtimeUpdate = (payload) => {
     const { eventType, new: newRecord, old: oldRecord } = payload;

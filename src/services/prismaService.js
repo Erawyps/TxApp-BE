@@ -731,22 +731,25 @@ export async function createFeuilleRoute(feuilleData) {
 
 export async function updateFeuilleRoute(feuilleId, feuilleData) {
   try {
+    // Construire l'objet de données à mettre à jour en filtrant les valeurs undefined
+    const updateData = {};
+
+    if (feuilleData.vehicule_id !== undefined) updateData.vehicule_id = feuilleData.vehicule_id;
+    if (feuilleData.mode_encodage !== undefined) updateData.mode_encodage = feuilleData.mode_encodage;
+    if (feuilleData.heure_debut !== undefined) updateData.heure_debut = feuilleData.heure_debut ? new Date(feuilleData.heure_debut) : null;
+    if (feuilleData.heure_fin !== undefined) updateData.heure_fin = feuilleData.heure_fin ? new Date(feuilleData.heure_fin) : null;
+    if (feuilleData.interruptions !== undefined) updateData.interruptions = feuilleData.interruptions;
+    if (feuilleData.total_heures !== undefined) updateData.total_heures = feuilleData.total_heures;
+    if (feuilleData.index_km_debut_tdb !== undefined) updateData.index_km_debut_tdb = feuilleData.index_km_debut_tdb;
+    if (feuilleData.index_km_fin_tdb !== undefined) updateData.index_km_fin_tdb = feuilleData.index_km_fin_tdb;
+    if (feuilleData.total_km_tdb !== undefined) updateData.total_km_tdb = feuilleData.total_km_tdb;
+    if (feuilleData.date_validation !== undefined) updateData.date_validation = feuilleData.date_validation ? new Date(feuilleData.date_validation) : null;
+    if (feuilleData.validee_par_user_id !== undefined) updateData.validee_par_user_id = feuilleData.validee_par_user_id;
+    if (feuilleData.montant_salaire_cash_declare !== undefined) updateData.montant_salaire_cash_declare = feuilleData.montant_salaire_cash_declare;
+
     return await prisma.feuille_route.update({
       where: { feuille_id: parseInt(feuilleId) },
-      data: {
-        vehicule_id: feuilleData.vehicule_id,
-        mode_encodage: feuilleData.mode_encodage,
-        heure_debut: feuilleData.heure_debut ? new Date(feuilleData.heure_debut) : null,
-        heure_fin: feuilleData.heure_fin ? new Date(feuilleData.heure_fin) : null,
-        interruptions: feuilleData.interruptions,
-        total_heures: feuilleData.total_heures,
-        index_km_debut_tdb: feuilleData.index_km_debut_tdb,
-        index_km_fin_tdb: feuilleData.index_km_fin_tdb,
-        total_km_tdb: feuilleData.total_km_tdb,
-        date_validation: feuilleData.date_validation ? new Date(feuilleData.date_validation) : null,
-        validee_par_user_id: feuilleData.validee_par_user_id,
-        montant_salaire_cash_declare: feuilleData.montant_salaire_cash_declare
-      },
+      data: updateData,
       include: {
         chauffeur: {
           include: {

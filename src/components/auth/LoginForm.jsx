@@ -53,7 +53,7 @@ export function LoginForm() {
       const redirectPath = getRedirectPath(user.type_utilisateur);
       navigate(redirectPath, { replace: true });
     }
-  }, [isAuthenticated, user, navigate]);
+  }, [isAuthenticated, user, navigate, getRedirectPath]);
 
   const getRedirectPath = useCallback((userType) => {
     const from = location.state?.from?.pathname;
