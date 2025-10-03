@@ -3,10 +3,11 @@ import {
   ClockIcon,
   TruckIcon,
   IdentificationIcon,
-  PencilSquareIcon
+  PencilSquareIcon,
+  ArrowPathIcon
 } from '@heroicons/react/24/outline';
 
-export function ShiftInfo({ shift, onUpdate }) {
+export function ShiftInfo({ shift, onUpdate, onChangeVehicle }) {
   const [isEditing, setIsEditing] = useState(false);
   const [editData, setEditData] = useState({
     notes: shift?.notes || ''

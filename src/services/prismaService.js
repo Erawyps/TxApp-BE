@@ -1,5 +1,6 @@
 import prisma from '../configs/database.config.js';
 import jwt from 'jsonwebtoken';
+import crypto from 'crypto';
 
 /**
  * Service Prisma unifié pour toutes les opérations de base de données
@@ -1632,15 +1633,15 @@ export async function hashPassword(password) {
 
 /**
  * Authentifie un utilisateur et retourne un token JWT
- * @param {string} email - Email de l'utilisateur
+ * @param {string} emailOrUsername - Email ou nom d'utilisateur de l'utilisateur
  * @param {string} password - Mot de passe en clair
  * @returns {Object} - Token JWT et informations utilisateur
  */
-export async function login(email, password) {
+export async function login(emailOrUsername, password) {
   try {
     // Recherche de l'utilisateur par email
     const utilisateur = await prisma.utilisateur.findUnique({
-      where: { email: email },
+      where: { email: emailOrUsername },
       include: {
         societe_taxi: true,
         chauffeur: {
@@ -1676,7 +1677,7 @@ export async function login(email, password) {
       {
         userId: utilisateur.user_id,
         email: utilisateur.email,
-        role: utilisateur.role,
+        role: utilisateur.role || utilisateur.type_utilisateur, // Support pour les deux champs
         societeId: utilisateur.societe_id
       },
       process.env.JWT_SECRET || 'txapp-secret-key-2025',

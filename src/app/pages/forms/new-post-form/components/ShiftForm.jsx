@@ -80,8 +80,8 @@ export function ShiftForm({ vehicles, onStartShift, onShowVehicleInfo, reglesSal
   // Utiliser les règles de salaire de la base de données ou les types par défaut
   const remunerationTypes = reglesSalaire.length > 0
     ? reglesSalaire.map(regle => ({
-        value: regle.id,
-        label: regle.nom
+        value: regle.regle_id, // Utiliser regle_id au lieu de id
+        label: regle.nom_regle // Utiliser nom_regle au lieu de nom
       }))
     : contractTypes;
 

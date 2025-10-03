@@ -55,10 +55,19 @@ const getCurrentUser = () => {
     }
 
     const decoded = jwtDecode(token);
+    console.log('🔍 Decoded token:', decoded);
+
+    // Vérifier que userId existe
+    if (!decoded.userId) {
+      console.error('❌ Token does not contain userId');
+      return null;
+    }
+
     return {
       id: decoded.userId,
       email: decoded.email,
       type: decoded.type,
+      role: decoded.role,
       exp: decoded.exp,
     };
   } catch (err) {

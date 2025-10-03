@@ -93,152 +93,15 @@ dashboardRoutes.get('/courses/stats', async (c) => {
 // Route pour les données de graphique
 dashboardRoutes.get('/courses/chart-data', async (c) => {
   try {
-    const dateFrom = c.req.query('dateFrom');
-    const dateTo = c.req.query('dateTo');
-    const type = c.req.query('type');
-
-    let data = [];
-    const whereClause = {};
-
-    // Construction des filtres de date
-    if (dateFrom || dateTo) {
-      whereClause.created_at = {};
-      if (dateFrom) whereClause.created_at.gte = new Date(dateFrom);
-      if (dateTo) whereClause.created_at.lte = new Date(dateTo);
-    }
-
-    switch (type) {
-      case 'dailyTripsCount': {
-        // Nombre de courses par jour
-        const tripsData = await prisma.course.groupBy({
-          by: ['created_at'],
-          _count: {
-            course_id: true
-          },
-          where: whereClause,
-          orderBy: {
-            created_at: 'asc'
-          }
-        });
-
-        data = tripsData.map(item => ({
-          date: item.created_at.toISOString().split('T')[0],
-          count: item._count.course_id
-        }));
-        break;
-      }
-
-      case 'dailyRevenues': {
-        // Revenus quotidiens
-        const revenueData = await prisma.course.groupBy({
-          by: ['created_at'],
-          _sum: {
-            sommes_percues: true
-          },
-          where: whereClause,
-          orderBy: {
-            created_at: 'asc'
-          }
-        });
-
-        data = revenueData.map(item => ({
-          date: item.created_at.toISOString().split('T')[0],
-          revenue: item._sum.sommes_percues || 0
-        }));
-        break;
-      }
-
-      case 'paymentMethodDistribution': {
-        // Distribution des modes de paiement
-        const paymentData = await prisma.course.findMany({
-          where: whereClause,
-          select: {
-            mode_paiement: {
-              select: {
-                libelle: true
-              }
-            }
-          }
-        });
-
-        // Grouper manuellement les données
-        const distribution = {};
-        paymentData.forEach(item => {
-          const method = item.mode_paiement?.libelle || 'Non défini';
-          distribution[method] = (distribution[method] || 0) + 1;
-        });
-
-        data = Object.entries(distribution).map(([method, count]) => ({
-          method,
-          count
-        }));
-        break;
-      }
-
-      case 'driverPerformance': {
-        // Performance des chauffeurs
-        const driverData = await prisma.course.findMany({
-          where: {
-            ...whereClause
-          },
-          select: {
-            sommes_percues: true,
-            feuille_route: {
-              select: {
-                chauffeur: {
-                  select: {
-                    utilisateur: {
-                      select: {
-                        nom: true,
-                        prenom: true
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          }
-        });
-
-        // Grouper manuellement les données
-        const performance = {};
-        driverData.forEach(item => {
-          const driverName = `${item.feuille_route?.chauffeur?.utilisateur?.prenom || ''} ${item.feuille_route?.chauffeur?.utilisateur?.nom || ''}`.trim();
-          if (driverName && driverName !== '') {
-            if (!performance[driverName]) {
-              performance[driverName] = {
-                driver: driverName,
-                revenue: 0,
-                trips: 0
-              };
-            }
-            performance[driverName].revenue += item.sommes_percues || 0;
-            performance[driverName].trips += 1;
-          }
-        });
-
-        data = Object.values(performance);
-        break;
-      }
-
-      default:
-        return c.json({ error: 'Type de graphique non supporté' }, 400);
-    }
-
+    console.log('Chart data endpoint called');
     return c.json({
-      type,
-      data,
-      filters: {
-        dateFrom,
-        dateTo
-      }
+      type: 'test',
+      data: [{ date: '2025-09-29', value: 100 }],
+      message: 'Test response'
     });
   } catch (error) {
-    console.error('Error in chart data:', error);
-    return c.json({
-      error: 'Erreur lors de la récupération des données de graphique',
-      details: error.message
-    }, 500);
+    console.error('Error in test endpoint:', error);
+    return c.json({ error: 'Test error' }, 500);
   }
 });
 

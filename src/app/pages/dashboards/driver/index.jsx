@@ -28,6 +28,7 @@ import ChauffeurStats from './components/ChauffeurStats';
 import InterventionsManager from './components/InterventionsManager';
 import InterventionModal from './components/InterventionModal';
 import { ControlAuthModal } from './components/ControlAuthModal';
+import { ChangeVehicleModal } from './components/ChangeVehicleModal';
 import { useDriverShift } from 'hooks/useDriverShift';
 import { useCourses } from 'hooks/useCourses';
 import { useExpenses } from 'hooks/useExpenses';
@@ -45,7 +46,8 @@ export default function DriverDashboard() {
     history: false,
     adminOversight: false,
     intervention: false,
-    controlAuth: false // Modal d'authentification pour les contrôleurs
+    controlAuth: false, // Modal d'authentification pour les contrôleurs
+    changeVehicle: false // Modal de changement de véhicule
   });
 
   // Vérification des permissions selon le rôle
@@ -185,6 +187,39 @@ export default function DriverDashboard() {
     closeModal('expense');
   };
 
+  const handleVehicleChange = async (feuilleId, vehiculeId, raisonChangement) => {
+    try {
+      const response = await fetch(`/api/feuilles-route/${feuilleId}/vehicule`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+        },
+        body: JSON.stringify({
+          vehicule_id: vehiculeId,
+          raison_changement: raisonChangement
+        })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Erreur lors du changement de véhicule');
+      }
+
+      const data = await response.json();
+
+      // Rafraîchir les données du shift
+      if (updateShift) {
+        await updateShift({ vehicule_id: vehiculeId });
+      }
+
+      return data;
+    } catch (error) {
+      console.error('Erreur lors du changement de véhicule:', error);
+      throw error;
+    }
+  };
+
   const quickActions = [
     {
       id: 'nouvelle-feuille',
@@ -200,6 +235,14 @@ export default function DriverDashboard() {
       icon: PlusIcon,
       color: 'bg-green-500 hover:bg-green-600',
       onClick: () => openModal('newCourse'),
+      disabled: !currentShift
+    },
+    {
+      id: 'changer-vehicule',
+      label: 'Changer véhicule',
+      icon: TruckIcon,
+      color: 'bg-orange-500 hover:bg-orange-600',
+      onClick: () => openModal('changeVehicle'),
       disabled: !currentShift
     },
     {
@@ -462,6 +505,13 @@ export default function DriverDashboard() {
           console.log('Contrôleur authentifié:', user);
           // Ici on pourrait mettre à jour l'état pour permettre l'accès
         }}
+      />
+
+      <ChangeVehicleModal
+        isOpen={activeModals.changeVehicle}
+        onClose={() => closeModal('changeVehicle')}
+        currentShift={currentShift}
+        onVehicleChanged={handleVehicleChange}
       />
     </Page>
     </ErrorBoundary>

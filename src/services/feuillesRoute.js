@@ -33,7 +33,7 @@ export async function getActiveFeuilleRoute(chauffeurId) {
     const feuilles = response.data;
 
     // Retourner la feuille la plus récente (par date_service)
-    if (feuilles && feuilles.length > 0) {
+    if (feuilles && Array.isArray(feuilles) && feuilles.length > 0) {
       const sortedFeuilles = feuilles.sort((a, b) => new Date(b.date_service) - new Date(a.date_service));
       return sortedFeuilles[0];
     }

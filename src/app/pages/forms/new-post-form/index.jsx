@@ -127,10 +127,10 @@ export default function TxApp() {
       });
 
       // Vérifier que l'utilisateur est un chauffeur
-      if (user.role !== 'Chauffeur') {
+      if (user.role !== 'Chauffeur' && user.role !== 'Driver') {
         console.warn('❌ Accès refusé: L\'utilisateur connecté n\'est pas un chauffeur');
         console.log('Rôle utilisateur:', user.role);
-        console.log('Rôles autorisés: Chauffeur');
+        console.log('Rôles autorisés: Chauffeur, Driver');
 
         // Afficher un message d'erreur et empêcher l'accès
         toast.error('Accès refusé: Cette interface est réservée aux chauffeurs');
@@ -714,32 +714,62 @@ export default function TxApp() {
         return;
       }
 
-      // Créer une nouvelle feuille de route
+      // Créer une nouvelle feuille de route avec le mapping correct des champs
       const feuilleRouteData = {
         chauffeur_id: currentChauffeur.chauffeur_id,
-        vehicule_id: shiftFormData.vehicule_id,
-        date: shiftFormData.date,
+        vehicule_id: parseInt(shiftFormData.vehicule_id), // S'assurer que c'est un entier
+        date_service: shiftFormData.date,
+        mode_encodage: 'MANUEL',
         heure_debut: shiftFormData.heure_debut,
-        km_debut: shiftFormData.km_debut,
-        prise_en_charge_debut: shiftFormData.prise_en_charge_debut,
-        chutes_debut: shiftFormData.chutes_debut,
-        notes: shiftFormData.notes
+        interruptions: shiftFormData.interruptions || '00:00',
+        index_km_debut_tdb: shiftFormData.km_tableau_bord_debut || 0,
+        montant_salaire_cash_declare: 0, // Sera calculé plus tard selon la règle de salaire
+        // Les champs taximètre seront gérés séparément si nécessaire
+        taximetre_prise_charge_debut: shiftFormData.taximetre_prise_charge_debut || 0,
+        taximetre_index_km_debut: shiftFormData.taximetre_index_km_debut || 0,
+        taximetre_km_charge_debut: shiftFormData.taximetre_km_charge_debut || 0,
+        taximetre_chutes_debut: shiftFormData.taximetre_chutes_debut || 0
       };
+
+      console.log('Données envoyées à l\'API:', feuilleRouteData);
+      console.log('Règle de salaire sélectionnée:', shiftFormData.type_remuneration);
+
+      // Vérifier si le chauffeur change de véhicule (notification admin)
+      const lastShift = currentChauffeur.feuille_route && currentChauffeur.feuille_route.length > 0
+        ? currentChauffeur.feuille_route.sort((a, b) => new Date(b.date_service) - new Date(a.date_service))[0]
+        : null;
+
+      const isVehicleChange = lastShift && lastShift.vehicule_id !== parseInt(shiftFormData.vehicule_id);
+
+      if (isVehicleChange) {
+        console.log('🔄 Changement de véhicule détecté - Notification admin requise');
+        console.log('Véhicule précédent:', lastShift.vehicule_id, 'Nouveau véhicule:', shiftFormData.vehicule_id);
+
+        // TODO: Implémenter la notification admin (email, notification en base, etc.)
+        // Pour l'instant, on log et affiche un toast
+        toast.info(`Changement de véhicule détecté. Le chauffeur ${currentChauffeur.utilisateur.prenom} ${currentChauffeur.utilisateur.nom} utilise un véhicule différent de son shift précédent.`, {
+          duration: 5000
+        });
+      }
 
       const newFeuilleRoute = await createFeuilleRoute(feuilleRouteData);
 
       setCurrentFeuilleRoute(newFeuilleRoute);
       setShiftData({
-        id: newFeuilleRoute.id,
+        id: newFeuilleRoute.feuille_id,
         chauffeur_id: newFeuilleRoute.chauffeur_id,
         vehicule_id: newFeuilleRoute.vehicule_id,
-        date: newFeuilleRoute.date,
+        date: newFeuilleRoute.date_service,
         heure_debut: newFeuilleRoute.heure_debut,
-        km_debut: newFeuilleRoute.km_debut,
-        prise_en_charge_debut: newFeuilleRoute.prise_en_charge_debut,
-        chutes_debut: newFeuilleRoute.chutes_debut,
-        statut: newFeuilleRoute.statut,
-        notes: newFeuilleRoute.notes
+        km_debut: newFeuilleRoute.index_km_debut_tdb,
+        statut: 'En cours',
+        type_remuneration: shiftFormData.type_remuneration, // Garder la règle de salaire sélectionnée
+        interruptions: newFeuilleRoute.interruptions,
+        // Conserver les données taximètre
+        taximetre_prise_charge_debut: shiftFormData.taximetre_prise_charge_debut || 0,
+        taximetre_index_km_debut: shiftFormData.taximetre_index_km_debut || 0,
+        taximetre_km_charge_debut: shiftFormData.taximetre_km_charge_debut || 0,
+        taximetre_chutes_debut: shiftFormData.taximetre_chutes_debut || 0
       });
 
       // Réinitialiser les courses pour la nouvelle feuille
@@ -747,7 +777,7 @@ export default function TxApp() {
       setExpenses([]);
 
       setActiveTab('courses');
-      toast.success("Nouvelle feuille de route créée");
+      toast.success("Nouvelle feuille de route créée avec succès");
     } catch (error) {
       console.error('Erreur lors de la création de la feuille de route:', error);
       toast.error("Erreur lors de la création de la feuille de route");

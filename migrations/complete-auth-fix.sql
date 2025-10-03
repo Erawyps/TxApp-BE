@@ -4,43 +4,76 @@
 -- 1. Désactiver RLS temporairement
 ALTER TABLE public.utilisateur DISABLE ROW LEVEL SECURITY;
 
--- 2. Nettoyer les doublons éventuels de l'utilisateur admin
-DELETE FROM public.utilisateur WHERE email = 'admin@taxi.be';
+-- 2. Nettoyer les utilisateurs existants
+DELETE FROM public.utilisateur WHERE email IN ('admin@taxi.be', 'chauffeur@taxi.be');
 
 -- 3. Créer l'utilisateur admin avec le bon hash bcrypt et le bon type
 INSERT INTO public.utilisateur (
+    societe_id,
     email,
-    mot_de_passe,
+    mot_de_passe_hashe,
     nom,
     prenom,
-    telephone,
-    type_utilisateur,
-    actif,
-    date_creation,
+    role,
+    created_at,
     updated_at
 ) VALUES (
+    1, -- societe_id par défaut
     'admin@taxi.be',
     '$2b$12$5uwbtgleugv1sy/tlKR1Ruv8f6NCcOCZolsytgJOTQgZuQX6RxOQ.',
     'Admin',
     'Système',
-    '+32 123 456 789',
-    'ADMIN',
-    true,
+    'Admin',
     NOW(),
     NOW()
 );
 
--- 4. Vérifier la création
-SELECT
-    id,
+-- 4. Créer un utilisateur chauffeur de test
+INSERT INTO public.utilisateur (
+    societe_id,
     email,
+    mot_de_passe_hashe,
     nom,
     prenom,
-    type_utilisateur,
-    actif,
-    'Utilisateur admin créé avec type ADMIN' as status
-FROM public.utilisateur
-WHERE email = 'admin@taxi.be';
+    role,
+    created_at,
+    updated_at
+) VALUES (
+    1, -- societe_id par défaut
+    'chauffeur@taxi.be',
+    '$2b$12$5uwbtgleugv1sy/tlKR1Ruv8f6NCcOCZolsytgJOTQgZuQX6RxOQ.', -- Même mot de passe que admin
+    'Dupont',
+    'Jean',
+    'Chauffeur',
+    NOW(),
+    NOW()
+);
+
+-- 5. Créer l'entrée chauffeur correspondante
+INSERT INTO public.chauffeur (
+    chauffeur_id,
+    societe_id,
+    statut,
+    created_at
+) VALUES (
+    (SELECT user_id FROM public.utilisateur WHERE email = 'chauffeur@taxi.be'),
+    1,
+    'Actif',
+    NOW()
+);
+
+-- 6. Vérifier la création
+SELECT
+    u.user_id,
+    u.email,
+    u.nom,
+    u.prenom,
+    u.role,
+    c.chauffeur_id,
+    'Utilisateur créé avec succès' as status
+FROM public.utilisateur u
+LEFT JOIN public.chauffeur c ON u.user_id = c.chauffeur_id
+WHERE u.email IN ('admin@taxi.be', 'chauffeur@taxi.be');
 
 -- 5. Réactiver RLS avec les bonnes politiques
 ALTER TABLE public.utilisateur ENABLE ROW LEVEL SECURITY;

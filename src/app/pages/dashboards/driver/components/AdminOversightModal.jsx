@@ -13,7 +13,7 @@ import {
 } from '@heroicons/react/24/outline';
 import { useAdminOversight } from 'hooks/useAdminOversight';
 
-// eslint-disable-next-line react-refresh/only-export-components
+ 
 export function AdminOversightModal({ isOpen, onClose }) {
   const [selectedTab, setSelectedTab] = useState('overview');
   const [selectedShift, setSelectedShift] = useState(null);

@@ -23,7 +23,7 @@ function RootErrorBoundary() {
   }
 
   // Log the error for diagnostics
-  // eslint-disable-next-line no-console
+   
   console.error('Route error:', error);
 
   // Friendly fallback with basic actions

@@ -303,6 +303,7 @@ enum role_type {
   Admin
   Controleur
   Chauffeur
+  Driver
 }
 
 enum statut_actif {

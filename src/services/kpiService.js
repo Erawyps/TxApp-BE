@@ -35,7 +35,7 @@ export const kpiService = {
     try {
       const chartData = await tripsService.getTripsChartData({
         ...options,
-        type: 'dailyRevenues'
+        type: 'daily-revenue'
       });
 
       // Transformer pour retourner seulement les revenus
@@ -56,7 +56,7 @@ export const kpiService = {
     try {
       const chartData = await tripsService.getTripsChartData({
         ...options,
-        type: 'dailyTripsCount'
+        type: 'trips-count'
       });
 
       // Transformer pour retourner seulement le nombre de courses
@@ -108,7 +108,7 @@ export const kpiService = {
     try {
       const chartData = await tripsService.getTripsChartData({
         ...options,
-        type: 'driverPerformance'
+        type: 'driver-performance'
       });
 
       // Transformer les données pour le graphique

@@ -1,4 +1,5 @@
 import { Hono } from 'hono';
+import prisma from '../configs/database.config.js';
 import {
   getUtilisateurs,
   getUtilisateurById,
@@ -737,16 +738,24 @@ app.post('/admin/feuille-route/encode', async (c) => {
 
 app.post('/auth/login', async (c) => {
   try {
-    const { email, password } = await c.req.json();
+    const body = await c.req.json();
+    console.log('Login request body:', body);
 
-    if (!email || !password) {
+    const { username, email, password } = body;
+
+    // Accepter username ou email pour la compatibilité
+    const loginIdentifier = username || email;
+
+    console.log('loginIdentifier:', loginIdentifier, 'password:', !!password);
+
+    if (!loginIdentifier || !password) {
       return c.json({
         success: false,
         error: 'Email et mot de passe requis'
       }, 400);
     }
 
-    const result = await login(email, password);
+    const result = await login(loginIdentifier, password);
 
     return c.json({
       success: true,
@@ -769,6 +778,40 @@ app.post('/auth/login', async (c) => {
       success: false,
       error: errorMessage
     }, statusCode);
+  }
+});
+
+app.post('/auth/create-test-users', async (c) => {
+  try {
+    // Créer un utilisateur chauffeur de test
+    const testUser = await prisma.utilisateur.create({
+      data: {
+        societe_id: 1,
+        email: 'chauffeur@taxi.be',
+        mot_de_passe_hashe: '$2b$12$5uwbtgleugv1sy/tlKR1Ruv8f6NCcOCZolsytgJOTQgZuQX6RxOQ.', // password: test123
+        nom: 'Dupont',
+        prenom: 'Jean',
+        role: 'Chauffeur'
+      }
+    });
+
+    // Créer l'entrée chauffeur correspondante
+    const testChauffeur = await prisma.chauffeur.create({
+      data: {
+        chauffeur_id: testUser.user_id,
+        societe_id: 1,
+        statut: 'Actif'
+      }
+    });
+
+    return c.json({
+      message: 'Utilisateurs de test créés',
+      user: testUser,
+      chauffeur: testChauffeur
+    });
+  } catch (error) {
+    console.error('Erreur création utilisateurs test:', error);
+    return c.json({ error: 'Erreur lors de la création des utilisateurs de test' }, 500);
   }
 });
 
@@ -841,6 +884,97 @@ app.post('/auth/change-password', async (c) => {
       success: false,
       error: errorMessage
     }, statusCode);
+  }
+});
+
+// ==================== CHANGEMENT DE VÉHICULE ====================
+
+app.put('/feuilles-route/:id/vehicule', async (c) => {
+  try {
+    const feuilleId = c.req.param('id');
+    const body = await c.req.json();
+    const { vehicule_id, raison_changement } = body;
+
+    if (!vehicule_id) {
+      return c.json({ error: 'ID du véhicule requis' }, 400);
+    }
+
+    // Vérifier que la feuille de route existe et est active
+    const feuille = await prisma.feuille_route.findUnique({
+      where: { feuille_id: parseInt(feuilleId) },
+      include: {
+        chauffeur: true,
+        vehicule: true
+      }
+    });
+
+    if (!feuille) {
+      return c.json({ error: 'Feuille de route non trouvée' }, 404);
+    }
+
+    if (feuille.statut !== 'En cours') {
+      return c.json({ error: 'Seul un shift actif peut être modifié' }, 400);
+    }
+
+    // Vérifier que le nouveau véhicule existe et est actif
+    const nouveauVehicule = await prisma.vehicule.findUnique({
+      where: { vehicule_id: parseInt(vehicule_id) }
+    });
+
+    if (!nouveauVehicule) {
+      return c.json({ error: 'Véhicule non trouvé' }, 404);
+    }
+
+    if (!nouveauVehicule.est_actif) {
+      return c.json({ error: 'Le véhicule sélectionné n\'est pas actif' }, 400);
+    }
+
+    // Vérifier que le véhicule n'est pas déjà assigné à un autre shift actif
+    const vehiculeDejaUtilise = await prisma.feuille_route.findFirst({
+      where: {
+        vehicule_id: parseInt(vehicule_id),
+        statut: 'En cours',
+        feuille_id: { not: parseInt(feuilleId) }
+      }
+    });
+
+    if (vehiculeDejaUtilise) {
+      return c.json({ error: 'Ce véhicule est déjà utilisé par un autre chauffeur' }, 400);
+    }
+
+    // Créer une intervention pour tracer le changement
+    await prisma.intervention.create({
+      data: {
+        chauffeur_id: feuille.chauffeur_id,
+        type: 'Changement de véhicule',
+        description: `Changement de véhicule: ${feuille.vehicule?.plaque_immatriculation || 'N/A'} → ${nouveauVehicule.plaque_immatriculation}${raison_changement ? ` (${raison_changement})` : ''}`,
+        date: new Date(),
+        location: 'Application chauffeur',
+        created_by: `${feuille.chauffeur.prenom} ${feuille.chauffeur.nom}`
+      }
+    });
+
+    // Mettre à jour le véhicule de la feuille de route
+    const feuilleMaj = await prisma.feuille_route.update({
+      where: { feuille_id: parseInt(feuilleId) },
+      data: { vehicule_id: parseInt(vehicule_id) },
+      include: {
+        chauffeur: true,
+        vehicule: true
+      }
+    });
+
+    return c.json({
+      success: true,
+      message: 'Véhicule changé avec succès',
+      feuille_route: feuilleMaj,
+      ancien_vehicule: feuille.vehicule,
+      nouveau_vehicule: nouveauVehicule
+    });
+
+  } catch (error) {
+    console.error('Erreur API changement véhicule:', error);
+    return c.json({ error: 'Erreur lors du changement de véhicule' }, 500);
   }
 });
 

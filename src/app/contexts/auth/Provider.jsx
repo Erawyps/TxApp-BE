@@ -110,8 +110,11 @@ export function AuthProvider({ children }) {
 
           // Récupérer les infos utilisateur depuis le token
           const userFromToken = getCurrentUser();
+          console.log('🔍 User from token:', userFromToken);
 
           if (userFromToken) {
+            console.log('✅ User ID from token:', userFromToken.id);
+
             // Récupérer le profil complet depuis la base de données
             try {
               const fullUserProfile = await getUserProfile(userFromToken.id);

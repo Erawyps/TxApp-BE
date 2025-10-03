@@ -7,15 +7,15 @@ import axios from 'axios';
 
 /**
  * Connexion d'un utilisateur
- * @param {string} email - Email de l'utilisateur
+ * @param {string} username - Email de l'utilisateur (utilisé comme username)
  * @param {string} password - Mot de passe
  * @returns {Promise<{user: Object, token: string}>}
  */
-export const loginUser = async (email, password) => {
+export const loginUser = async (username, password) => {
   try {
     // Utiliser l'API backend au lieu de Supabase
     const response = await axios.post('/api/auth/login', {
-      email,
+      username: username, // L'API attend 'username' pas 'email'
       password
     }, {
       headers: {
