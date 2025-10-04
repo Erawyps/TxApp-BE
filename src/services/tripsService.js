@@ -76,10 +76,17 @@ export const tripsService = {
       if (chauffeurId) params.push(`chauffeurId=${chauffeurId}`);
       if (params.length > 0) url += `?${params.join('&')}`;
 
+      console.log('📊 Fetching stats from:', url);
       const response = await axios.get(url);
+      console.log('📊 Stats response:', response.data);
       return response.data;
     } catch (error) {
-      console.error('Erreur lors de la récupération des statistiques:', error);
+      console.error('❌ Erreur lors de la récupération des statistiques:', error);
+      console.error('❌ Error details:', {
+        message: error.message,
+        response: error.response?.data,
+        status: error.response?.status
+      });
 
       // Gestion spécifique des erreurs
       if (error.response) {
@@ -115,10 +122,18 @@ export const tripsService = {
       if (dateFrom) url += `&dateFrom=${encodeURIComponent(dateFrom)}`;
       if (dateTo) url += `&dateTo=${encodeURIComponent(dateTo)}`;
 
+      console.log('📈 Fetching chart data from:', url);
       const response = await axios.get(url);
+      console.log('📈 Chart response:', response.data);
       return response.data;
     } catch (error) {
-      console.error('Erreur lors de la récupération des données de graphique:', error);
+      console.error('❌ Erreur lors de la récupération des données de graphique:', error);
+      console.error('❌ Error details:', {
+        message: error.message,
+        response: error.response?.data,
+        status: error.response?.status,
+        type
+      });
 
       // Gestion spécifique des erreurs
       if (error.response) {

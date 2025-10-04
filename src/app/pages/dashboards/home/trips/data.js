@@ -2,45 +2,33 @@ import {
   CheckCircleIcon,
   ClockIcon,
   XCircleIcon,
-  DocumentTextIcon,
+  MoonIcon,
 } from "@heroicons/react/24/outline";
 
 export const tripStatusOptions = [
   {
-    value: "En attente",
-    label: "En attente",
+    value: "en_cours",
+    label: "En cours",
     color: "warning",
     icon: ClockIcon,
   },
   {
-    value: "Confirmée",
-    label: "Confirmée",
-    color: "info",
-    icon: DocumentTextIcon,
-  },
-  {
-    value: "En cours",
-    label: "En cours",
-    color: "primary",
-    icon: ClockIcon,
-  },
-  {
-    value: "Terminée",
-    label: "Terminée",
+    value: "validee",
+    label: "Validée",
     color: "success",
     icon: CheckCircleIcon,
   },
   {
-    value: "Annulée",
+    value: "hors_heures",
+    label: "Hors heures",
+    color: "info",
+    icon: MoonIcon,
+  },
+  {
+    value: "annulee",
     label: "Annulée",
     color: "error",
     icon: XCircleIcon,
-  },
-  {
-    value: "Facturée",
-    label: "Facturée",
-    color: "success",
-    icon: DocumentTextIcon,
   },
 ];
 
