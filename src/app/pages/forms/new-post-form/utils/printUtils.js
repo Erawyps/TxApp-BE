@@ -1,12 +1,38 @@
 // Import jsPDF
 import jsPDF from 'jspdf';
-import { mapFeuilleRouteFromDB, mapCourseFromDB } from '../../../../../utils/fieldMapper.js';
+import { mapFeuilleRouteFromDB, mapCourseFromDB } from 'utils/fieldMapper.js';
 
 export const generateAndDownloadReport = (rawShiftData, rawCourses, driver, vehicle, expenses = [], externalCourses = []) => {
   try {
+    console.log('🔍 DEBUG generateAndDownloadReport:');
+    console.log('  rawShiftData:', rawShiftData);
+    console.log('  rawCourses:', rawCourses);
+    console.log('  rawCourses.length:', rawCourses?.length);
+    console.log('  driver:', driver);
+    console.log('  vehicle:', vehicle);
+    
+    // Vérifier que les fonctions de mapping existent
+    console.log('  mapFeuilleRouteFromDB existe?', typeof mapFeuilleRouteFromDB === 'function');
+    console.log('  mapCourseFromDB existe?', typeof mapCourseFromDB === 'function');
+    
     // ✅ UTILISER LE FIELD MAPPER pour transformer les données DB en format frontend
     const shiftData = rawShiftData ? mapFeuilleRouteFromDB(rawShiftData) : {};
-    const courses = Array.isArray(rawCourses) ? rawCourses.map(c => mapCourseFromDB(c) || c) : [];
+    const courses = Array.isArray(rawCourses) ? rawCourses.map(c => {
+      const mapped = mapCourseFromDB(c);
+      console.log('  Course mappée:', { original: c.num_ordre, mapped: mapped?.num_ordre });
+      return mapped || c;
+    }) : [];
+    
+    console.log('  ✅ Après mapping:');
+    console.log('  shiftData.nom_exploitant:', shiftData.nom_exploitant);
+    console.log('  shiftData.courses:', shiftData.courses);
+    console.log('  courses (variable):', courses);
+    console.log('  courses.length:', courses.length);
+    
+    if (courses.length === 0) {
+      console.warn('  ⚠️ ATTENTION: Aucune course après mapping!');
+      console.warn('  rawCourses était:', rawCourses);
+    }
     
     // Créer un nouveau document PDF en format A4
     const doc = new jsPDF('p', 'mm', 'a4');
@@ -26,8 +52,16 @@ export const generateAndDownloadReport = (rawShiftData, rawCourses, driver, vehi
     // Utilitaires de formatage
     const formatTime = (time) => {
       if (!time) return '';
-      // Gère les formats HH:MM:SS et HH:MM
-      return time.toString().substring(0, 5);
+      const timeStr = time.toString();
+      
+      // Si c'est une date ISO (contient 'T'), extraire la partie heure
+      if (timeStr.includes('T')) {
+        const timePart = timeStr.split('T')[1]; // "06:00:00.000Z"
+        return timePart.substring(0, 5); // "06:00"
+      }
+      
+      // Sinon, gérer les formats HH:MM:SS et HH:MM
+      return timeStr.substring(0, 5);
     };
     
     const formatNumber = (num) => {
@@ -701,6 +735,16 @@ export const fetchDataForPDF = async (feuilleId) => {
     
     const feuilleDB = await response.json();
     
+    console.log('📥 fetchDataForPDF - Données de l\'API:', {
+      feuille_id: feuilleDB.feuille_id,
+      date_service: feuilleDB.date_service,
+      course_count: feuilleDB.course?.length || 0,
+      charge_count: feuilleDB.charge?.length || 0,
+      has_taximetre: !!feuilleDB.taximetre,
+      has_chauffeur: !!feuilleDB.chauffeur,
+      has_vehicule: !!feuilleDB.vehicule
+    });
+    
     // ✅ Les données sont déjà correctement structurées par l'API
     // car nous avons corrigé prismaService.js pour inclure :
     // - chauffeur (avec societe_taxi et utilisateur)
@@ -709,7 +753,7 @@ export const fetchDataForPDF = async (feuilleId) => {
     // - charges (pluriel avec vehicule et mode_paiement)
     // - taximetre
     
-    return {
+    const result = {
       shiftData: feuilleDB,  // Feuille de route complète avec toutes les relations
       driver: {
         prenom: feuilleDB.chauffeur?.utilisateur?.prenom || feuilleDB.chauffeur?.prenom || '',
@@ -719,9 +763,18 @@ export const fetchDataForPDF = async (feuilleId) => {
         plaque_immatriculation: feuilleDB.vehicule?.plaque_immatriculation || '',
         numero_identification: feuilleDB.vehicule?.numero_identification || ''
       },
-      courses: feuilleDB.courses || feuilleDB.course || [],  // Support pluriel et singulier
-      expenses: feuilleDB.charges || feuilleDB.charge || []   // Support pluriel et singulier
+      courses: feuilleDB.course || [],  // ✅ SINGULIER - le schéma utilise 'course'
+      expenses: feuilleDB.charge || []   // ✅ SINGULIER - le schéma utilise 'charge'
     };
+    
+    console.log('📤 fetchDataForPDF - Données retournées:', {
+      courses_count: result.courses.length,
+      expenses_count: result.expenses.length,
+      driver: result.driver,
+      vehicle: result.vehicle
+    });
+    
+    return result;
   } catch (error) {
     console.error('Erreur fetchDataForPDF:', error);
     throw new Error(`Impossible de récupérer les données de la feuille de route: ${error.message}`);

@@ -58,14 +58,14 @@ export async function getUtilisateurById(userId) {
             feuille_route: {
               include: {
                 vehicule: true,
-                courses: {
+                course: { // ✅ SINGULIER - le schéma utilise 'course'
                   include: {
                     client: true,
                     mode_paiement: true,
                     detail_facture_complexe: true
                   }
                 },
-                charges: {
+                charge: { // ✅ SINGULIER - le schéma utilise 'charge'
                   include: {
                     vehicule: true,
                     mode_paiement: true
@@ -176,13 +176,13 @@ export async function getChauffeurs() {
         feuille_route: {
           include: {
             vehicule: true,
-            courses: { // ✅ PLURIEL
+            course: { // ✅ SINGULIER - le schéma utilise 'course'
               include: {
                 client: true,
                 mode_paiement: true
               }
             },
-            charges: { // ✅ PLURIEL
+            charge: { // ✅ SINGULIER - le schéma utilise 'charge'
               include: {
                 vehicule: true,
                 mode_paiement: true
@@ -636,7 +636,7 @@ export async function getFeuilleRouteById(feuilleId) {
             societe_taxi: true // ✅ Ajouter pour nom_exploitant du véhicule
           }
         },
-        courses: { // ✅ PLURIEL - corriger de 'course' à 'courses'
+        course: { // ✅ SINGULIER - le schéma Prisma utilise 'course' pas 'courses'
           include: {
             client: true,
             mode_paiement: true,
@@ -646,7 +646,7 @@ export async function getFeuilleRouteById(feuilleId) {
             num_ordre: 'asc'
           }
         },
-        charges: { // ✅ PLURIEL - corriger de 'charge' à 'charges'
+        charge: { // ✅ SINGULIER - le schéma Prisma utilise 'charge' pas 'charges'
           include: {
             vehicule: true,
             mode_paiement: true
@@ -685,7 +685,7 @@ export async function getFeuillesRouteByChauffeur(chauffeurId, date = null) {
             societe_taxi: true // ✅ Ajouter pour nom_exploitant du véhicule
           }
         },
-        courses: { // ✅ PLURIEL - corriger de 'course' à 'courses'
+        course: { // ✅ SINGULIER - le schéma Prisma utilise 'course' pas 'courses'
           include: {
             client: true,
             mode_paiement: true,
@@ -695,7 +695,7 @@ export async function getFeuillesRouteByChauffeur(chauffeurId, date = null) {
             num_ordre: 'asc'
           }
         },
-        charges: { // ✅ PLURIEL - corriger de 'charge' à 'charges'
+        charge: { // ✅ SINGULIER - le schéma Prisma utilise 'charge' pas 'charges'
           include: {
             vehicule: true,
             mode_paiement: true
@@ -1603,7 +1603,7 @@ export async function findChauffeurByDate(date) {
           }
         },
         vehicule: true,
-        courses: {
+        course: { // ✅ SINGULIER - le schéma utilise 'course'
           include: {
             client: true,
             mode_paiement: true
@@ -1627,13 +1627,13 @@ export async function findVehiculeByChauffeurAndDate(chauffeurId, date) {
       },
       include: {
         vehicule: true,
-        courses: {
+        course: { // ✅ SINGULIER - le schéma utilise 'course'
           include: {
             client: true,
             mode_paiement: true
           }
         },
-        charges: {
+        charge: { // ✅ SINGULIER - le schéma utilise 'charge'
           include: {
             mode_paiement: true
           }
@@ -2201,7 +2201,7 @@ export async function calculateDriverSalary(feuilleId) {
       pourcentage_au_dela: pourcentageAuDela,
       est_variable: regleSalaire.est_variable,
       salaire_calcule: Math.round(salaireCalcule * 100) / 100, // Arrondi à 2 décimales
-      nombre_courses: feuille.courses.length
+      nombre_courses: feuille.course?.length || 0 // ✅ SINGULIER - le schéma utilise 'course'
     };
   } catch (error) {
     console.error('Erreur lors du calcul du salaire:', error);
@@ -2344,8 +2344,8 @@ export async function calculateFeuilleTotals(feuilleId) {
       duree_totale_minutes: dureeTotale,
       recettes_par_mode: recettesParMode,
       depenses_par_mode: depensesParMode,
-      nombre_courses: feuille.courses.filter(c => c.heure_debarquement).length,
-      nombre_charges: feuille.charges.length
+      nombre_courses: feuille.course?.filter(c => c.heure_debarquement).length || 0, // ✅ SINGULIER
+      nombre_charges: feuille.charge?.length || 0 // ✅ SINGULIER
     };
   } catch (error) {
     console.error('Erreur lors du calcul des totaux:', error);

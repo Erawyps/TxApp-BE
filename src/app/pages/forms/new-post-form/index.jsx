@@ -11,7 +11,7 @@ import { Fragment } from "react";
 import { Dialog, Transition, TransitionChild, DialogPanel, DialogTitle } from "@headlessui/react";
 import { XMarkIcon } from "@heroicons/react/24/outline";
 import { toast } from "sonner";
-import { generateAndDownloadReport } from "./utils/printUtils";
+import { generateFeuilleDeRoutePDF } from "./utils/printUtils";
 
 // Local Imports
 import { Page } from "components/shared/Page";
@@ -599,7 +599,7 @@ export default function TxApp() {
     loadInitialData();
   }, [isAuthenticated, user]);
 
-  const handleDownloadReport = () => {
+  const handleDownloadReport = async () => {
     try {
       if (!currentFeuilleRoute) {
         toast.error('Aucune feuille de route active');
@@ -611,19 +611,17 @@ export default function TxApp() {
         return;
       }
 
-      // Vérifier que les données utilisateur existent
-      const driverData = {
-        nom: currentChauffeur.utilisateur?.nom || 'Non défini',
-        prenom: currentChauffeur.utilisateur?.prenom || 'Non défini',
-        numero_badge: currentChauffeur.numero_badge || 'N/A'
-      };
+      console.log('🚀 Génération PDF pour feuille_id:', currentFeuilleRoute.feuille_id);
+      console.log('   Chauffeur:', currentChauffeur.utilisateur.prenom, currentChauffeur.utilisateur.nom);
 
-      const fileName = generateAndDownloadReport(
-        shiftData,
-        courses,
-        driverData,
-        currentFeuilleRoute.vehicule
+      // ✅ UTILISER generateFeuilleDeRoutePDF qui récupère les données depuis l'API
+      // et applique automatiquement le Field Mapper
+      const fileName = await generateFeuilleDeRoutePDF(
+        currentFeuilleRoute.feuille_id,
+        [], // expenses - à récupérer depuis l'API si nécessaire
+        []  // externalCourses
       );
+      
       toast.success(`Feuille de route téléchargée : ${fileName}`);
     } catch (error) {
       console.error('Erreur lors du téléchargement:', error);

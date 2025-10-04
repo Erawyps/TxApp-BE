@@ -30,14 +30,25 @@ export const mapFeuilleRouteFromDB = (dbData) => {
     index_km_fin_tdb: dbData.index_km_fin_tdb,
     
     // Taximètre - données détaillées (depuis la relation taximetre)
-    taximetre_prise_charge_debut: dbData.taximetre?.prise_en_charge_debut || null,
-    taximetre_prise_charge_fin: dbData.taximetre?.prise_en_charge_fin || null,
-    taximetre_index_km_debut: dbData.taximetre?.index_km_debut || dbData.index_km_debut_tdb,
-    taximetre_index_km_fin: dbData.taximetre?.index_km_fin || dbData.index_km_fin_tdb,
-    taximetre_km_charge_debut: dbData.taximetre?.km_en_charge_debut || null,
-    taximetre_km_charge_fin: dbData.taximetre?.km_en_charge_fin || null,
-    taximetre_chutes_debut: dbData.taximetre?.chutes_debut || null,
-    taximetre_chutes_fin: dbData.taximetre?.chutes_fin || null,
+    // Mapper les vrais noms de champs depuis le schéma Prisma
+    taximetre_prise_charge_debut: dbData.taximetre?.taximetre_prise_charge_debut || 
+                                   dbData.taximetre?.pc_debut_tax || null,
+    taximetre_prise_charge_fin: dbData.taximetre?.taximetre_prise_charge_fin || 
+                                 dbData.taximetre?.pc_fin_tax || null,
+    taximetre_index_km_debut: dbData.taximetre?.taximetre_index_km_debut || 
+                              dbData.taximetre?.index_km_debut_tax || 
+                              dbData.index_km_debut_tdb,
+    taximetre_index_km_fin: dbData.taximetre?.taximetre_index_km_fin || 
+                            dbData.taximetre?.index_km_fin_tax || 
+                            dbData.index_km_fin_tdb,
+    taximetre_km_charge_debut: dbData.taximetre?.taximetre_km_charge_debut || 
+                               dbData.taximetre?.km_charge_debut || null,
+    taximetre_km_charge_fin: dbData.taximetre?.taximetre_km_charge_fin || 
+                             dbData.taximetre?.km_charge_fin || null,
+    taximetre_chutes_debut: dbData.taximetre?.taximetre_chutes_debut || 
+                            dbData.taximetre?.chutes_debut_tax || null,
+    taximetre_chutes_fin: dbData.taximetre?.taximetre_chutes_fin || 
+                          dbData.taximetre?.chutes_fin_tax || null,
     
     // Informations financières
     montant_salaire_cash_declare: dbData.montant_salaire_cash_declare || null,
@@ -53,8 +64,8 @@ export const mapFeuilleRouteFromDB = (dbData) => {
     // Relations
     chauffeur: dbData.chauffeur,
     vehicule: dbData.vehicule,
-    courses: dbData.courses || dbData.course || [],
-    charges: dbData.charges || dbData.charge || [],
+    courses: dbData.course || [], // ✅ SINGULIER - le schéma utilise 'course'
+    charges: dbData.charge || [], // ✅ SINGULIER - le schéma utilise 'charge'
     taximetre: dbData.taximetre,
     
     // Timestamps
