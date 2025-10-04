@@ -78,8 +78,8 @@ export const mapCourseFromDB = (dbCourse) => {
     numero_ordre: dbCourse.num_ordre,
     num_ordre: dbCourse.num_ordre,
     
-    // Index de départ (utiliser index_embarquement comme valeur par défaut)
-    index_depart: dbCourse.index_embarquement,
+    // Index de départ (utiliser le champ index_depart du schéma, ou index_embarquement comme fallback)
+    index_depart: dbCourse.index_depart ?? dbCourse.index_embarquement,
     
     // Embarquement
     index_embarquement: dbCourse.index_embarquement,

@@ -1,8 +1,13 @@
 // Import jsPDF
 import jsPDF from 'jspdf';
+import { mapFeuilleRouteFromDB, mapCourseFromDB } from '../../../../../utils/fieldMapper.js';
 
-export const generateAndDownloadReport = (shiftData, courses, driver, vehicle, expenses = [], externalCourses = []) => {
+export const generateAndDownloadReport = (rawShiftData, rawCourses, driver, vehicle, expenses = [], externalCourses = []) => {
   try {
+    // ✅ UTILISER LE FIELD MAPPER pour transformer les données DB en format frontend
+    const shiftData = rawShiftData ? mapFeuilleRouteFromDB(rawShiftData) : {};
+    const courses = Array.isArray(rawCourses) ? rawCourses.map(c => mapCourseFromDB(c) || c) : [];
+    
     // Créer un nouveau document PDF en format A4
     const doc = new jsPDF('p', 'mm', 'a4');
 
@@ -685,53 +690,42 @@ export const generateAndDownloadReport = (shiftData, courses, driver, vehicle, e
 // ============ FONCTIONS UTILITAIRES POUR L'INTÉGRATION ============
 
 // Fonction pour récupérer les données depuis la base de données
-
-/** 
 export const fetchDataForPDF = async (feuilleId) => {
-  // Cette fonction devrait être implémentée côté backend
-  // Exemple de structure de retour attendue :
-  return {
-    shiftData: {
-      date: '2024-09-22',
-      heure_debut: '06:00:00',
-      heure_fin: '14:00:00',
-      interruptions: '',
-      km_tableau_bord_debut: 125000,
-      km_tableau_bord_fin: 125180,
-      taximetre_prise_charge_debut: 2.40,
-      taximetre_prise_charge_fin: 2.40,
-      taximetre_index_km_debut: 125000,
-      taximetre_index_km_fin: 125180,
-      taximetre_km_charge_debut: 15642.5,
-      taximetre_km_charge_fin: 15722.8,
-      taximetre_chutes_debut: 1254.60,
-      taximetre_chutes_fin: 1389.20,
-      nom_exploitant: 'Taxi Express Brussels'
-    },
-    driver: {
-      prenom: 'Hasler',
-      nom: 'TEHOU'
-    },
-    vehicle: {
-      plaque_immatriculation: 'TXAA-751',
-      numero_identification: 'N°1'
-    },
-    courses: [
-      {
-        num_ordre: 1,
-        index_depart: 125000,
-        index_embarquement: 125005,
-        lieu_embarquement: 'Gare Centrale',
-        heure_embarquement: '06:15:00',
-        index_debarquement: 125018,
-        lieu_debarquement: 'Brussels Airport',
-        heure_debarquement: '06:45:00',
-        prix_taximetre: 45.20,
-        sommes_percues: 45.20
-      }
-      // ... autres courses
-    ]
-  };
+  try {
+    // Récupérer les données depuis l'API backend
+    const response = await fetch(`/api/feuilles-route/${feuilleId}`);
+    
+    if (!response.ok) {
+      throw new Error(`Erreur HTTP ${response.status}: ${response.statusText}`);
+    }
+    
+    const feuilleDB = await response.json();
+    
+    // ✅ Les données sont déjà correctement structurées par l'API
+    // car nous avons corrigé prismaService.js pour inclure :
+    // - chauffeur (avec societe_taxi et utilisateur)
+    // - vehicule (avec societe_taxi)
+    // - courses (pluriel avec client et mode_paiement)
+    // - charges (pluriel avec vehicule et mode_paiement)
+    // - taximetre
+    
+    return {
+      shiftData: feuilleDB,  // Feuille de route complète avec toutes les relations
+      driver: {
+        prenom: feuilleDB.chauffeur?.utilisateur?.prenom || feuilleDB.chauffeur?.prenom || '',
+        nom: feuilleDB.chauffeur?.utilisateur?.nom || feuilleDB.chauffeur?.nom || ''
+      },
+      vehicle: {
+        plaque_immatriculation: feuilleDB.vehicule?.plaque_immatriculation || '',
+        numero_identification: feuilleDB.vehicule?.numero_identification || ''
+      },
+      courses: feuilleDB.courses || feuilleDB.course || [],  // Support pluriel et singulier
+      expenses: feuilleDB.charges || feuilleDB.charge || []   // Support pluriel et singulier
+    };
+  } catch (error) {
+    console.error('Erreur fetchDataForPDF:', error);
+    throw new Error(`Impossible de récupérer les données de la feuille de route: ${error.message}`);
+  }
 };
 
 // Fonction de validation des données
@@ -750,7 +744,7 @@ export const validateDataForPDF = (shiftData, courses, driver, vehicle) => {
     errors.push('Liste des courses invalide');
   }
 
-  if (!shiftData || !shiftData.date) {
+  if (!shiftData || !shiftData.date_service) {
     errors.push('Date de service manquante');
   }
 
@@ -774,11 +768,17 @@ export const generateFeuilleDeRoutePDF = async (feuilleId, expenses = [], extern
     }
 
     // 3. Générer le PDF avec les données agrégées
-    return generateAndDownloadReport(data.shiftData, data.courses, data.driver, data.vehicle, expenses, externalCourses);
+    return generateAndDownloadReport(
+      data.shiftData, 
+      data.courses, 
+      data.driver, 
+      data.vehicle, 
+      expenses || data.expenses || [], 
+      externalCourses
+    );
 
   } catch (error) {
     console.error('Erreur génération feuille de route:', error);
     throw error;
   }
 };
-*/
