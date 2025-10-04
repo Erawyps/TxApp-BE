@@ -162,23 +162,23 @@ export async function deleteCourse(courseId) {
 function mapFromDb(row) {
   if (!row) return null;
   return {
-    id: row.id,
-    feuille_route_id: row.feuille_route_id,
+    id: row.course_id, // Correction: utiliser course_id au lieu de id
+    feuille_route_id: row.feuille_id, // Correction: utiliser feuille_id au lieu de feuille_route_id
     client_id: row.client_id,
-    numero_ordre: row.numero_ordre,
+    numero_ordre: row.num_ordre, // Correction: utiliser num_ordre au lieu de numero_ordre
     index_depart: row.index_depart,
     lieu_embarquement: row.lieu_embarquement,
     heure_embarquement: row.heure_embarquement,
-    index_arrivee: row.index_arrivee,
+    index_arrivee: row.index_debarquement, // Correction: utiliser index_debarquement au lieu de index_arrivee
     lieu_debarquement: row.lieu_debarquement,
     heure_debarquement: row.heure_debarquement,
     prix_taximetre: Number(row.prix_taximetre || 0),
-    somme_percue: Number(row.somme_percue || 0),
+    somme_percue: Number(row.sommes_percues || 0), // Correction: utiliser sommes_percues (pluriel)
     pourboire: Number(row.pourboire || 0), // Nouveau champ pourboire
     statut: row.statut || 'Active', // Nouveau champ statut
     mode_paiement: row.mode_paiement?.code || row.mode_paiement?.libelle || 'CASH',
     client: row.client ? `${row.client.prenom || ''} ${row.client.nom || ''}`.trim() : '',
-    hors_creneau: row.hors_creneau || false,
+    hors_creneau: row.est_hors_heures || false, // Correction: utiliser est_hors_heures
     notes: row.notes || '',
     created_at: row.created_at,
     updated_at: row.updated_at
@@ -188,20 +188,19 @@ function mapFromDb(row) {
 // Mapper vers la base de données
 function mapToDb(course) {
   return {
-    feuille_route_id: course.feuille_route_id,
+    feuille_id: course.feuille_route_id, // Correction: utiliser feuille_id
     client_id: course.client_id || null,
     mode_paiement_id: course.mode_paiement_id || null,
-    numero_ordre: course.numero_ordre,
+    num_ordre: course.numero_ordre, // Correction: utiliser num_ordre
     index_depart: course.index_depart,
     lieu_embarquement: course.lieu_embarquement,
     heure_embarquement: course.heure_embarquement,
-    index_arrivee: course.index_arrivee,
+    index_debarquement: course.index_arrivee, // Correction: utiliser index_debarquement
     lieu_debarquement: course.lieu_debarquement,
     heure_debarquement: course.heure_debarquement,
     prix_taximetre: course.prix_taximetre,
-    somme_percue: course.somme_percue, // Correction: somme_percue au lieu de sommes_percues
-    hors_creneau: course.hors_creneau || false,
-    statut: course.statut || 'Active', // Nouveau champ statut
+    sommes_percues: course.somme_percue, // Correction: utiliser sommes_percues (pluriel)
+    est_hors_heures: course.hors_creneau || false, // Correction: utiliser est_hors_heures
     notes: course.notes || null
   };
 }

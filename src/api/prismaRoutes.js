@@ -64,7 +64,12 @@ import {
   createIntervention,
   login,
   verifyToken,
-  changePassword
+  changePassword,
+  calculateFeuilleTotals,
+  validateFeuilleRouteAdmin,
+  calculateDriverSalary,
+  createOrUpdateTaximetre,
+  getTaximetreByFeuille
 } from '../services/prismaService.js';
 
 const app = new Hono();
@@ -428,6 +433,117 @@ app.patch('/feuilles-route/:id/change-vehicle', async (c) => {
   } catch (error) {
     console.error('Erreur API changement de véhicule:', error);
     return c.json({ error: error.message || 'Erreur lors du changement de véhicule' }, 500);
+  }
+});
+
+// ==================== VALIDATION ADMINISTRATIVE ====================
+
+app.patch('/feuilles-route/:id/validate', async (c) => {
+  try {
+    // Vérifier l'authentification
+    const authHeader = c.req.header('Authorization');
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return c.json({ error: 'Token d\'authentification requis' }, 401);
+    }
+
+    const token = authHeader.substring(7);
+    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key');
+
+    // Vérifier que c'est un admin ou contrôleur
+    const user = await getUtilisateurById(decoded.userId);
+    if (!user || (user.role !== 'Admin' && user.role !== 'Controleur')) {
+      return c.json({ error: 'Permissions insuffisantes pour valider une feuille de route' }, 403);
+    }
+
+    const result = await validateFeuilleRouteAdmin(c.req.param('id'), decoded.userId);
+
+    return c.json({
+      success: true,
+      message: 'Feuille de route validée avec succès',
+      feuille: result,
+      totals: result.totals
+    });
+  } catch (error) {
+    console.error('Erreur API validation administrative:', error);
+    return c.json({ error: error.message || 'Erreur lors de la validation administrative' }, 500);
+  }
+});
+
+// Endpoint de test sans authentification (à supprimer en production)
+app.patch('/feuilles-route/:id/validate-test', async (c) => {
+  try {
+    const result = await validateFeuilleRouteAdmin(c.req.param('id'), 1); // User ID 1 (admin)
+
+    return c.json({
+      success: true,
+      message: 'Feuille de route validée avec succès (TEST)',
+      feuille: result,
+      totals: result.totals
+    });
+  } catch (error) {
+    console.error('Erreur API validation test:', error);
+    return c.json({ error: error.message || 'Erreur lors de la validation test' }, 500);
+  }
+});
+
+// ==================== TOTAUX FEUILLE DE ROUTE ====================
+
+app.get('/feuilles-route/:id/totals', async (c) => {
+  try {
+    const totals = await calculateFeuilleTotals(c.req.param('id'));
+    return c.json(totals);
+  } catch (error) {
+    console.error('Erreur API calcul totaux:', error);
+    return c.json({ error: 'Erreur lors du calcul des totaux' }, 500);
+  }
+});
+
+// ==================== CALCUL SALAIRE CHAUFFEUR ====================
+
+app.get('/feuilles-route/:id/salary', async (c) => {
+  try {
+    const salary = await calculateDriverSalary(c.req.param('id'));
+    return c.json(salary);
+  } catch (error) {
+    console.error('Erreur API calcul salaire:', error);
+    return c.json({ error: error.message || 'Erreur lors du calcul du salaire' }, 500);
+  }
+});
+
+// ==================== GESTION TAXIMETRE ====================
+
+app.get('/feuilles-route/:feuilleId/taximetre', async (c) => {
+  try {
+    const taximetre = await getTaximetreByFeuille(c.req.param('feuilleId'));
+    if (!taximetre) {
+      return c.json({ message: 'Aucune donnée taximètre trouvée pour cette feuille' });
+    }
+    return c.json(taximetre);
+  } catch (error) {
+    console.error('Erreur API récupération taximètre:', error);
+    return c.json({ error: 'Erreur lors de la récupération des données taximètre' }, 500);
+  }
+});
+
+app.post('/feuilles-route/:feuilleId/taximetre', async (c) => {
+  try {
+    const body = await c.req.json();
+    const taximetre = await createOrUpdateTaximetre(c.req.param('feuilleId'), body);
+    return c.json(taximetre, 201);
+  } catch (error) {
+    console.error('Erreur API création taximètre:', error);
+    return c.json({ error: error.message || 'Erreur lors de la création/mise à jour des données taximètre' }, 500);
+  }
+});
+
+app.put('/feuilles-route/:feuilleId/taximetre', async (c) => {
+  try {
+    const body = await c.req.json();
+    const taximetre = await createOrUpdateTaximetre(c.req.param('feuilleId'), body);
+    return c.json(taximetre);
+  } catch (error) {
+    console.error('Erreur API mise à jour taximètre:', error);
+    return c.json({ error: error.message || 'Erreur lors de la mise à jour des données taximètre' }, 500);
   }
 });
 
@@ -851,7 +967,9 @@ app.post('/auth/login', async (c) => {
     let statusCode = 500;
     let errorMessage = 'Erreur interne du serveur';
 
-    if (error.message === 'Utilisateur non trouvé' || error.message === 'Mot de passe incorrect') {
+    if (error.message === 'Utilisateur non trouvé' ||
+        error.message === 'Mot de passe incorrect' ||
+        error.message === 'Email ou mot de passe incorrect') {
       statusCode = 401;
       errorMessage = 'Email ou mot de passe incorrect';
     }
@@ -960,6 +1078,114 @@ app.post('/auth/change-password', async (c) => {
     if (error.message.includes('Mot de passe') || error.message === 'Utilisateur non trouvé') {
       statusCode = 400;
       errorMessage = error.message;
+    }
+
+    return c.json({
+      success: false,
+      error: errorMessage
+    }, statusCode);
+  }
+});
+
+// ==================== AUTHENTIFICATION ====================
+
+app.post('/auth/login', async (c) => {
+  try {
+    const body = await c.req.json();
+    const { username, password } = body;
+
+    if (!username || !password) {
+      return c.json({
+        success: false,
+        error: 'Email et mot de passe requis'
+      }, 400);
+    }
+
+    const result = await login(username, password);
+
+    return c.json(result);
+  } catch (error) {
+    console.error('Erreur API login:', error);
+
+    let statusCode = 500;
+    let errorMessage = 'Erreur interne du serveur';
+
+    if (error.message === 'Email ou mot de passe incorrect') {
+      statusCode = 401;
+      errorMessage = error.message;
+    }
+
+    return c.json({
+      success: false,
+      error: errorMessage
+    }, statusCode);
+  }
+});
+
+app.post('/auth/verify', async (c) => {
+  try {
+    const authHeader = c.req.header('Authorization');
+
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return c.json({
+        success: false,
+        error: 'Token d\'autorisation requis'
+      }, 401);
+    }
+
+    const token = authHeader.substring(7); // Remove 'Bearer ' prefix
+    const result = await verifyToken(token);
+
+    return c.json(result);
+  } catch (error) {
+    console.error('Erreur API verify token:', error);
+
+    return c.json({
+      success: false,
+      error: 'Token invalide'
+    }, 401);
+  }
+});
+
+app.post('/auth/change-password', async (c) => {
+  try {
+    const authHeader = c.req.header('Authorization');
+
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return c.json({
+        success: false,
+        error: 'Token d\'autorisation requis'
+      }, 401);
+    }
+
+    const token = authHeader.substring(7);
+    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'txapp-secret-key-2025');
+
+    const body = await c.req.json();
+    const { currentPassword, newPassword } = body;
+
+    if (!currentPassword || !newPassword) {
+      return c.json({
+        success: false,
+        error: 'Mot de passe actuel et nouveau mot de passe requis'
+      }, 400);
+    }
+
+    const result = await changePassword(decoded.userId, currentPassword, newPassword);
+
+    return c.json(result);
+  } catch (error) {
+    console.error('Erreur API change password:', error);
+
+    let statusCode = 500;
+    let errorMessage = 'Erreur interne du serveur';
+
+    if (error.message.includes('Mot de passe') || error.message === 'Utilisateur non trouvé') {
+      statusCode = 400;
+      errorMessage = error.message;
+    } else if (error.name === 'JsonWebTokenError') {
+      statusCode = 401;
+      errorMessage = 'Token invalide';
     }
 
     return c.json({

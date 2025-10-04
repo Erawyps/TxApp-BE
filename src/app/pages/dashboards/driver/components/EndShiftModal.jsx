@@ -46,8 +46,8 @@ export function EndShiftModal({ isOpen, onClose, onSubmit, currentShift, courses
     }
 
     // Validate ending kilometers >= starting kilometers
-    if (currentShift?.km_debut && formData.km_fin) {
-      if (parseInt(formData.km_fin) < currentShift.km_debut) {
+    if (currentShift?.index_km_debut_tdb && formData.km_fin) {
+      if (parseInt(formData.km_fin) < currentShift.index_km_debut_tdb) {
         newErrors.km_fin = 'Le kilométrage de fin doit être supérieur ou égal au kilométrage de début';
       }
     }
@@ -219,14 +219,14 @@ export function EndShiftModal({ isOpen, onClose, onSubmit, currentShift, courses
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Kilométrage final *
+                    Kilométrage final du tableau de bord *
                   </label>
                   <input
                     type="number"
-                    min={Math.max(currentShift?.km_debut || 0, summary.lastCourseIndex)}
+                    min={Math.max(currentShift?.index_km_debut_tdb || 0, summary.lastCourseIndex)}
                     value={formData.km_fin}
                     onChange={(e) => setFormData(prev => ({ ...prev, km_fin: e.target.value }))}
-                    placeholder={`Min: ${Math.max(currentShift?.km_debut || 0, summary.lastCourseIndex)}`}
+                    placeholder={`Min: ${Math.max(currentShift?.index_km_debut_tdb || 0, summary.lastCourseIndex)}`}
                     className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 ${
                       errors.km_fin ? 'border-red-500' : 'border-gray-300'
                     }`}
@@ -235,7 +235,7 @@ export function EndShiftModal({ isOpen, onClose, onSubmit, currentShift, courses
                     <p className="text-red-500 text-sm mt-1">{errors.km_fin}</p>
                   )}
                   <div className="text-gray-500 text-xs mt-1">
-                    <p>Début: {currentShift?.km_debut?.toLocaleString()} km</p>
+                    <p>Début: {currentShift?.index_km_debut_tdb?.toLocaleString()} km</p>
                     {summary.lastCourseIndex > 0 && (
                       <p>Dernière course: {summary.lastCourseIndex} km</p>
                     )}

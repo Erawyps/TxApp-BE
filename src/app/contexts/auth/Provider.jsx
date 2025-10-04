@@ -2,10 +2,11 @@
 import { useEffect, useReducer } from "react";
 import PropTypes from "prop-types";
 import isObject from "lodash/isObject";
+import { jwtDecode } from "jwt-decode";
 
 // Local Imports
 import { loginUser, getUserProfile, createUser, updateUserProfile } from "services/auth";
-import { isTokenValid, setSession, getCurrentUser, generateToken } from "utils/jwt";
+import { isTokenValid, setSession, getCurrentUser } from "utils/jwt";
 import { AuthContext } from "./context";
 
 // ----------------------------------------------------------------------
@@ -104,12 +105,68 @@ export function AuthProvider({ children }) {
     const init = async () => {
       try {
         const authToken = window.localStorage.getItem("authToken");
+        console.log('🔍 Token from localStorage:', authToken ? 'present' : 'null');
+
+        // Nettoyer immédiatement les tokens manifestement invalides
+        if (authToken) {
+          try {
+            const decoded = jwtDecode(authToken);
+            // Vérifier si c'est un token avec une signature fake ou un ID invalide
+            if (authToken.includes('fake-signature') ||
+                (decoded.sub && typeof decoded.sub === 'string' && decoded.sub.startsWith('uid-')) ||
+                (decoded.userId && typeof decoded.userId === 'string' && decoded.userId.startsWith('uid-'))) {
+              console.log('🧹 Token invalide détecté au démarrage, suppression...');
+              setSession(null);
+              dispatch({
+                type: "INITIALIZE",
+                payload: {
+                  isAuthenticated: false,
+                  user: null,
+                },
+              });
+              return;
+            }
+          } catch (decodeError) {
+            console.log('🧹 Token non décodable détecté, suppression...', decodeError.message);
+            setSession(null);
+            dispatch({
+              type: "INITIALIZE",
+              payload: {
+                isAuthenticated: false,
+                user: null,
+              },
+            });
+            return;
+          }
+        }
 
         if (authToken && isTokenValid(authToken)) {
+          console.log('✅ Token is valid, extracting user data...');
+          // Vérifier si c'est un ancien token local (avec "uid-" dans l'ID ou signature "fake-signature")
+          const userFromToken = getCurrentUser();
+          console.log('🔍 User from token:', userFromToken);
+
+          // Détecter les tokens locaux par leur signature ou leur contenu
+          const isLocalToken = authToken.includes('fake-signature') ||
+                              (userFromToken && typeof userFromToken.id === 'string' && userFromToken.id.startsWith('uid-'));
+
+          console.log('🔍 Is local token?', isLocalToken, 'Token ends with fake-signature?', authToken.includes('fake-signature'));
+
+          if (isLocalToken || !userFromToken) {
+            console.log('🧹 Token invalide ou local détecté, suppression...', { isLocalToken, hasUserFromToken: !!userFromToken });
+            setSession(null);
+            dispatch({
+              type: "INITIALIZE",
+              payload: {
+                isAuthenticated: false,
+                user: null,
+              },
+            });
+            return;
+          }
+
           setSession(authToken);
 
-          // Récupérer les infos utilisateur depuis le token
-          const userFromToken = getCurrentUser();
           console.log('🔍 User from token:', userFromToken);
 
           if (userFromToken) {
@@ -155,7 +212,16 @@ export function AuthProvider({ children }) {
               });
             }
           } else {
-            throw new Error("Token invalide");
+            console.log('❌ Token valide mais données utilisateur non extraites, nettoyage...');
+            setSession(null);
+            dispatch({
+              type: "INITIALIZE",
+              payload: {
+                isAuthenticated: false,
+                user: null,
+              },
+            });
+            return;
           }
         } else {
           // Token invalide ou expiré
@@ -193,15 +259,14 @@ export function AuthProvider({ children }) {
     try {
       // Utiliser notre service d'authentification local
       // Note: username is actually the email in this context
-      const { user } = await loginUser(username, password);
+      const { user, token } = await loginUser(username, password);
 
       if (!isObject(user)) {
         throw new Error("Réponse d'authentification invalide");
       }
 
-      // Générer un token JWT local
-      const authToken = generateToken(user);
-      setSession(authToken);
+      // Utiliser le token JWT du backend au lieu de générer un token local
+      setSession(token);
 
       dispatch({
         type: "LOGIN_SUCCESS",

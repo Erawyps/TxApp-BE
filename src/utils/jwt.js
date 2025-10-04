@@ -50,28 +50,41 @@ const setSession = (authToken) => {
 const getCurrentUser = () => {
   try {
     const token = localStorage.getItem(TOKEN_STORAGE_KEY);
+    console.log('🔑 getCurrentUser - Token from storage:', token ? 'present' : 'null');
     if (!token || !isTokenValid(token)) {
+      console.log('❌ getCurrentUser - Token invalid or missing');
       return null;
     }
 
     const decoded = jwtDecode(token);
-    console.log('🔍 Decoded token:', decoded);
+    console.log('🔍 getCurrentUser - Decoded token:', decoded);
+    console.log('🔍 getCurrentUser - Token string (first 50 chars):', token.substring(0, 50));
 
-    // Vérifier que userId existe
-    if (!decoded.userId) {
-      console.error('❌ Token does not contain userId');
+    // Vérifier que userId ou sub existe
+    const userId = decoded.sub || decoded.userId;
+    console.log('🔍 getCurrentUser - Extracted userId:', userId, 'type:', typeof userId);
+    if (!userId) {
+      console.error('❌ getCurrentUser - Token does not contain userId or sub');
       return null;
     }
 
-    return {
-      id: decoded.userId,
+    // Vérifier que l'ID est valide (pas une string commençant par 'uid-')
+    if (typeof userId === 'string' && userId.startsWith('uid-')) {
+      console.error('❌ getCurrentUser - Token contains invalid local userId:', userId);
+      return null;
+    }
+
+    const userData = {
+      id: userId,
       email: decoded.email,
       type: decoded.type,
       role: decoded.role,
       exp: decoded.exp,
     };
+    console.log('✅ getCurrentUser - Returning user data:', userData);
+    return userData;
   } catch (err) {
-    console.error("Failed to get current user from token:", err);
+    console.error("❌ getCurrentUser - Failed to get current user from token:", err);
     return null;
   }
 };

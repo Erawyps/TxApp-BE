@@ -1,6 +1,6 @@
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
-import { logger } from 'hono/logger';
+// Removed unused logger import
 import { compress } from 'hono/compress';
 import { serve } from '@hono/node-server';
 import dotenv from 'dotenv';
@@ -34,7 +34,7 @@ async function initializeTestData() {
         data: {
           societe_id: 1,
           email: 'chauffeur@taxi.be',
-          mot_de_passe_hashe: '$2b$12$5uwbtgleugv1sy/tlKR1Ruv8f6NCcOCZolsytgJOTQgZuQX6RxOQ.', // password: test123
+          mot_de_passe_hashe: '$2b$12$Xtm7aj/onfagKahWuid3we5QpdsQRiC.y8SoQGYsL5jQFaov4hcA6', // password: test123
           nom: 'Dupont',
           prenom: 'Jean',
           role: 'Chauffeur'
@@ -254,7 +254,7 @@ const startServer = async () => {
     console.log(`🌐 Configuration: ${HOST}:${PORT}`);
 
     // Initialiser les données de test
-    // await initializeTestData();
+    await initializeTestData();
 
     serve({
       fetch: app.fetch,

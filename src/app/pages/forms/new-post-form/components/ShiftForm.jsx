@@ -46,7 +46,7 @@ const loadSavedData = (key) => {
   }
 };
 
-export function ShiftForm({ vehicles, onStartShift, onShowVehicleInfo, reglesSalaire = [] }) {
+export function ShiftForm({ vehicles, currentShift, onStartShift, onShowVehicleInfo, reglesSalaire = [] }) {
   // Charger les données sauvegardées au montage du composant
   const savedData = loadSavedData('shiftFormData');
 
@@ -58,7 +58,19 @@ export function ShiftForm({ vehicles, onStartShift, onShowVehicleInfo, reglesSal
     formState: { errors }
   } = useForm({
     resolver: yupResolver(shiftSchema),
-    defaultValues: savedData || {
+    defaultValues: currentShift ? {
+      date: currentShift.date_service ? new Date(currentShift.date_service).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+      heure_debut: currentShift.heure_debut || '',
+      heure_fin_estimee: currentShift.heure_fin_estimee || '',
+      interruptions: currentShift.interruptions || '00:00',
+      type_remuneration: currentShift.type_remuneration || '',
+      vehicule_id: currentShift.vehicule_id ? currentShift.vehicule_id.toString() : '',
+      km_tableau_bord_debut: currentShift.index_km_debut_tdb || '',
+      taximetre_prise_charge_debut: currentShift.taximetre_prise_charge_debut || '0',
+      taximetre_index_km_debut: currentShift.taximetre_index_km_debut || '0',
+      taximetre_km_charge_debut: currentShift.taximetre_km_charge_debut || '0',
+      taximetre_chutes_debut: currentShift.taximetre_chutes_debut || '0'
+    } : (savedData || {
       date: new Date().toISOString().split('T')[0],
       heure_debut: '',
       heure_fin_estimee: '',
@@ -70,7 +82,7 @@ export function ShiftForm({ vehicles, onStartShift, onShowVehicleInfo, reglesSal
       taximetre_index_km_debut: '0',
       taximetre_km_charge_debut: '0',
       taximetre_chutes_debut: '0'
-    }
+    })
   });
 
   // Auto-sauvegarde des données du formulaire

@@ -46,6 +46,7 @@ const loadSavedData = (key) => {
 
 const initialEndShiftData = {
   heure_fin: '',
+  interruptions: '',
   km_tableau_bord_fin: '',
   taximetre_prise_charge_fin: '',
   taximetre_index_km_fin: '',
@@ -56,8 +57,11 @@ const initialEndShiftData = {
 };
 
 export function EndShiftForm({ onEndShift, shiftData, driver, onPrintReport }) {
-  // Charger les données sauvegardées
-  const savedData = loadSavedData('endShiftFormData');
+  // Charger les données sauvegardées du formulaire de fin
+  const savedEndData = loadSavedData('endShiftFormData');
+  
+  // Charger les données sauvegardées du formulaire de début pour récupérer heure_fin_estimee
+  const savedStartData = loadSavedData('shiftFormData');
 
   const {
     register,
@@ -66,9 +70,9 @@ export function EndShiftForm({ onEndShift, shiftData, driver, onPrintReport }) {
     formState: { errors }
   } = useForm({
     resolver: yupResolver(endShiftSchema),
-    defaultValues: savedData || {
+    defaultValues: savedEndData || {
       ...initialEndShiftData,
-      signature_chauffeur: `${driver?.prenom || 'Non défini'} ${driver?.nom || 'Non défini'}`
+      signature_chauffeur: `${driver?.utilisateur?.prenom || 'Non défini'} ${driver?.utilisateur?.nom || 'Non défini'}`
     }
   });
 
@@ -77,6 +81,9 @@ export function EndShiftForm({ onEndShift, shiftData, driver, onPrintReport }) {
   // Auto-sauvegarde des données du formulaire
   useAutoSave(watchedData, 'endShiftFormData');
 
+  // Récupérer heure_fin_estimee depuis les données sauvegardées du formulaire de début
+  const heureFinEstimee = savedStartData?.heure_fin_estimee || shiftData?.heure_fin_estimee;
+
   // Calculer la durée réelle du shift
   const calculateActualShiftDuration = () => {
     if (shiftData?.heure_debut && watchedData.heure_fin) {
@@ -84,15 +91,16 @@ export function EndShiftForm({ onEndShift, shiftData, driver, onPrintReport }) {
       const end = new Date(`2000-01-01T${watchedData.heure_fin}`);
       const diff = end - start;
       
-      // Soustraire les interruptions
-      if (shiftData?.interruptions) {
-        const [intHours, intMinutes] = shiftData.interruptions.split(':').map(Number);
-        const interruptionsMs = (intHours * 60 + intMinutes) * 60 * 1000;
+      // Soustraire les interruptions (en minutes)
+      if (watchedData.interruptions && !isNaN(watchedData.interruptions)) {
+        const interruptionsMs = Number(watchedData.interruptions) * 60 * 1000;
         const adjustedDiff = diff - interruptionsMs;
         
-        const hours = Math.floor(adjustedDiff / (1000 * 60 * 60));
-        const minutes = Math.floor((adjustedDiff % (1000 * 60 * 60)) / (1000 * 60));
-        return `${hours}h${minutes.toString().padStart(2, '0')}`;
+        if (adjustedDiff > 0) {
+          const hours = Math.floor(adjustedDiff / (1000 * 60 * 60));
+          const minutes = Math.floor((adjustedDiff % (1000 * 60 * 60)) / (1000 * 60));
+          return `${hours}h${minutes.toString().padStart(2, '0')}`;
+        }
       }
       
       const hours = Math.floor(diff / (1000 * 60 * 60));
@@ -105,19 +113,21 @@ export function EndShiftForm({ onEndShift, shiftData, driver, onPrintReport }) {
   // Calculer la différence avec l'estimation
   const calculateDurationDifference = () => {
     const actual = calculateActualShiftDuration();
-    const estimated = shiftData?.heure_fin_estimee && shiftData?.heure_debut ? (() => {
+    const estimated = heureFinEstimee && shiftData?.heure_debut ? (() => {
       const start = new Date(`2000-01-01T${shiftData.heure_debut}`);
-      const end = new Date(`2000-01-01T${shiftData.heure_fin_estimee}`);
+      const end = new Date(`2000-01-01T${heureFinEstimee}`);
       const diff = end - start;
       
-      if (shiftData?.interruptions) {
-        const [intHours, intMinutes] = shiftData.interruptions.split(':').map(Number);
-        const interruptionsMs = (intHours * 60 + intMinutes) * 60 * 1000;
+      // Soustraire les interruptions (en minutes depuis le formulaire)
+      if (watchedData.interruptions && !isNaN(watchedData.interruptions)) {
+        const interruptionsMs = Number(watchedData.interruptions) * 60 * 1000;
         const adjustedDiff = diff - interruptionsMs;
         
-        const hours = Math.floor(adjustedDiff / (1000 * 60 * 60));
-        const minutes = Math.floor((adjustedDiff % (1000 * 60 * 60)) / (1000 * 60));
-        return `${hours}h${minutes.toString().padStart(2, '0')}`;
+        if (adjustedDiff > 0) {
+          const hours = Math.floor(adjustedDiff / (1000 * 60 * 60));
+          const minutes = Math.floor((adjustedDiff % (1000 * 60 * 60)) / (1000 * 60));
+          return `${hours}h${minutes.toString().padStart(2, '0')}`;
+        }
       }
       
       const hours = Math.floor(diff / (1000 * 60 * 60));
@@ -148,6 +158,27 @@ export function EndShiftForm({ onEndShift, shiftData, driver, onPrintReport }) {
         </h3>
         
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+          {/* Informations générales */}
+          <div className="bg-gray-50 dark:bg-gray-900/20 p-4 rounded-lg">
+            <h4 className="font-medium mb-4 text-gray-800 dark:text-gray-200">
+              Informations générales
+            </h4>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="bg-white dark:bg-dark-700 p-3 rounded-lg border">
+                <p className="text-sm text-gray-600 dark:text-gray-400">Nom de l&apos;exploitant</p>
+                <p className="text-lg font-semibold text-gray-800 dark:text-dark-100">
+                  {driver?.societe_taxi?.nom_exploitant || 'Non défini'}
+                </p>
+              </div>
+              <div className="bg-white dark:bg-dark-700 p-3 rounded-lg border">
+                <p className="text-sm text-gray-600 dark:text-gray-400">Chauffeur</p>
+                <p className="text-lg font-semibold text-gray-800 dark:text-dark-100">
+                  {driver?.utilisateur?.prenom || 'Non défini'} {driver?.utilisateur?.nom || 'Non défini'}
+                </p>
+              </div>
+            </div>
+          </div>
+
           {/* Informations de fin */}
           <div className="bg-red-50 dark:bg-red-900/20 p-4 rounded-lg">
             <h4 className="font-medium mb-4 text-red-800 dark:text-red-200">
@@ -172,6 +203,17 @@ export function EndShiftForm({ onEndShift, shiftData, driver, onPrintReport }) {
                   {estimated}
                 </p>
               </div>
+            </div>
+            <div className="mt-4">
+              <Input
+                label="Interruptions (minutes)"
+                type="number"
+                min="0"
+                step="1"
+                {...register("interruptions")}
+                error={errors?.interruptions?.message}
+                placeholder="Durée totale des interruptions en minutes"
+              />
             </div>
           </div>
 

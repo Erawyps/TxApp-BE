@@ -16,15 +16,24 @@ import { locales } from "i18n/langs";
 const initialLang =
   localStorage.getItem("i18nextLng") || defaultTheme.defaultLang;
 
-const initialDir = i18n.dir(initialLang);
+// Ensure the initial language is supported, fallback to 'en' if not
+const validInitialLang = locales[initialLang] ? initialLang : 'en';
+
+const initialDir = i18n.dir(validInitialLang);
 
 export function LocaleProvider({ children }) {
-  const [locale, setLocale] = useState(initialLang);
+  const [locale, setLocale] = useState(validInitialLang);
   const [direction, setDirection] = useState(initialDir);
 
   // Function to update the locale dynamically
   const updateLocale = useCallback(async (newLocale) => {
     try {
+      // Check if the locale is supported
+      if (!locales[newLocale]) {
+        console.warn(`Locale '${newLocale}' is not supported, falling back to 'en'`);
+        newLocale = 'en';
+      }
+
       // Dynamically load the locale and update dependencies
       await locales[newLocale].dayjs();
       dayjs.locale(newLocale);

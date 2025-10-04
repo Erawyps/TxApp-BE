@@ -113,15 +113,33 @@ export default function TxApp() {
 
   // Vérification d'authentification et permissions
   useEffect(() => {
+    console.log('🔍 Auth state check:', { authLoading, isAuthenticated, user: user ? 'present' : 'null' });
+
     if (!authLoading && !isAuthenticated) {
-      console.warn('Utilisateur non authentifié - redirection vers login');
-      // TODO: Rediriger vers la page de connexion
+      console.warn('❌ Utilisateur non authentifié - redirection vers login');
+      // Forcer le nettoyage complet
+      localStorage.removeItem('authToken');
+      window.location.href = '/login'; // Redirection forcée
       return;
     }
 
     if (!authLoading && isAuthenticated && user) {
-      console.log('Utilisateur connecté:', {
-        id: user?.chauffeur?.chauffeur_id,
+      // Vérifier que l'utilisateur a des données valides
+      if (!user.nom || !user.prenom || !user.user_id) {
+        console.warn('❌ Données utilisateur incomplètes:', {
+          nom: user.nom,
+          prenom: user.prenom,
+          user_id: user.user_id,
+          id: user.id
+        });
+        // Nettoyer et rediriger
+        localStorage.removeItem('authToken');
+        window.location.href = '/login';
+        return;
+      }
+
+      console.log('✅ Utilisateur connecté avec données valides:', {
+        id: user?.chauffeur?.chauffeur_id || user?.user_id,
         nom: user.nom,
         prenom: user.prenom,
         role: user.role
@@ -525,16 +543,17 @@ export default function TxApp() {
                   id: activeSheet.id,
                   chauffeur_id: activeSheet.chauffeur_id,
                   vehicule_id: activeSheet.vehicule_id,
-                  date: activeSheet.date,
-                  heure_debut: activeSheet.heure_debut,
-                  heure_fin: activeSheet.heure_fin,
-                  km_debut: activeSheet.km_debut,
-                  km_fin: activeSheet.km_fin,
-                  prise_en_charge_debut: activeSheet.prise_en_charge_debut,
-                  prise_en_charge_fin: activeSheet.prise_en_charge_fin,
-                  chutes_debut: activeSheet.chutes_debut,
-                  chutes_fin: activeSheet.chutes_fin,
-                  statut: activeSheet.statut,
+                  date: activeSheet.date_service,
+                  heure_debut: activeSheet.heure_debut ? new Date(activeSheet.heure_debut).toTimeString().slice(0, 5) : null,
+                  heure_fin: activeSheet.heure_fin ? new Date(activeSheet.heure_fin).toTimeString().slice(0, 5) : null,
+                  interruptions: activeSheet.interruptions,
+                  km_debut: activeSheet.index_km_debut_tdb,
+                  km_fin: activeSheet.index_km_fin_tdb,
+                  prise_en_charge_debut: activeSheet.taximetre_prise_charge_debut,
+                  prise_en_charge_fin: activeSheet.taximetre_prise_charge_fin,
+                  chutes_debut: activeSheet.taximetre_chutes_debut,
+                  chutes_fin: activeSheet.taximetre_chutes_fin,
+                  statut: activeSheet.est_validee ? 'validée' : 'en cours',
                   notes: activeSheet.notes
                 });
 
@@ -782,11 +801,12 @@ export default function TxApp() {
         chauffeur_id: newFeuilleRoute.chauffeur_id,
         vehicule_id: newFeuilleRoute.vehicule_id,
         date: newFeuilleRoute.date_service,
-        heure_debut: newFeuilleRoute.heure_debut,
+        heure_debut: newFeuilleRoute.heure_debut ? new Date(newFeuilleRoute.heure_debut).toTimeString().slice(0, 5) : null,
+        heure_fin_estimee: shiftFormData.heure_fin_estimee,
+        interruptions: shiftFormData.interruptions,
         km_debut: newFeuilleRoute.index_km_debut_tdb,
-        statut: !newFeuilleRoute.est_validee ? 'En cours' : 'Terminé', // Calculer le statut basé sur est_validee
-        type_remuneration: shiftFormData.type_remuneration, // Garder la règle de salaire sélectionnée
-        interruptions: newFeuilleRoute.interruptions,
+        statut: !newFeuilleRoute.est_validee ? 'En cours' : 'Terminé',
+        type_remuneration: shiftFormData.type_remuneration,
         // Conserver les données taximètre
         taximetre_prise_charge_debut: shiftFormData.taximetre_prise_charge_debut || 0,
         taximetre_index_km_debut: shiftFormData.taximetre_index_km_debut || 0,
@@ -825,11 +845,11 @@ export default function TxApp() {
       setCurrentFeuilleRoute(updatedFeuilleRoute);
       setShiftData({
         ...shiftData,
-        heure_fin: updatedFeuilleRoute.heure_fin,
-        km_fin: updatedFeuilleRoute.km_fin,
-        prise_en_charge_fin: updatedFeuilleRoute.prise_en_charge_fin,
-        chutes_fin: updatedFeuilleRoute.chutes_fin,
-        statut: updatedFeuilleRoute.statut,
+        heure_fin: updatedFeuilleRoute.heure_fin ? new Date(updatedFeuilleRoute.heure_fin).toTimeString().slice(0, 5) : null,
+        km_fin: updatedFeuilleRoute.index_km_fin_tdb,
+        prise_en_charge_fin: updatedFeuilleRoute.taximetre_prise_charge_fin,
+        chutes_fin: updatedFeuilleRoute.taximetre_chutes_fin,
+        statut: updatedFeuilleRoute.est_validee ? 'Validée' : 'Terminée',
         notes: updatedFeuilleRoute.notes
       });
 
@@ -950,7 +970,7 @@ export default function TxApp() {
               <ShiftForm
                 key={`shift-form-${vehicules?.length || 0}`}
                 vehicles={vehicules}
-                chauffeur={currentChauffeur}
+                currentShift={currentFeuilleRoute}
                 onStartShift={handleStartShift}
                 onShowVehicleInfo={() => setShowVehicleModal(true)}
                 reglesSalaire={reglesSalaire}
@@ -981,11 +1001,7 @@ export default function TxApp() {
               <EndShiftForm 
                 onEndShift={handleEndShift}
                 shiftData={shiftData}
-                driver={currentChauffeur ? {
-                  nom: currentChauffeur.utilisateur?.nom,
-                  prenom: currentChauffeur.utilisateur?.prenom,
-                  numero_badge: currentChauffeur.numero_badge
-                } : null}
+                driver={currentChauffeur}
                 vehicle={currentFeuilleRoute?.vehicule || null}
                 onPrintReport={handleDownloadReport}
               />

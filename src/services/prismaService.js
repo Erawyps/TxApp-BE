@@ -1,6 +1,7 @@
 import prisma from '../configs/database.config.js';
 import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
+import bcrypt from 'bcryptjs';
 
 /**
  * Service Prisma unifié pour toutes les opérations de base de données
@@ -714,22 +715,91 @@ export async function createFeuilleRouteSimple(feuilleData) {
   }
 }
 
+export async function validateFeuilleRouteData(feuilleId, feuilleData) {
+  // Récupérer la feuille existante pour les validations
+  const existingFeuille = await prisma.feuille_route.findUnique({
+    where: { feuille_id: parseInt(feuilleId) },
+    include: {
+      course: true
+    }
+  });
+
+  if (!existingFeuille) {
+    throw new Error('Feuille de route non trouvée');
+  }
+
+  // Validation des horaires
+  if (feuilleData.heure_debut && feuilleData.heure_fin) {
+    const heureDebut = new Date(`1970-01-01T${feuilleData.heure_debut}:00`);
+    const heureFin = new Date(`1970-01-01T${feuilleData.heure_fin}:00`);
+
+    if (heureFin <= heureDebut) {
+      throw new Error('L\'heure de fin doit être postérieure à l\'heure de début');
+    }
+  }
+
+  // Validation des kilométrages
+  if (feuilleData.index_km_fin_tdb !== undefined && feuilleData.index_km_fin_tdb !== null) {
+    if (feuilleData.index_km_fin_tdb < 0) {
+      throw new Error('Le kilométrage de fin ne peut pas être négatif');
+    }
+
+    if (existingFeuille.index_km_debut_tdb && feuilleData.index_km_fin_tdb < existingFeuille.index_km_debut_tdb) {
+      throw new Error('Le kilométrage de fin doit être supérieur ou égal au kilométrage de début');
+    }
+
+    // Vérifier que le km fin >= dernier index de course
+    const lastCourseIndex = Math.max(...existingFeuille.course.map(c => c.index_debarquement || 0), 0);
+    if (lastCourseIndex > 0 && feuilleData.index_km_fin_tdb < lastCourseIndex) {
+      throw new Error(`Le kilométrage de fin doit être au moins égal au dernier index de course (${lastCourseIndex})`);
+    }
+  }
+
+  if (feuilleData.index_km_debut_tdb !== undefined && feuilleData.index_km_debut_tdb !== null) {
+    if (feuilleData.index_km_debut_tdb < 0) {
+      throw new Error('Le kilométrage de début ne peut pas être négatif');
+    }
+  }
+
+  // Validation des courses terminées
+  const coursesNonTerminees = existingFeuille.course.filter(c =>
+    c.heure_embarquement && !c.heure_debarquement && parseFloat(c.sommes_percues || 0) > 0
+  );
+
+  if (coursesNonTerminees.length > 0 && feuilleData.heure_fin) {
+    throw new Error('Toutes les courses doivent être terminées avant de finaliser la feuille de route');
+  }
+
+  // Validation du mode d'encodage
+  if (feuilleData.mode_encodage && !['LIVE', 'ULTERIEUR'].includes(feuilleData.mode_encodage)) {
+    throw new Error('Le mode d\'encodage doit être LIVE ou ULTERIEUR');
+  }
+
+  // Validation du montant salaire
+  if (feuilleData.montant_salaire_cash_declare !== undefined &&
+      feuilleData.montant_salaire_cash_declare !== null &&
+      feuilleData.montant_salaire_cash_declare < 0) {
+    throw new Error('Le montant du salaire déclaré ne peut pas être négatif');
+  }
+}
+
 export async function updateFeuilleRoute(feuilleId, feuilleData) {
   try {
+    // Validation des données
+    await validateFeuilleRouteData(feuilleId, feuilleData);
+
     return await prisma.feuille_route.update({
       where: { feuille_id: parseInt(feuilleId) },
       data: {
         vehicule_id: feuilleData.vehicule_id,
         mode_encodage: feuilleData.mode_encodage,
-        heure_debut: feuilleData.heure_debut ? new Date(feuilleData.heure_debut) : null,
-        heure_fin: feuilleData.heure_fin ? new Date(feuilleData.heure_fin) : null,
+        heure_debut: feuilleData.heure_debut ? new Date(`1970-01-01T${feuilleData.heure_debut}:00`) : null,
+        heure_fin: feuilleData.heure_fin ? new Date(`1970-01-01T${feuilleData.heure_fin}:00`) : null,
         interruptions: feuilleData.interruptions,
-        total_heures: feuilleData.total_heures,
         index_km_debut_tdb: feuilleData.index_km_debut_tdb,
         index_km_fin_tdb: feuilleData.index_km_fin_tdb,
-        total_km_tdb: feuilleData.total_km_tdb,
         date_validation: feuilleData.date_validation ? new Date(feuilleData.date_validation) : null,
-        validee_par_user_id: feuilleData.validee_par_user_id,
+        validated_by: feuilleData.validated_by,
         montant_salaire_cash_declare: feuilleData.montant_salaire_cash_declare
       },
       include: {
@@ -742,7 +812,7 @@ export async function updateFeuilleRoute(feuilleId, feuilleData) {
       }
     });
   } catch (error) {
-    console.error('Erreur lors de la création de la feuille de route:', error);
+    console.error('Erreur lors de la mise à jour de la feuille de route:', error);
     throw error;
   }
 }
@@ -1751,45 +1821,35 @@ export async function hashPassword(password) {
 export async function login(emailOrUsername, password) {
   try {
     // Recherche de l'utilisateur par email
-    const utilisateur = await prisma.utilisateur.findUnique({
+    const user = await prisma.utilisateur.findUnique({
       where: { email: emailOrUsername },
       include: {
-        societe_taxi: true,
         chauffeur: {
           include: {
-            regle_salaire: true
+            societe_taxi: true
           }
         }
       }
     });
 
-    if (!utilisateur) {
-      throw new Error('Utilisateur non trouvé');
+    if (!user) {
+      throw new Error('Email ou mot de passe incorrect');
     }
 
-    // Vérification du mot de passe
-    // Certains utilisateurs ont des mots de passe en clair, d'autres sont hashés
-    let isPasswordValid = false;
-    if (utilisateur.mot_de_passe_hashe === password) {
-      // Mot de passe en clair
-      isPasswordValid = true;
-    } else {
-      // Mot de passe hashé
-      const hashedInput = await hashPassword(password);
-      isPasswordValid = hashedInput === utilisateur.mot_de_passe_hashe;
-    }
-
-    if (!isPasswordValid) {
-      throw new Error('Mot de passe incorrect');
+    // Vérification du mot de passe avec bcrypt
+    const isValidPassword = await bcrypt.compare(password, user.mot_de_passe_hashe);
+    if (!isValidPassword) {
+      throw new Error('Email ou mot de passe incorrect');
     }
 
     // Génération du token JWT
     const token = jwt.sign(
       {
-        userId: utilisateur.user_id,
-        email: utilisateur.email,
-        role: utilisateur.role || utilisateur.type_utilisateur, // Support pour les deux champs
-        societeId: utilisateur.societe_id
+        sub: user.user_id, // Utiliser 'sub' comme identifiant standard JWT
+        userId: user.user_id, // Garder userId pour compatibilité
+        email: user.email,
+        role: user.role,
+        societeId: user.societe_id
       },
       process.env.JWT_SECRET || 'txapp-secret-key-2025',
       {
@@ -1800,15 +1860,17 @@ export async function login(emailOrUsername, password) {
     );
 
     // Retour des informations utilisateur (sans le mot de passe hashé)
-    const { ...userWithoutPassword } = utilisateur;
+    const userWithoutPassword = { ...user };
+    delete userWithoutPassword.mot_de_passe_hashe;
 
     return {
-      token,
+      success: true,
       user: userWithoutPassword,
+      token,
       expiresIn: process.env.JWT_EXPIRES_IN || '24h'
     };
   } catch (error) {
-    console.error('Erreur lors de l\'authentification:', error);
+    console.error('Erreur lors de la connexion:', error);
     throw error;
   }
 }
@@ -1827,8 +1889,9 @@ export async function verifyToken(token) {
     });
 
     // Récupération des informations utilisateur à jour
+    const userId = decoded.sub || decoded.userId; // Utiliser sub en priorité, fallback sur userId
     const utilisateur = await prisma.utilisateur.findUnique({
-      where: { user_id: decoded.userId },
+      where: { user_id: userId },
       include: {
         societe_taxi: true,
         chauffeur: {
@@ -1844,7 +1907,8 @@ export async function verifyToken(token) {
     }
 
     // Retour des informations utilisateur (sans le mot de passe hashé)
-    const { ...userWithoutPassword } = utilisateur;
+    const userWithoutPassword = { ...utilisateur };
+    delete userWithoutPassword.mot_de_passe_hashe;
 
     return {
       valid: true,
@@ -1926,6 +1990,337 @@ export async function changePassword(userId, oldPassword, newPassword) {
 }
 
 // ==================== UTILITAIRES ====================
+
+export async function createOrUpdateTaximetre(feuilleId, taximetreData) {
+  try {
+    // Vérifier que la feuille existe
+    const feuille = await prisma.feuille_route.findUnique({
+      where: { feuille_id: parseInt(feuilleId) }
+    });
+
+    if (!feuille) {
+      throw new Error('Feuille de route non trouvée');
+    }
+
+    // Calculs automatiques
+    const calculs = {};
+
+    // Calcul des km parcourus
+    if (taximetreData.index_km_fin_tax && taximetreData.index_km_debut_tax) {
+      calculs.km_parcourus_tax = taximetreData.index_km_fin_tax - taximetreData.index_km_debut_tax;
+    }
+
+    // Calcul des chutes
+    if (taximetreData.chutes_fin_tax && taximetreData.chutes_debut_tax) {
+      calculs.chutes_totales = taximetreData.chutes_fin_tax - taximetreData.chutes_debut_tax;
+    }
+
+    // Calcul du PC (prise en charge)
+    if (taximetreData.taximetre_prise_charge_fin && taximetreData.taximetre_prise_charge_debut) {
+      calculs.pc_total = taximetreData.taximetre_prise_charge_fin - taximetreData.taximetre_prise_charge_debut;
+    }
+
+    // Créer ou mettre à jour le taximètre
+    const taximetre = await prisma.taximetre.upsert({
+      where: { feuille_id: parseInt(feuilleId) },
+      update: {
+        pc_debut_tax: taximetreData.pc_debut_tax,
+        pc_fin_tax: taximetreData.pc_fin_tax,
+        index_km_debut_tax: taximetreData.index_km_debut_tax,
+        index_km_fin_tax: taximetreData.index_km_fin_tax,
+        km_charge_debut: taximetreData.km_charge_debut,
+        km_charge_fin: taximetreData.km_charge_fin,
+        chutes_debut_tax: taximetreData.chutes_debut_tax,
+        chutes_fin_tax: taximetreData.chutes_fin_tax,
+        taximetre_prise_charge_debut: taximetreData.taximetre_prise_charge_debut,
+        taximetre_prise_charge_fin: taximetreData.taximetre_prise_charge_fin,
+        taximetre_index_km_debut: taximetreData.taximetre_index_km_debut,
+        taximetre_index_km_fin: taximetreData.taximetre_index_km_fin,
+        taximetre_km_charge_debut: taximetreData.taximetre_km_charge_debut,
+        taximetre_km_charge_fin: taximetreData.taximetre_km_charge_fin,
+        taximetre_chutes_debut: taximetreData.taximetre_chutes_debut,
+        taximetre_chutes_fin: taximetreData.taximetre_chutes_fin
+      },
+      create: {
+        feuille_id: parseInt(feuilleId),
+        pc_debut_tax: taximetreData.pc_debut_tax,
+        pc_fin_tax: taximetreData.pc_fin_tax,
+        index_km_debut_tax: taximetreData.index_km_debut_tax,
+        index_km_fin_tax: taximetreData.index_km_fin_tax,
+        km_charge_debut: taximetreData.km_charge_debut,
+        km_charge_fin: taximetreData.km_charge_fin,
+        chutes_debut_tax: taximetreData.chutes_debut_tax,
+        chutes_fin_tax: taximetreData.chutes_fin_tax,
+        taximetre_prise_charge_debut: taximetreData.taximetre_prise_charge_debut,
+        taximetre_prise_charge_fin: taximetreData.taximetre_prise_charge_fin,
+        taximetre_index_km_debut: taximetreData.taximetre_index_km_debut,
+        taximetre_index_km_fin: taximetreData.taximetre_index_km_fin,
+        taximetre_km_charge_debut: taximetreData.taximetre_km_charge_debut,
+        taximetre_km_charge_fin: taximetreData.taximetre_km_charge_fin,
+        taximetre_chutes_debut: taximetreData.taximetre_chutes_debut,
+        taximetre_chutes_fin: taximetreData.taximetre_chutes_fin
+      }
+    });
+
+    return {
+      ...taximetre,
+      calculs: calculs
+    };
+  } catch (error) {
+    console.error('Erreur lors de la création/mise à jour du taximètre:', error);
+    throw error;
+  }
+}
+
+export async function getTaximetreByFeuille(feuilleId) {
+  try {
+    const taximetre = await prisma.taximetre.findUnique({
+      where: { feuille_id: parseInt(feuilleId) }
+    });
+
+    if (!taximetre) {
+      return null;
+    }
+
+    // Calculs automatiques
+    const calculs = {
+      km_parcourus_tax: taximetre.index_km_fin_tax && taximetre.index_km_debut_tax
+        ? taximetre.index_km_fin_tax - taximetre.index_km_debut_tax
+        : 0,
+      chutes_totales: taximetre.chutes_fin_tax && taximetre.chutes_debut_tax
+        ? taximetre.chutes_fin_tax - taximetre.chutes_debut_tax
+        : 0,
+      pc_total: taximetre.taximetre_prise_charge_fin && taximetre.taximetre_prise_charge_debut
+        ? taximetre.taximetre_prise_charge_fin - taximetre.taximetre_prise_charge_debut
+        : 0
+    };
+
+    return {
+      ...taximetre,
+      calculs: calculs
+    };
+  } catch (error) {
+    console.error('Erreur lors de la récupération du taximètre:', error);
+    throw error;
+  }
+}
+
+export async function calculateDriverSalary(feuilleId) {
+  try {
+    // Récupérer la feuille avec le chauffeur et sa règle de salaire
+    const feuille = await prisma.feuille_route.findUnique({
+      where: { feuille_id: parseInt(feuilleId) },
+      include: {
+        chauffeur: {
+          include: {
+            regle_salaire: true
+          }
+        },
+        course: {
+          where: {
+            heure_debarquement: {
+              not: null
+            }
+          }
+        }
+      }
+    });
+
+    if (!feuille) {
+      throw new Error('Feuille de route non trouvée');
+    }
+
+    if (!feuille.chauffeur.regle_salaire) {
+      throw new Error('Aucune règle de salaire définie pour ce chauffeur');
+    }
+
+    const regleSalaire = feuille.chauffeur.regle_salaire;
+
+    // Calculer les recettes totales (courses terminées)
+    const recettesTotales = feuille.course.reduce((sum, course) => {
+      return sum + (parseFloat(course.sommes_percues) || 0);
+    }, 0);
+
+    let salaireCalcule = 0;
+    const seuil = parseFloat(regleSalaire.seuil_recette) || 0;
+    const pourcentageBase = parseFloat(regleSalaire.pourcentage_base) || 0;
+    const pourcentageAuDela = parseFloat(regleSalaire.pourcentage_au_dela) || pourcentageBase;
+
+    if (regleSalaire.est_variable) {
+      // Calcul variable avec seuil
+      if (recettesTotales <= seuil) {
+        salaireCalcule = (recettesTotales * pourcentageBase) / 100;
+      } else {
+        const salaireBase = (seuil * pourcentageBase) / 100;
+        const salaireAuDela = ((recettesTotales - seuil) * pourcentageAuDela) / 100;
+        salaireCalcule = salaireBase + salaireAuDela;
+      }
+    } else {
+      // Calcul fixe
+      salaireCalcule = (recettesTotales * pourcentageBase) / 100;
+    }
+
+    return {
+      feuille_id: feuille.feuille_id,
+      chauffeur_id: feuille.chauffeur_id,
+      regle_salaire_id: regleSalaire.regle_id,
+      recettes_totales: recettesTotales,
+      seuil_recette: seuil,
+      pourcentage_base: pourcentageBase,
+      pourcentage_au_dela: pourcentageAuDela,
+      est_variable: regleSalaire.est_variable,
+      salaire_calcule: Math.round(salaireCalcule * 100) / 100, // Arrondi à 2 décimales
+      nombre_courses: feuille.course.length
+    };
+  } catch (error) {
+    console.error('Erreur lors du calcul du salaire:', error);
+    throw error;
+  }
+}
+
+export async function validateFeuilleRouteAdmin(feuilleId, validatedByUserId) {
+  try {
+    // Vérifier que la feuille existe et n'est pas déjà validée
+    const feuille = await prisma.feuille_route.findUnique({
+      where: { feuille_id: parseInt(feuilleId) },
+      include: {
+        chauffeur: {
+          include: {
+            utilisateur: true
+          }
+        },
+        vehicule: true,
+        course: true,
+        charge: true
+      }
+    });
+
+    if (!feuille) {
+      throw new Error('Feuille de route non trouvée');
+    }
+
+    if (feuille.est_validee) {
+      throw new Error('Cette feuille de route est déjà validée');
+    }
+
+    // Validation finale avant validation administrative
+    if (!feuille.heure_fin) {
+      throw new Error('La feuille de route doit être finalisée avant validation');
+    }
+
+    if (!feuille.index_km_fin_tdb) {
+      throw new Error('Le kilométrage de fin doit être saisi');
+    }
+
+    // Calculer les totaux avant validation
+    const totals = await calculateFeuilleTotals(feuilleId);
+
+    // Marquer comme validée
+    const updatedFeuille = await prisma.feuille_route.update({
+      where: { feuille_id: parseInt(feuilleId) },
+      data: {
+        est_validee: true,
+        date_validation: new Date(),
+        validated_by: parseInt(validatedByUserId)
+      },
+      include: {
+        chauffeur: {
+          include: {
+            utilisateur: true
+          }
+        },
+        vehicule: true
+      }
+    });
+
+    return {
+      ...updatedFeuille,
+      totals: totals
+    };
+  } catch (error) {
+    console.error('Erreur lors de la validation administrative:', error);
+    throw error;
+  }
+}
+
+export async function calculateFeuilleTotals(feuilleId) {
+  try {
+    // Récupérer la feuille de route avec ses courses et charges
+    const feuille = await prisma.feuille_route.findUnique({
+      where: { feuille_id: parseInt(feuilleId) },
+      include: {
+        course: {
+          include: {
+            mode_paiement: true
+          }
+        },
+        charge: {
+          include: {
+            mode_paiement: true
+          }
+        }
+      }
+    });
+
+    if (!feuille) {
+      throw new Error('Feuille de route non trouvée');
+    }
+
+    // Calculer les km parcourus
+    const kmParcourus = feuille.index_km_fin_tdb && feuille.index_km_debut_tdb
+      ? feuille.index_km_fin_tdb - feuille.index_km_debut_tdb
+      : 0;
+
+    // Calculer les recettes totales (courses terminées)
+    const recettesTotales = feuille.course
+      .filter(c => c.heure_debarquement) // Uniquement les courses terminées
+      .reduce((sum, course) => sum + (parseFloat(course.sommes_percues) || 0), 0);
+
+    // Calculer les dépenses totales
+    const depensesTotales = feuille.charge
+      .reduce((sum, charge) => sum + (parseFloat(charge.montant) || 0), 0);
+
+    // Calculer la durée totale
+    let dureeTotale = null;
+    if (feuille.heure_debut && feuille.heure_fin) {
+      const debut = new Date(`1970-01-01T${feuille.heure_debut}`);
+      const fin = new Date(`1970-01-01T${feuille.heure_fin}`);
+      dureeTotale = (fin - debut) / (1000 * 60); // Durée en minutes
+    }
+
+    // Calculer les recettes par mode de paiement
+    const recettesParMode = feuille.course
+      .filter(c => c.heure_debarquement)
+      .reduce((acc, course) => {
+        const mode = course.mode_paiement?.code || 'AUTRE';
+        acc[mode] = (acc[mode] || 0) + (parseFloat(course.sommes_percues) || 0);
+        return acc;
+      }, {});
+
+    // Calculer les dépenses par mode de paiement
+    const depensesParMode = feuille.charge
+      .reduce((acc, charge) => {
+        const mode = charge.mode_paiement?.code || 'AUTRE';
+        acc[mode] = (acc[mode] || 0) + (parseFloat(charge.montant) || 0);
+        return acc;
+      }, {});
+
+    return {
+      feuille_id: feuille.feuille_id,
+      km_parcourus: kmParcourus,
+      recettes_totales: recettesTotales,
+      depenses_totales: depensesTotales,
+      duree_totale_minutes: dureeTotale,
+      recettes_par_mode: recettesParMode,
+      depenses_par_mode: depensesParMode,
+      nombre_courses: feuille.course.filter(c => c.heure_debarquement).length,
+      nombre_charges: feuille.charge.length
+    };
+  } catch (error) {
+    console.error('Erreur lors du calcul des totaux:', error);
+    throw error;
+  }
+}
 
 export async function disconnect() {
   await prisma.$disconnect();

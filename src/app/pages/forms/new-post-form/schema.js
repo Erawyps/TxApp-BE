@@ -99,6 +99,9 @@ export const courseSchema = Yup.object().shape({
 export const endShiftSchema = Yup.object().shape({
   heure_fin: Yup.string()
     .required('Heure de fin requise'),
+  interruptions: Yup.number()
+    .min(0, 'Les interruptions doivent être positives')
+    .nullable(),
   km_tableau_bord_fin: Yup.number()
     .min(0, 'Les kilomètres doivent être positifs')
     .required('Kilomètres tableau de bord de fin requis'),

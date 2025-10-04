@@ -23,18 +23,32 @@ export function useDriverShift(chauffeurId) {
       const { data, error } = await supabase
         .from('feuille_route')
         .select(`
-          *,
+          feuille_id,
+          chauffeur_id,
+          vehicule_id,
+          date_service,
+          mode_encodage,
+          heure_debut,
+          heure_fin,
+          interruptions,
+          index_km_debut_tdb,
+          index_km_fin_tdb,
+          montant_salaire_cash_declare,
+          est_validee,
+          date_validation,
+          validated_by,
+          created_at,
           vehicule:vehicule_id (
-            id,
+            vehicule_id,
             plaque_immatriculation,
             marque,
             modele,
-            actif
+            est_actif
           )
         `)
         .eq('chauffeur_id', chauffeurId)
-        .eq('statut', 'En cours')
-        .order('date', { ascending: false })
+        .eq('est_validee', false)
+        .order('date_service', { ascending: false })
         .limit(1)
         .maybeSingle(); // Utiliser maybeSingle pour éviter les erreurs si aucun résultat
 
@@ -61,26 +75,35 @@ export function useDriverShift(chauffeurId) {
       const { data, error } = await supabase
         .from('feuille_route')
         .insert({
-          ...shiftData,
           chauffeur_id: chauffeurId,
-          statut: 'En cours',
-          date: shiftData.date || new Date().toISOString().split('T')[0]
+          vehicule_id: shiftData.vehicule_id,
+          date_service: shiftData.date_service || new Date().toISOString().split('T')[0],
+          mode_encodage: shiftData.mode_encodage || 'LIVE',
+          heure_debut: shiftData.heure_debut,
+          index_km_debut_tdb: shiftData.index_km_debut_tdb,
+          interruptions: shiftData.interruptions || '',
+          montant_salaire_cash_declare: shiftData.montant_salaire_cash_declare || 0
         })
         .select(`
-          *,
-          chauffeur:chauffeur_id (
-            id,
-            nom,
-            prenom,
-            numero_badge,
-            telephone
-          ),
+          feuille_id,
+          chauffeur_id,
+          vehicule_id,
+          date_service,
+          mode_encodage,
+          heure_debut,
+          heure_fin,
+          interruptions,
+          index_km_debut_tdb,
+          index_km_fin_tdb,
+          montant_salaire_cash_declare,
+          est_validee,
+          created_at,
           vehicule:vehicule_id (
-            id,
+            vehicule_id,
             plaque_immatriculation,
             marque,
             modele,
-            actif
+            est_actif
           )
         `)
         .single();
@@ -107,11 +130,12 @@ export function useDriverShift(chauffeurId) {
       const { error } = await supabase
         .from('feuille_route')
         .update({
-          ...endData,
-          statut: 'Terminée',
-          heure_fin: endData.heure_fin || new Date().toISOString()
+          heure_fin: endData.heure_fin,
+          index_km_fin_tdb: endData.km_fin,
+          interruptions: endData.notes || '',
+          est_validee: false // Le shift est terminé mais pas encore validé administrativement
         })
-        .eq('id', currentShift.id);
+        .eq('feuille_id', currentShift.feuille_id);
 
       if (error) throw error;
 
@@ -133,29 +157,37 @@ export function useDriverShift(chauffeurId) {
     try {
       const { data, error } = await supabase
         .from('feuille_route')
-        .update(updateData)
+        .update({
+          vehicule_id: updateData.vehicule_id,
+          mode_encodage: updateData.mode_encodage,
+          heure_debut: updateData.heure_debut,
+          heure_fin: updateData.heure_fin,
+          interruptions: updateData.interruptions,
+          index_km_debut_tdb: updateData.index_km_debut_tdb,
+          index_km_fin_tdb: updateData.index_km_fin_tdb,
+          montant_salaire_cash_declare: updateData.montant_salaire_cash_declare
+        })
         .eq('feuille_id', currentShift.feuille_id)
         .select(`
-          *,
-          chauffeur:chauffeur_id (
-            chauffeur_id,
-            nom,
-            prenom,
-            numero_badge,
-            telephone,
-            utilisateur:user_id (
-              user_id,
-              nom,
-              prenom,
-              email
-            )
-          ),
+          feuille_id,
+          chauffeur_id,
+          vehicule_id,
+          date_service,
+          mode_encodage,
+          heure_debut,
+          heure_fin,
+          interruptions,
+          index_km_debut_tdb,
+          index_km_fin_tdb,
+          montant_salaire_cash_declare,
+          est_validee,
+          created_at,
           vehicule:vehicule_id (
             vehicule_id,
             plaque_immatriculation,
             marque,
             modele,
-            actif
+            est_actif
           )
         `)
         .single();
