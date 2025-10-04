@@ -176,18 +176,19 @@ export async function getChauffeurs() {
         feuille_route: {
           include: {
             vehicule: true,
-            course: {
+            courses: { // ✅ PLURIEL
               include: {
                 client: true,
                 mode_paiement: true
               }
             },
-            charge: {
+            charges: { // ✅ PLURIEL
               include: {
                 vehicule: true,
                 mode_paiement: true
               }
-            }
+            },
+            taximetre: true // ✅ Ajouter les données taximètre
           }
         },
         charge: {
@@ -626,12 +627,32 @@ export async function getFeuilleRouteById(feuilleId) {
       include: {
         chauffeur: {
           include: {
-            utilisateur: true
+            utilisateur: true,
+            societe_taxi: true // ✅ Ajouter pour nom_exploitant
           }
         },
-        vehicule: true,
-        course: true,
-        charge: true
+        vehicule: {
+          include: {
+            societe_taxi: true // ✅ Ajouter pour nom_exploitant du véhicule
+          }
+        },
+        courses: { // ✅ PLURIEL - corriger de 'course' à 'courses'
+          include: {
+            client: true,
+            mode_paiement: true,
+            detail_facture_complexe: true
+          },
+          orderBy: {
+            num_ordre: 'asc'
+          }
+        },
+        charges: { // ✅ PLURIEL - corriger de 'charge' à 'charges'
+          include: {
+            vehicule: true,
+            mode_paiement: true
+          }
+        },
+        taximetre: true // ✅ Ajouter les données taximètre
       }
     });
   } catch (error) {
@@ -653,8 +674,18 @@ export async function getFeuillesRouteByChauffeur(chauffeurId, date = null) {
     return await prisma.feuille_route.findMany({
       where,
       include: {
-        vehicule: true,
-        course: {
+        chauffeur: {
+          include: {
+            utilisateur: true,
+            societe_taxi: true // ✅ Ajouter pour nom_exploitant
+          }
+        },
+        vehicule: {
+          include: {
+            societe_taxi: true // ✅ Ajouter pour nom_exploitant du véhicule
+          }
+        },
+        courses: { // ✅ PLURIEL - corriger de 'course' à 'courses'
           include: {
             client: true,
             mode_paiement: true,
@@ -664,13 +695,13 @@ export async function getFeuillesRouteByChauffeur(chauffeurId, date = null) {
             num_ordre: 'asc'
           }
         },
-        charge: {
+        charges: { // ✅ PLURIEL - corriger de 'charge' à 'charges'
           include: {
             vehicule: true,
             mode_paiement: true
           }
         },
-        taximetre: true
+        taximetre: true // ✅ Inclure les données taximètre
       },
       orderBy: {
         date_service: 'desc'
@@ -749,7 +780,7 @@ export async function validateFeuilleRouteData(feuilleId, feuilleData) {
     }
 
     // Vérifier que le km fin >= dernier index de course
-    const lastCourseIndex = Math.max(...existingFeuille.course.map(c => c.index_debarquement || 0), 0);
+    const lastCourseIndex = Math.max(...existingFeuille.courses.map(c => c.index_debarquement || 0), 0);
     if (lastCourseIndex > 0 && feuilleData.index_km_fin_tdb < lastCourseIndex) {
       throw new Error(`Le kilométrage de fin doit être au moins égal au dernier index de course (${lastCourseIndex})`);
     }
@@ -762,7 +793,7 @@ export async function validateFeuilleRouteData(feuilleId, feuilleData) {
   }
 
   // Validation des courses terminées
-  const coursesNonTerminees = existingFeuille.course.filter(c =>
+  const coursesNonTerminees = existingFeuille.courses.filter(c =>
     c.heure_embarquement && !c.heure_debarquement && parseFloat(c.sommes_percues || 0) > 0
   );
 
@@ -2137,7 +2168,7 @@ export async function calculateDriverSalary(feuilleId) {
     const regleSalaire = feuille.chauffeur.regle_salaire;
 
     // Calculer les recettes totales (courses terminées)
-    const recettesTotales = feuille.course.reduce((sum, course) => {
+    const recettesTotales = feuille.courses.reduce((sum, course) => {
       return sum + (parseFloat(course.sommes_percues) || 0);
     }, 0);
 
@@ -2170,7 +2201,7 @@ export async function calculateDriverSalary(feuilleId) {
       pourcentage_au_dela: pourcentageAuDela,
       est_variable: regleSalaire.est_variable,
       salaire_calcule: Math.round(salaireCalcule * 100) / 100, // Arrondi à 2 décimales
-      nombre_courses: feuille.course.length
+      nombre_courses: feuille.courses.length
     };
   } catch (error) {
     console.error('Erreur lors du calcul du salaire:', error);
@@ -2272,12 +2303,12 @@ export async function calculateFeuilleTotals(feuilleId) {
       : 0;
 
     // Calculer les recettes totales (courses terminées)
-    const recettesTotales = feuille.course
+    const recettesTotales = feuille.courses
       .filter(c => c.heure_debarquement) // Uniquement les courses terminées
       .reduce((sum, course) => sum + (parseFloat(course.sommes_percues) || 0), 0);
 
     // Calculer les dépenses totales
-    const depensesTotales = feuille.charge
+    const depensesTotales = feuille.charges
       .reduce((sum, charge) => sum + (parseFloat(charge.montant) || 0), 0);
 
     // Calculer la durée totale
@@ -2289,7 +2320,7 @@ export async function calculateFeuilleTotals(feuilleId) {
     }
 
     // Calculer les recettes par mode de paiement
-    const recettesParMode = feuille.course
+    const recettesParMode = feuille.courses
       .filter(c => c.heure_debarquement)
       .reduce((acc, course) => {
         const mode = course.mode_paiement?.code || 'AUTRE';
@@ -2298,7 +2329,7 @@ export async function calculateFeuilleTotals(feuilleId) {
       }, {});
 
     // Calculer les dépenses par mode de paiement
-    const depensesParMode = feuille.charge
+    const depensesParMode = feuille.charges
       .reduce((acc, charge) => {
         const mode = charge.mode_paiement?.code || 'AUTRE';
         acc[mode] = (acc[mode] || 0) + (parseFloat(charge.montant) || 0);
@@ -2313,8 +2344,8 @@ export async function calculateFeuilleTotals(feuilleId) {
       duree_totale_minutes: dureeTotale,
       recettes_par_mode: recettesParMode,
       depenses_par_mode: depensesParMode,
-      nombre_courses: feuille.course.filter(c => c.heure_debarquement).length,
-      nombre_charges: feuille.charge.length
+      nombre_courses: feuille.courses.filter(c => c.heure_debarquement).length,
+      nombre_charges: feuille.charges.length
     };
   } catch (error) {
     console.error('Erreur lors du calcul des totaux:', error);

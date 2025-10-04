@@ -191,7 +191,7 @@ export default function TxApp() {
               // Recharger les courses du chauffeur depuis feuille_route
               if (userChauffeur.feuille_route && userChauffeur.feuille_route.length > 0) {
                 const chauffeurCourses = userChauffeur.feuille_route.flatMap(feuille =>
-                  (feuille.course || []).map((course) => ({
+                  (feuille.courses || feuille.course || []).map((course) => ({
                     id: course.course_id,
                     numero_ordre: course.num_ordre,
                     index_embarquement: course.index_embarquement || 0,
@@ -366,7 +366,7 @@ export default function TxApp() {
               nom: ch.utilisateur?.nom,
               prenom: ch.utilisateur?.prenom,
               actif: ch.statut === 'Actif',
-              courses: ch.feuille_route?.reduce((total, feuille) => total + (feuille.course?.length || 0), 0) || 0
+              courses: ch.feuille_route?.reduce((total, feuille) => total + ((feuille.courses || feuille.course)?.length || 0), 0) || 0
             });
           });
 
@@ -446,7 +446,7 @@ export default function TxApp() {
           console.log('Chauffeur sélectionné:', chauffeur?.utilisateur?.prenom, chauffeur?.utilisateur?.nom);
           console.log('Données du chauffeur:', {
             chauffeur_id: chauffeur?.chauffeur_id,
-            courses_count: chauffeur?.feuille_route?.reduce((total, feuille) => total + (feuille.course?.length || 0), 0) || 0
+            courses_count: chauffeur?.feuille_route?.reduce((total, feuille) => total + ((feuille.courses || feuille.course)?.length || 0), 0) || 0
           });
 
           // Vérifier que le chauffeur a des données utilisateur valides
@@ -456,7 +456,7 @@ export default function TxApp() {
               nom: chauffeur.utilisateur?.nom,
               prenom: chauffeur.utilisateur?.prenom,
               actif: chauffeur.statut === 'Actif',
-              courses_count: chauffeur.feuille_route?.reduce((total, feuille) => total + (feuille.course?.length || 0), 0) || 0,
+              courses_count: chauffeur.feuille_route?.reduce((total, feuille) => total + ((feuille.courses || feuille.course)?.length || 0), 0) || 0,
               utilisateur_id: chauffeur.chauffeur_id, // chauffeur_id corresponds to user_id in Prisma
               user_connecte_id: user?.user_id || user?.id
             });
@@ -480,7 +480,7 @@ export default function TxApp() {
 
               // Transformer les courses des feuilles de route pour correspondre au format attendu
               const chauffeurCourses = chauffeur.feuille_route.flatMap(feuille =>
-                (feuille.course || []).map((course) => ({
+                (feuille.courses || feuille.course || []).map((course) => ({
                   id: course.course_id,
                   numero_ordre: course.num_ordre,
                   index_embarquement: course.index_embarquement || 0,
