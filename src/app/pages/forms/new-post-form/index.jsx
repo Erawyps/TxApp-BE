@@ -702,10 +702,12 @@ export default function TxApp() {
       // Ajouter l'ID de la feuille de route et le numéro d'ordre
       const courseWithMeta = {
         ...courseData,
-        feuille_route_id: currentFeuilleRoute.id,
+        feuille_route_id: currentFeuilleRoute.feuille_id, // ✅ Corrigé : utiliser feuille_id
         numero_ordre: editingCourse ? editingCourse.numero_ordre : courses.length + 1,
         id: editingCourse?.id
       };
+
+      console.log('💾 Sauvegarde course avec feuille_id:', currentFeuilleRoute.feuille_id);
 
       const saved = await upsertCourse(courseWithMeta);
 
@@ -739,6 +741,15 @@ export default function TxApp() {
         console.error('handleStartShift: currentChauffeur.chauffeur_id est manquant', currentChauffeur);
         return;
       }
+
+      // ✅ VÉRIFICATION : Empêcher la création d'une nouvelle feuille si une feuille active existe
+      if (currentFeuilleRoute && currentFeuilleRoute.feuille_id) {
+        toast.error("Vous avez déjà une feuille de route active. Veuillez d'abord terminer votre service avant d'en créer une nouvelle.");
+        console.warn('⚠️ Tentative de création d\'une nouvelle feuille alors qu\'une feuille active existe:', currentFeuilleRoute.feuille_id);
+        return;
+      }
+
+      console.log('✅ Aucune feuille active - Création d\'une nouvelle feuille autorisée');
 
       // Créer une nouvelle feuille de route avec le mapping correct des champs
       const feuilleRouteData = {
@@ -832,7 +843,7 @@ export default function TxApp() {
       }
 
       // Finaliser la feuille de route
-      const updatedFeuilleRoute = await endFeuilleRoute(currentFeuilleRoute.id, {
+      const updatedFeuilleRoute = await endFeuilleRoute(currentFeuilleRoute.feuille_id, { // ✅ Corrigé
         heure_fin: endData.heure_fin,
         km_fin: endData.km_fin,
         prise_en_charge_fin: endData.prise_en_charge_fin,
@@ -851,7 +862,17 @@ export default function TxApp() {
         notes: updatedFeuilleRoute.notes
       });
 
-      toast.success("Feuille de route terminée");
+      toast.success("Feuille de route terminée avec succès !");
+      
+      // ✅ IMPORTANT : Réinitialiser la feuille active après la fin du shift
+      // Cela permettra au chauffeur de créer une nouvelle feuille lors du prochain shift
+      setTimeout(() => {
+        console.log('🔄 Réinitialisation de la feuille active après fin du shift');
+        setCurrentFeuilleRoute(null);
+        setCourses([]);
+        setExpenses([]);
+        toast.info("Vous pouvez maintenant créer une nouvelle feuille de route pour votre prochain service");
+      }, 2000); // Attendre 2 secondes pour que l'utilisateur voie le message de succès
       setActiveTab('dashboard');
     } catch (error) {
       console.error('Erreur lors de la finalisation de la feuille de route:', error);
@@ -867,7 +888,7 @@ export default function TxApp() {
       }
 
       const chargeData = {
-        feuille_route_id: currentFeuilleRoute.id,
+        feuille_route_id: currentFeuilleRoute.feuille_id, // ✅ Corrigé
         type_charge: expenseData.type_charge || 'Autre',
         description: expenseData.description,
         montant: expenseData.montant,
