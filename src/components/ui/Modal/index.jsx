@@ -1,5 +1,6 @@
 import PropTypes from "prop-types";
 import { forwardRef } from "react";
+import { createPortal } from "react-dom";
 import clsx from 'clsx';
 import { XMarkIcon } from "@heroicons/react/24/outline";
 import { Button } from "../Button";
@@ -11,6 +12,9 @@ const Modal = forwardRef(({
   children,
   size = "md",
   className,
+  blur = false,
+  highPriority = false,
+  showFooter = true,
   ...rest
 }, ref) => {
   if (!isOpen) return null;
@@ -24,12 +28,20 @@ const Modal = forwardRef(({
     full: "max-w-full"
   };
 
-  return (
-    <div className="fixed inset-0 z-50 overflow-y-auto">
+  return createPortal(
+    <div className={clsx(
+      "fixed inset-0 overflow-y-auto",
+      highPriority ? "z-[99999]" : "z-50"
+    )}>
       <div className="flex min-h-full items-center justify-center p-4 text-center">
         {/* Overlay */}
-        <div 
-          className="fixed inset-0 bg-black bg-opacity-50 transition-opacity" 
+        <div
+          className={clsx(
+            "fixed inset-0 transition-opacity",
+            blur
+              ? "backdrop-blur-sm bg-black/30"
+              : "bg-black bg-opacity-50"
+          )}
           onClick={onClose}
         />
 
@@ -63,17 +75,20 @@ const Modal = forwardRef(({
           </div>
 
           {/* Footer (optionnel) */}
-          <div className="flex justify-end gap-3 p-4 border-t border-gray-200 dark:border-dark-500">
-            <Button variant="outlined" onClick={onClose}>
-              Annuler
-            </Button>
-            <Button variant="primary">
-              Confirmer
-            </Button>
-          </div>
+          {showFooter && (
+            <div className="flex justify-end gap-3 p-4 border-t border-gray-200 dark:border-dark-500">
+              <Button variant="outlined" onClick={onClose}>
+                Annuler
+              </Button>
+              <Button variant="primary">
+                Confirmer
+              </Button>
+            </div>
+          )}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 });
 
@@ -85,7 +100,10 @@ Modal.propTypes = {
   title: PropTypes.string,
   children: PropTypes.node,
   size: PropTypes.oneOf(["sm", "md", "lg", "xl", "2xl", "full"]),
-  className: PropTypes.string
+  className: PropTypes.string,
+  blur: PropTypes.bool,
+  highPriority: PropTypes.bool,
+  showFooter: PropTypes.bool
 };
 
 export { Modal };

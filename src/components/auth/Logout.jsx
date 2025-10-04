@@ -90,24 +90,22 @@ export default function Logout({ onClose, showAsModal = false }) {
               Session active
             </p>
             <p className="text-xs text-blue-800 dark:text-blue-200">
-              Dernière activité : {user?.last_login ? new Date(user.last_login).toLocaleString() : "Maintenant"}
+              Dernière activité : Maintenant
             </p>
           </div>
         </div>
       </Card>
 
-      {/* Actions */}
+            {/* Actions */}
       <div className="flex space-x-3">
-        {!showAsModal && (
-          <Button
-            variant="outline"
-            onClick={onClose}
-            className="flex-1"
-            disabled={isLoading}
-          >
-            Annuler
-          </Button>
-        )}
+        <Button
+          variant="outline"
+          onClick={onClose}
+          className="flex-1"
+          disabled={isLoading}
+        >
+          Annuler
+        </Button>
         <Button
           onClick={handleLogout}
           disabled={isLoading}
@@ -121,7 +119,7 @@ export default function Logout({ onClose, showAsModal = false }) {
           ) : (
             <div className="flex items-center">
               <ArrowRightOnRectangleIcon className="h-4 w-4 mr-2" />
-              Se déconnecter
+              Confirmer
             </div>
           )}
         </Button>
@@ -144,6 +142,9 @@ export default function Logout({ onClose, showAsModal = false }) {
         onClose={onClose}
         title="Déconnexion"
         size="sm"
+        blur={true}
+        highPriority={true}
+        showFooter={false}
       >
         <LogoutContent />
       </Modal>
