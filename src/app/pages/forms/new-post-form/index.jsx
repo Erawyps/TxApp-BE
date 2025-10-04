@@ -31,6 +31,7 @@ import { ControlModal } from "./components/ControlModal";
 // Services
 import { upsertCourse, deleteCourse as removeCourse } from "services/courses";
 import { createFeuilleRoute, endFeuilleRoute, getActiveFeuilleRoute } from "services/feuillesRoute";
+import { mapFeuilleRouteFromDB } from "utils/fieldMapper";
 import { getChauffeurs } from "services/chauffeurs";
 import { getVehicules } from "services/vehicules";
 import { getClients } from "services/clients";
@@ -547,43 +548,17 @@ export default function TxApp() {
                 console.log('  activeSheet.km_tableau_bord_fin:', activeSheet.km_tableau_bord_fin);
                 console.log('  activeSheet.taximetre (relation):', activeSheet.taximetre);
                 
+                // ✅ UTILISER LE FIELD MAPPER pour transformer les données DB en format frontend
+                const mappedShiftData = mapFeuilleRouteFromDB(activeSheet);
+                console.log('  📊 APRÈS MAPPING - données taximètre:');
+                console.log('    mappedShiftData.taximetre_prise_charge_fin:', mappedShiftData.taximetre_prise_charge_fin);
+                console.log('    mappedShiftData.taximetre_index_km_fin:', mappedShiftData.taximetre_index_km_fin);
+                console.log('    mappedShiftData.taximetre_km_charge_fin:', mappedShiftData.taximetre_km_charge_fin);
+                console.log('    mappedShiftData.taximetre_chutes_fin:', mappedShiftData.taximetre_chutes_fin);
+                console.log('    mappedShiftData.km_tableau_bord_fin:', mappedShiftData.km_tableau_bord_fin);
+                
                 setCurrentFeuilleRoute(activeSheet);
-                setShiftData({
-                  id: activeSheet.id,
-                  feuille_id: activeSheet.feuille_id,
-                  chauffeur_id: activeSheet.chauffeur_id,
-                  vehicule_id: activeSheet.vehicule_id,
-                  date_service: activeSheet.date_service,
-                  date: activeSheet.date_service,
-                  heure_debut: activeSheet.heure_debut ? new Date(activeSheet.heure_debut).toTimeString().slice(0, 5) : null,
-                  heure_fin: activeSheet.heure_fin ? new Date(activeSheet.heure_fin).toTimeString().slice(0, 5) : null,
-                  heure_fin_estimee: activeSheet.heure_fin_estimee ? new Date(activeSheet.heure_fin_estimee).toTimeString().slice(0, 5) : null,
-                  interruptions: activeSheet.interruptions,
-                  type_remuneration: activeSheet.type_remuneration,
-                  // Données tableau de bord
-                  index_km_debut_tdb: activeSheet.index_km_debut_tdb,
-                  index_km_fin_tdb: activeSheet.index_km_fin_tdb,
-                  km_tableau_bord_debut: activeSheet.km_tableau_bord_debut,
-                  km_tableau_bord_fin: activeSheet.km_tableau_bord_fin,
-                  // Données taximètre (directement depuis feuille_route)
-                  taximetre_prise_charge_debut: activeSheet.taximetre_prise_charge_debut,
-                  taximetre_prise_charge_fin: activeSheet.taximetre_prise_charge_fin,
-                  taximetre_index_km_debut: activeSheet.taximetre_index_km_debut,
-                  taximetre_index_km_fin: activeSheet.taximetre_index_km_fin,
-                  taximetre_km_charge_debut: activeSheet.taximetre_km_charge_debut,
-                  taximetre_km_charge_fin: activeSheet.taximetre_km_charge_fin,
-                  taximetre_chutes_debut: activeSheet.taximetre_chutes_debut,
-                  taximetre_chutes_fin: activeSheet.taximetre_chutes_fin,
-                  // Données taximètre (depuis relation taximetre si disponible)
-                  taximetre: activeSheet.taximetre || {},
-                  // Autres données
-                  statut: activeSheet.est_validee ? 'validée' : 'en cours',
-                  est_validee: activeSheet.est_validee,
-                  observations: activeSheet.observations,
-                  signature_chauffeur: activeSheet.signature_chauffeur,
-                  notes: activeSheet.notes,
-                  montant_salaire_cash_declare: activeSheet.montant_salaire_cash_declare
-                });
+                setShiftData(mappedShiftData);
 
                 // Charger les charges/dépenses de la feuille active
                 const chargesList = await getCharges(activeSheet.id);

@@ -222,28 +222,61 @@ export function EndShiftForm({ onEndShift, shiftData, driver, onPrintReport }) {
   // Récupérer heure_fin_estimee depuis les données sauvegardées du formulaire de début
   const heureFinEstimee = savedStartData?.heure_fin_estimee || shiftData?.heure_fin_estimee;
 
+  // Fonction utilitaire pour normaliser le format d'heure
+  const normalizeTimeFormat = (timeValue) => {
+    if (!timeValue) return null;
+    
+    const timeStr = String(timeValue);
+    
+    // Si c'est une date ISO (contient 'T'), extraire la partie heure
+    if (timeStr.includes('T')) {
+      const timePart = timeStr.split('T')[1]; // "06:00:00.000Z"
+      return timePart.substring(0, 5); // "06:00"
+    }
+    
+    // Si c'est déjà au format HH:MM ou HH:MM:SS, garder HH:MM
+    if (timeStr.includes(':')) {
+      return timeStr.substring(0, 5);
+    }
+    
+    return timeStr;
+  };
+
   // Calculer la durée réelle du shift
   const calculateActualShiftDuration = () => {
     if (shiftData?.heure_debut && watchedData.heure_fin) {
-      const start = new Date(`2000-01-01T${shiftData.heure_debut}`);
-      const end = new Date(`2000-01-01T${watchedData.heure_fin}`);
-      const diff = end - start;
+      const normalizedStart = normalizeTimeFormat(shiftData.heure_debut);
+      const normalizedEnd = normalizeTimeFormat(watchedData.heure_fin);
+      
+      if (!normalizedStart || !normalizedEnd) {
+        console.warn('🔴 Heures non valides:', { start: normalizedStart, end: normalizedEnd });
+        return '0h00';
+      }
+      
+      console.log('⏰ Calcul durée:', { start: normalizedStart, end: normalizedEnd });
+      
+      const start = new Date(`2000-01-01T${normalizedStart}:00`);
+      const end = new Date(`2000-01-01T${normalizedEnd}:00`);
+      
+      let diff = end - start;
+      
+      // Si l'heure de fin est le jour suivant (ex: 23h -> 01h)
+      if (diff < 0) {
+        diff += 24 * 60 * 60 * 1000; // Ajouter 24h
+      }
       
       // Soustraire les interruptions (en minutes)
       if (watchedData.interruptions && !isNaN(watchedData.interruptions)) {
         const interruptionsMs = Number(watchedData.interruptions) * 60 * 1000;
-        const adjustedDiff = diff - interruptionsMs;
-        
-        if (adjustedDiff > 0) {
-          const hours = Math.floor(adjustedDiff / (1000 * 60 * 60));
-          const minutes = Math.floor((adjustedDiff % (1000 * 60 * 60)) / (1000 * 60));
-          return `${hours}h${minutes.toString().padStart(2, '0')}`;
-        }
+        diff = Math.max(0, diff - interruptionsMs);
       }
       
       const hours = Math.floor(diff / (1000 * 60 * 60));
       const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-      return `${hours}h${minutes.toString().padStart(2, '0')}`;
+      const result = `${hours}h${minutes.toString().padStart(2, '0')}`;
+      
+      console.log('✅ Durée calculée:', result);
+      return result;
     }
     return '0h00';
   };

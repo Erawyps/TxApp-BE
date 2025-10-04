@@ -348,7 +348,7 @@ export const generateAndDownloadReport = (rawShiftData, rawCourses, driver, vehi
     }
     currentX += col3_tableau;
 
-    // Colonne "Taximètre"
+    // Colonne "Taximètre" - AVEC DONNÉES
     doc.setFont('times', 'bold');
     doc.rect(currentX, serviceTableY, col4_taximetre, rowHeight);
     drawText('Taximètre', currentX + col4_taximetre/2, serviceTableY + 6, 'center');
@@ -357,6 +357,20 @@ export const generateAndDownloadReport = (rawShiftData, rawCourses, driver, vehi
     for (let i = 0; i < 3; i++) {
       doc.rect(currentX, serviceTableY + rowHeight * (i + 1), col4_taximetre, rowHeight);
     }
+    
+    // Données taximètre - AJOUT DES VALEURS
+    if (safeShiftData.taximetre_index_km_fin) {
+      drawText(formatNumber(safeShiftData.taximetre_index_km_fin), currentX + col4_taximetre/2, serviceTableY + rowHeight + 6, 'center');
+    }
+    if (safeShiftData.taximetre_index_km_debut) {
+      drawText(formatNumber(safeShiftData.taximetre_index_km_debut), currentX + col4_taximetre/2, serviceTableY + 2 * rowHeight + 6, 'center');
+    }
+    // Total calculé automatiquement
+    if (safeShiftData.taximetre_index_km_fin && safeShiftData.taximetre_index_km_debut) {
+      const totalKmTaximetre = safeShiftData.taximetre_index_km_fin - safeShiftData.taximetre_index_km_debut;
+      drawText(formatNumber(totalKmTaximetre), currentX + col4_taximetre/2, serviceTableY + 3 * rowHeight + 6, 'center');
+    }
+    
     currentX += col4_taximetre;
 
     yPos = serviceTableY + 5 * rowHeight + 6;
