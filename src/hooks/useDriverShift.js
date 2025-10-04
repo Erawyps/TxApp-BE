@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from 'utils/supabase';
+import axios from 'axios';
 
 export function useDriverShift(chauffeurId) {
   const [currentShift, setCurrentShift] = useState(null);
@@ -200,6 +201,49 @@ export function useDriverShift(chauffeurId) {
     };
   }, [chauffeurId, fetchCurrentShift]);
 
+  // Changer de véhicule pour la feuille de route actuelle
+  const changeVehicle = useCallback(async (newVehiculeId) => {
+    if (!currentShift) return { success: false, error: 'Aucune feuille de route active' };
+
+    try {
+      setIsLoading(true);
+      setError(null);
+
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('Token d\'authentification manquant');
+      }
+
+      const response = await axios.patch(
+        `http://localhost:3001/api/feuilles-route/${currentShift.feuille_id}/change-vehicle`,
+        {
+          newVehiculeId: newVehiculeId
+        },
+        {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+
+      if (response.data.success) {
+        // Mettre à jour le shift local avec les nouvelles données
+        setCurrentShift(response.data.data);
+        return { success: true, data: response.data.data };
+      } else {
+        throw new Error('Erreur lors du changement de véhicule');
+      }
+    } catch (err) {
+      console.error('Error changing vehicle:', err);
+      const errorMessage = err.response?.data?.error || err.message || 'Erreur lors du changement de véhicule';
+      setError(errorMessage);
+      return { success: false, error: errorMessage };
+    } finally {
+      setIsLoading(false);
+    }
+  }, [currentShift]);
+
   return {
     currentShift,
     isLoading,
@@ -207,6 +251,7 @@ export function useDriverShift(chauffeurId) {
     createShift,
     endShift,
     updateShift,
+    changeVehicle,
     refreshShift: fetchCurrentShift
   };
 }

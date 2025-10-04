@@ -214,7 +214,7 @@ export function ShiftForm({ vehicles, onStartShift, onShowVehicleInfo, reglesSal
                 // Map vehicles prop to Listbox options
                 const baseVehicleOptions = (vehicles && Array.isArray(vehicles) && vehicles.length > 0)
                   ? vehicles.map(v => ({
-                      value: v.id,
+                      value: v.vehicule_id,
                       label: `${v.plaque_immatriculation} - ${v.marque} ${v.modele}`
                     }))
                   : [];

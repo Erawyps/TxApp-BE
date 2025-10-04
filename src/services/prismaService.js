@@ -214,14 +214,14 @@ export async function getChauffeurById(chauffeurId) {
         feuille_route: {
           include: {
             vehicule: true,
-            courses: {
+            course: {
               include: {
                 client: true,
                 mode_paiement: true,
                 detail_facture_complexe: true
               }
             },
-            charges: {
+            charge: {
               include: {
                 vehicule: true,
                 mode_paiement: true
@@ -629,24 +629,8 @@ export async function getFeuilleRouteById(feuilleId) {
           }
         },
         vehicule: true,
-        courses: {
-          include: {
-            client: true,
-            mode_paiement: true,
-            detail_facture_complexe: true
-          },
-          orderBy: {
-            num_ordre: 'asc'
-          }
-        },
-        charges: {
-          include: {
-            vehicule: true,
-            mode_paiement: true
-          }
-        },
-        taximetre: true,
-        validee_par: true
+        course: true,
+        charge: true
       }
     });
   } catch (error) {
@@ -697,14 +681,46 @@ export async function getFeuillesRouteByChauffeur(chauffeurId, date = null) {
   }
 }
 
-export async function createFeuilleRoute(feuilleData) {
+export async function createFeuilleRouteSimple(feuilleData) {
   try {
+    // Validation des données requises
+    if (!feuilleData.chauffeur_id) {
+      throw new Error('chauffeur_id est requis pour créer une feuille de route');
+    }
+    if (!feuilleData.vehicule_id) {
+      throw new Error('vehicule_id est requis pour créer une feuille de route');
+    }
+    if (!feuilleData.date_service) {
+      throw new Error('date_service est requis pour créer une feuille de route');
+    }
+
     return await prisma.feuille_route.create({
       data: {
         chauffeur_id: feuilleData.chauffeur_id,
         vehicule_id: feuilleData.vehicule_id,
         date_service: new Date(feuilleData.date_service),
-        mode_encodage: feuilleData.mode_encodage || 'MANUEL',
+        mode_encodage: feuilleData.mode_encodage || 'LIVE',
+        heure_debut: feuilleData.heure_debut ? new Date(`1970-01-01T${feuilleData.heure_debut}:00`) : null,
+        heure_fin: feuilleData.heure_fin ? new Date(`1970-01-01T${feuilleData.heure_fin}:00`) : null,
+        interruptions: feuilleData.interruptions,
+        index_km_debut_tdb: feuilleData.index_km_debut_tdb,
+        index_km_fin_tdb: feuilleData.index_km_fin_tdb,
+        montant_salaire_cash_declare: feuilleData.montant_salaire_cash_declare || 0
+      }
+    });
+  } catch (error) {
+    console.error('Erreur lors de la création de la feuille de route:', error);
+    throw error;
+  }
+}
+
+export async function updateFeuilleRoute(feuilleId, feuilleData) {
+  try {
+    return await prisma.feuille_route.update({
+      where: { feuille_id: parseInt(feuilleId) },
+      data: {
+        vehicule_id: feuilleData.vehicule_id,
+        mode_encodage: feuilleData.mode_encodage,
         heure_debut: feuilleData.heure_debut ? new Date(feuilleData.heure_debut) : null,
         heure_fin: feuilleData.heure_fin ? new Date(feuilleData.heure_fin) : null,
         interruptions: feuilleData.interruptions,
@@ -712,7 +728,9 @@ export async function createFeuilleRoute(feuilleData) {
         index_km_debut_tdb: feuilleData.index_km_debut_tdb,
         index_km_fin_tdb: feuilleData.index_km_fin_tdb,
         total_km_tdb: feuilleData.total_km_tdb,
-        montant_salaire_cash_declare: feuilleData.montant_salaire_cash_declare || 0
+        date_validation: feuilleData.date_validation ? new Date(feuilleData.date_validation) : null,
+        validee_par_user_id: feuilleData.validee_par_user_id,
+        montant_salaire_cash_declare: feuilleData.montant_salaire_cash_declare
       },
       include: {
         chauffeur: {
@@ -729,54 +747,6 @@ export async function createFeuilleRoute(feuilleData) {
   }
 }
 
-export async function updateFeuilleRoute(feuilleId, feuilleData) {
-  try {
-    // Construire l'objet de données à mettre à jour en filtrant les valeurs undefined
-    const updateData = {};
-
-    if (feuilleData.vehicule_id !== undefined) updateData.vehicule_id = feuilleData.vehicule_id;
-    if (feuilleData.mode_encodage !== undefined) updateData.mode_encodage = feuilleData.mode_encodage;
-    if (feuilleData.heure_debut !== undefined) updateData.heure_debut = feuilleData.heure_debut ? new Date(feuilleData.heure_debut) : null;
-    if (feuilleData.heure_fin !== undefined) updateData.heure_fin = feuilleData.heure_fin ? new Date(feuilleData.heure_fin) : null;
-    if (feuilleData.interruptions !== undefined) updateData.interruptions = feuilleData.interruptions;
-    if (feuilleData.total_heures !== undefined) updateData.total_heures = feuilleData.total_heures;
-    if (feuilleData.index_km_debut_tdb !== undefined) updateData.index_km_debut_tdb = feuilleData.index_km_debut_tdb;
-    if (feuilleData.index_km_fin_tdb !== undefined) updateData.index_km_fin_tdb = feuilleData.index_km_fin_tdb;
-    if (feuilleData.total_km_tdb !== undefined) updateData.total_km_tdb = feuilleData.total_km_tdb;
-    if (feuilleData.date_validation !== undefined) updateData.date_validation = feuilleData.date_validation ? new Date(feuilleData.date_validation) : null;
-    if (feuilleData.validee_par_user_id !== undefined) updateData.validee_par_user_id = feuilleData.validee_par_user_id;
-    if (feuilleData.montant_salaire_cash_declare !== undefined) updateData.montant_salaire_cash_declare = feuilleData.montant_salaire_cash_declare;
-
-    return await prisma.feuille_route.update({
-      where: { feuille_id: parseInt(feuilleId) },
-      data: updateData,
-      include: {
-        chauffeur: {
-          include: {
-            utilisateur: true
-          }
-        },
-        vehicule: true,
-        courses: {
-          include: {
-            client: true,
-            mode_paiement: true
-          }
-        },
-        charges: {
-          include: {
-            vehicule: true,
-            mode_paiement: true
-          }
-        }
-      }
-    });
-  } catch (error) {
-    console.error('Erreur lors de la mise à jour de la feuille de route:', error);
-    throw error;
-  }
-}
-
 export async function deleteFeuilleRoute(feuilleId) {
   try {
     return await prisma.feuille_route.delete({
@@ -784,6 +754,144 @@ export async function deleteFeuilleRoute(feuilleId) {
     });
   } catch (error) {
     console.error('Erreur lors de la suppression de la feuille de route:', error);
+    throw error;
+  }
+}
+
+export async function createVehicleChangeNotification(chauffeur, oldVehicle, newVehicle, shiftDate, shiftTime) {
+  try {
+    const notificationMessage = `🚗 CHANGEMENT DE VÉHICULE - Nouveau shift\n` +
+      `Chauffeur: ${chauffeur.utilisateur.prenom} ${chauffeur.utilisateur.nom}\n` +
+      `Ancien véhicule: ${oldVehicle ? oldVehicle.plaque_immatriculation : 'N/A'}\n` +
+      `Nouveau véhicule: ${newVehicle ? newVehicle.plaque_immatriculation : 'N/A'}\n` +
+      `Date: ${shiftDate} à ${shiftTime}`;
+
+    console.log('NOTIFICATION ADMIN VEHICLE CHANGE:', notificationMessage);
+
+    // TODO: Implémenter la persistance en base ou envoi d'email/webhook
+    // Pour l'instant, on retourne le message pour utilisation dans l'interface
+
+    return {
+      message: notificationMessage,
+      type: 'VEHICLE_CHANGE',
+      severity: 'WARNING',
+      timestamp: new Date().toISOString(),
+      data: {
+        chauffeur_id: chauffeur.chauffeur_id,
+        old_vehicle_id: oldVehicle?.vehicule_id,
+        new_vehicle_id: newVehicle?.vehicule_id,
+        shift_date: shiftDate,
+        shift_time: shiftTime
+      }
+    };
+  } catch (error) {
+    console.error('Erreur lors de la création de la notification de changement de véhicule:', error);
+    throw error;
+  }
+}
+
+export async function changeVehicleInShift(feuilleId, newVehiculeId, chauffeurId) {
+  try {
+    // Vérifier que la feuille de route existe et appartient au chauffeur
+    const existingFeuille = await prisma.feuille_route.findUnique({
+      where: { feuille_id: parseInt(feuilleId) },
+      include: {
+        vehicule: true,
+        chauffeur: {
+          include: {
+            utilisateur: true
+          }
+        }
+      }
+    });
+
+    if (!existingFeuille) {
+      throw new Error('Feuille de route non trouvée');
+    }
+
+    if (existingFeuille.chauffeur_id !== parseInt(chauffeurId)) {
+      throw new Error('Accès non autorisé à cette feuille de route');
+    }
+
+    // Vérifier que le nouveau véhicule existe et est actif
+    const newVehicule = await prisma.vehicule.findUnique({
+      where: { vehicule_id: parseInt(newVehiculeId) }
+    });
+
+    if (!newVehicule) {
+      throw new Error('Véhicule non trouvé');
+    }
+
+    if (!newVehicule.est_actif) {
+      throw new Error('Le véhicule sélectionné n\'est pas actif');
+    }
+
+    // Vérifier qu'il n'y a pas déjà une feuille de route active avec ce véhicule pour ce chauffeur aujourd'hui
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const conflictingFeuille = await prisma.feuille_route.findFirst({
+      where: {
+        chauffeur_id: parseInt(chauffeurId),
+        vehicule_id: parseInt(newVehiculeId),
+        date_service: {
+          gte: today,
+          lt: new Date(today.getTime() + 24 * 60 * 60 * 1000)
+        },
+        est_validee: false // Shift non terminé
+      }
+    });
+
+    if (conflictingFeuille && conflictingFeuille.feuille_id !== parseInt(feuilleId)) {
+      throw new Error('Ce véhicule est déjà utilisé dans une autre feuille de route active aujourd\'hui');
+    }
+
+    // Créer une notification pour l'admin
+    const notificationMessage = `Changement de véhicule - Chauffeur: ${existingFeuille.chauffeur.utilisateur.prenom} ${existingFeuille.chauffeur.utilisateur.nom}, Ancien véhicule: ${existingFeuille.vehicule.plaque_immatriculation}, Nouveau véhicule: ${newVehicule.plaque_immatriculation}`;
+
+    // TODO: Implémenter le système de notifications
+    console.log('NOTIFICATION ADMIN:', notificationMessage);
+
+    // Mettre à jour la feuille de route avec le nouveau véhicule
+    const updatedFeuille = await prisma.feuille_route.update({
+      where: { feuille_id: parseInt(feuilleId) },
+      data: {
+        vehicule_id: parseInt(newVehiculeId)
+      },
+      include: {
+        chauffeur: {
+          include: {
+            utilisateur: true
+          }
+        },
+        vehicule: true,
+        course: {
+          include: {
+            client: true,
+            mode_paiement: true,
+            detail_facture_complexe: true
+          },
+          orderBy: {
+            num_ordre: 'asc'
+          }
+        },
+        charge: {
+          include: {
+            vehicule: true,
+            mode_paiement: true
+          }
+        }
+      }
+    });
+
+    return {
+      success: true,
+      data: updatedFeuille,
+      notification: notificationMessage
+    };
+
+  } catch (error) {
+    console.error('Erreur lors du changement de véhicule:', error);
     throw error;
   }
 }

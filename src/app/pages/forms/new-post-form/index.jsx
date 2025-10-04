@@ -37,6 +37,7 @@ import { getClients } from "services/clients";
 import { getModesPaiement } from "services/modesPaiement";
 import { getCharges, createCharge } from "services/charges";
 import { getReglesSalaireForDropdown } from "services/reglesSalaire";
+import { createVehicleChangeNotification } from "services/notifications";
 
 // Hooks
 import { useAuth } from "hooks/useAuth";
@@ -81,7 +82,7 @@ export default function TxApp() {
   const [loading, setLoading] = useState(true);
 
   // Vérifier s'il y a un shift actif
-  const hasActiveShift = Boolean(currentFeuilleRoute && currentFeuilleRoute.statut === 'En cours');
+  const hasActiveShift = Boolean(currentFeuilleRoute && !currentFeuilleRoute.est_validee);
 
   // Fonction de validation des changements d'onglet
   const handleTabChange = (newTab) => {
@@ -709,8 +710,16 @@ export default function TxApp() {
 
   const handleStartShift = async (shiftFormData) => {
     try {
+      // Vérification stricte que le chauffeur est chargé
       if (!currentChauffeur) {
-        toast.error("Aucun chauffeur sélectionné");
+        toast.error("Erreur: Données du chauffeur non chargées. Veuillez rafraîchir la page et réessayer.");
+        console.error('handleStartShift: currentChauffeur est null ou undefined');
+        return;
+      }
+
+      if (!currentChauffeur.chauffeur_id) {
+        toast.error("Erreur: ID du chauffeur manquant. Veuillez contacter l'administrateur.");
+        console.error('handleStartShift: currentChauffeur.chauffeur_id est manquant', currentChauffeur);
         return;
       }
 
@@ -719,7 +728,7 @@ export default function TxApp() {
         chauffeur_id: currentChauffeur.chauffeur_id,
         vehicule_id: parseInt(shiftFormData.vehicule_id), // S'assurer que c'est un entier
         date_service: shiftFormData.date,
-        mode_encodage: 'MANUEL',
+        mode_encodage: 'LIVE', // Utiliser LIVE au lieu de MANUEL
         heure_debut: shiftFormData.heure_debut,
         interruptions: shiftFormData.interruptions || '00:00',
         index_km_debut_tdb: shiftFormData.km_tableau_bord_debut || 0,
@@ -745,10 +754,23 @@ export default function TxApp() {
         console.log('🔄 Changement de véhicule détecté - Notification admin requise');
         console.log('Véhicule précédent:', lastShift.vehicule_id, 'Nouveau véhicule:', shiftFormData.vehicule_id);
 
-        // TODO: Implémenter la notification admin (email, notification en base, etc.)
-        // Pour l'instant, on log et affiche un toast
-        toast.info(`Changement de véhicule détecté. Le chauffeur ${currentChauffeur.utilisateur.prenom} ${currentChauffeur.utilisateur.nom} utilise un véhicule différent de son shift précédent.`, {
-          duration: 5000
+        // Créer une notification détaillée pour l'admin
+        const oldVehicle = lastShift.vehicule;
+
+        const notification = await createVehicleChangeNotification(
+          currentChauffeur.chauffeur_id,
+          oldVehicle?.vehicule_id,
+          parseInt(shiftFormData.vehicule_id),
+          shiftFormData.date,
+          shiftFormData.heure_debut
+        );
+
+        // TODO: Envoyer la notification à l'admin (email, webhook, interface admin)
+        console.log('NOTIFICATION CRÉÉE:', notification);
+
+        // Afficher une notification au chauffeur
+        toast.warning(`Changement de véhicule détecté. L'administration a été notifiée.`, {
+          duration: 6000
         });
       }
 
@@ -762,7 +784,7 @@ export default function TxApp() {
         date: newFeuilleRoute.date_service,
         heure_debut: newFeuilleRoute.heure_debut,
         km_debut: newFeuilleRoute.index_km_debut_tdb,
-        statut: 'En cours',
+        statut: !newFeuilleRoute.est_validee ? 'En cours' : 'Terminé', // Calculer le statut basé sur est_validee
         type_remuneration: shiftFormData.type_remuneration, // Garder la règle de salaire sélectionnée
         interruptions: newFeuilleRoute.interruptions,
         // Conserver les données taximètre

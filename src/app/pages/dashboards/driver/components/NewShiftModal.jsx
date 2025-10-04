@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Dialog } from '@headlessui/react';
 import { XMarkIcon, TruckIcon } from '@heroicons/react/24/outline';
-import { supabase } from 'utils/supabase';
+import axios from 'axios';
 
 export function NewShiftModal({ isOpen, onClose, onSubmit }) {
   const [formData, setFormData] = useState({
@@ -22,6 +22,7 @@ export function NewShiftModal({ isOpen, onClose, onSubmit }) {
 
   useEffect(() => {
     if (isOpen) {
+      console.log('NewShiftModal opened, fetching vehicles...');
       fetchVehicles();
       fetchRemunerationTypes();
     }
@@ -29,16 +30,29 @@ export function NewShiftModal({ isOpen, onClose, onSubmit }) {
 
   const fetchVehicles = async () => {
     try {
-      const { data, error } = await supabase
-        .from('vehicule')
-        .select('id, plaque_immatriculation, marque, modele')
-        .eq('actif', true)
-        .order('plaque_immatriculation');
+      const token = localStorage.getItem('token');
+      if (!token) {
+        console.error('Token d\'authentification manquant');
+        return;
+      }
 
-      if (error) throw error;
-      setVehicles(data || []);
+      console.log('Fetching vehicles...');
+      const response = await axios.get('http://localhost:3001/api/vehicules', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      console.log('Vehicles response:', response.data);
+
+      // Filtrer les véhicules actifs
+      const activeVehicles = response.data.filter(vehicle => vehicle.est_actif);
+      console.log('Active vehicles:', activeVehicles);
+
+      setVehicles(activeVehicles || []);
     } catch (err) {
       console.error('Error fetching vehicles:', err);
+      setVehicles([]); // S'assurer que vehicles est un tableau vide en cas d'erreur
     }
   };
 
@@ -76,12 +90,13 @@ export function NewShiftModal({ isOpen, onClose, onSubmit }) {
     }
 
     // Validate license plate format if manually entered
-    const selectedVehicle = vehicles.find(v => v.id === parseInt(formData.vehicule_id));
+    const selectedVehicle = vehicles.find(v => String(v.vehicule_id) === formData.vehicule_id);
     if (selectedVehicle) {
-      const platePattern = /^[A-Z]{2}-[A-Z]{3}-\d{3}$/;
-      if (!platePattern.test(selectedVehicle.plaque_immatriculation)) {
-        newErrors.vehicule_id = 'Format de plaque invalide (ex: TX-AAA-171)';
-      }
+      // Skip plate validation for now since we're using existing vehicles
+      // const platePattern = /^[A-Z]{2}-[A-Z]{3}-\d{3}$/;
+      // if (!platePattern.test(selectedVehicle.plaque_immatriculation)) {
+      //   newErrors.vehicule_id = 'Format de plaque invalide (ex: TX-AAA-171)';
+      // }
     }
 
     setErrors(newErrors);
@@ -122,12 +137,19 @@ export function NewShiftModal({ isOpen, onClose, onSubmit }) {
   };
 
   const formatPlateDisplay = (plate) => {
-    // Ensure proper formatting display
-    return plate.replace(/([A-Z]{2})([A-Z]{3})(\d{3})/, '$1-$2-$3');
+    // Format: TXAA-751 -> TX-AA-751
+    if (plate && plate.includes('-')) {
+      const parts = plate.split('-');
+      if (parts.length === 2 && parts[0].length === 4 && parts[1].length === 3) {
+        return `${parts[0].substring(0, 2)}-${parts[0].substring(2)}-${parts[1]}`;
+      }
+    }
+    return plate; // Retourner tel quel si le format ne correspond pas
   };
 
   return (
     <Dialog open={isOpen} onClose={handleClose} className="relative z-50">
+      {console.log('NewShiftModal rendering, vehicles count:', vehicles.length)}
       <div className="fixed inset-0 bg-black/30" aria-hidden="true" />
 
       <div className="fixed inset-0 flex items-center justify-center p-4">
@@ -155,17 +177,24 @@ export function NewShiftModal({ isOpen, onClose, onSubmit }) {
               </label>
               <select
                 value={formData.vehicule_id}
-                onChange={(e) => setFormData(prev => ({ ...prev, vehicule_id: e.target.value }))}
+                onChange={(e) => {
+                  console.log('Vehicle selected:', e.target.value);
+                  setFormData(prev => ({ ...prev, vehicule_id: e.target.value }));
+                }}
                 className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
                   errors.vehicule_id ? 'border-red-500' : 'border-gray-300'
                 }`}
               >
                 <option value="">Sélectionner un véhicule</option>
-                {vehicles.map((vehicle) => (
-                  <option key={vehicle.id} value={vehicle.id}>
-                    {formatPlateDisplay(vehicle.plaque_immatriculation)} - {vehicle.marque} {vehicle.modele}
-                  </option>
-                ))}
+                {console.log('Rendering vehicles:', vehicles)}
+                {vehicles.map((vehicle) => {
+                  console.log('Rendering vehicle:', vehicle.vehicule_id, vehicle.plaque_immatriculation);
+                  return (
+                    <option key={vehicle.vehicule_id} value={vehicle.vehicule_id}>
+                      {formatPlateDisplay(vehicle.plaque_immatriculation)} - {vehicle.marque} {vehicle.modele}
+                    </option>
+                  );
+                })}
               </select>
               {errors.vehicule_id && (
                 <p className="text-red-500 text-sm mt-1">{errors.vehicule_id}</p>

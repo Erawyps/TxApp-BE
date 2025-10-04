@@ -1,4 +1,5 @@
 import { Hono } from 'hono';
+import jwt from 'jsonwebtoken';
 import prisma from '../configs/database.config.js';
 import {
   getUtilisateurs,
@@ -24,9 +25,11 @@ import {
   getFeuillesRoute,
   getFeuilleRouteById,
   getFeuillesRouteByChauffeur,
-  createFeuilleRoute,
+  createFeuilleRouteSimple,
   updateFeuilleRoute,
   deleteFeuilleRoute,
+  changeVehicleInShift,
+  createVehicleChangeNotification,
   getCourses,
   getCoursesByFeuille,
   createCourse,
@@ -365,7 +368,7 @@ app.get('/chauffeurs/:chauffeurId/feuilles-route', async (c) => {
 app.post('/feuilles-route', async (c) => {
   try {
     const body = await c.req.json();
-    const feuille = await createFeuilleRoute(body);
+    const feuille = await createFeuilleRouteSimple(body);
     return c.json(feuille, 201);
   } catch (error) {
     console.error('Erreur API création feuille de route:', error);
@@ -391,6 +394,85 @@ app.delete('/feuilles-route/:id', async (c) => {
   } catch (error) {
     console.error('Erreur API suppression feuille de route:', error);
     return c.json({ error: 'Erreur lors de la suppression de la feuille de route' }, 500);
+  }
+});
+
+app.patch('/feuilles-route/:id/change-vehicle', async (c) => {
+  try {
+    const body = await c.req.json();
+    const { newVehiculeId } = body;
+
+    if (!newVehiculeId) {
+      return c.json({ error: 'Le nouveau véhicule est requis' }, 400);
+    }
+
+    // Récupérer l'utilisateur connecté depuis le JWT
+    const authHeader = c.req.header('Authorization');
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return c.json({ error: 'Token d\'authentification requis' }, 401);
+    }
+
+    const token = authHeader.substring(7);
+    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key');
+
+    const chauffeurId = decoded.userId;
+
+    const result = await changeVehicleInShift(c.req.param('id'), newVehiculeId, chauffeurId);
+
+    return c.json({
+      success: true,
+      data: result.data,
+      message: 'Véhicule changé avec succès',
+      notification: result.notification
+    });
+  } catch (error) {
+    console.error('Erreur API changement de véhicule:', error);
+    return c.json({ error: error.message || 'Erreur lors du changement de véhicule' }, 500);
+  }
+});
+
+// ==================== NOTIFICATIONS ====================
+
+app.post('/notifications/vehicle-change', async (c) => {
+  try {
+    const body = await c.req.json();
+    const { chauffeurId, oldVehicleId, newVehicleId, shiftDate, shiftTime } = body;
+
+    if (!chauffeurId || !newVehicleId || !shiftDate || !shiftTime) {
+      return c.json({ error: 'Paramètres requis manquants' }, 400);
+    }
+
+    // Récupérer les informations du chauffeur et des véhicules
+    const chauffeur = await getChauffeurById(chauffeurId);
+    if (!chauffeur) {
+      return c.json({ error: 'Chauffeur non trouvé' }, 404);
+    }
+
+    const newVehicle = await getVehiculeById(newVehicleId);
+    if (!newVehicle) {
+      return c.json({ error: 'Nouveau véhicule non trouvé' }, 404);
+    }
+
+    let oldVehicle = null;
+    if (oldVehicleId) {
+      oldVehicle = await getVehiculeById(oldVehicleId);
+    }
+
+    const notification = await createVehicleChangeNotification(
+      chauffeur,
+      oldVehicle,
+      newVehicle,
+      shiftDate,
+      shiftTime
+    );
+
+    return c.json({
+      success: true,
+      notification: notification
+    });
+  } catch (error) {
+    console.error('Erreur API notification changement véhicule:', error);
+    return c.json({ error: error.message || 'Erreur lors de la création de la notification' }, 500);
   }
 });
 
