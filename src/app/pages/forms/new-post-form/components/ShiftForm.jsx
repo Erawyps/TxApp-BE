@@ -7,7 +7,7 @@ import PropTypes from "prop-types";
 import { useEffect, useCallback } from "react";
 
 // Local Imports
-import { Card, Button, Input } from "components/ui";
+import { Card, Button, Input, EncodingModeBadge } from "components/ui";
 import { Listbox } from "components/shared/form/Listbox";
 import { shiftSchema } from "../schema";
 import { contractTypes } from "../data";
@@ -139,9 +139,12 @@ export function ShiftForm({ vehicles, currentShift, onStartShift, onShowVehicleI
   return (
     <div className="space-y-6">
       <Card className="p-6">
-        <h3 className="text-lg font-semibold mb-6 text-gray-800 dark:text-dark-100">
-          Début du Shift
-        </h3>
+        <div className="flex items-center justify-between mb-6">
+          <h3 className="text-lg font-semibold text-gray-800 dark:text-dark-100">
+            Début du Shift
+          </h3>
+          <EncodingModeBadge />
+        </div>
         
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
           {/* Informations générales du shift */}

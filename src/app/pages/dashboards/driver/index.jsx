@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Page } from 'components/shared/Page';
 import ErrorBoundary from 'components/shared/ErrorBoundary';
+import { EncodingStatusBar } from 'components/ui/EncodingStatusBar';
 import {
   ClockIcon,
   TruckIcon,
@@ -185,6 +186,12 @@ export default function DriverDashboard() {
     closeModal('expense');
   };
 
+  const handleEncodingModeChange = (newMode, oldMode) => {
+    console.log(`🔄 Changement de mode d'encodage : ${oldMode} → ${newMode}`);
+    // Ici on peut ajouter de la logique métier selon le mode sélectionné
+    // Par exemple, adapter l'interface ou les fonctionnalités disponibles
+  };
+
   const quickActions = [
     {
       id: 'nouvelle-feuille',
@@ -274,6 +281,12 @@ export default function DriverDashboard() {
               ))}
             </div>
           </div>
+
+          {/* Encoding Mode Status */}
+          <EncodingStatusBar 
+            onModeChange={handleEncodingModeChange}
+            className="mx-auto max-w-2xl"
+          />
 
           {/* Secondary Actions */}
           <div className="bg-white rounded-lg shadow p-6">
