@@ -28,7 +28,7 @@ export function ControlModal({ isOpen, onClose, driver, vehicle, shiftData, cour
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title="Mode Contrôle - Police/SPOE"
+      title="Mode Contrôle - Police/Police Fédéral/SPW"
       size="4xl"
     >
       <div className="space-y-6 max-h-[70vh] overflow-y-auto">

@@ -538,23 +538,51 @@ export default function TxApp() {
               const activeSheet = await getActiveFeuilleRoute(chauffeur.chauffeur_id);
               if (activeSheet) {
                 console.log('Feuille de route active trouvée:', activeSheet.id);
+                console.log('🔍 DEBUG activeSheet données taximètre:');
+                console.log('  activeSheet.taximetre_prise_charge_fin:', activeSheet.taximetre_prise_charge_fin);
+                console.log('  activeSheet.taximetre_index_km_fin:', activeSheet.taximetre_index_km_fin);
+                console.log('  activeSheet.taximetre_km_charge_fin:', activeSheet.taximetre_km_charge_fin);
+                console.log('  activeSheet.taximetre_chutes_fin:', activeSheet.taximetre_chutes_fin);
+                console.log('  activeSheet.index_km_fin_tdb:', activeSheet.index_km_fin_tdb);
+                console.log('  activeSheet.km_tableau_bord_fin:', activeSheet.km_tableau_bord_fin);
+                console.log('  activeSheet.taximetre (relation):', activeSheet.taximetre);
+                
                 setCurrentFeuilleRoute(activeSheet);
                 setShiftData({
                   id: activeSheet.id,
+                  feuille_id: activeSheet.feuille_id,
                   chauffeur_id: activeSheet.chauffeur_id,
                   vehicule_id: activeSheet.vehicule_id,
+                  date_service: activeSheet.date_service,
                   date: activeSheet.date_service,
                   heure_debut: activeSheet.heure_debut ? new Date(activeSheet.heure_debut).toTimeString().slice(0, 5) : null,
                   heure_fin: activeSheet.heure_fin ? new Date(activeSheet.heure_fin).toTimeString().slice(0, 5) : null,
+                  heure_fin_estimee: activeSheet.heure_fin_estimee ? new Date(activeSheet.heure_fin_estimee).toTimeString().slice(0, 5) : null,
                   interruptions: activeSheet.interruptions,
-                  km_debut: activeSheet.index_km_debut_tdb,
-                  km_fin: activeSheet.index_km_fin_tdb,
-                  prise_en_charge_debut: activeSheet.taximetre_prise_charge_debut,
-                  prise_en_charge_fin: activeSheet.taximetre_prise_charge_fin,
-                  chutes_debut: activeSheet.taximetre_chutes_debut,
-                  chutes_fin: activeSheet.taximetre_chutes_fin,
+                  type_remuneration: activeSheet.type_remuneration,
+                  // Données tableau de bord
+                  index_km_debut_tdb: activeSheet.index_km_debut_tdb,
+                  index_km_fin_tdb: activeSheet.index_km_fin_tdb,
+                  km_tableau_bord_debut: activeSheet.km_tableau_bord_debut,
+                  km_tableau_bord_fin: activeSheet.km_tableau_bord_fin,
+                  // Données taximètre (directement depuis feuille_route)
+                  taximetre_prise_charge_debut: activeSheet.taximetre_prise_charge_debut,
+                  taximetre_prise_charge_fin: activeSheet.taximetre_prise_charge_fin,
+                  taximetre_index_km_debut: activeSheet.taximetre_index_km_debut,
+                  taximetre_index_km_fin: activeSheet.taximetre_index_km_fin,
+                  taximetre_km_charge_debut: activeSheet.taximetre_km_charge_debut,
+                  taximetre_km_charge_fin: activeSheet.taximetre_km_charge_fin,
+                  taximetre_chutes_debut: activeSheet.taximetre_chutes_debut,
+                  taximetre_chutes_fin: activeSheet.taximetre_chutes_fin,
+                  // Données taximètre (depuis relation taximetre si disponible)
+                  taximetre: activeSheet.taximetre || {},
+                  // Autres données
                   statut: activeSheet.est_validee ? 'validée' : 'en cours',
-                  notes: activeSheet.notes
+                  est_validee: activeSheet.est_validee,
+                  observations: activeSheet.observations,
+                  signature_chauffeur: activeSheet.signature_chauffeur,
+                  notes: activeSheet.notes,
+                  montant_salaire_cash_declare: activeSheet.montant_salaire_cash_declare
                 });
 
                 // Charger les charges/dépenses de la feuille active
@@ -842,26 +870,46 @@ export default function TxApp() {
         return;
       }
 
-      // Finaliser la feuille de route
-      const updatedFeuilleRoute = await endFeuilleRoute(currentFeuilleRoute.feuille_id, { // ✅ Corrigé
+      console.log('🔍 handleEndShift - Données reçues:', endData);
+
+      // Mapper les données du formulaire vers les champs de la base
+      const feuilleUpdateData = {
         heure_fin: endData.heure_fin,
         interruptions: endData.interruptions,
-        km_fin: endData.km_fin,
-        prise_en_charge_fin: endData.prise_en_charge_fin,
-        chutes_fin: endData.chutes_fin,
-        notes: endData.notes,
-        signature_chauffeur: endData.signature_chauffeur // ✅ Ajouter la signature
-      });
+        // Kilométrage tableau de bord
+        km_tableau_bord_fin: endData.km_tableau_bord_fin,
+        index_km_fin_tdb: endData.km_tableau_bord_fin, // Mapping pour compatibilité
+        // Champs taximètre de fin
+        taximetre_prise_charge_fin: endData.taximetre_prise_charge_fin,
+        taximetre_index_km_fin: endData.taximetre_index_km_fin,
+        taximetre_km_charge_fin: endData.taximetre_km_charge_fin,
+        taximetre_chutes_fin: endData.taximetre_chutes_fin,
+        // Autres champs
+        observations: endData.observations,
+        signature_chauffeur: endData.signature_chauffeur
+      };
+
+      console.log('🔧 handleEndShift - Données mappées pour l\'API:', feuilleUpdateData);
+
+      // Finaliser la feuille de route via l'endpoint de mise à jour
+      const updatedFeuilleRoute = await endFeuilleRoute(currentFeuilleRoute.feuille_id, feuilleUpdateData);
+
+      console.log('✅ handleEndShift - Feuille de route mise à jour:', updatedFeuilleRoute);
 
       setCurrentFeuilleRoute(updatedFeuilleRoute);
       setShiftData({
         ...shiftData,
         heure_fin: updatedFeuilleRoute.heure_fin ? new Date(updatedFeuilleRoute.heure_fin).toTimeString().slice(0, 5) : null,
-        km_fin: updatedFeuilleRoute.index_km_fin_tdb,
-        prise_en_charge_fin: updatedFeuilleRoute.taximetre_prise_charge_fin,
-        chutes_fin: updatedFeuilleRoute.taximetre_chutes_fin,
-        statut: updatedFeuilleRoute.est_validee ? 'Validée' : 'Terminée',
-        notes: updatedFeuilleRoute.notes
+        interruptions: updatedFeuilleRoute.interruptions,
+        index_km_fin_tdb: updatedFeuilleRoute.index_km_fin_tdb,
+        km_tableau_bord_fin: updatedFeuilleRoute.km_tableau_bord_fin,
+        taximetre_prise_charge_fin: updatedFeuilleRoute.taximetre_prise_charge_fin,
+        taximetre_index_km_fin: updatedFeuilleRoute.taximetre_index_km_fin,
+        taximetre_km_charge_fin: updatedFeuilleRoute.taximetre_km_charge_fin,
+        taximetre_chutes_fin: updatedFeuilleRoute.taximetre_chutes_fin,
+        observations: updatedFeuilleRoute.observations,
+        signature_chauffeur: updatedFeuilleRoute.signature_chauffeur,
+        statut: updatedFeuilleRoute.est_validee ? 'Validée' : 'Terminée'
       });
 
       toast.success("Feuille de route terminée avec succès !");
@@ -873,6 +921,7 @@ export default function TxApp() {
         setCurrentFeuilleRoute(null);
         setCourses([]);
         setExpenses([]);
+        setShiftData(null);
         toast.info("Vous pouvez maintenant créer une nouvelle feuille de route pour votre prochain service");
       }, 2000); // Attendre 2 secondes pour que l'utilisateur voie le message de succès
       setActiveTab('dashboard');

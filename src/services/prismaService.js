@@ -726,18 +726,51 @@ export async function createFeuilleRouteSimple(feuilleData) {
       throw new Error('date_service est requis pour créer une feuille de route');
     }
 
+    const feuilleRouteData = {
+      chauffeur_id: feuilleData.chauffeur_id,
+      vehicule_id: feuilleData.vehicule_id,
+      date_service: new Date(feuilleData.date_service),
+      mode_encodage: feuilleData.mode_encodage || 'LIVE',
+      heure_debut: feuilleData.heure_debut ? new Date(`1970-01-01T${feuilleData.heure_debut}:00`) : null,
+      heure_fin: feuilleData.heure_fin ? new Date(`1970-01-01T${feuilleData.heure_fin}:00`) : null,
+      interruptions: feuilleData.interruptions,
+      index_km_debut_tdb: feuilleData.index_km_debut_tdb,
+      index_km_fin_tdb: feuilleData.index_km_fin_tdb,
+      km_tableau_bord_debut: feuilleData.km_tableau_bord_debut,
+      km_tableau_bord_fin: feuilleData.km_tableau_bord_fin,
+      montant_salaire_cash_declare: feuilleData.montant_salaire_cash_declare || 0,
+      // ✅ Ajout des champs taximètre de début
+      taximetre_prise_charge_debut: feuilleData.taximetre_prise_charge_debut || null,
+      taximetre_index_km_debut: feuilleData.taximetre_index_km_debut || null,
+      taximetre_km_charge_debut: feuilleData.taximetre_km_charge_debut || null,
+      taximetre_chutes_debut: feuilleData.taximetre_chutes_debut || null,
+      // ✅ Ajout des champs taximètre de fin (pour mise à jour ultérieure)
+      taximetre_prise_charge_fin: feuilleData.taximetre_prise_charge_fin || null,
+      taximetre_index_km_fin: feuilleData.taximetre_index_km_fin || null,
+      taximetre_km_charge_fin: feuilleData.taximetre_km_charge_fin || null,
+      taximetre_chutes_fin: feuilleData.taximetre_chutes_fin || null,
+      // ✅ Autres champs optionnels
+      observations: feuilleData.observations || null,
+      signature_chauffeur: feuilleData.signature_chauffeur || null
+    };
+
+    console.log('🔧 createFeuilleRouteSimple - Données à créer:', feuilleRouteData);
+
     return await prisma.feuille_route.create({
-      data: {
-        chauffeur_id: feuilleData.chauffeur_id,
-        vehicule_id: feuilleData.vehicule_id,
-        date_service: new Date(feuilleData.date_service),
-        mode_encodage: feuilleData.mode_encodage || 'LIVE',
-        heure_debut: feuilleData.heure_debut ? new Date(`1970-01-01T${feuilleData.heure_debut}:00`) : null,
-        heure_fin: feuilleData.heure_fin ? new Date(`1970-01-01T${feuilleData.heure_fin}:00`) : null,
-        interruptions: feuilleData.interruptions,
-        index_km_debut_tdb: feuilleData.index_km_debut_tdb,
-        index_km_fin_tdb: feuilleData.index_km_fin_tdb,
-        montant_salaire_cash_declare: feuilleData.montant_salaire_cash_declare || 0
+      data: feuilleRouteData,
+      include: {
+        chauffeur: {
+          include: {
+            utilisateur: true,
+            societe_taxi: true
+          }
+        },
+        vehicule: {
+          include: {
+            societe_taxi: true
+          }
+        },
+        taximetre: true
       }
     });
   } catch (error) {
@@ -819,27 +852,54 @@ export async function updateFeuilleRoute(feuilleId, feuilleData) {
     // Validation des données
     await validateFeuilleRouteData(feuilleId, feuilleData);
 
+    const updateData = {
+      vehicule_id: feuilleData.vehicule_id,
+      mode_encodage: feuilleData.mode_encodage,
+      heure_debut: feuilleData.heure_debut ? new Date(`1970-01-01T${feuilleData.heure_debut}:00`) : null,
+      heure_fin: feuilleData.heure_fin ? new Date(`1970-01-01T${feuilleData.heure_fin}:00`) : null,
+      interruptions: feuilleData.interruptions,
+      index_km_debut_tdb: feuilleData.index_km_debut_tdb,
+      index_km_fin_tdb: feuilleData.index_km_fin_tdb,
+      km_tableau_bord_debut: feuilleData.km_tableau_bord_debut,
+      km_tableau_bord_fin: feuilleData.km_tableau_bord_fin,
+      date_validation: feuilleData.date_validation ? new Date(feuilleData.date_validation) : null,
+      validated_by: feuilleData.validated_by,
+      montant_salaire_cash_declare: feuilleData.montant_salaire_cash_declare,
+      // ✅ Ajout des champs taximètre de début
+      taximetre_prise_charge_debut: feuilleData.taximetre_prise_charge_debut !== undefined ? feuilleData.taximetre_prise_charge_debut : undefined,
+      taximetre_index_km_debut: feuilleData.taximetre_index_km_debut !== undefined ? feuilleData.taximetre_index_km_debut : undefined,
+      taximetre_km_charge_debut: feuilleData.taximetre_km_charge_debut !== undefined ? feuilleData.taximetre_km_charge_debut : undefined,
+      taximetre_chutes_debut: feuilleData.taximetre_chutes_debut !== undefined ? feuilleData.taximetre_chutes_debut : undefined,
+      // ✅ Ajout des champs taximètre de fin
+      taximetre_prise_charge_fin: feuilleData.taximetre_prise_charge_fin !== undefined ? feuilleData.taximetre_prise_charge_fin : undefined,
+      taximetre_index_km_fin: feuilleData.taximetre_index_km_fin !== undefined ? feuilleData.taximetre_index_km_fin : undefined,
+      taximetre_km_charge_fin: feuilleData.taximetre_km_charge_fin !== undefined ? feuilleData.taximetre_km_charge_fin : undefined,
+      taximetre_chutes_fin: feuilleData.taximetre_chutes_fin !== undefined ? feuilleData.taximetre_chutes_fin : undefined,
+      // ✅ Autres champs optionnels
+      observations: feuilleData.observations !== undefined ? feuilleData.observations : undefined,
+      signature_chauffeur: feuilleData.signature_chauffeur !== undefined ? feuilleData.signature_chauffeur : undefined
+    };
+
+    // Nettoyer les champs undefined pour éviter les erreurs Prisma
+    Object.keys(updateData).forEach(key => {
+      if (updateData[key] === undefined) {
+        delete updateData[key];
+      }
+    });
+
+    console.log('🔧 updateFeuilleRoute - Données à mettre à jour:', updateData);
+
     return await prisma.feuille_route.update({
       where: { feuille_id: parseInt(feuilleId) },
-      data: {
-        vehicule_id: feuilleData.vehicule_id,
-        mode_encodage: feuilleData.mode_encodage,
-        heure_debut: feuilleData.heure_debut ? new Date(`1970-01-01T${feuilleData.heure_debut}:00`) : null,
-        heure_fin: feuilleData.heure_fin ? new Date(`1970-01-01T${feuilleData.heure_fin}:00`) : null,
-        interruptions: feuilleData.interruptions,
-        index_km_debut_tdb: feuilleData.index_km_debut_tdb,
-        index_km_fin_tdb: feuilleData.index_km_fin_tdb,
-        date_validation: feuilleData.date_validation ? new Date(feuilleData.date_validation) : null,
-        validated_by: feuilleData.validated_by,
-        montant_salaire_cash_declare: feuilleData.montant_salaire_cash_declare
-      },
+      data: updateData,
       include: {
         chauffeur: {
           include: {
             utilisateur: true
           }
         },
-        vehicule: true
+        vehicule: true,
+        taximetre: true
       }
     });
   } catch (error) {

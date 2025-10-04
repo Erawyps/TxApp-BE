@@ -33,11 +33,27 @@ const useAutoSave = (data, key, delay = 2000) => {
   }, [data, saveData, delay]);
 };
 
-// Fonction pour charger les données sauvegardées
+// Fonction pour charger les données sauvegardées avec validation
 const loadSavedData = (key) => {
   try {
     const saved = localStorage.getItem(key);
-    return saved ? JSON.parse(saved) : null;
+    if (saved) {
+      const parsedData = JSON.parse(saved);
+      
+      // Vérifier si les données sont significatives (pas que des valeurs vides)
+      const hasSignificantData = Object.values(parsedData).some(value => 
+        value !== '' && value !== null && value !== undefined && value !== '0'
+      );
+      
+      console.log(`📦 loadSavedData(${key}):`, {
+        found: !!parsedData,
+        hasSignificantData,
+        data: parsedData
+      });
+      
+      return hasSignificantData ? parsedData : null;
+    }
+    return null;
   } catch (error) {
     console.warn('Erreur lors du chargement des données sauvegardées:', error);
     return null;
@@ -63,18 +79,140 @@ export function EndShiftForm({ onEndShift, shiftData, driver, onPrintReport }) {
   // Charger les données sauvegardées du formulaire de début pour récupérer heure_fin_estimee
   const savedStartData = loadSavedData('shiftFormData');
 
+  // Debug: Afficher les données reçues
+  console.log('🔍 EndShiftForm DEBUG:');
+  console.log('  shiftData:', shiftData);
+  console.log('  shiftData?.taximetre:', shiftData?.taximetre);
+  console.log('  shiftData?.taximetre_prise_charge_fin:', shiftData?.taximetre_prise_charge_fin);
+  console.log('  shiftData?.index_km_fin_tdb:', shiftData?.index_km_fin_tdb);
+  console.log('  savedEndData:', savedEndData);
+
+  // Créer les valeurs par défaut avec priorité correcte
+  const getDefaultValues = () => {
+    console.log('  🔄 getDefaultValues() appelée:');
+    console.log('    shiftData au moment de getDefaultValues:', shiftData);
+    console.log('    savedEndData au moment de getDefaultValues:', savedEndData);
+    
+    // Si on a des données sauvegardées ET qu'elles ne sont pas vides, les utiliser
+    if (savedEndData && Object.keys(savedEndData).length > 0) {
+      console.log('  ✅ Utilisation des données sauvegardées localStorage');
+      return savedEndData;
+    }
+
+    // Sinon, utiliser les données du shift existant
+    const defaultValues = {
+      ...initialEndShiftData,
+      // Pré-remplir avec les données existantes si disponibles
+      heure_fin: shiftData?.heure_fin || '',
+      interruptions: shiftData?.interruptions || '',
+      km_tableau_bord_fin: shiftData?.index_km_fin_tdb || shiftData?.km_tableau_bord_fin || '',
+      // Champs taximètre de fin avec données existantes du shift actuel
+      taximetre_prise_charge_fin: shiftData?.taximetre?.taximetre_prise_charge_fin || shiftData?.taximetre_prise_charge_fin || '',
+      taximetre_index_km_fin: shiftData?.taximetre?.taximetre_index_km_fin || shiftData?.taximetre_index_km_fin || '',
+      taximetre_km_charge_fin: shiftData?.taximetre?.taximetre_km_charge_fin || shiftData?.taximetre_km_charge_fin || '',
+      taximetre_chutes_fin: shiftData?.taximetre?.taximetre_chutes_fin || shiftData?.taximetre_chutes_fin || '',
+      observations: shiftData?.observations || '',
+      signature_chauffeur: shiftData?.signature_chauffeur || `${driver?.utilisateur?.prenom || 'Non défini'} ${driver?.utilisateur?.nom || 'Non défini'}`
+    };
+
+    console.log('  ✅ Utilisation des données du shift existant:', defaultValues);
+    console.log('    defaultValues.taximetre_prise_charge_fin:', defaultValues.taximetre_prise_charge_fin);
+    console.log('    defaultValues.km_tableau_bord_fin:', defaultValues.km_tableau_bord_fin);
+    return defaultValues;
+  };
+
   const {
     register,
     handleSubmit,
     watch,
+    reset,
+    setValue,
     formState: { errors }
   } = useForm({
     resolver: yupResolver(endShiftSchema),
-    defaultValues: savedEndData || {
-      ...initialEndShiftData,
-      signature_chauffeur: `${driver?.utilisateur?.prenom || 'Non défini'} ${driver?.utilisateur?.nom || 'Non défini'}`
-    }
+    defaultValues: getDefaultValues()
   });
+
+  // Effet pour mettre à jour les valeurs quand shiftData change
+  useEffect(() => {
+    console.log('  🔄 useEffect EndShiftForm déclenché !');
+    console.log('    shiftData:', shiftData);
+    console.log('    driver:', driver);
+    
+    if (shiftData) {
+      console.log('  🔄 shiftData a changé, mise à jour du formulaire...');
+      console.log('  📊 DEBUG shiftData complet:', shiftData);
+      console.log('  🎯 DEBUG données taximètre dans shiftData:');
+      console.log('    shiftData.taximetre_prise_charge_fin:', shiftData.taximetre_prise_charge_fin);
+      console.log('    shiftData.taximetre_index_km_fin:', shiftData.taximetre_index_km_fin);
+      console.log('    shiftData.taximetre_km_charge_fin:', shiftData.taximetre_km_charge_fin);
+      console.log('    shiftData.taximetre_chutes_fin:', shiftData.taximetre_chutes_fin);
+      console.log('    shiftData.taximetre:', shiftData.taximetre);
+      
+      // Ne pas écraser les données déjà saisies par l'utilisateur
+      const currentValues = watch();
+      
+      // Une saisie utilisateur "significative" n'est pas juste des chaînes vides ou des zéros
+      const hasSignificantUserInput = Object.entries(currentValues).some(([key, value]) => {
+        // Ignorer les champs de signature et observations pour cette vérification
+        if (key === 'signature_chauffeur' || key === 'observations') return false;
+        
+        // Une valeur significative n'est pas vide, null, undefined, ou "0"
+        return value !== '' && value !== null && value !== undefined && value !== '0' && String(value).trim() !== '';
+      });
+
+      console.log('    currentValues:', currentValues);
+      console.log('    hasSignificantUserInput:', hasSignificantUserInput);
+
+      if (!hasSignificantUserInput) {
+        console.log('  ✅ Aucune saisie utilisateur significative détectée, mise à jour des valeurs par défaut');
+        const newValues = {
+          heure_fin: shiftData.heure_fin || '',
+          interruptions: shiftData.interruptions || '',
+          km_tableau_bord_fin: shiftData.index_km_fin_tdb || shiftData.km_tableau_bord_fin || '',
+          taximetre_prise_charge_fin: shiftData.taximetre?.taximetre_prise_charge_fin || shiftData.taximetre_prise_charge_fin || '',
+          taximetre_index_km_fin: shiftData.taximetre?.taximetre_index_km_fin || shiftData.taximetre_index_km_fin || '',
+          taximetre_km_charge_fin: shiftData.taximetre?.taximetre_km_charge_fin || shiftData.taximetre_km_charge_fin || '',
+          taximetre_chutes_fin: shiftData.taximetre?.taximetre_chutes_fin || shiftData.taximetre_chutes_fin || '',
+          observations: shiftData.observations || '',
+          signature_chauffeur: shiftData.signature_chauffeur || `${driver?.utilisateur?.prenom || 'Non défini'} ${driver?.utilisateur?.nom || 'Non défini'}`
+        };
+        
+        console.log('  📝 DEBUG newValues calculées:', newValues);
+        console.log('  🔧 Application des valeurs avec reset()...');
+        reset(newValues);
+      } else {
+        console.log('  ⚠️ Saisie utilisateur significative détectée, conservation des valeurs actuelles');
+      }
+    } else {
+      console.log('  ❌ Pas de shiftData disponible pour le pré-remplissage');
+    }
+  }, [shiftData, reset, watch, driver]);
+
+  // useEffect supplémentaire pour forcer le pré-remplissage des données taximètre
+  useEffect(() => {
+    if (shiftData?.taximetre || shiftData?.taximetre_prise_charge_fin) {
+      console.log('  🎯 FORCE UPDATE: Données taximètre détectées, forçage de la mise à jour');
+      
+      const forceValues = {
+        km_tableau_bord_fin: shiftData.index_km_fin_tdb || shiftData.km_tableau_bord_fin || '',
+        taximetre_prise_charge_fin: shiftData.taximetre?.taximetre_prise_charge_fin || shiftData.taximetre_prise_charge_fin || '',
+        taximetre_index_km_fin: shiftData.taximetre?.taximetre_index_km_fin || shiftData.taximetre_index_km_fin || '',
+        taximetre_km_charge_fin: shiftData.taximetre?.taximetre_km_charge_fin || shiftData.taximetre_km_charge_fin || '',
+        taximetre_chutes_fin: shiftData.taximetre?.taximetre_chutes_fin || shiftData.taximetre_chutes_fin || ''
+      };
+      
+      console.log('  🔧 FORCE UPDATE values:', forceValues);
+      
+      // Mettre à jour seulement les champs taximètre et km tableau de bord
+      Object.entries(forceValues).forEach(([fieldName, value]) => {
+        if (value) {
+          console.log(`    Updating ${fieldName} = ${value}`);
+          setValue(fieldName, value);
+        }
+      });
+    }
+  }, [shiftData?.taximetre, shiftData?.taximetre_prise_charge_fin, shiftData?.taximetre_index_km_fin, shiftData?.taximetre_km_charge_fin, shiftData?.taximetre_chutes_fin, shiftData?.index_km_fin_tdb, shiftData?.km_tableau_bord_fin, setValue]);
 
   const watchedData = watch();
 
