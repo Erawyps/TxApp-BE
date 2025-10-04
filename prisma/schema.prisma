@@ -114,6 +114,7 @@ model feuille_route {
   est_validee                  Boolean?     @default(false)
   date_validation              DateTime?    @db.Timestamp(6)
   validated_by                 Int?
+  signature_chauffeur          String?      @db.VarChar(255)
   created_at                   DateTime?    @default(now()) @db.Timestamp(6)
   charge                       charge[]
   course                       course[]

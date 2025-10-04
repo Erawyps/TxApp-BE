@@ -845,10 +845,12 @@ export default function TxApp() {
       // Finaliser la feuille de route
       const updatedFeuilleRoute = await endFeuilleRoute(currentFeuilleRoute.feuille_id, { // ✅ Corrigé
         heure_fin: endData.heure_fin,
+        interruptions: endData.interruptions,
         km_fin: endData.km_fin,
         prise_en_charge_fin: endData.prise_en_charge_fin,
         chutes_fin: endData.chutes_fin,
-        notes: endData.notes
+        notes: endData.notes,
+        signature_chauffeur: endData.signature_chauffeur // ✅ Ajouter la signature
       });
 
       setCurrentFeuilleRoute(updatedFeuilleRoute);

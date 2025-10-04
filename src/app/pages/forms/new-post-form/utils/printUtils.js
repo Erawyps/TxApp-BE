@@ -28,6 +28,12 @@ export const generateAndDownloadReport = (rawShiftData, rawCourses, driver, vehi
     console.log('  shiftData.courses:', shiftData.courses);
     console.log('  courses (variable):', courses);
     console.log('  courses.length:', courses.length);
+    console.log('  📊 TAXIMETRE DATA:');
+    console.log('  shiftData.taximetre:', shiftData.taximetre);
+    console.log('  shiftData.taximetre_prise_charge_debut:', shiftData.taximetre_prise_charge_debut);
+    console.log('  shiftData.taximetre_prise_charge_fin:', shiftData.taximetre_prise_charge_fin);
+    console.log('  shiftData.taximetre_index_km_debut:', shiftData.taximetre_index_km_debut);
+    console.log('  shiftData.taximetre_index_km_fin:', shiftData.taximetre_index_km_fin);
     
     if (courses.length === 0) {
       console.warn('  ⚠️ ATTENTION: Aucune course après mapping!');
@@ -266,15 +272,34 @@ export const generateAndDownloadReport = (rawShiftData, rawCourses, driver, vehi
     for (let i = 0; i < 4; i++) {
       doc.rect(currentX, serviceTableY + rowHeight * (i + 1), col1_heures_data, rowHeight);
 
-      // Données CORRIGÉES
+      // Données CORRIGÉES avec calculs automatiques
       if (i === 0 && safeShiftData.heure_debut) {
+        // Début
         drawText(formatTime(safeShiftData.heure_debut), currentX + col1_heures_data/2, serviceTableY + rowHeight * (i + 1) + 6, 'center');
       }
       if (i === 1 && safeShiftData.heure_fin) {
+        // Fin
         drawText(formatTime(safeShiftData.heure_fin), currentX + col1_heures_data/2, serviceTableY + rowHeight * (i + 1) + 6, 'center');
       }
-      if (i === 2 && safeShiftData.interruptions) {
-        drawText(safeShiftData.interruptions, currentX + col1_heures_data/2, serviceTableY + rowHeight * (i + 1) + 6, 'center');
+      if (i === 2) {
+        // Interruptions - afficher la valeur ou "00:00" par défaut
+        const interruptions = safeShiftData.interruptions || '00:00';
+        drawText(interruptions, currentX + col1_heures_data/2, serviceTableY + rowHeight * (i + 1) + 6, 'center');
+      }
+      if (i === 3 && safeShiftData.heure_debut && safeShiftData.heure_fin) {
+        // Total - Calculer automatiquement (Fin - Début - Interruptions)
+        const debut = new Date(`1970-01-01T${formatTime(safeShiftData.heure_debut)}:00`);
+        const fin = new Date(`1970-01-01T${formatTime(safeShiftData.heure_fin)}:00`);
+        const interruptions = safeShiftData.interruptions || '00:00';
+        const [intH, intM] = interruptions.split(':').map(Number);
+        
+        const diffMs = fin - debut;
+        const totalMinutes = Math.floor(diffMs / 60000) - (intH * 60 + intM);
+        const heures = Math.floor(totalMinutes / 60);
+        const minutes = totalMinutes % 60;
+        const totalFormatted = `${String(heures).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
+        
+        drawText(totalFormatted, currentX + col1_heures_data/2, serviceTableY + rowHeight * (i + 1) + 6, 'center');
       }
     }
     currentX += col1_heures_data;
@@ -404,6 +429,12 @@ export const generateAndDownloadReport = (rawShiftData, rawCourses, driver, vehi
     }
 
     // Remplir les données taximètre - CORRIGÉES
+    console.log('  📊 DEBUG TAXIMETRE DISPLAY:');
+    console.log('  taximetre_prise_charge_fin:', safeShiftData.taximetre_prise_charge_fin, typeof safeShiftData.taximetre_prise_charge_fin);
+    console.log('  taximetre_prise_charge_debut:', safeShiftData.taximetre_prise_charge_debut, typeof safeShiftData.taximetre_prise_charge_debut);
+    console.log('  taximetre_index_km_fin:', safeShiftData.taximetre_index_km_fin, typeof safeShiftData.taximetre_index_km_fin);
+    console.log('  taximetre_index_km_debut:', safeShiftData.taximetre_index_km_debut, typeof safeShiftData.taximetre_index_km_debut);
+    
     const totalRecettes = courses.reduce((sum, course) => sum + (Number(course.sommes_percues) || 0), 0);
     const dataStartX = margin + bas_vide;
 
@@ -621,6 +652,14 @@ export const generateAndDownloadReport = (rawShiftData, rawCourses, driver, vehi
     yPos += 8;
     doc.setFontSize(9);
     drawText('Signature du chauffeur :', margin, yPos);
+    
+    // Afficher la signature si présente
+    if (safeShiftData.signature_chauffeur) {
+      doc.setFont('times', 'italic');
+      drawText(safeShiftData.signature_chauffeur, margin + 60, yPos);
+      doc.setFont('times', 'normal');
+    }
+    
     doc.line(margin + 55, yPos + 3, margin + 130, yPos + 3);
 
     // ============ RÉSUMÉ FINANCIER ============
