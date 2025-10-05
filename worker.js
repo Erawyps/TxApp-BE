@@ -1330,7 +1330,29 @@ app.delete('/api/regles-salaire/:id', dbMiddleware, authMiddleware, async (c) =>
 app.get('/api/feuilles-route', dbMiddleware, authMiddleware, async (c) => {
   try {
     const prisma = c.get('prisma');
-    const feuillesRoute = await prisma.feuille_route.findMany();
+    const feuillesRoute = await prisma.feuille_route.findMany({
+      include: {
+        chauffeur: {
+          include: {
+            utilisateur: true,
+            societe_taxi: true
+          }
+        },
+        vehicule: {
+          include: {
+            societe_taxi: true
+          }
+        },
+        course: {
+          include: {
+            client: true,
+            mode_paiement: true,
+            detail_facture_complexe: true
+          }
+        },
+        taximetre: true
+      }
+    });
     return c.json(feuillesRoute);
   } catch (error) {
     console.error('Erreur lors de la récupération des feuilles de route:', error);
@@ -1343,7 +1365,28 @@ app.get('/api/feuilles-route/:id', dbMiddleware, authMiddleware, async (c) => {
     const prisma = c.get('prisma');
     const { id } = c.req.param();
     const feuilleRoute = await prisma.feuille_route.findUnique({
-      where: { feuille_id: parseInt(id) }
+      where: { feuille_id: parseInt(id) },
+      include: {
+        chauffeur: {
+          include: {
+            utilisateur: true,
+            societe_taxi: true
+          }
+        },
+        vehicule: {
+          include: {
+            societe_taxi: true
+          }
+        },
+        course: {
+          include: {
+            client: true,
+            mode_paiement: true,
+            detail_facture_complexe: true
+          }
+        },
+        taximetre: true
+      }
     });
     if (!feuilleRoute) {
       return c.json({ error: 'Feuille de route non trouvée' }, 404);
@@ -1360,7 +1403,28 @@ app.get('/api/chauffeurs/:chauffeurId/feuilles-route', dbMiddleware, authMiddlew
     const prisma = c.get('prisma');
     const { chauffeurId } = c.req.param();
     const feuillesRoute = await prisma.feuille_route.findMany({
-      where: { chauffeur_id: parseInt(chauffeurId) }
+      where: { chauffeur_id: parseInt(chauffeurId) },
+      include: {
+        chauffeur: {
+          include: {
+            utilisateur: true,
+            societe_taxi: true
+          }
+        },
+        vehicule: {
+          include: {
+            societe_taxi: true
+          }
+        },
+        course: {
+          include: {
+            client: true,
+            mode_paiement: true,
+            detail_facture_complexe: true
+          }
+        },
+        taximetre: true
+      }
     });
     return c.json(feuillesRoute);
   } catch (error) {
@@ -1408,29 +1472,28 @@ app.get('/api/feuilles-route/active/:chauffeurId', dbMiddleware, authMiddleware,
     const feuilleRoute = await prisma.feuille_route.findFirst({
       where: {
         chauffeur_id: chauffeurId,
-        statut: 'En cours'
+        est_validee: false // Utilise est_validee au lieu de statut
       },
       include: {
         vehicule: {
-          select: {
-            id: true,
-            plaque_immatriculation: true,
-            marque: true,
-            modele: true
+          include: {
+            societe_taxi: true
           }
         },
         chauffeur: {
-          select: {
-            id: true,
-            numero_badge: true,
-            utilisateur: {
-              select: {
-                nom: true,
-                prenom: true
-              }
-            }
+          include: {
+            utilisateur: true,
+            societe_taxi: true
           }
-        }
+        },
+        course: {
+          include: {
+            client: true,
+            mode_paiement: true,
+            detail_facture_complexe: true
+          }
+        },
+        taximetre: true
       },
       orderBy: { created_at: 'desc' }
     });
@@ -1439,16 +1502,7 @@ app.get('/api/feuilles-route/active/:chauffeurId', dbMiddleware, authMiddleware,
       return c.json(null);
     }
 
-    const formattedResult = {
-      ...feuilleRoute,
-      vehicule: feuilleRoute.vehicule,
-      chauffeur: {
-        numero_badge: feuilleRoute.chauffeur?.numero_badge,
-        utilisateur: feuilleRoute.chauffeur?.utilisateur
-      }
-    };
-
-    return c.json(formattedResult);
+    return c.json(feuilleRoute);
   } catch (error) {
     console.error('Error fetching active feuille route:', error);
     return c.json({ error: 'Erreur lors de la récupération de la feuille de route active' }, 500);
@@ -2895,17 +2949,25 @@ app.get('/api/dashboard/feuilles-route/active/:chauffeurId', dbMiddleware, authM
         est_validee: false // Feuille non validée = active
       },
       include: {
-        vehicule: true,
+        vehicule: {
+          include: {
+            societe_taxi: true
+          }
+        },
         chauffeur: {
           include: {
-            utilisateur: {
-              select: {
-                nom: true,
-                prenom: true
-              }
-            }
+            utilisateur: true,
+            societe_taxi: true
           }
-        }
+        },
+        course: {
+          include: {
+            client: true,
+            mode_paiement: true,
+            detail_facture_complexe: true
+          }
+        },
+        taximetre: true
       },
       orderBy: { created_at: 'desc' }
     });

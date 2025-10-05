@@ -1,8 +1,30 @@
-# 🎯 CORRECTION FINALE - Génération PDF
+# ✅ CORRECTION FINALE - Génération PDF Feuille de Route
+
+## 🔍 Problème Initial Identifié en Production
+
+L'erreur en production était :
+```
+Erreur génération feuille de route: Error: Données invalides: 
+Informations du chauffeur manquantes, Informations du véhicule manquantes
+```
 
 ## ❌ Cause Racine du Problème
 
-Le composant React **ne passait PAS par l'API** pour récupérer les données de la feuille de route.
+Les routes API `/api/feuilles-route/:id` et autres **retournaient les données SANS les relations nécessaires**.
+
+Le frontend essayait d'accéder à :
+- `feuilleRoute.chauffeur.utilisateur.nom` → **undefined**
+- `feuilleRoute.vehicule.marque` → **undefined**
+
+Parce que l'API retournait seulement :
+```javascript
+{
+  feuille_id: 22,
+  chauffeur_id: 5,    // ❌ Seulement l'ID, pas l'objet complet
+  vehicule_id: 2,     // ❌ Seulement l'ID, pas l'objet complet
+  // ... autres champs de base
+}
+```
 
 **Ancien code (INCORRECT) :**
 ```javascript
