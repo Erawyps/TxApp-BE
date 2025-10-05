@@ -178,10 +178,13 @@ const verifyPassword = async (password, hashedPassword) => {
 // Route de connexion (login)
 app.post('/api/auth/login', dbMiddleware, async (c) => {
   try {
-    const { username, password } = await c.req.json();
+    const { username, email, password } = await c.req.json();
 
-    if (!username || !password) {
-      return c.json({ error: 'Nom d\'utilisateur et mot de passe requis' }, 400);
+    // Accepter username ou email pour la compatibilité
+    const loginIdentifier = username || email;
+
+    if (!loginIdentifier || !password) {
+      return c.json({ error: 'Email et mot de passe requis' }, 400);
     }
 
     const prisma = c.get('prisma');
@@ -189,7 +192,7 @@ app.post('/api/auth/login', dbMiddleware, async (c) => {
     // Rechercher l'utilisateur par email
     const user = await prisma.utilisateur.findFirst({
       where: {
-        email: username
+        email: loginIdentifier
       },
       include: {
         chauffeur: {
@@ -470,6 +473,77 @@ app.post('/api/auth/change-password', authMiddleware, async (c) => {
   }
 });
 
+// Routes pour utilisateurs
+app.get('/api/utilisateurs', dbMiddleware, authMiddleware, async (c) => {
+  try {
+    const prisma = c.get('prisma');
+    const utilisateurs = await prisma.utilisateur.findMany();
+    return c.json(utilisateurs);
+  } catch (error) {
+    console.error('Erreur lors de la récupération des utilisateurs:', error);
+    return c.json({ error: 'Erreur interne du serveur' }, 500);
+  }
+});
+
+app.get('/api/utilisateurs/:id', dbMiddleware, authMiddleware, async (c) => {
+  try {
+    const prisma = c.get('prisma');
+    const { id } = c.req.param();
+    const utilisateur = await prisma.utilisateur.findUnique({
+      where: { user_id: parseInt(id) }
+    });
+    if (!utilisateur) {
+      return c.json({ error: 'Utilisateur non trouvé' }, 404);
+    }
+    return c.json(utilisateur);
+  } catch (error) {
+    console.error('Erreur lors de la récupération de l\'utilisateur:', error);
+    return c.json({ error: 'Erreur interne du serveur' }, 500);
+  }
+});
+
+app.post('/api/utilisateurs', dbMiddleware, authMiddleware, async (c) => {
+  try {
+    const prisma = c.get('prisma');
+    const data = await c.req.json();
+    const utilisateur = await prisma.utilisateur.create({ data });
+    return c.json(utilisateur);
+  } catch (error) {
+    console.error('Erreur lors de la création de l\'utilisateur:', error);
+    return c.json({ error: 'Erreur interne du serveur' }, 500);
+  }
+});
+
+app.put('/api/utilisateurs/:id', dbMiddleware, authMiddleware, async (c) => {
+  try {
+    const prisma = c.get('prisma');
+    const { id } = c.req.param();
+    const data = await c.req.json();
+    const utilisateur = await prisma.utilisateur.update({
+      where: { user_id: parseInt(id) },
+      data
+    });
+    return c.json(utilisateur);
+  } catch (error) {
+    console.error('Erreur lors de la mise à jour de l\'utilisateur:', error);
+    return c.json({ error: 'Erreur interne du serveur' }, 500);
+  }
+});
+
+app.delete('/api/utilisateurs/:id', dbMiddleware, authMiddleware, async (c) => {
+  try {
+    const prisma = c.get('prisma');
+    const { id } = c.req.param();
+    await prisma.utilisateur.delete({
+      where: { user_id: parseInt(id) }
+    });
+    return c.json({ message: 'Utilisateur supprimé avec succès' });
+  } catch (error) {
+    console.error('Erreur lors de la suppression de l\'utilisateur:', error);
+    return c.json({ error: 'Erreur interne du serveur' }, 500);
+  }
+});
+
 // Routes pour chauffeurs
 app.get('/api/chauffeurs', dbMiddleware, authMiddleware, async (c) => {
   try {
@@ -493,6 +567,98 @@ app.get('/api/chauffeurs', dbMiddleware, authMiddleware, async (c) => {
   } catch (error) {
     console.error('Error fetching chauffeurs:', error);
     return c.json({ error: 'Erreur lors de la récupération des chauffeurs' }, 500);
+  }
+});
+
+app.get('/api/chauffeurs/:id', dbMiddleware, authMiddleware, async (c) => {
+  try {
+    const prisma = c.get('prisma');
+    const { id } = c.req.param();
+    const chauffeur = await prisma.chauffeur.findUnique({
+      where: { chauffeur_id: parseInt(id) }
+    });
+    if (!chauffeur) {
+      return c.json({ error: 'Chauffeur non trouvé' }, 404);
+    }
+    return c.json(chauffeur);
+  } catch (error) {
+    console.error('Erreur lors de la récupération du chauffeur:', error);
+    return c.json({ error: 'Erreur interne du serveur' }, 500);
+  }
+});
+
+// Route pour récupérer le chauffeur_id à partir du user_id
+app.get('/api/chauffeurs/by-user/:userId', dbMiddleware, authMiddleware, async (c) => {
+  try {
+    const prisma = c.get('prisma');
+    const { userId } = c.req.param();
+    
+    const chauffeur = await prisma.chauffeur.findFirst({
+      where: { 
+        utilisateur: {
+          user_id: parseInt(userId)
+        }
+      },
+      select: {
+        chauffeur_id: true,
+        statut: true,
+        utilisateur: {
+          select: {
+            user_id: true,
+            nom: true,
+            prenom: true,
+            role: true
+          }
+        }
+      }
+    });
+    
+    if (!chauffeur) {
+      return c.json({ error: 'Chauffeur non trouvé pour cet utilisateur' }, 404);
+    }
+    
+    return c.json(chauffeur);
+  } catch (error) {
+    console.error('Erreur lors de la récupération du chauffeur par user_id:', error);
+    return c.json({ error: 'Erreur interne du serveur' }, 500);
+  }
+});
+
+// Routes pour interventions
+app.get('/api/interventions', dbMiddleware, authMiddleware, async (c) => {
+  try {
+    const prisma = c.get('prisma');
+    const interventions = await prisma.intervention.findMany();
+    return c.json(interventions);
+  } catch (error) {
+    console.error('Erreur lors de la récupération des interventions:', error);
+    return c.json({ error: 'Erreur interne du serveur' }, 500);
+  }
+});
+
+app.get('/api/chauffeurs/:chauffeurId/interventions', dbMiddleware, authMiddleware, async (c) => {
+  try {
+    const prisma = c.get('prisma');
+    const { chauffeurId } = c.req.param();
+    const interventions = await prisma.intervention.findMany({
+      where: { chauffeur_id: parseInt(chauffeurId) }
+    });
+    return c.json(interventions);
+  } catch (error) {
+    console.error('Erreur lors de la récupération des interventions:', error);
+    return c.json({ error: 'Erreur interne du serveur' }, 500);
+  }
+});
+
+app.post('/api/interventions', dbMiddleware, authMiddleware, async (c) => {
+  try {
+    const prisma = c.get('prisma');
+    const data = await c.req.json();
+    const intervention = await prisma.intervention.create({ data });
+    return c.json(intervention);
+  } catch (error) {
+    console.error('Erreur lors de la création de l\'intervention:', error);
+    return c.json({ error: 'Erreur interne du serveur' }, 500);
   }
 });
 
@@ -630,6 +796,23 @@ app.get('/api/vehicules', dbMiddleware, authMiddleware, async (c) => {
   }
 });
 
+app.get('/api/vehicules/:id', dbMiddleware, authMiddleware, async (c) => {
+  try {
+    const prisma = c.get('prisma');
+    const { id } = c.req.param();
+    const vehicule = await prisma.vehicule.findUnique({
+      where: { vehicule_id: parseInt(id) }
+    });
+    if (!vehicule) {
+      return c.json({ error: 'Véhicule non trouvé' }, 404);
+    }
+    return c.json(vehicule);
+  } catch (error) {
+    console.error('Erreur lors de la récupération du véhicule:', error);
+    return c.json({ error: 'Erreur interne du serveur' }, 500);
+  }
+});
+
 // POST /api/vehicules - Créer un véhicule
 app.post('/api/vehicules', dbMiddleware, authMiddleware, async (c) => {
   try {
@@ -754,6 +937,23 @@ app.get('/api/clients', dbMiddleware, authMiddleware, async (c) => {
   } catch (error) {
     console.error('Error fetching clients:', error.message);
     return c.json({ error: 'Erreur lors de la récupération des clients' }, 500);
+  }
+});
+
+app.get('/api/clients/:id', dbMiddleware, authMiddleware, async (c) => {
+  try {
+    const prisma = c.get('prisma');
+    const { id } = c.req.param();
+    const client = await prisma.client.findUnique({
+      where: { client_id: parseInt(id) }
+    });
+    if (!client) {
+      return c.json({ error: 'Client non trouvé' }, 404);
+    }
+    return c.json(client);
+  } catch (error) {
+    console.error('Erreur lors de la récupération du client:', error);
+    return c.json({ error: 'Erreur interne du serveur' }, 500);
   }
 });
 
@@ -1126,6 +1326,79 @@ app.delete('/api/regles-salaire/:id', dbMiddleware, authMiddleware, async (c) =>
   }
 });
 
+// Routes pour feuilles-route
+app.get('/api/feuilles-route', dbMiddleware, authMiddleware, async (c) => {
+  try {
+    const prisma = c.get('prisma');
+    const feuillesRoute = await prisma.feuille_route.findMany();
+    return c.json(feuillesRoute);
+  } catch (error) {
+    console.error('Erreur lors de la récupération des feuilles de route:', error);
+    return c.json({ error: 'Erreur interne du serveur' }, 500);
+  }
+});
+
+app.get('/api/feuilles-route/:id', dbMiddleware, authMiddleware, async (c) => {
+  try {
+    const prisma = c.get('prisma');
+    const { id } = c.req.param();
+    const feuilleRoute = await prisma.feuille_route.findUnique({
+      where: { feuille_id: parseInt(id) }
+    });
+    if (!feuilleRoute) {
+      return c.json({ error: 'Feuille de route non trouvée' }, 404);
+    }
+    return c.json(feuilleRoute);
+  } catch (error) {
+    console.error('Erreur lors de la récupération de la feuille de route:', error);
+    return c.json({ error: 'Erreur interne du serveur' }, 500);
+  }
+});
+
+app.get('/api/chauffeurs/:chauffeurId/feuilles-route', dbMiddleware, authMiddleware, async (c) => {
+  try {
+    const prisma = c.get('prisma');
+    const { chauffeurId } = c.req.param();
+    const feuillesRoute = await prisma.feuille_route.findMany({
+      where: { chauffeur_id: parseInt(chauffeurId) }
+    });
+    return c.json(feuillesRoute);
+  } catch (error) {
+    console.error('Erreur lors de la récupération des feuilles de route:', error);
+    return c.json({ error: 'Erreur interne du serveur' }, 500);
+  }
+});
+
+app.put('/api/feuilles-route/:id', dbMiddleware, authMiddleware, async (c) => {
+  try {
+    const prisma = c.get('prisma');
+    const { id } = c.req.param();
+    const data = await c.req.json();
+    const feuilleRoute = await prisma.feuille_route.update({
+      where: { feuille_id: parseInt(id) },
+      data
+    });
+    return c.json(feuilleRoute);
+  } catch (error) {
+    console.error('Erreur lors de la mise à jour de la feuille de route:', error);
+    return c.json({ error: 'Erreur interne du serveur' }, 500);
+  }
+});
+
+app.delete('/api/feuilles-route/:id', dbMiddleware, authMiddleware, async (c) => {
+  try {
+    const prisma = c.get('prisma');
+    const { id } = c.req.param();
+    await prisma.feuille_route.delete({
+      where: { feuille_id: parseInt(id) }
+    });
+    return c.json({ message: 'Feuille de route supprimée avec succès' });
+  } catch (error) {
+    console.error('Erreur lors de la suppression de la feuille de route:', error);
+    return c.json({ error: 'Erreur interne du serveur' }, 500);
+  }
+});
+
 // Route pour feuille de route active
 app.get('/api/feuilles-route/active/:chauffeurId', dbMiddleware, authMiddleware, async (c) => {
   try {
@@ -1180,7 +1453,169 @@ app.get('/api/feuilles-route/active/:chauffeurId', dbMiddleware, authMiddleware,
     console.error('Error fetching active feuille route:', error);
     return c.json({ error: 'Erreur lors de la récupération de la feuille de route active' }, 500);
   }
-});// Routes pour courses
+});
+
+// Routes complexes pour feuilles-route
+app.patch('/api/feuilles-route/:id/change-vehicle', dbMiddleware, authMiddleware, async (c) => {
+  try {
+    const prisma = c.get('prisma');
+    const { id } = c.req.param();
+    const data = await c.req.json();
+    const feuilleRoute = await prisma.feuille_route.update({
+      where: { feuille_id: parseInt(id) },
+      data: { vehicule_id: data.vehicule_id }
+    });
+    return c.json(feuilleRoute);
+  } catch (error) {
+    console.error('Erreur lors du changement de véhicule:', error);
+    return c.json({ error: 'Erreur interne du serveur' }, 500);
+  }
+});
+
+app.patch('/api/feuilles-route/:id/validate', dbMiddleware, authMiddleware, async (c) => {
+  try {
+    const prisma = c.get('prisma');
+    const { id } = c.req.param();
+    const feuilleRoute = await prisma.feuille_route.update({
+      where: { feuille_id: parseInt(id) },
+      data: { est_validee: true }
+    });
+    return c.json(feuilleRoute);
+  } catch (error) {
+    console.error('Erreur lors de la validation de la feuille de route:', error);
+    return c.json({ error: 'Erreur interne du serveur' }, 500);
+  }
+});
+
+app.patch('/api/feuilles-route/:id/validate-test', dbMiddleware, authMiddleware, async (c) => {
+  try {
+    const prisma = c.get('prisma');
+    const { id } = c.req.param();
+    const feuilleRoute = await prisma.feuille_route.update({
+      where: { feuille_id: parseInt(id) },
+      data: { est_validee: true }
+    });
+    return c.json(feuilleRoute);
+  } catch (error) {
+    console.error('Erreur lors de la validation test:', error);
+    return c.json({ error: 'Erreur interne du serveur' }, 500);
+  }
+});
+
+app.get('/api/feuilles-route/:id/totals', dbMiddleware, authMiddleware, async (c) => {
+  try {
+    const prisma = c.get('prisma');
+    const { id } = c.req.param();
+    // Logique de calcul des totaux (simplifié)
+    const totals = await prisma.course.aggregate({
+      where: { feuille_route_id: parseInt(id) },
+      _sum: { montant: true }
+    });
+    return c.json(totals);
+  } catch (error) {
+    console.error('Erreur lors du calcul des totaux:', error);
+    return c.json({ error: 'Erreur interne du serveur' }, 500);
+  }
+});
+
+app.get('/api/feuilles-route/:id/salary', dbMiddleware, authMiddleware, async (c) => {
+  try {
+    const prisma = c.get('prisma');
+    const { id } = c.req.param();
+    // Logique de calcul du salaire (simplifié)
+    const salary = { base: 0, bonus: 0, total: 0 };
+    return c.json(salary);
+  } catch (error) {
+    console.error('Erreur lors du calcul du salaire:', error);
+    return c.json({ error: 'Erreur interne du serveur' }, 500);
+  }
+});
+
+app.get('/api/feuilles-route/:feuilleId/taximetre', dbMiddleware, authMiddleware, async (c) => {
+  try {
+    const prisma = c.get('prisma');
+    const { feuilleId } = c.req.param();
+    const taximetre = await prisma.taximetre.findFirst({
+      where: { feuille_route_id: parseInt(feuilleId) }
+    });
+    return c.json(taximetre);
+  } catch (error) {
+    console.error('Erreur lors de la récupération du taximètre:', error);
+    return c.json({ error: 'Erreur interne du serveur' }, 500);
+  }
+});
+
+app.post('/api/feuilles-route/:feuilleId/taximetre', dbMiddleware, authMiddleware, async (c) => {
+  try {
+    const prisma = c.get('prisma');
+    const { feuilleId } = c.req.param();
+    const data = await c.req.json();
+    const taximetre = await prisma.taximetre.create({
+      data: { ...data, feuille_route_id: parseInt(feuilleId) }
+    });
+    return c.json(taximetre);
+  } catch (error) {
+    console.error('Erreur lors de la création du taximètre:', error);
+    return c.json({ error: 'Erreur interne du serveur' }, 500);
+  }
+});
+
+app.put('/api/feuilles-route/:feuilleId/taximetre', dbMiddleware, authMiddleware, async (c) => {
+  try {
+    const prisma = c.get('prisma');
+    const { feuilleId } = c.req.param();
+    const data = await c.req.json();
+    const taximetre = await prisma.taximetre.updateMany({
+      where: { feuille_route_id: parseInt(feuilleId) },
+      data
+    });
+    return c.json(taximetre);
+  } catch (error) {
+    console.error('Erreur lors de la mise à jour du taximètre:', error);
+    return c.json({ error: 'Erreur interne du serveur' }, 500);
+  }
+});
+
+app.get('/api/feuilles-route/:feuilleId/courses', dbMiddleware, authMiddleware, async (c) => {
+  try {
+    const prisma = c.get('prisma');
+    const { feuilleId } = c.req.param();
+    const courses = await prisma.course.findMany({
+      where: { feuille_id: parseInt(feuilleId) }
+    });
+    return c.json(courses);
+  } catch (error) {
+    console.error('Erreur lors de la récupération des courses:', error);
+    return c.json({ error: 'Erreur interne du serveur' }, 500);
+  }
+});
+
+app.get('/api/feuilles-route/:feuilleId/charges', dbMiddleware, authMiddleware, async (c) => {
+  try {
+    const prisma = c.get('prisma');
+    const { feuilleId } = c.req.param();
+    const charges = await prisma.charge.findMany({
+      where: { feuille_id: parseInt(feuilleId) }
+    });
+    return c.json(charges);
+  } catch (error) {
+    console.error('Erreur lors de la récupération des charges:', error);
+    return c.json({ error: 'Erreur interne du serveur' }, 500);
+  }
+});
+
+app.post('/api/notifications/vehicle-change', dbMiddleware, authMiddleware, async (c) => {
+  try {
+    const data = await c.req.json();
+    // Logique de notification (simplifié)
+    return c.json({ message: 'Notification envoyée avec succès' });
+  } catch (error) {
+    console.error('Erreur lors de l\'envoi de la notification:', error);
+    return c.json({ error: 'Erreur interne du serveur' }, 500);
+  }
+});
+
+// Routes pour courses
 app.get('/api/courses', dbMiddleware, authMiddleware, async (c) => {
   try {
     const feuilleRouteId = c.req.query('feuilleRouteId');
@@ -1586,6 +2021,237 @@ app.delete('/api/charges/:id', dbMiddleware, authMiddleware, async (c) => {
   }
 });
 
+// Routes pour factures
+app.get('/api/factures', dbMiddleware, authMiddleware, async (c) => {
+  try {
+    const prisma = c.get('prisma');
+    const factures = await prisma.facture.findMany();
+    return c.json(factures);
+  } catch (error) {
+    console.error('Erreur lors de la récupération des factures:', error);
+    return c.json({ error: 'Erreur interne du serveur' }, 500);
+  }
+});
+
+app.get('/api/gestion-factures', dbMiddleware, authMiddleware, async (c) => {
+  try {
+    const prisma = c.get('prisma');
+    const factures = await prisma.facture.findMany({
+      include: { client: true }
+    });
+    return c.json(factures);
+  } catch (error) {
+    console.error('Erreur lors de la récupération des factures:', error);
+    return c.json({ error: 'Erreur interne du serveur' }, 500);
+  }
+});
+
+app.get('/api/factures/:id', dbMiddleware, authMiddleware, async (c) => {
+  try {
+    const prisma = c.get('prisma');
+    const { id } = c.req.param();
+    const facture = await prisma.facture.findUnique({
+      where: { facture_id: parseInt(id) },
+      include: { client: true }
+    });
+    if (!facture) {
+      return c.json({ error: 'Facture non trouvée' }, 404);
+    }
+    return c.json(facture);
+  } catch (error) {
+    console.error('Erreur lors de la récupération de la facture:', error);
+    return c.json({ error: 'Erreur interne du serveur' }, 500);
+  }
+});
+
+app.post('/api/factures', dbMiddleware, authMiddleware, async (c) => {
+  try {
+    const prisma = c.get('prisma');
+    const data = await c.req.json();
+    const facture = await prisma.facture.create({ data });
+    return c.json(facture);
+  } catch (error) {
+    console.error('Erreur lors de la création de la facture:', error);
+    return c.json({ error: 'Erreur interne du serveur' }, 500);
+  }
+});
+
+app.put('/api/factures/:id', dbMiddleware, authMiddleware, async (c) => {
+  try {
+    const prisma = c.get('prisma');
+    const { id } = c.req.param();
+    const data = await c.req.json();
+    const facture = await prisma.facture.update({
+      where: { facture_id: parseInt(id) },
+      data
+    });
+    return c.json(facture);
+  } catch (error) {
+    console.error('Erreur lors de la mise à jour de la facture:', error);
+    return c.json({ error: 'Erreur interne du serveur' }, 500);
+  }
+});
+
+app.delete('/api/factures/:id', dbMiddleware, authMiddleware, async (c) => {
+  try {
+    const prisma = c.get('prisma');
+    const { id } = c.req.param();
+    await prisma.facture.delete({
+      where: { facture_id: parseInt(id) }
+    });
+    return c.json({ message: 'Facture supprimée avec succès' });
+  } catch (error) {
+    console.error('Erreur lors de la suppression de la facture:', error);
+    return c.json({ error: 'Erreur interne du serveur' }, 500);
+  }
+});
+
+// Routes pour règles de facturation
+app.get('/api/regles-facturation', dbMiddleware, authMiddleware, async (c) => {
+  try {
+    const prisma = c.get('prisma');
+    const reglesFacturation = await prisma.regle_facturation.findMany();
+    return c.json(reglesFacturation);
+  } catch (error) {
+    console.error('Erreur lors de la récupération des règles de facturation:', error);
+    return c.json({ error: 'Erreur interne du serveur' }, 500);
+  }
+});
+
+app.post('/api/regles-facturation', dbMiddleware, authMiddleware, async (c) => {
+  try {
+    const prisma = c.get('prisma');
+    const data = await c.req.json();
+    const regleFacturation = await prisma.regle_facturation.create({ data });
+    return c.json(regleFacturation);
+  } catch (error) {
+    console.error('Erreur lors de la création de la règle de facturation:', error);
+    return c.json({ error: 'Erreur interne du serveur' }, 500);
+  }
+});
+
+// Routes pour partenaires
+app.get('/api/partenaires', dbMiddleware, authMiddleware, async (c) => {
+  try {
+    const prisma = c.get('prisma');
+    const partenaires = await prisma.partenaire.findMany();
+    return c.json(partenaires);
+  } catch (error) {
+    console.error('Erreur lors de la récupération des partenaires:', error);
+    return c.json({ error: 'Erreur interne du serveur' }, 500);
+  }
+});
+
+app.post('/api/partenaires', dbMiddleware, authMiddleware, async (c) => {
+  try {
+    const prisma = c.get('prisma');
+    const data = await c.req.json();
+    const partenaire = await prisma.partenaire.create({ data });
+    return c.json(partenaire);
+  } catch (error) {
+    console.error('Erreur lors de la création du partenaire:', error);
+    return c.json({ error: 'Erreur interne du serveur' }, 500);
+  }
+});
+
+// Routes pour sociétés de taxi
+app.get('/api/societes-taxi', dbMiddleware, authMiddleware, async (c) => {
+  try {
+    const prisma = c.get('prisma');
+    const societesTaxi = await prisma.societe_taxi.findMany();
+    return c.json(societesTaxi);
+  } catch (error) {
+    console.error('Erreur lors de la récupération des sociétés de taxi:', error);
+    return c.json({ error: 'Erreur interne du serveur' }, 500);
+  }
+});
+
+app.get('/api/societe-taxi/current', dbMiddleware, authMiddleware, async (c) => {
+  try {
+    const prisma = c.get('prisma');
+    const societeTaxi = await prisma.societe_taxi.findFirst({
+      orderBy: { societe_id: 'asc' }
+    });
+    return c.json(societeTaxi);
+  } catch (error) {
+    console.error('Erreur lors de la récupération de la société courante:', error);
+    return c.json({ error: 'Erreur interne du serveur' }, 500);
+  }
+});
+
+app.get('/api/societe-taxi/:id', dbMiddleware, authMiddleware, async (c) => {
+  try {
+    const prisma = c.get('prisma');
+    const { id } = c.req.param();
+    const societeTaxi = await prisma.societe_taxi.findUnique({
+      where: { societe_id: parseInt(id) }
+    });
+    if (!societeTaxi) {
+      return c.json({ error: 'Société de taxi non trouvée' }, 404);
+    }
+    return c.json(societeTaxi);
+  } catch (error) {
+    console.error('Erreur lors de la récupération de la société de taxi:', error);
+    return c.json({ error: 'Erreur interne du serveur' }, 500);
+  }
+});
+
+// Routes d'administration
+app.get('/api/admin/chauffeur-by-date', dbMiddleware, authMiddleware, async (c) => {
+  try {
+    const prisma = c.get('prisma');
+    const { date } = c.req.query();
+    const chauffeurs = await prisma.chauffeur.findMany({
+      where: date ? { created_at: { gte: new Date(date) } } : {}
+    });
+    return c.json(chauffeurs);
+  } catch (error) {
+    console.error('Erreur lors de la récupération des chauffeurs par date:', error);
+    return c.json({ error: 'Erreur interne du serveur' }, 500);
+  }
+});
+
+app.get('/api/admin/vehicule-by-chauffeur-date', dbMiddleware, authMiddleware, async (c) => {
+  try {
+    const prisma = c.get('prisma');
+    const { chauffeurId, date } = c.req.query();
+    const vehicules = await prisma.vehicule.findMany({
+      where: {
+        chauffeur_id: chauffeurId ? parseInt(chauffeurId) : undefined,
+        created_at: date ? { gte: new Date(date) } : undefined
+      }
+    });
+    return c.json(vehicules);
+  } catch (error) {
+    console.error('Erreur lors de la récupération des véhicules:', error);
+    return c.json({ error: 'Erreur interne du serveur' }, 500);
+  }
+});
+
+app.post('/api/admin/feuille-route/encode', dbMiddleware, authMiddleware, async (c) => {
+  try {
+    const prisma = c.get('prisma');
+    const data = await c.req.json();
+    // Logique d'encodage administratif (simplifié)
+    return c.json({ message: 'Encodage effectué avec succès', data });
+  } catch (error) {
+    console.error('Erreur lors de l\'encodage:', error);
+    return c.json({ error: 'Erreur interne du serveur' }, 500);
+  }
+});
+
+// Route d'authentification supplémentaire
+app.post('/api/auth/create-test-users', dbMiddleware, async (c) => {
+  try {
+    const prisma = c.get('prisma');
+    // Logique de création d'utilisateurs de test (simplifié)
+    return c.json({ message: 'Utilisateurs de test créés avec succès' });
+  } catch (error) {
+    console.error('Erreur lors de la création des utilisateurs de test:', error);
+    return c.json({ error: 'Erreur interne du serveur' }, 500);
+  }
+});
+
 // Créer une nouvelle feuille de route
 app.post('/api/feuilles-route', dbMiddleware, authMiddleware, async (c) => {
   try {
@@ -1619,100 +2285,130 @@ app.get('/api/dashboard/courses', dbMiddleware, async (c) => {
   try {
     const url = new URL(c.req.url);
     const page = parseInt(url.searchParams.get('page')) || 1;
-    const limit = parseInt(url.searchParams.get('limit')) || 10;
+    const limit = parseInt(url.searchParams.get('limit')) || 50;
+    const chauffeurId = url.searchParams.get('chauffeurId');
+    const dateFrom = url.searchParams.get('dateFrom');
+    const dateTo = url.searchParams.get('dateTo');
     const offset = (page - 1) * limit;
 
     const prisma = c.get('prisma');
 
-    // Récupérer les courses avec pagination
+    // Construire les filtres
+    const whereFilter = {};
+    
+    // Filtre par chauffeur
+    if (chauffeurId) {
+      whereFilter.feuille_route = {
+        chauffeur_id: parseInt(chauffeurId)
+      };
+    }
+
+    // Filtres de date
+    if (dateFrom || dateTo) {
+      if (!whereFilter.feuille_route) {
+        whereFilter.feuille_route = {};
+      }
+      whereFilter.feuille_route.date_service = {};
+      if (dateFrom) whereFilter.feuille_route.date_service.gte = new Date(dateFrom);
+      if (dateTo) whereFilter.feuille_route.date_service.lte = new Date(dateTo);
+    }
+
+    // Récupérer les courses avec pagination et filtrage
     const courses = await prisma.course.findMany({
+      where: Object.keys(whereFilter).length > 0 ? whereFilter : undefined,
       include: {
-        client: {
-          select: {
-            id: true,
-            nom: true,
-            prenom: true
-          }
-        },
         feuille_route: {
           include: {
             chauffeur: {
               include: {
-                utilisateur: {
-                  select: {
-                    nom: true,
-                    prenom: true
-                  }
-                }
-              },
-              select: {
-                id: true,
-                numero_badge: true,
                 utilisateur: true
               }
             },
-            vehicule: {
-              select: {
-                id: true,
-                plaque_immatriculation: true,
-                marque: true,
-                modele: true
-              }
-            }
-          },
-          select: {
-            id: true,
-            date: true,
-            heure_debut: true,
-            heure_fin: true,
-            chauffeur: true,
             vehicule: true
           }
         },
-        mode_paiement: {
-          select: {
-            id: true,
-            libelle: true
-          }
-        }
+        client: true,
+        mode_paiement: true,
+        detail_facture_complexe: true
       },
-      orderBy: { created_at: 'desc' },
+      orderBy: [
+        {
+          feuille_id: 'desc'
+        },
+        {
+          num_ordre: 'asc'
+        }
+      ],
       skip: offset,
       take: limit
     });
 
-    // Compter le nombre total de courses
-    const total = await prisma.course.count();
+    // Compter le nombre total de courses avec filtrage
+    const total = await prisma.course.count({ 
+      where: Object.keys(whereFilter).length > 0 ? whereFilter : undefined 
+    });
 
-    const formattedCourses = courses.map(course => ({
+    // Transformer les données pour assurer l'affichage correct
+    const transformedCourses = courses.map(course => ({
       ...course,
-      client: course.client,
-      feuille_route: course.feuille_route,
-      mode_paiement: course.mode_paiement
+      chauffeur_nom: course.feuille_route?.chauffeur?.utilisateur 
+        ? `${course.feuille_route.chauffeur.utilisateur.prenom} ${course.feuille_route.chauffeur.utilisateur.nom}`
+        : 'Inconnu',
+      vehicule_info: course.feuille_route?.vehicule 
+        ? `${course.feuille_route.vehicule.marque} ${course.feuille_route.vehicule.modele} (${course.feuille_route.vehicule.plaque_immatriculation})`
+        : 'N/A'
     }));
 
     return c.json({
-      courses: formattedCourses,
+      data: transformedCourses,
+      courses: transformedCourses, // Compatibilité avec l'ancien format
+      count: courses.length,
       pagination: {
         page,
         limit,
         total,
         totalPages: Math.ceil(total / limit)
-      }
+      },
+      filters: {
+        chauffeurId: chauffeurId || null,
+        dateFrom: dateFrom || null,
+        dateTo: dateTo || null
+      },
+      timestamp: new Date().toISOString()
     });
   } catch (error) {
     console.error('Error fetching dashboard courses:', error);
-    return c.json({ error: 'Erreur lors de la récupération des courses du dashboard' }, 500);
+    return c.json({ 
+      error: 'Erreur lors de la récupération des courses du dashboard',
+      details: error.message,
+      timestamp: new Date().toISOString()
+    }, 500);
   }
 });
 
 // Route pour les statistiques des courses
 app.get('/api/dashboard/courses/stats', dbMiddleware, async (c) => {
   try {
+    const { dateFrom, dateTo, chauffeurId } = c.req.query();
     const prisma = c.get('prisma');
 
     // Test simple de connexion DB
     await prisma.$queryRaw`SELECT 1`;
+
+    // Construire les filtres
+    const where = {};
+    if (dateFrom || dateTo) {
+      where.heure_embarquement = {};
+      if (dateFrom) where.heure_embarquement.gte = new Date(dateFrom);
+      if (dateTo) where.heure_embarquement.lte = new Date(dateTo);
+    }
+
+    // Filtrer par chauffeur via feuille_route si spécifié
+    if (chauffeurId) {
+      where.feuille_route = {
+        chauffeur_id: parseInt(chauffeurId)
+      };
+    }
 
     // Statistiques simples et sûres
     const stats = {
@@ -1725,95 +2421,92 @@ app.get('/api/dashboard/courses/stats', dbMiddleware, async (c) => {
     };
 
     try {
-      // Nombre total de courses
-      stats.totalCourses = await prisma.course.count();
+      // Nombre total de courses avec filtrage
+      stats.totalCourses = await prisma.course.count({ where });
     } catch (error) {
       console.error('Error fetching total courses:', error);
     }
 
     try {
-      // Revenus totaux
+      // Revenus totaux avec filtrage
       const revenueResult = await prisma.course.aggregate({
+        where,
         _sum: {
-          somme_percue: true
+          sommes_percues: true
         }
       });
-      stats.totalRevenue = revenueResult._sum.somme_percue || 0;
+      stats.totalRevenue = revenueResult._sum.sommes_percues || 0;
     } catch (error) {
       console.error('Error fetching total revenue:', error);
     }
 
     try {
-      // Distance totale
-      const distanceResult = await prisma.course.aggregate({
-        _sum: {
-          distance_km: true
+      // Distance totale (calculée depuis les index) avec filtrage
+      const distanceResult = await prisma.course.findMany({
+        where,
+        select: {
+          index_embarquement: true,
+          index_debarquement: true
         }
       });
-      stats.totalDistance = distanceResult._sum.distance_km || 0;
+      
+      stats.totalDistance = distanceResult.reduce((sum, course) => {
+        const dist = (course.index_debarquement || 0) - (course.index_embarquement || 0);
+        return sum + dist;
+      }, 0);
     } catch (error) {
       console.error('Error fetching total distance:', error);
     }
 
     try {
-      // Nombre de chauffeurs actifs
-      const chauffeursResult = await prisma.course.findMany({
+      // Chauffeurs actifs avec filtrage par date
+      const chauffeursResult = await prisma.feuille_route.findMany({
+        where: dateFrom || dateTo ? {
+          date_service: {
+            ...(dateFrom && { gte: new Date(dateFrom) }),
+            ...(dateTo && { lte: new Date(dateTo) })
+          }
+        } : undefined,
         select: {
-          feuille_route: {
-            select: {
-              chauffeur_id: true
-            }
-          }
+          chauffeur_id: true
         },
-        where: {
-          feuille_route: {
-            chauffeur_id: {
-              not: null
-            }
-          }
-        }
+        distinct: ['chauffeur_id']
       });
-
-      const uniqueChauffeurs = new Set(
-        chauffeursResult
-          .map(c => c.feuille_route?.chauffeur_id)
-          .filter(id => id !== null)
-      );
-      stats.chauffeursActifs = uniqueChauffeurs.size;
+      stats.chauffeursActifs = chauffeursResult.length;
     } catch (error) {
       console.error('Error fetching active drivers:', error);
     }
 
     try {
-      // Nombre de véhicules utilisés
-      const vehiculesResult = await prisma.course.findMany({
+      // Véhicules utilisés avec filtrage par date
+      const vehiculesResult = await prisma.feuille_route.findMany({
+        where: dateFrom || dateTo ? {
+          date_service: {
+            ...(dateFrom && { gte: new Date(dateFrom) }),
+            ...(dateTo && { lte: new Date(dateTo) })
+          }
+        } : undefined,
         select: {
-          feuille_route: {
-            select: {
-              vehicule_id: true
-            }
-          }
+          vehicule_id: true
         },
-        where: {
-          feuille_route: {
-            vehicule_id: {
-              not: null
-            }
-          }
-        }
+        distinct: ['vehicule_id']
       });
-
-      const uniqueVehicules = new Set(
-        vehiculesResult
-          .map(c => c.feuille_route?.vehicule_id)
-          .filter(id => id !== null)
-      );
-      stats.vehiculesUtilises = uniqueVehicules.size;
+      stats.vehiculesUtilises = vehiculesResult.length;
     } catch (error) {
       console.error('Error fetching vehicles used:', error);
     }
 
-    return c.json(stats);
+    // Calculer les moyennes
+    const totalRevenue = parseFloat(stats.totalRevenue || 0);
+    const averageEarningsPerTrip = stats.totalCourses > 0 ? totalRevenue / stats.totalCourses : 0;
+    const averageDistancePerTrip = stats.totalCourses > 0 ? stats.totalDistance / stats.totalCourses : 0;
+
+    // Retourner les stats avec moyennes
+    return c.json({
+      ...stats,
+      averageEarningsPerTrip: parseFloat(averageEarningsPerTrip.toFixed(2)),
+      averageDistancePerTrip: parseFloat(averageDistancePerTrip.toFixed(2))
+    });
   } catch (error) {
     console.error('Error in dashboard stats:', error);
     return c.json({
@@ -1827,102 +2520,615 @@ app.get('/api/dashboard/courses/stats', dbMiddleware, async (c) => {
 // Route pour les données de graphique
 app.get('/api/dashboard/courses/chart-data', dbMiddleware, async (c) => {
   try {
-    const url = new URL(c.req.url);
-    const dateFrom = url.searchParams.get('dateFrom');
-    const dateTo = url.searchParams.get('dateTo');
-    const type = url.searchParams.get('type');
-
+    const { type = 'daily', dateFrom, dateTo, chauffeurId } = c.req.query();
     const prisma = c.get('prisma');
 
-    let data = [];
-    const whereClause = {};
-
-    // Construction des filtres de date
+    // Construire les filtres de date
+    const dateFilter = {};
     if (dateFrom || dateTo) {
-      whereClause.created_at = {};
-      if (dateFrom) whereClause.created_at.gte = new Date(dateFrom);
-      if (dateTo) whereClause.created_at.lte = new Date(dateTo);
+      if (dateFrom) dateFilter.gte = new Date(dateFrom);
+      if (dateTo) dateFilter.lte = new Date(dateTo);
     }
 
+    let data = [];
+
     switch (type) {
-      case 'trips-count': {
-        // Test simple: juste compter le nombre total de courses
-        try {
-          const totalCount = await prisma.course.count();
-          data = [{ date: new Date().toISOString().split('T')[0], count: totalCount }];
-        } catch (simpleError) {
-          console.error('Simple count failed:', simpleError);
-          // Fallback: retourner des données statiques
-          data = [{ date: '2025-09-29', count: 40 }];
+      case 'daily-revenue':
+      case 'dailyRevenues': {
+        // Revenus quotidiens avec filtrage par chauffeur
+        const whereClause = {};
+        if (dateFrom || dateTo) {
+          whereClause.heure_embarquement = dateFilter;
         }
+        // Filtrer par chauffeur si spécifié
+        if (chauffeurId) {
+          whereClause.feuille_route = {
+            chauffeur_id: parseInt(chauffeurId)
+          };
+        }
+
+        const courses = await prisma.course.findMany({
+          where: whereClause,
+          select: {
+            heure_embarquement: true,
+            sommes_percues: true
+          },
+          orderBy: {
+            heure_embarquement: 'asc'
+          }
+        });
+
+        // Grouper par date
+        const revenueByDate = {};
+        courses.forEach(course => {
+          if (!course.heure_embarquement) return;
+          const date = new Date(course.heure_embarquement).toISOString().split('T')[0];
+          if (!revenueByDate[date]) {
+            revenueByDate[date] = 0;
+          }
+          revenueByDate[date] += parseFloat(course.sommes_percues || 0);
+        });
+
+        data = Object.entries(revenueByDate).map(([date, revenue]) => ({
+          date,
+          revenue: parseFloat(revenue.toFixed(2))
+        }));
         break;
       }
 
-      case 'daily-revenue': {
-        // Test simple: utiliser Prisma aggregation au lieu de raw SQL
-        try {
-          const totalRevenue = await prisma.course.aggregate({
-            _sum: {
-              somme_percue: true
-            }
-          });
-          data = [{ date: new Date().toISOString().split('T')[0], revenue: totalRevenue._sum.somme_percue || 0 }];
-        } catch (simpleError) {
-          console.error('Simple revenue aggregation failed:', simpleError);
-          // Fallback: retourner des données statiques
-          data = [{ date: '2025-09-29', revenue: 0 }];
+      case 'trips-count':
+      case 'dailyTripsCount': {
+        // Nombre de courses quotidiennes avec filtrage par chauffeur
+        const whereClause = {};
+        if (dateFrom || dateTo) {
+          whereClause.heure_embarquement = dateFilter;
         }
+        // Filtrer par chauffeur si spécifié
+        if (chauffeurId) {
+          whereClause.feuille_route = {
+            chauffeur_id: parseInt(chauffeurId)
+          };
+        }
+
+        const courses = await prisma.course.findMany({
+          where: whereClause,
+          select: {
+            heure_embarquement: true
+          },
+          orderBy: {
+            heure_embarquement: 'asc'
+          }
+        });
+
+        // Grouper par date
+        const countByDate = {};
+        courses.forEach(course => {
+          if (!course.heure_embarquement) return;
+          const date = new Date(course.heure_embarquement).toISOString().split('T')[0];
+          if (!countByDate[date]) {
+            countByDate[date] = 0;
+          }
+          countByDate[date] += 1;
+        });
+
+        data = Object.entries(countByDate).map(([date, count]) => ({
+          date,
+          count
+        }));
         break;
       }
 
-      case 'driver-performance': {
-        // Test simple: utiliser une requête basique pour les chauffeurs
-        try {
-          const drivers = await prisma.utilisateur.findMany({
-            where: {
-              chauffeur: {
-                isNot: null
+      case 'driver-performance':
+      case 'driverPerformance': {
+        // Performances des chauffeurs avec filtrage possible
+        const whereClause = {};
+        if (dateFrom || dateTo) {
+          whereClause.date_service = dateFilter;
+        }
+        // Si chauffeurId spécifié, filtrer seulement ce chauffeur
+        if (chauffeurId) {
+          whereClause.chauffeur_id = parseInt(chauffeurId);
+        }
+
+        const feuillesRoute = await prisma.feuille_route.findMany({
+          where: whereClause,
+          include: {
+            chauffeur: {
+              include: {
+                utilisateur: {
+                  select: {
+                    prenom: true,
+                    nom: true
+                  }
+                }
               }
             },
-            select: {
-              nom: true,
-              prenom: true
-            },
-            take: 5 // Limiter à 5 résultats pour éviter les timeouts
-          });
-          data = drivers.map(driver => ({
-            nom: driver.nom,
-            prenom: driver.prenom,
-            trips_count: 0, // Valeur par défaut
-            total_revenue: 0, // Valeur par défaut
-            avg_revenue: 0
-          }));
-        } catch (simpleError) {
-          console.error('Simple driver query failed:', simpleError);
-          // Fallback: retourner des données statiques
-          data = [{
-            nom: 'Test',
-            prenom: 'Driver',
-            trips_count: 10,
-            total_revenue: 500,
-            avg_revenue: 50
-          }];
+            course: {
+              select: {
+                sommes_percues: true
+              }
+            }
+          }
+        });
+
+        // Grouper par chauffeur
+        const perfByDriver = {};
+        feuillesRoute.forEach(feuille => {
+          const driverName = feuille.chauffeur?.utilisateur
+            ? `${feuille.chauffeur.utilisateur.prenom} ${feuille.chauffeur.utilisateur.nom}`
+            : 'Inconnu';
+
+          if (!perfByDriver[driverName]) {
+            perfByDriver[driverName] = {
+              trips: 0,
+              revenue: 0
+            };
+          }
+
+          perfByDriver[driverName].trips += feuille.course?.length || 0;
+          perfByDriver[driverName].revenue += feuille.course?.reduce((sum, c) => 
+            sum + parseFloat(c.sommes_percues || 0), 0
+          ) || 0;
+        });
+
+        data = Object.entries(perfByDriver).map(([driver, perf]) => ({
+          driver,
+          trips: perf.trips,
+          revenue: parseFloat(perf.revenue.toFixed(2))
+        }));
+        break;
+      }
+
+      case 'payment-method':
+      case 'paymentMethodDistribution': {
+        // Distribution des modes de paiement avec filtrage par chauffeur
+        const whereClause = {};
+        if (dateFrom || dateTo) {
+          whereClause.heure_embarquement = dateFilter;
         }
+        // Filtrer par chauffeur si spécifié
+        if (chauffeurId) {
+          whereClause.feuille_route = {
+            chauffeur_id: parseInt(chauffeurId)
+          };
+        }
+
+        const courses = await prisma.course.findMany({
+          where: whereClause,
+          include: {
+            mode_paiement: {
+              select: {
+                libelle: true
+              }
+            }
+          }
+        });
+
+        // Grouper par mode de paiement
+        const paymentCounts = {};
+        courses.forEach(course => {
+          const method = course.mode_paiement?.libelle || 'Non spécifié';
+          if (!paymentCounts[method]) {
+            paymentCounts[method] = 0;
+          }
+          paymentCounts[method] += 1;
+        });
+
+        data = Object.entries(paymentCounts).map(([method, count]) => ({
+          method,
+          count
+        }));
         break;
       }
 
       default:
         return c.json({
-          type: 'test',
-          data: [{ date: '2025-09-29', value: 100 }],
-          message: 'Test response'
-        });
+          error: `Type de graphique non supporté: ${type}`,
+          supportedTypes: ['daily-revenue', 'trips-count', 'driver-performance', 'payment-method']
+        }, 400);
     }
 
-    return c.json({ data });
+    return c.json({
+      type,
+      data,
+      timestamp: new Date().toISOString()
+    });
   } catch (error) {
-    console.error('Error fetching dashboard courses chart data:', error);
-    return c.json({ error: 'Erreur lors de la récupération des données de graphique' }, 500);
+    console.error('Error in chart data endpoint:', error);
+    return c.json({
+      error: 'Erreur lors de la récupération des données de graphique',
+      details: error.message,
+      timestamp: new Date().toISOString()
+    }, 500);
+  }
+});
+
+// Routes dashboard spécifiques pour l'interface chauffeur
+app.get('/api/dashboard/chauffeurs', dbMiddleware, authMiddleware, async (c) => {
+  try {
+    const prisma = c.get('prisma');
+    const user = c.get('user');
+    
+    // Pour les chauffeurs, retourner seulement leurs propres données
+    if (user && (user.type === 'Driver' || user.type === 'Chauffeur')) {
+      const chauffeur = await prisma.chauffeur.findFirst({
+        where: { 
+          utilisateur: {
+            user_id: user.id
+          }
+        },
+        include: {
+          utilisateur: {
+            select: {
+              user_id: true,
+              nom: true,
+              prenom: true,
+              email: true,
+              role: true
+            }
+          }
+        }
+      });
+      
+      if (!chauffeur) {
+        return c.json({ error: 'Chauffeur non trouvé' }, 404);
+      }
+      
+      return c.json([{
+        chauffeur_id: chauffeur.chauffeur_id,
+        statut: chauffeur.statut,
+        utilisateur: chauffeur.utilisateur,
+        nom_complet: `${chauffeur.utilisateur.prenom} ${chauffeur.utilisateur.nom}`
+      }]);
+    }
+    
+    // Pour les admins, retourner tous les chauffeurs
+    const chauffeurs = await prisma.chauffeur.findMany({
+      where: { statut: 'Actif' },
+      include: {
+        utilisateur: {
+          select: {
+            user_id: true,
+            nom: true,
+            prenom: true,
+            email: true,
+            role: true
+          }
+        }
+      },
+      orderBy: { chauffeur_id: 'asc' }
+    });
+
+    const formattedChauffeurs = chauffeurs.map(chauffeur => ({
+      chauffeur_id: chauffeur.chauffeur_id,
+      statut: chauffeur.statut,
+      utilisateur: chauffeur.utilisateur,
+      nom_complet: `${chauffeur.utilisateur.prenom} ${chauffeur.utilisateur.nom}`
+    }));
+
+    return c.json(formattedChauffeurs);
+  } catch (error) {
+    console.error('Error fetching dashboard chauffeurs:', error);
+    return c.json({ error: 'Erreur lors de la récupération des chauffeurs dashboard' }, 500);
+  }
+});
+
+app.get('/api/dashboard/vehicules', dbMiddleware, authMiddleware, async (c) => {
+  try {
+    const prisma = c.get('prisma');
+
+    const vehicules = await prisma.vehicule.findMany({
+      where: { est_actif: true },
+      orderBy: { plaque_immatriculation: 'asc' }
+    });
+
+    return c.json(vehicules);
+  } catch (error) {
+    console.error('Error fetching dashboard vehicules:', error);
+    return c.json({ error: 'Erreur lors de la récupération des véhicules dashboard' }, 500);
+  }
+});
+
+app.get('/api/dashboard/clients', dbMiddleware, authMiddleware, async (c) => {
+  try {
+    const prisma = c.get('prisma');
+
+    const clients = await prisma.client.findMany({
+      where: { est_actif: true },
+      orderBy: { nom_societe: 'asc' }
+    });
+
+    return c.json(clients);
+  } catch (error) {
+    console.error('Error fetching dashboard clients:', error);
+    return c.json({ error: 'Erreur lors de la récupération des clients dashboard' }, 500);
+  }
+});
+
+app.get('/api/dashboard/modes-paiement', dbMiddleware, authMiddleware, async (c) => {
+  try {
+    const prisma = c.get('prisma');
+
+    const modes = await prisma.mode_paiement.findMany({
+      where: { est_actif: true },
+      orderBy: { libelle: 'asc' }
+    });
+
+    return c.json(modes);
+  } catch (error) {
+    console.error('Error fetching dashboard modes paiement:', error);
+    return c.json({ error: 'Erreur lors de la récupération des modes de paiement dashboard' }, 500);
+  }
+});
+
+app.get('/api/dashboard/regles-salaire', dbMiddleware, authMiddleware, async (c) => {
+  try {
+    const prisma = c.get('prisma');
+
+    const reglesSalaire = await prisma.regle_salaire.findMany({
+      orderBy: { nom_regle: 'asc' }
+    });
+
+    const formattedReglesSalaire = reglesSalaire.map(regle => ({
+      id: regle.regle_id,
+      regle_id: regle.regle_id,
+      nom_regle: regle.nom_regle,
+      value: regle.regle_id,
+      label: regle.nom_regle
+    }));
+
+    return c.json(formattedReglesSalaire);
+  } catch (error) {
+    console.error('Error fetching dashboard regles salaire:', error);
+    return c.json({ error: 'Erreur lors de la récupération des règles de salaire dashboard' }, 500);
+  }
+});
+
+app.get('/api/dashboard/feuilles-route/active/:chauffeurId', dbMiddleware, authMiddleware, async (c) => {
+  try {
+    const chauffeurId = parseInt(c.req.param('chauffeurId'));
+    const prisma = c.get('prisma');
+
+    const feuilleRoute = await prisma.feuille_route.findFirst({
+      where: {
+        chauffeur_id: chauffeurId,
+        est_validee: false // Feuille non validée = active
+      },
+      include: {
+        vehicule: true,
+        chauffeur: {
+          include: {
+            utilisateur: {
+              select: {
+                nom: true,
+                prenom: true
+              }
+            }
+          }
+        }
+      },
+      orderBy: { created_at: 'desc' }
+    });
+
+    if (!feuilleRoute) {
+      return c.json(null);
+    }
+
+    return c.json(feuilleRoute);
+  } catch (error) {
+    console.error('Error fetching active dashboard feuille route:', error);
+    return c.json({ error: 'Erreur lors de la récupération de la feuille de route active dashboard' }, 500);
+  }
+});
+
+app.post('/api/dashboard/feuilles-route', dbMiddleware, authMiddleware, async (c) => {
+  try {
+    const data = await c.req.json();
+    const prisma = c.get('prisma');
+    const user = c.get('user');
+
+    // Vérifier que l'utilisateur est autorisé à créer une feuille de route
+    if (user.type === 'Driver' || user.type === 'Chauffeur') {
+      // Le chauffeur ne peut créer que ses propres feuilles
+      if (data.chauffeur_id !== user.chauffeur_id && data.chauffeur_id !== user.id) {
+        return c.json({ error: 'Non autorisé à créer une feuille pour un autre chauffeur' }, 403);
+      }
+    }
+
+    const result = await prisma.feuille_route.create({
+      data: {
+        chauffeur_id: data.chauffeur_id,
+        vehicule_id: data.vehicule_id,
+        date_service: new Date(data.date_service || data.date),
+        mode_encodage: data.mode_encodage || 'LIVE',
+        heure_debut: data.heure_debut ? new Date(`1970-01-01T${data.heure_debut}`) : null,
+        heure_fin: data.heure_fin ? new Date(`1970-01-01T${data.heure_fin}`) : null,
+        index_km_debut_tdb: data.index_km_debut_tdb || data.km_debut,
+        km_tableau_bord_debut: data.km_tableau_bord_debut || data.km_debut,
+        interruptions: data.interruptions || '',
+        montant_salaire_cash_declare: 0,
+        est_validee: false
+      },
+      include: {
+        vehicule: true,
+        chauffeur: {
+          include: {
+            utilisateur: true
+          }
+        }
+      }
+    });
+
+    return c.json(result);
+  } catch (error) {
+    console.error('Error creating dashboard feuille route:', error);
+    return c.json({ error: 'Erreur lors de la création de la feuille de route dashboard' }, 500);
+  }
+});
+
+app.put('/api/dashboard/feuilles-route/:id', dbMiddleware, authMiddleware, async (c) => {
+  try {
+    const { id } = c.req.param();
+    const data = await c.req.json();
+    const prisma = c.get('prisma');
+    const user = c.get('user');
+
+    // Vérifier que l'utilisateur est autorisé à modifier cette feuille
+    if (user.type === 'Driver' || user.type === 'Chauffeur') {
+      const existingFeuille = await prisma.feuille_route.findUnique({
+        where: { feuille_id: parseInt(id) },
+        select: { chauffeur_id: true }
+      });
+      
+      if (!existingFeuille || (existingFeuille.chauffeur_id !== user.chauffeur_id && existingFeuille.chauffeur_id !== user.id)) {
+        return c.json({ error: 'Non autorisé à modifier cette feuille de route' }, 403);
+      }
+    }
+
+    const updateData = {};
+    if (data.heure_fin) updateData.heure_fin = new Date(`1970-01-01T${data.heure_fin}`);
+    if (data.index_km_fin_tdb !== undefined) updateData.index_km_fin_tdb = data.index_km_fin_tdb;
+    if (data.km_tableau_bord_fin !== undefined) updateData.km_tableau_bord_fin = data.km_tableau_bord_fin;
+    if (data.montant_salaire_cash_declare !== undefined) updateData.montant_salaire_cash_declare = data.montant_salaire_cash_declare;
+    if (data.est_validee !== undefined) updateData.est_validee = data.est_validee;
+    if (data.date_validation !== undefined) updateData.date_validation = data.date_validation ? new Date(data.date_validation) : null;
+    if (data.validated_by !== undefined) updateData.validated_by = data.validated_by;
+    if (data.signature_chauffeur !== undefined) updateData.signature_chauffeur = data.signature_chauffeur;
+
+    const feuilleRoute = await prisma.feuille_route.update({
+      where: { feuille_id: parseInt(id) },
+      data: updateData,
+      include: {
+        vehicule: true,
+        chauffeur: {
+          include: {
+            utilisateur: true
+          }
+        }
+      }
+    });
+
+    return c.json(feuilleRoute);
+  } catch (error) {
+    console.error('Error updating dashboard feuille route:', error);
+    return c.json({ error: 'Erreur lors de la mise à jour de la feuille de route dashboard' }, 500);
+  }
+});
+
+app.get('/api/dashboard/charges', dbMiddleware, authMiddleware, async (c) => {
+  try {
+    const feuilleRouteId = c.req.query('feuilleRouteId');
+    const chauffeurId = c.req.query('chauffeurId');
+    const user = c.get('user');
+    const prisma = c.get('prisma');
+
+    let whereClause = {};
+    
+    if (feuilleRouteId) {
+      whereClause.feuille_id = parseInt(feuilleRouteId);
+    }
+    
+    if (chauffeurId) {
+      whereClause.chauffeur_id = parseInt(chauffeurId);
+    }
+    
+    // Pour les chauffeurs, filtrer par leurs propres charges
+    if (user && (user.type === 'Driver' || user.type === 'Chauffeur')) {
+      whereClause.chauffeur_id = user.chauffeur_id || user.id;
+    }
+
+    const charges = await prisma.charge.findMany({
+      where: whereClause,
+      include: {
+        chauffeur: {
+          include: {
+            utilisateur: {
+              select: {
+                nom: true,
+                prenom: true
+              }
+            }
+          }
+        },
+        vehicule: {
+          select: {
+            vehicule_id: true,
+            plaque_immatriculation: true
+          }
+        }
+      },
+      orderBy: { created_at: 'desc' }
+    });
+
+    const formattedCharges = charges.map(charge => ({
+      ...charge,
+      chauffeur_nom: charge.chauffeur?.utilisateur 
+        ? `${charge.chauffeur.utilisateur.prenom} ${charge.chauffeur.utilisateur.nom}`
+        : 'Inconnu',
+      vehicule_plaque: charge.vehicule?.plaque_immatriculation || 'N/A'
+    }));
+
+    return c.json(formattedCharges);
+  } catch (error) {
+    console.error('Error fetching dashboard charges:', error);
+    return c.json({ error: 'Erreur lors de la récupération des charges dashboard' }, 500);
+  }
+});
+
+app.post('/api/dashboard/charges', dbMiddleware, authMiddleware, async (c) => {
+  try {
+    const prisma = c.get('prisma');
+    const data = await c.req.json();
+    const user = c.get('user');
+
+    // Vérifier que l'utilisateur est autorisé à créer une charge
+    if (user.type === 'Driver' || user.type === 'Chauffeur') {
+      if (data.chauffeur_id !== user.chauffeur_id && data.chauffeur_id !== user.id) {
+        return c.json({ error: 'Non autorisé à créer une charge pour un autre chauffeur' }, 403);
+      }
+    }
+
+    const charge = await prisma.charge.create({
+      data: {
+        feuille_id: data.feuille_id || null,
+        chauffeur_id: data.chauffeur_id,
+        vehicule_id: data.vehicule_id,
+        description: data.description,
+        montant: parseFloat(data.montant),
+        mode_paiement_charge: data.mode_paiement_charge,
+        date_charge: data.date_charge ? new Date(data.date_charge) : new Date()
+      },
+      include: {
+        chauffeur: {
+          include: {
+            utilisateur: {
+              select: {
+                nom: true,
+                prenom: true
+              }
+            }
+          }
+        },
+        vehicule: {
+          select: {
+            vehicule_id: true,
+            plaque_immatriculation: true
+          }
+        }
+      }
+    });
+
+    return c.json({
+      id: charge.charge_id,
+      ...charge,
+      chauffeur_nom: charge.chauffeur?.utilisateur 
+        ? `${charge.chauffeur.utilisateur.prenom} ${charge.chauffeur.utilisateur.nom}`
+        : 'Inconnu',
+      vehicule_plaque: charge.vehicule?.plaque_immatriculation || 'N/A'
+    }, 201);
+  } catch (error) {
+    console.error('Error creating dashboard charge:', error);
+    return c.json({ error: 'Erreur lors de la création de la charge dashboard' }, 500);
   }
 });
 

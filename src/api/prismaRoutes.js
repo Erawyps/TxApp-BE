@@ -156,6 +156,42 @@ app.get('/chauffeurs/:id', async (c) => {
   }
 });
 
+// Route pour récupérer le chauffeur_id à partir du user_id
+app.get('/chauffeurs/by-user/:userId', async (c) => {
+  try {
+    const { userId } = c.req.param();
+    
+    const chauffeur = await prisma.chauffeur.findFirst({
+      where: { 
+        utilisateur: {
+          user_id: parseInt(userId)
+        }
+      },
+      select: {
+        chauffeur_id: true,
+        statut: true,
+        utilisateur: {
+          select: {
+            user_id: true,
+            nom: true,
+            prenom: true,
+            role: true
+          }
+        }
+      }
+    });
+    
+    if (!chauffeur) {
+      return c.json({ error: 'Chauffeur non trouvé pour cet utilisateur' }, 404);
+    }
+    
+    return c.json(chauffeur);
+  } catch (error) {
+    console.error('Erreur API chauffeur par user_id:', error);
+    return c.json({ error: 'Erreur lors de la récupération du chauffeur par user_id' }, 500);
+  }
+});
+
 app.post('/chauffeurs', async (c) => {
   try {
     const body = await c.req.json();
@@ -1192,6 +1228,123 @@ app.post('/auth/change-password', async (c) => {
       success: false,
       error: errorMessage
     }, statusCode);
+  }
+});
+
+// ==================== ROUTES DASHBOARD ====================
+
+// Routes dashboard pour l'interface chauffeur avec authentification simplifiée
+app.get('/dashboard/chauffeurs', async (c) => {
+  try {
+    const chauffeurs = await getChauffeurs();
+    return c.json(chauffeurs);
+  } catch (error) {
+    console.error('Erreur API dashboard chauffeurs:', error);
+    return c.json({ error: 'Erreur lors de la récupération des chauffeurs dashboard' }, 500);
+  }
+});
+
+app.get('/dashboard/vehicules', async (c) => {
+  try {
+    const vehicules = await getVehicules();
+    return c.json(vehicules);
+  } catch (error) {
+    console.error('Erreur API dashboard véhicules:', error);
+    return c.json({ error: 'Erreur lors de la récupération des véhicules dashboard' }, 500);
+  }
+});
+
+app.get('/dashboard/clients', async (c) => {
+  try {
+    const clients = await getClients();
+    return c.json(clients);
+  } catch (error) {
+    console.error('Erreur API dashboard clients:', error);
+    return c.json({ error: 'Erreur lors de la récupération des clients dashboard' }, 500);
+  }
+});
+
+app.get('/dashboard/modes-paiement', async (c) => {
+  try {
+    const modes = await getModesPaiement();
+    return c.json(modes);
+  } catch (error) {
+    console.error('Erreur API dashboard modes paiement:', error);
+    return c.json({ error: 'Erreur lors de la récupération des modes de paiement dashboard' }, 500);
+  }
+});
+
+app.get('/dashboard/regles-salaire', async (c) => {
+  try {
+    const regles = await getReglesSalaire();
+    const formattedRegles = regles.map(regle => ({
+      id: regle.regle_id,
+      regle_id: regle.regle_id,
+      nom_regle: regle.nom_regle,
+      value: regle.regle_id,
+      label: regle.nom_regle
+    }));
+    return c.json(formattedRegles);
+  } catch (error) {
+    console.error('Erreur API dashboard règles salaire:', error);
+    return c.json({ error: 'Erreur lors de la récupération des règles de salaire dashboard' }, 500);
+  }
+});
+
+app.get('/dashboard/feuilles-route/active/:chauffeurId', async (c) => {
+  try {
+    const chauffeurId = c.req.param('chauffeurId');
+    const feuilles = await getFeuillesRouteByChauffeur(chauffeurId);
+    
+    // Retourner la feuille active (non validée)
+    const activeSheet = feuilles.find(f => !f.est_validee) || null;
+    return c.json(activeSheet);
+  } catch (error) {
+    console.error('Erreur API dashboard feuille active:', error);
+    return c.json({ error: 'Erreur lors de la récupération de la feuille active dashboard' }, 500);
+  }
+});
+
+app.post('/dashboard/feuilles-route', async (c) => {
+  try {
+    const body = await c.req.json();
+    const feuille = await createFeuilleRoute(body);
+    return c.json(feuille, 201);
+  } catch (error) {
+    console.error('Erreur API dashboard création feuille:', error);
+    return c.json({ error: 'Erreur lors de la création de la feuille dashboard' }, 500);
+  }
+});
+
+app.put('/dashboard/feuilles-route/:id', async (c) => {
+  try {
+    const body = await c.req.json();
+    const feuille = await updateFeuilleRoute(c.req.param('id'), body);
+    return c.json(feuille);
+  } catch (error) {
+    console.error('Erreur API dashboard mise à jour feuille:', error);
+    return c.json({ error: 'Erreur lors de la mise à jour de la feuille dashboard' }, 500);
+  }
+});
+
+app.get('/dashboard/charges', async (c) => {
+  try {
+    const charges = await getCharges();
+    return c.json(charges);
+  } catch (error) {
+    console.error('Erreur API dashboard charges:', error);
+    return c.json({ error: 'Erreur lors de la récupération des charges dashboard' }, 500);
+  }
+});
+
+app.post('/dashboard/charges', async (c) => {
+  try {
+    const body = await c.req.json();
+    const charge = await createCharge(body);
+    return c.json(charge, 201);
+  } catch (error) {
+    console.error('Erreur API dashboard création charge:', error);
+    return c.json({ error: 'Erreur lors de la création de la charge dashboard' }, 500);
   }
 });
 

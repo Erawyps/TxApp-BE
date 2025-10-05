@@ -1,17 +1,14 @@
-import axios from 'axios';
+import axios from '../utils/axios.js';
 
 /**
- * Service pour gérer les règles de salaire via API HTTP
+ * Service pour gérer les règles de salaire avec routes dashboard
  */
 
-/**
- * Récupère toutes les règles de salaire pour les dropdowns
- * @returns {Promise<Array>} Liste des règles de salaire
- */
+// Récupérer toutes les règles de salaire pour dropdown
 export async function getReglesSalaireForDropdown() {
   try {
-    const response = await axios.get('/api/regles-salaire?dropdown=true');
-    return response.data.slice(0, 100);
+    const response = await axios.get('/dashboard/regles-salaire');
+    return response.data;
   } catch (error) {
     console.error('Erreur lors de la récupération des règles de salaire:', error);
     throw error;

@@ -1,4 +1,4 @@
-import axios from 'axios';
+import axios from '../utils/axios.js';
 
 /**
  * Service pour récupérer toutes les données d'un chauffeur pour new-post-form via API HTTP

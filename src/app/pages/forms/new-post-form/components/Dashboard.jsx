@@ -13,6 +13,11 @@ import { useState } from "react";
 import { Card, Button, Select } from "components/ui";
 import { StatsCards } from "./StatsCards";
 
+// Services
+import { getChauffeurs } from "services/chauffeurs";
+import { getVehicules } from "services/vehicules";
+import { getReglesSalaireForDropdown } from "services/reglesSalaire";
+
 // ----------------------------------------------------------------------
 
 export function Dashboard({
@@ -36,35 +41,27 @@ export function Dashboard({
 
   const handleDatabaseTest = async () => {
     try {
-      // Test de connexion à l'API
-      const apiResponse = await fetch('http://localhost:3001/health');
-      const apiStatus = apiResponse.ok ? '✅ Connecté' : '❌ Erreur';
+      // Test des chauffeurs via service
+      const chauffeursData = await getChauffeurs();
+      const chauffeursCount = chauffeursData?.length || 0;
 
-      // Test des chauffeurs
-      const chauffeursResponse = await fetch('http://localhost:3001/api/chauffeurs');
-      const chauffeursData = await chauffeursResponse.json();
-      const chauffeursCount = chauffeursData?.data?.length || 0;
+      // Test des véhicules via service
+      const vehiculesData = await getVehicules();
+      const vehiculesCount = vehiculesData?.length || 0;
 
-      // Test des véhicules
-      const vehiculesResponse = await fetch('http://localhost:3001/api/vehicules');
-      const vehiculesData = await vehiculesResponse.json();
-      const vehiculesCount = vehiculesData?.data?.length || 0;
-
-      // Test des règles de salaire
-      const reglesResponse = await fetch('http://localhost:3001/api/regles-salaire');
-      const reglesData = await reglesResponse.json();
-      const reglesCount = reglesData?.data?.length || 0;
+      // Test des règles de salaire via service
+      const reglesData = await getReglesSalaireForDropdown();
+      const reglesCount = reglesData?.length || 0;
 
       // Afficher les résultats
       const message = `
 🧪 Tests de base de données - new-post-form
 
-📡 API Server: ${apiStatus}
 👥 Chauffeurs: ${chauffeursCount} trouvés
 🚗 Véhicules: ${vehiculesCount} disponibles
 💰 Règles de salaire: ${reglesCount} configurées
 
-✅ Tous les services fonctionnent correctement !
+✅ Tous les services dashboard fonctionnent correctement !
       `.trim();
 
       alert(message);

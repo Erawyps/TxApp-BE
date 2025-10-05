@@ -1,4 +1,4 @@
-import axios from 'axios';
+import axios from '../utils/axios.js';
 
 /**
  * Service pour gérer les courses via API HTTP
@@ -7,9 +7,9 @@ import axios from 'axios';
 // Récupérer toutes les courses d'une feuille de route
 export async function fetchCourses(feuilleRouteId = null) {
   try {
-    const url = feuilleRouteId
-      ? `/api/courses?feuille_route_id=${feuilleRouteId}`
-      : '/api/courses';
+    const url = feuilleRouteId 
+      ? `/courses?feuille_route_id=${feuilleRouteId}`
+      : '/courses';
     const response = await axios.get(url);
     return response.data.map(mapFromDb);
   } catch (error) {
@@ -42,7 +42,7 @@ export async function fetchCourses(feuilleRouteId = null) {
 export async function createCourse(courseData) {
   try {
     const data = mapToDb(courseData);
-    const response = await axios.post('/api/courses', data);
+    const response = await axios.post('/courses', data);
     return mapFromDb(response.data);
   } catch (error) {
     console.error('Erreur lors de la création de la course:', error);
@@ -78,7 +78,7 @@ export async function createCourse(courseData) {
 export async function updateCourse(courseId, courseData) {
   try {
     const data = mapToDb(courseData);
-    const response = await axios.put(`/api/courses/${courseId}`, data);
+    const response = await axios.put(`/courses/${courseId}`, data);
     return mapFromDb(response.data);
   } catch (error) {
     console.error('Erreur lors de la mise à jour de la course:', error);
@@ -114,7 +114,7 @@ export async function updateCourse(courseId, courseData) {
 export async function autoSaveCourse(courseId, courseData) {
   try {
     const data = mapToDb(courseData);
-    const response = await axios.put(`/api/courses/${courseId}`, data);
+    const response = await axios.put(`/courses/${courseId}`, data);
     return mapFromDb(response.data);
   } catch (error) {
     console.error('Erreur lors de la sauvegarde automatique:', error);
@@ -125,7 +125,7 @@ export async function autoSaveCourse(courseId, courseData) {
 // Annuler une course (remplace la suppression)
 export async function cancelCourse(courseId, motif = null) {
   try {
-    const response = await axios.put(`/api/courses/${courseId}`, {
+    const response = await axios.put(`/courses/${courseId}`, {
       statut: 'Annulé',
       notes: motif ? `Annulé: ${motif}` : 'Annulé'
     });

@@ -33,6 +33,7 @@ import {
   import { Toolbar } from "./Toolbar";
   import { useThemeContext } from "app/contexts/theme/context";
   import { getUserAgentBrowser } from "utils/dom/getUserAgentBrowser";
+  import { useAuth } from "hooks/useAuth"; // Hook pour récupérer l'utilisateur connecté
   
   // ----------------------------------------------------------------------
   
@@ -40,11 +41,13 @@ import {
   
   export default function TripsTable() {
     const { cardSkin } = useThemeContext();
+    const { user } = useAuth(); // Récupérer l'utilisateur connecté
 
     const [autoResetPageIndex, skipAutoResetPageIndex] = useSkipper();
     const [trips, setTrips] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+    const [chauffeurId, setChauffeurId] = useState(null); // ID du chauffeur connecté
     const [tableSettings, setTableSettings] = useState({
       enableSorting: true,
       enableColumnFilters: true,
@@ -72,7 +75,14 @@ import {
         try {
           setLoading(true);
           setError(null);
-          const response = await tripsService.getTrips();
+          
+          // Pour les chauffeurs, filtrer par leur ID, pour les autres rôles, afficher toutes les courses
+          const filters = {};
+          if (user && user.role === 'Driver' && chauffeurId) {
+            filters.chauffeurId = chauffeurId;
+          }
+          
+          const response = await tripsService.getTrips(1, 50, filters);
           setTrips(response.data || []);
         } catch (err) {
           console.error('Erreur lors du chargement des courses:', err);
@@ -83,8 +93,32 @@ import {
         }
       };
 
-      loadTrips();
-    }, []);
+      // Récupérer le chauffeur_id à partir du user_id pour les chauffeurs
+      const fetchChauffeurId = async () => {
+        if (user && user.role === 'Driver' && user.id) {
+          try {
+            // Appel API pour récupérer le chauffeur_id à partir du user_id
+            const response = await fetch(`/api/chauffeurs/by-user/${user.id}`, {
+              credentials: 'include'
+            });
+            if (response.ok) {
+              const chauffeurData = await response.json();
+              setChauffeurId(chauffeurData.chauffeur_id);
+            }
+          } catch (error) {
+            console.error('Erreur lors de la récupération du chauffeur_id:', error);
+          }
+        }
+      };
+
+      if (user) {
+        if (user.role === 'Driver') {
+          fetchChauffeurId().then(() => loadTrips());
+        } else {
+          loadTrips();
+        }
+      }
+    }, [user, chauffeurId]);
 
     const table = useReactTable({
       data: trips,

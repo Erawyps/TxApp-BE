@@ -1927,8 +1927,30 @@ export async function login(emailOrUsername, password) {
       throw new Error('Email ou mot de passe incorrect');
     }
 
-    // Vérification du mot de passe avec bcrypt
-    const isValidPassword = await bcrypt.compare(password, user.mot_de_passe_hashe);
+    // Vérification du mot de passe (support bcrypt et SHA-256 salé)
+    let isValidPassword = false;
+    
+    // Tenter d'abord avec bcrypt (nouveaux comptes)
+    try {
+      isValidPassword = await bcrypt.compare(password, user.mot_de_passe_hashe);
+      if (isValidPassword) {
+        console.log('Authentification réussie avec bcrypt pour:', user.email);
+      }
+    } catch {
+      // Ignore, on essaiera SHA-256
+    }
+    
+    // Si bcrypt échoue, tenter avec SHA-256 + salt TxApp (anciens comptes)
+    if (!isValidPassword) {
+      const saltedPassword = password + 'TxApp-Salt-2025';
+      const sha256Hash = crypto.createHash('sha256').update(saltedPassword).digest('hex');
+      isValidPassword = (sha256Hash === user.mot_de_passe_hashe);
+      
+      if (isValidPassword) {
+        console.log('Authentification réussie avec SHA-256 + salt pour:', user.email);
+      }
+    }
+    
     if (!isValidPassword) {
       throw new Error('Email ou mot de passe incorrect');
     }

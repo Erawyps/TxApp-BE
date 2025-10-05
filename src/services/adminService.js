@@ -1,4 +1,4 @@
-import axios from 'axios';
+import axios from '../utils/axios.js';
 
 /**
  * Service pour la gestion administrative via API HTTP

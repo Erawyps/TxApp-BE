@@ -317,30 +317,7 @@ export default function TxApp() {
         // Vérification finale des données
         if (chauffeursList.length === 0) {
           console.warn('⚠️ Aucune donnée chauffeur reçue de l\'API');
-          console.log('Tentative de récupération directe depuis l\'API...');
-
-          // Tentative de récupération directe pour diagnostiquer
-          try {
-            const directResponse = await fetch('http://localhost:3001/api/chauffeurs', {
-              headers: {
-                'Content-Type': 'application/json',
-              },
-              credentials: 'include'
-            });
-
-            if (directResponse.ok) {
-              const directData = await directResponse.json();
-              console.log('✅ Récupération directe réussie:', directData?.length || 0, 'chauffeurs');
-              if (directData && directData.length > 0) {
-                chauffeursList = directData;
-                console.log('🔄 Utilisation des données de récupération directe');
-              }
-            } else {
-              console.error('❌ Échec récupération directe:', directResponse.status);
-            }
-          } catch (directError) {
-            console.error('💥 Erreur récupération directe:', directError);
-          }
+          console.log('🔍 Vérification de l\'authentification...');
         }
 
         setVehicules(vehiculesList);

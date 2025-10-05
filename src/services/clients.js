@@ -1,13 +1,13 @@
 import axios from '../utils/axios.js';
 
 /**
- * Service pour gérer les clients
+ * Service pour gérer les clients avec routes dashboard
  */
 
 // Récupérer tous les clients actifs
 export async function getClients() {
   try {
-    const response = await axios.get('/clients');
+    const response = await axios.get('/dashboard/clients');
     return response.data;
   } catch (error) {
     console.error('Erreur lors de la récupération des clients:', error);

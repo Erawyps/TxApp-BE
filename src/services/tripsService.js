@@ -1,5 +1,5 @@
 // Import Dependencies
-import axios from 'axios';
+import axios from '../utils/axios.js';
 
 /**
  * Service pour récupérer les données des courses depuis l'API HTTP
@@ -8,7 +8,7 @@ export const tripsService = {
   /**
    * Récupère la liste des courses avec pagination et filtres
    */
-  async getTrips(page = 1, limit = 10, filters = {}) {
+  async getTrips(page = 1, limit = 50, filters = {}) {
     try {
       const params = new URLSearchParams({
         page: page.toString(),
@@ -16,18 +16,20 @@ export const tripsService = {
         ...filters
       });
 
-      const response = await axios.get(`/api/courses?${params}`, {
-        withCredentials: true,
-        timeout: 10000
-      });
+      // Utiliser la route dashboard qui supporte le filtrage par chauffeur
+      const response = await axios.get(`/dashboard/courses?${params}`);
+
+      // La route dashboard retourne un format différent avec .data
+      const coursesData = response.data.data || response.data.courses || [];
+      const totalCount = response.data.count || coursesData.length;
 
       return {
-        data: response.data,
-        pagination: {
+        data: coursesData,
+        pagination: response.data.pagination || {
           page,
           limit,
-          total: response.data.length || 0,
-          totalPages: Math.ceil((response.data.length || 0) / limit)
+          total: totalCount,
+          totalPages: Math.ceil(totalCount / limit)
         }
       };
     } catch (error) {
@@ -69,7 +71,7 @@ export const tripsService = {
     const { dateFrom, dateTo, chauffeurId } = options;
 
     try {
-      let url = '/api/dashboard/courses/stats';
+      let url = '/dashboard/courses/stats';
       const params = [];
       if (dateFrom) params.push(`dateFrom=${encodeURIComponent(dateFrom)}`);
       if (dateTo) params.push(`dateTo=${encodeURIComponent(dateTo)}`);
@@ -118,7 +120,7 @@ export const tripsService = {
     const { dateFrom, dateTo, type = 'daily' } = options;
 
     try {
-      let url = `/api/dashboard/courses/chart-data?type=${type}`;
+      let url = `/dashboard/courses/chart-data?type=${type}`;
       if (dateFrom) url += `&dateFrom=${encodeURIComponent(dateFrom)}`;
       if (dateTo) url += `&dateTo=${encodeURIComponent(dateTo)}`;
 

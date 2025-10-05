@@ -1,13 +1,23 @@
-import axios from 'axios';
+import axios from '../utils/axios.js';
 
 /**
- * Service pour gérer les charges/dépenses via API HTTP
+ * Service pour gérer les charges avec routes dashboard
  */
 
-// Récupérer les charges d'une feuille de route
-export async function getCharges(feuilleRouteId) {
+// Récupérer toutes les charges
+export async function getCharges(filters = {}) {
   try {
-    const response = await axios.get(`/api/charges?feuille_route_id=${feuilleRouteId}`);
+    const params = new URLSearchParams();
+    
+    if (filters.feuilleRouteId) {
+      params.append('feuilleRouteId', filters.feuilleRouteId);
+    }
+    if (filters.chauffeurId) {
+      params.append('chauffeurId', filters.chauffeurId);
+    }
+    
+    const url = `/dashboard/charges${params.toString() ? '?' + params.toString() : ''}`;
+    const response = await axios.get(url);
     return response.data;
   } catch (error) {
     console.error('Erreur lors de la récupération des charges:', error);
@@ -18,7 +28,7 @@ export async function getCharges(feuilleRouteId) {
 // Créer une nouvelle charge
 export async function createCharge(chargeData) {
   try {
-    const response = await axios.post('/api/charges', chargeData);
+    const response = await axios.post('/dashboard/charges', chargeData);
     return response.data;
   } catch (error) {
     console.error('Erreur lors de la création de la charge:', error);

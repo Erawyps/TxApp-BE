@@ -1,4 +1,4 @@
-import axios from 'axios';
+import axios from '../utils/axios.js';
 
 /**
  * Service pour récupérer les statistiques d'un chauffeur via API HTTP

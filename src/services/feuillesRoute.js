@@ -1,13 +1,13 @@
-import axios from 'axios';
+import axios from '../utils/axios.js';
 
 /**
- * Service pour gérer les feuilles de route via API HTTP
+ * Service pour gérer les feuilles de route via API dashboard
  */
 
 // Créer une nouvelle feuille de route
 export async function createFeuilleRoute(data) {
   try {
-    const response = await axios.post('/api/feuilles-route', data);
+    const response = await axios.post('/dashboard/feuilles-route', data);
     return response.data;
   } catch (error) {
     console.error('Erreur lors de la création de la feuille de route:', error);
@@ -20,8 +20,8 @@ export async function endFeuilleRoute(id, data) {
   try {
     console.log('🔧 endFeuilleRoute - Service appelé avec:', { id, data });
     
-    // Utiliser l'endpoint de mise à jour standard
-    const response = await axios.put(`/api/feuilles-route/${id}`, data);
+    // Utiliser l'endpoint dashboard de mise à jour
+    const response = await axios.put(`/dashboard/feuilles-route/${id}`, data);
     
     console.log('✅ endFeuilleRoute - Réponse API:', response.data);
     return response.data;
@@ -34,31 +34,22 @@ export async function endFeuilleRoute(id, data) {
 // Récupérer la feuille de route active pour un chauffeur (la plus récente)
 export async function getActiveFeuilleRoute(chauffeurId) {
   try {
-    const response = await axios.get(`/api/chauffeurs/${chauffeurId}/feuilles-route`);
-    const feuilles = response.data;
+    const response = await axios.get(`/dashboard/feuilles-route/active/${chauffeurId}`);
+    const feuilleRoute = response.data;
 
-    // Retourner la feuille la plus récente (par date_service)
-    if (feuilles && Array.isArray(feuilles) && feuilles.length > 0) {
-      console.log('🔍 DEBUG getActiveFeuilleRoute - Toutes les feuilles:', feuilles.map(f => ({
-        id: f.feuille_id,
-        date: f.date_service,
-        hasTaxa: !!f.taximetre
-      })));
-      
-      const sortedFeuilles = feuilles.sort((a, b) => new Date(b.date_service) - new Date(a.date_service));
-      
-      // TEMP: Pour le test, récupérer une feuille avec des données taximètre
-      const feuilleAvecTaximetre = feuilles.find(f => f.taximetre && f.taximetre.taximetre_prise_charge_fin);
-      if (feuilleAvecTaximetre) {
-        console.log('🎯 TEMP: Utilisation de la feuille avec données taximètre:', feuilleAvecTaximetre.feuille_id);
-        return feuilleAvecTaximetre;
-      }
-      
-      console.log('📋 Utilisation de la feuille la plus récente:', sortedFeuilles[0]?.feuille_id);
-      return sortedFeuilles[0];
+    if (!feuilleRoute) {
+      console.log('🔍 getActiveFeuilleRoute - Aucune feuille active trouvée pour chauffeur:', chauffeurId);
+      return null;
     }
 
-    return null;
+    console.log('✅ getActiveFeuilleRoute - Feuille active trouvée:', {
+      id: feuilleRoute.feuille_id,
+      date: feuilleRoute.date_service,
+      chauffeur: feuilleRoute.chauffeur_id,
+      est_validee: feuilleRoute.est_validee
+    });
+
+    return feuilleRoute;
   } catch (error) {
     console.error('Erreur lors de la récupération de la feuille de route active:', error);
     throw error;

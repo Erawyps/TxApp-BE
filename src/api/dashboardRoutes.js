@@ -303,4 +303,116 @@ dashboardRoutes.get('/courses/chart-data', async (c) => {
   }
 });
 
+// Route pour la liste des courses avec filtrage par chauffeur
+dashboardRoutes.get('/courses', async (c) => {
+  try {
+    const { chauffeurId, dateFrom, dateTo } = c.req.query();
+
+    // Construire les filtres
+    const whereFilter = {};
+    
+    // Filtre par chauffeur
+    if (chauffeurId) {
+      whereFilter.feuille_route = {
+        chauffeur_id: parseInt(chauffeurId)
+      };
+    }
+
+    // Filtres de date
+    if (dateFrom || dateTo) {
+      if (!whereFilter.feuille_route) {
+        whereFilter.feuille_route = {};
+      }
+      whereFilter.feuille_route.date_service = {};
+      if (dateFrom) whereFilter.feuille_route.date_service.gte = new Date(dateFrom);
+      if (dateTo) whereFilter.feuille_route.date_service.lte = new Date(dateTo);
+    }
+
+    const courses = await prisma.course.findMany({
+      where: Object.keys(whereFilter).length > 0 ? whereFilter : undefined,
+      include: {
+        feuille_route: {
+          include: {
+            chauffeur: {
+              include: {
+                utilisateur: {
+                  select: {
+                    nom: true,
+                    prenom: true,
+                    email: true
+                  }
+                }
+              }
+            },
+            vehicule: {
+              select: {
+                vehicule_id: true,
+                plaque_immatriculation: true,
+                num_identification: true,
+                marque: true,
+                modele: true,
+                annee: true
+              }
+            }
+          }
+        },
+        client: {
+          select: {
+            client_id: true,
+            nom_societe: true,
+            telephone: true,
+            email: true
+          }
+        },
+        mode_paiement: {
+          select: {
+            mode_id: true,
+            code: true,
+            libelle: true,
+            type: true
+          }
+        },
+        detail_facture_complexe: true
+      },
+      orderBy: [
+        {
+          feuille_id: 'desc'
+        },
+        {
+          num_ordre: 'asc'
+        }
+      ]
+    });
+
+    // Transformer les données pour assurer l'affichage correct
+    const transformedCourses = courses.map(course => ({
+      ...course,
+      chauffeur_nom: course.feuille_route?.chauffeur?.utilisateur 
+        ? `${course.feuille_route.chauffeur.utilisateur.prenom} ${course.feuille_route.chauffeur.utilisateur.nom}`
+        : 'Inconnu',
+      vehicule_info: course.feuille_route?.vehicule 
+        ? `${course.feuille_route.vehicule.marque} ${course.feuille_route.vehicule.modele} (${course.feuille_route.vehicule.plaque_immatriculation})`
+        : 'N/A'
+    }));
+
+    return c.json({
+      data: transformedCourses,
+      count: courses.length,
+      filters: {
+        chauffeurId: chauffeurId || null,
+        dateFrom: dateFrom || null,
+        dateTo: dateTo || null
+      },
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    console.error('Error in dashboard courses endpoint:', error);
+    return c.json({
+      error: 'Erreur lors de la récupération des courses du dashboard',
+      details: error.message,
+      timestamp: new Date().toISOString()
+    }, 500);
+  }
+});
+
 export default dashboardRoutes;

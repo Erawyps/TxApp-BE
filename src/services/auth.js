@@ -1,4 +1,4 @@
-import axios from 'axios';
+import axios from '../utils/axios.js';
 
 /**
  * Service d'authentification pour TxApp
@@ -14,7 +14,7 @@ import axios from 'axios';
 export const loginUser = async (username, password) => {
   try {
     // Utiliser l'API backend au lieu de Supabase
-    const response = await axios.post('/api/auth/login', {
+    const response = await axios.post('/auth/login', {
       username: username, // L'API attend 'username' pas 'email'
       password
     }, {
@@ -58,7 +58,7 @@ export const loginUser = async (username, password) => {
 export const getUserProfile = async (userId) => {
   try {
     // Utiliser l'API backend pour récupérer le profil
-    const response = await axios.get(`/api/utilisateurs/${userId}`, {
+    const response = await axios.get(`/utilisateurs/${userId}`, {
       headers: {
         'Content-Type': 'application/json'
       }
@@ -78,7 +78,7 @@ export const getUserProfile = async (userId) => {
  */
 export const verifyToken = async (token) => {
   try {
-    const response = await axios.post('/api/auth/verify', {
+    const response = await axios.post('/auth/verify', {
       token
     }, {
       headers: {
@@ -104,7 +104,7 @@ export const verifyToken = async (token) => {
  */
 export const createUser = async (userData) => {
   try {
-    const response = await axios.post('/api/utilisateurs', userData, {
+    const response = await axios.post('/utilisateurs', userData, {
       headers: {
         'Content-Type': 'application/json'
       }
@@ -124,7 +124,7 @@ export const createUser = async (userData) => {
  */
 export const changePassword = async (passwordData) => {
   try {
-    const response = await axios.post('/api/auth/change-password', passwordData, {
+    const response = await axios.post('/auth/change-password', passwordData, {
       headers: {
         'Content-Type': 'application/json'
       }
@@ -145,7 +145,7 @@ export const changePassword = async (passwordData) => {
  */
 export const updateUserProfile = async (userId, updateData) => {
   try {
-    const response = await axios.put(`/api/utilisateurs/${userId}`, updateData, {
+    const response = await axios.put(`/utilisateurs/${userId}`, updateData, {
       headers: {
         'Content-Type': 'application/json'
       }
