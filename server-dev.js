@@ -1052,13 +1052,34 @@ app.post('/api/dashboard/feuilles-route', dbMiddleware, async (c) => {
       }, 400);
     }
     
+    // Fonction pour parser les heures de manière sûre
+    const parseTime = (timeString) => {
+      if (!timeString) return null;
+      
+      let parsedTime;
+      if (timeString.includes('T')) {
+        parsedTime = new Date(timeString);
+      } else {
+        // Format HH:MM:SS ou HH:MM - créer une date avec 1970-01-01
+        const timeStr = timeString.length === 5 ? timeString + ':00' : timeString;
+        parsedTime = new Date(`1970-01-01T${timeStr}`);
+      }
+      
+      if (isNaN(parsedTime.getTime())) {
+        console.error('❌ Invalid time format:', timeString);
+        return null;
+      }
+      
+      return parsedTime;
+    };
+
     const feuilleData = {
       chauffeur_id: parseInt(data.chauffeur_id),
       vehicule_id: parseInt(data.vehicule_id),
       date_service: new Date(data.date_service),
       mode_encodage: data.mode_encodage || 'LIVE',
-      heure_debut: data.heure_debut ? new Date(`1970-01-01T${data.heure_debut}:00`) : null,
-      heure_fin: data.heure_fin ? new Date(`1970-01-01T${data.heure_fin}:00`) : null,
+      heure_debut: parseTime(data.heure_debut),
+      heure_fin: parseTime(data.heure_fin),
       interruptions: data.interruptions || '',
       index_km_debut_tdb: parseInt(data.index_km_debut_tdb),
       index_km_fin_tdb: data.index_km_fin_tdb ? parseInt(data.index_km_fin_tdb) : null,
@@ -1110,7 +1131,13 @@ app.put('/api/dashboard/feuilles-route/:id', dbMiddleware, async (c) => {
     const feuilleId = parseInt(c.req.param('id'));
     const data = await c.req.json();
     
-    console.log('📝 Updating feuille de route:', feuilleId, 'avec données:', data);
+    console.log('📝 FRONTEND REQUEST - Updating feuille de route:', feuilleId);
+    console.log('📝 FRONTEND DATA received:', JSON.stringify(data, null, 2));
+    console.log('📝 Data types:', {
+      heure_fin: typeof data.heure_fin,
+      index_fin_shift: typeof data.index_fin_shift,
+      est_validee: typeof data.est_validee
+    });
     
     const updateData = {};
     
@@ -1118,16 +1145,37 @@ app.put('/api/dashboard/feuilles-route/:id', dbMiddleware, async (c) => {
     if (data.heure_fin) {
       // Si c'est déjà un timestamp complet, l'utiliser directement
       // Sinon, traiter comme une heure simple
-      const heureFinValue = data.heure_fin.includes('T') ? 
-        new Date(data.heure_fin) : 
-        new Date(`1970-01-01T${data.heure_fin}:00`);
+      let heureFinValue;
+      if (data.heure_fin.includes('T')) {
+        heureFinValue = new Date(data.heure_fin);
+      } else {
+        // Format HH:MM:SS ou HH:MM - créer une date avec 1970-01-01
+        const timeStr = data.heure_fin.length === 5 ? data.heure_fin + ':00' : data.heure_fin;
+        heureFinValue = new Date(`1970-01-01T${timeStr}`);
+      }
       
       console.log('🕒 Processing heure_fin:', data.heure_fin, '→', heureFinValue);
+      
+      // Vérifier si la date est valide
+      if (isNaN(heureFinValue.getTime())) {
+        console.error('❌ Invalid date format for heure_fin:', data.heure_fin);
+        return c.json({ 
+          error: 'Format d\'heure invalide pour heure_fin',
+          received: data.heure_fin,
+          expected: 'HH:MM:SS ou YYYY-MM-DDTHH:MM:SS'
+        }, 400);
+      }
+      
       updateData.heure_fin = heureFinValue;
     }
     if (data.index_km_fin_tdb) updateData.index_km_fin_tdb = parseInt(data.index_km_fin_tdb);
     if (data.index_fin_shift) updateData.index_km_fin_tdb = parseInt(data.index_fin_shift);
-    if (data.interruptions !== undefined) updateData.interruptions = data.interruptions;
+    if (data.interruptions !== undefined) {
+      // Convertir en string si c'est un nombre
+      updateData.interruptions = typeof data.interruptions === 'number' ? 
+        data.interruptions.toString() : 
+        data.interruptions;
+    }
     if (data.montant_salaire_cash_declare !== undefined) updateData.montant_salaire_cash_declare = parseFloat(data.montant_salaire_cash_declare);
     if (data.signature_chauffeur !== undefined) updateData.signature_chauffeur = data.signature_chauffeur;
     if (data.est_validee !== undefined) updateData.est_validee = data.est_validee;
@@ -1137,7 +1185,7 @@ app.put('/api/dashboard/feuilles-route/:id', dbMiddleware, async (c) => {
       updateData.date_validation = new Date();
     }
     
-    console.log('🔧 Données de mise à jour Prisma:', updateData);
+    console.log('🔧 Données de mise à jour Prisma:', JSON.stringify(updateData, null, 2));
     
     // Mettre à jour la feuille de route
     const updatedFeuille = await prisma.feuille_route.update({
@@ -1163,12 +1211,20 @@ app.put('/api/dashboard/feuilles-route/:id', dbMiddleware, async (c) => {
     console.log('✅ Feuille de route mise à jour:', updatedFeuille.feuille_id);
     return c.json(updatedFeuille);
   } catch (error) {
-    console.error('❌ Error updating feuille route:', error);
-    console.error('❌ Error message:', error.message);
-    console.error('❌ Error stack:', error.stack);
+    console.error('❌ FRONTEND ERROR - Error updating feuille route:', error);
+    console.error('❌ FRONTEND ERROR - Error message:', error.message);
+    console.error('❌ FRONTEND ERROR - Error code:', error.code);
+    console.error('❌ FRONTEND ERROR - Error stack:', error.stack);
+    
+    // Log des détails Prisma si disponibles
+    if (error.meta) {
+      console.error('❌ FRONTEND ERROR - Prisma meta:', error.meta);
+    }
+    
     return c.json({ 
       error: 'Erreur lors de la mise à jour de la feuille de route',
-      details: process.env.NODE_ENV === 'development' ? error.message : undefined
+      details: process.env.NODE_ENV === 'development' ? error.message : undefined,
+      code: error.code || 'UNKNOWN'
     }, 500);
   }
 });
@@ -1187,6 +1243,35 @@ app.post('/api/courses', dbMiddleware, async (c) => {
         error: 'Données manquantes: feuille_id, num_ordre, sommes_percues et mode_paiement_id sont requis',
         received: data
       }, 400);
+    }
+    
+    // Trouver le prochain numéro d'ordre disponible si conflit
+    let numOrdre = parseInt(data.num_ordre);
+    const feuilleId = parseInt(data.feuille_id);
+    
+    // Vérifier si ce numéro d'ordre existe déjà
+    const existingCourse = await prisma.course.findFirst({
+      where: {
+        feuille_id: feuilleId,
+        num_ordre: numOrdre
+      }
+    });
+    
+    if (existingCourse) {
+      console.log(`⚠️ Course ${numOrdre} existe déjà pour feuille ${feuilleId}, recherche du prochain numéro disponible...`);
+      
+      // Trouver le prochain numéro d'ordre disponible
+      const maxCourse = await prisma.course.findFirst({
+        where: {
+          feuille_id: feuilleId
+        },
+        orderBy: {
+          num_ordre: 'desc'
+        }
+      });
+      
+      numOrdre = maxCourse ? maxCourse.num_ordre + 1 : 1;
+      console.log(`✅ Nouveau numéro d'ordre assigné: ${numOrdre}`);
     }
     
     // Fonction pour traiter les heures
@@ -1209,7 +1294,7 @@ app.post('/api/courses', dbMiddleware, async (c) => {
     
     const newCourse = await prisma.course.create({
       data: {
-        num_ordre: parseInt(data.num_ordre),
+        num_ordre: numOrdre, // Utiliser le numéro d'ordre calculé (original ou nouveau)
         index_depart: data.index_depart ? parseInt(data.index_depart) : null,
         index_embarquement: data.index_embarquement ? parseInt(data.index_embarquement) : null,
         lieu_embarquement: data.lieu_embarquement || '',
@@ -1223,7 +1308,7 @@ app.post('/api/courses', dbMiddleware, async (c) => {
         // Connecter à la feuille de route existante
         feuille_route: {
           connect: {
-            feuille_id: parseInt(data.feuille_id)
+            feuille_id: feuilleId
           }
         },
         // Connecter au mode de paiement existant
