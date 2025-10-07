@@ -123,7 +123,6 @@ model feuille_route {
   vehicule                     vehicule     @relation(fields: [vehicule_id], references: [vehicule_id], onUpdate: NoAction)
   taximetre                    taximetre?
 
-  @@unique([chauffeur_id, date_service, vehicule_id])
   @@index([chauffeur_id], map: "idx_feuille_route_chauffeur")
   @@index([date_service], map: "idx_feuille_route_date")
 }

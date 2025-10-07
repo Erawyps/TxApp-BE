@@ -38,6 +38,22 @@ export async function fetchCourses(feuilleRouteId = null) {
   }
 }
 
+// Récupérer les courses d'une feuille de route spécifique (utilisé par la vue chauffeur)
+export async function getCoursesByFeuille(feuilleId) {
+  try {
+    const response = await axios.get(`/courses/${feuilleId}`);
+    console.log('✅ Courses récupérées pour feuille', feuilleId, ':', response.data?.length || 0);
+    return response.data || [];
+  } catch (error) {
+    console.error('Erreur lors de la récupération des courses par feuille:', error);
+    if (error.response?.status === 404) {
+      // Pas de courses pour cette feuille, retourner un tableau vide
+      return [];
+    }
+    throw error;
+  }
+}
+
 // Créer une course avec validations chauffeur
 export async function createCourse(courseData) {
   try {
@@ -187,20 +203,39 @@ function mapFromDb(row) {
 
 // Mapper vers la base de données
 function mapToDb(course) {
-  return {
-    feuille_id: course.feuille_route_id, // Correction: utiliser feuille_id
-    client_id: course.client_id || null,
-    mode_paiement_id: course.mode_paiement_id || null,
-    num_ordre: course.numero_ordre, // Correction: utiliser num_ordre
-    index_depart: course.index_depart,
-    lieu_embarquement: course.lieu_embarquement,
-    heure_embarquement: course.heure_embarquement,
-    index_debarquement: course.index_arrivee, // Correction: utiliser index_debarquement
-    lieu_debarquement: course.lieu_debarquement,
-    heure_debarquement: course.heure_debarquement,
-    prix_taximetre: course.prix_taximetre,
-    sommes_percues: course.somme_percue, // Correction: utiliser sommes_percues (pluriel)
-    est_hors_heures: course.hors_creneau || false, // Correction: utiliser est_hors_heures
+  console.log('🔍 mapToDb - Données reçues:', course);
+  
+  // Helper pour parser les nombres en toute sécurité
+  const safeParseInt = (value) => {
+    if (value === null || value === undefined || value === '') return null;
+    const parsed = parseInt(value);
+    return isNaN(parsed) ? null : parsed;
+  };
+  
+  const safeParseFloat = (value) => {
+    if (value === null || value === undefined || value === '') return null;
+    const parsed = parseFloat(value);
+    return isNaN(parsed) ? null : parsed;
+  };
+  
+  const mapped = {
+    feuille_id: safeParseInt(course.feuille_id),
+    client_id: safeParseInt(course.client_id),
+    mode_paiement_id: safeParseInt(course.mode_paiement), // Le formulaire envoie 'mode_paiement'
+    num_ordre: safeParseInt(course.num_ordre),
+    index_depart: safeParseInt(course.index_depart),
+    index_embarquement: safeParseInt(course.index_embarquement),
+    lieu_embarquement: course.lieu_embarquement || null,
+    heure_embarquement: course.heure_embarquement || null,
+    index_debarquement: safeParseInt(course.index_debarquement),
+    lieu_debarquement: course.lieu_debarquement || null,
+    heure_debarquement: course.heure_debarquement || null,
+    prix_taximetre: safeParseFloat(course.prix_taximetre),
+    sommes_percues: safeParseFloat(course.sommes_percues),
+    est_hors_heures: course.hors_creneau || false,
     notes: course.notes || null
   };
+  
+  console.log('🔍 mapToDb - Données mappées pour API:', mapped);
+  return mapped;
 }

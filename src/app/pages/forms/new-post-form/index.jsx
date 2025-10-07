@@ -62,6 +62,8 @@ export default function TxApp() {
 
   // Données de référence
   const [vehicules, setVehicules] = useState([]);
+  const [clients, setClients] = useState([]);
+  const [modesPaiement, setModesPaiement] = useState([]);
   const [currentChauffeur, setCurrentChauffeur] = useState(null);
   const [reglesSalaire, setReglesSalaire] = useState([]);
 
@@ -306,6 +308,12 @@ export default function TxApp() {
         } catch (otherError) {
           console.error('💥 Erreur chargement autres données:', otherError);
         }
+
+        // Mettre à jour l'état avec les données chargées
+        setVehicules(vehiculesList);
+        setClients(clientsList);
+        setModesPaiement(modesList);
+        setReglesSalaire(reglesSalaireList);
 
         console.log('📊 Données chargées:', {
           chauffeurs: chauffeursList.length,
@@ -674,6 +682,8 @@ export default function TxApp() {
 
   const handleSubmitCourse = async (courseData) => {
     try {
+      console.log('🔍 handleSubmitCourse - Données reçues du formulaire:', courseData);
+      
       if (!currentFeuilleRoute) {
         toast.error("Aucune feuille de route active");
         return;
@@ -682,12 +692,12 @@ export default function TxApp() {
       // Ajouter l'ID de la feuille de route et le numéro d'ordre
       const courseWithMeta = {
         ...courseData,
-        feuille_route_id: currentFeuilleRoute.feuille_id, // ✅ Corrigé : utiliser feuille_id
-        numero_ordre: editingCourse ? editingCourse.numero_ordre : courses.length + 1,
+        feuille_id: currentFeuilleRoute.feuille_id, // ✅ Corrigé : utiliser feuille_id (nom attendu par l'API)
+        num_ordre: editingCourse ? editingCourse.numero_ordre : courses.length + 1, // ✅ Corrigé : utiliser num_ordre
         id: editingCourse?.id
       };
 
-      console.log('💾 Sauvegarde course avec feuille_id:', currentFeuilleRoute.feuille_id);
+      console.log('💾 Sauvegarde course avec métadonnées:', courseWithMeta);
 
       const saved = await upsertCourse(courseWithMeta);
 
@@ -831,13 +841,13 @@ export default function TxApp() {
         // Kilométrage tableau de bord
         km_tableau_bord_fin: endData.km_tableau_bord_fin,
         index_km_fin_tdb: endData.km_tableau_bord_fin, // Mapping pour compatibilité
-        // Champs taximètre de fin
-        taximetre_prise_charge_fin: endData.taximetre_prise_charge_fin,
-        taximetre_index_km_fin: endData.taximetre_index_km_fin,
-        taximetre_km_charge_fin: endData.taximetre_km_charge_fin,
-        taximetre_chutes_fin: endData.taximetre_chutes_fin,
-        // Autres champs
-        observations: endData.observations,
+        // Note: Champs taximètre temporairement désactivés car non présents dans la DB actuelle
+        // taximetre_prise_charge_fin: endData.taximetre_prise_charge_fin,
+        // taximetre_index_km_fin: endData.taximetre_index_km_fin,
+        // taximetre_km_charge_fin: endData.taximetre_km_charge_fin,
+        // taximetre_chutes_fin: endData.taximetre_chutes_fin,
+        // Note: Champ observations temporairement désactivé car non présent dans la DB actuelle
+        // observations: endData.observations,
         signature_chauffeur: endData.signature_chauffeur
       };
 
@@ -855,11 +865,11 @@ export default function TxApp() {
         interruptions: updatedFeuilleRoute.interruptions,
         index_km_fin_tdb: updatedFeuilleRoute.index_km_fin_tdb,
         km_tableau_bord_fin: updatedFeuilleRoute.km_tableau_bord_fin,
-        taximetre_prise_charge_fin: updatedFeuilleRoute.taximetre_prise_charge_fin,
-        taximetre_index_km_fin: updatedFeuilleRoute.taximetre_index_km_fin,
-        taximetre_km_charge_fin: updatedFeuilleRoute.taximetre_km_charge_fin,
-        taximetre_chutes_fin: updatedFeuilleRoute.taximetre_chutes_fin,
-        observations: updatedFeuilleRoute.observations,
+        // Données taximètre temporairement désactivées
+        taximetre_prise_charge_fin: null,
+        taximetre_index_km_fin: null,
+        taximetre_km_charge_fin: null,
+        taximetre_chutes_fin: null,
         signature_chauffeur: updatedFeuilleRoute.signature_chauffeur,
         statut: updatedFeuilleRoute.est_validee ? 'Validée' : 'Terminée'
       });
@@ -1077,6 +1087,8 @@ export default function TxApp() {
                         onSubmit={handleSubmitCourse}
                         onCancel={handleCancelCourse}
                         reglesSalaire={reglesSalaire}
+                        clients={clients}
+                        modesPaiement={modesPaiement}
                       />
                     </div>
                   </DialogPanel>

@@ -310,11 +310,14 @@ export function EndShiftForm({ onEndShift, shiftData, driver, onPrintReport }) {
   };
 
   const onSubmit = (data) => {
+    console.log('🔍 EndShiftForm - Données brutes du formulaire:', data);
+    
     const endShiftData = {
       ...data,
       duree_reelle: calculateActualShiftDuration()
     };
-    console.log('End shift data:', endShiftData);
+    
+    console.log('🔍 EndShiftForm - Données envoyées avec durée calculée:', endShiftData);
     toast.success("Shift terminé avec succès!");
     onEndShift(endShiftData);
   };

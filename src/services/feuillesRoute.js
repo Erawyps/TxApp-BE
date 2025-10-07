@@ -15,16 +15,34 @@ export async function createFeuilleRoute(data) {
   }
 }
 
-// Terminer une feuille de route
-export async function endFeuilleRoute(id, data) {
+// Mettre à jour une feuille de route
+export async function updateFeuilleRoute(id, data) {
   try {
-    console.log('🔧 endFeuilleRoute - Service appelé avec:', { id, data });
+    console.log('🔧 updateFeuilleRoute - Service appelé avec:', { id, data });
     
     // Utiliser l'endpoint dashboard de mise à jour
     const response = await axios.put(`/dashboard/feuilles-route/${id}`, data);
     
-    console.log('✅ endFeuilleRoute - Réponse API:', response.data);
+    console.log('✅ updateFeuilleRoute - Réponse API:', response.data);
     return response.data;
+  } catch (error) {
+    console.error('Erreur lors de la mise à jour de la feuille de route:', error);
+    throw error;
+  }
+}
+
+// Terminer une feuille de route (alias pour updateFeuilleRoute)
+export async function endFeuilleRoute(id, data) {
+  try {
+    console.log('🔧 endFeuilleRoute - Service appelé avec:', { id, data });
+    
+    // Marquer comme terminée et validée
+    const endData = {
+      ...data,
+      est_validee: true
+    };
+    
+    return await updateFeuilleRoute(id, endData);
   } catch (error) {
     console.error('Erreur lors de la finalisation de la feuille de route:', error);
     throw error;

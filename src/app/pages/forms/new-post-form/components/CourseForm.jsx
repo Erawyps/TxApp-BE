@@ -50,7 +50,9 @@ export function CourseForm({
   coursesCount, 
   onSubmit, 
   onCancel,
-  reglesSalaire = []
+  reglesSalaire = [],
+  clients = [], // eslint-disable-line no-unused-vars
+  modesPaiement = []
 }) {
   // Charger les données sauvegardées (uniquement si pas en mode édition)
   const savedData = editingCourse ? null : loadSavedData('courseFormData');
@@ -66,7 +68,7 @@ export function CourseForm({
     heure_debarquement: '',
     prix_taximetre: '',
     sommes_percues: '',
-    mode_paiement: 'CASH',
+    mode_paiement: 1, // ID du mode de paiement CASH par défaut
     client: '',
     remuneration_chauffeur: '',
     notes: ''
@@ -85,15 +87,25 @@ export function CourseForm({
 
   const watchedData = watch();
 
+  // Utiliser les données dynamiques ou les données par défaut
+  const basePaymentMethods = modesPaiement.length > 0
+    ? modesPaiement.map(mode => ({
+        value: mode.mode_id,
+        label: mode.libelle,
+        code: mode.code
+      }))
+    : paymentMethods;
+
   // Auto-sauvegarde uniquement si pas en mode édition
   useAutoSave(editingCourse ? null : watchedData, 'courseFormData');
-  const requiresClient = watchedData.mode_paiement && watchedData.mode_paiement.startsWith('F-');
+  const selectedPaymentMethod = basePaymentMethods.find(p => p.value === watchedData.mode_paiement);
+  const requiresClient = selectedPaymentMethod && selectedPaymentMethod.code && selectedPaymentMethod.code.startsWith('F-');
 
   // Utiliser les règles de salaire de la base de données ou les types par défaut
   const baseRemunerationOptions = reglesSalaire.length > 0
     ? reglesSalaire.map(regle => ({
-        value: regle.id,
-        label: regle.nom
+        value: regle.regle_id,
+        label: regle.nom_regle
       }))
     : contractTypes;
   const remunerationOptions = baseRemunerationOptions.length > 0
@@ -101,13 +113,17 @@ export function CourseForm({
     : [{ value: '', label: 'Chargement des rémunérations...' }];
 
   console.log('CourseForm - Regles salaire:', reglesSalaire?.length || 0, 'options:', remunerationOptions.length);
+  console.log('CourseForm - Options de rémunération:', remunerationOptions);
 
   const handleFormSubmit = (data) => {
+    console.log('🔍 CourseForm - Données du formulaire brutes:', data);
+    
     const courseData = {
       ...data,
       status: 'completed'
     };
 
+    console.log('🔍 CourseForm - Données envoyées au parent:', courseData);
     onSubmit(courseData);
     toast.success(editingCourse ? "Course modifiée avec succès!" : "Course ajoutée avec succès!");
   };
@@ -215,8 +231,8 @@ export function CourseForm({
             control={control}
             render={({ field }) => (
               <Listbox
-                data={paymentMethods}
-                value={paymentMethods.find(p => p.value === field.value) || paymentMethods[0]}
+                data={basePaymentMethods}
+                value={basePaymentMethods.find(p => p.value === field.value) || basePaymentMethods[0]}
                 onChange={(val) => field.onChange(val.value)}
                 label="Mode de paiement"
                 displayField="label"
@@ -238,8 +254,11 @@ export function CourseForm({
             render={({ field }) => (
               <Listbox
                 data={remunerationOptions}
-                value={field.value ? remunerationOptions.find(c => c.value === field.value) || remunerationOptions[0] : remunerationOptions[0]}
-                onChange={(val) => field.onChange(val?.value)}
+                value={remunerationOptions.find(c => c.value === field.value) || remunerationOptions[0]}
+                onChange={(val) => {
+                  console.log('Sélection rémunération:', val);
+                  field.onChange(val?.value);
+                }}
                 label="Rémunération chauffeur"
                 displayField="label"
                 error={errors?.remuneration_chauffeur?.message}
@@ -281,5 +300,7 @@ CourseForm.propTypes = {
   coursesCount: PropTypes.number.isRequired,
   onSubmit: PropTypes.func.isRequired,
   onCancel: PropTypes.func.isRequired,
-  reglesSalaire: PropTypes.array
+  reglesSalaire: PropTypes.array,
+  clients: PropTypes.array,
+  modesPaiement: PropTypes.array
 };
