@@ -825,6 +825,66 @@ export default function TxApp() {
     }
   };
 
+  // ✅ NOUVELLE FONCTION: Validation uniquement (sans terminer le shift)
+  const handleValidateEndShift = async (endData) => {
+    try {
+      if (!currentFeuilleRoute) {
+        toast.error("Aucune feuille de route active");
+        return false;
+      }
+
+      console.log('🔍 handleValidateEndShift - Validation sans terminer le shift');
+      console.log('🔍 handleValidateEndShift - Données reçues:', endData);
+
+      // Mapper les données du formulaire vers les champs de la base
+      const feuilleUpdateData = {
+        heure_fin: endData.heure_fin,
+        interruptions: endData.interruptions,
+        km_tableau_bord_fin: endData.km_tableau_bord_fin,
+        index_km_fin_tdb: endData.km_tableau_bord_fin,
+        taximetre_prise_charge_fin: endData.taximetre_prise_charge_fin,
+        taximetre_index_km_fin: endData.taximetre_index_km_fin,
+        taximetre_km_charge_fin: endData.taximetre_km_charge_fin,
+        taximetre_chutes_fin: endData.taximetre_chutes_fin,
+        observations: endData.observations,
+        signature_chauffeur: endData.signature_chauffeur,
+        // ✅ NE PAS marquer comme validée définitivement
+        est_validee: false
+      };
+
+      console.log('🔧 handleValidateEndShift - Données mappées pour l\'API:', feuilleUpdateData);
+
+      // Sauvegarder les données via l'endpoint de mise à jour
+      const updatedFeuilleRoute = await endFeuilleRoute(currentFeuilleRoute.feuille_id, feuilleUpdateData);
+
+      console.log('✅ handleValidateEndShift - Données sauvegardées:', updatedFeuilleRoute);
+
+      // Mettre à jour l'état local
+      setCurrentFeuilleRoute(updatedFeuilleRoute);
+      setShiftData({
+        ...shiftData,
+        heure_fin: updatedFeuilleRoute.heure_fin ? new Date(updatedFeuilleRoute.heure_fin).toTimeString().slice(0, 5) : null,
+        interruptions: updatedFeuilleRoute.interruptions,
+        index_km_fin_tdb: updatedFeuilleRoute.index_km_fin_tdb,
+        km_tableau_bord_fin: updatedFeuilleRoute.km_tableau_bord_fin,
+        taximetre_prise_charge_fin: updatedFeuilleRoute.taximetre_prise_charge_fin,
+        taximetre_index_km_fin: updatedFeuilleRoute.taximetre_index_km_fin,
+        taximetre_km_charge_fin: updatedFeuilleRoute.taximetre_km_charge_fin,
+        taximetre_chutes_fin: updatedFeuilleRoute.taximetre_chutes_fin,
+        observations: updatedFeuilleRoute.observations,
+        signature_chauffeur: updatedFeuilleRoute.signature_chauffeur,
+        statut: 'En cours' // Le shift n'est pas encore terminé
+      });
+
+      toast.success("Données validées et enregistrées avec succès !");
+      return true; // Retourner true pour indiquer le succès
+    } catch (error) {
+      console.error('Erreur lors de la validation:', error);
+      toast.error("Erreur lors de la validation des données");
+      return false;
+    }
+  };
+
   const handleEndShift = async (endData) => {
     try {
       if (!currentFeuilleRoute) {
@@ -832,23 +892,24 @@ export default function TxApp() {
         return;
       }
 
+      console.log('🔍 handleEndShift - Terminer le shift définitivement');
       console.log('🔍 handleEndShift - Données reçues:', endData);
 
       // Mapper les données du formulaire vers les champs de la base
       const feuilleUpdateData = {
         heure_fin: endData.heure_fin,
         interruptions: endData.interruptions,
-        // Kilométrage tableau de bord
         km_tableau_bord_fin: endData.km_tableau_bord_fin,
-        index_km_fin_tdb: endData.km_tableau_bord_fin, // Mapping pour compatibilité
-        // Note: Champs taximètre temporairement désactivés car non présents dans la DB actuelle
-        // taximetre_prise_charge_fin: endData.taximetre_prise_charge_fin,
-        // taximetre_index_km_fin: endData.taximetre_index_km_fin,
-        // taximetre_km_charge_fin: endData.taximetre_km_charge_fin,
-        // taximetre_chutes_fin: endData.taximetre_chutes_fin,
-        // Note: Champ observations temporairement désactivé car non présent dans la DB actuelle
-        // observations: endData.observations,
-        signature_chauffeur: endData.signature_chauffeur
+        index_km_fin_tdb: endData.km_tableau_bord_fin,
+        // ✅ CORRECTION: Activer les champs taximètre de fin
+        taximetre_prise_charge_fin: endData.taximetre_prise_charge_fin,
+        taximetre_index_km_fin: endData.taximetre_index_km_fin,
+        taximetre_km_charge_fin: endData.taximetre_km_charge_fin,
+        taximetre_chutes_fin: endData.taximetre_chutes_fin,
+        observations: endData.observations,
+        signature_chauffeur: endData.signature_chauffeur,
+        // ✅ Marquer comme validée définitivement lors de la fin du shift
+        est_validee: true
       };
 
       console.log('🔧 handleEndShift - Données mappées pour l\'API:', feuilleUpdateData);
@@ -856,7 +917,7 @@ export default function TxApp() {
       // Finaliser la feuille de route via l'endpoint de mise à jour
       const updatedFeuilleRoute = await endFeuilleRoute(currentFeuilleRoute.feuille_id, feuilleUpdateData);
 
-      console.log('✅ handleEndShift - Feuille de route mise à jour:', updatedFeuilleRoute);
+      console.log('✅ handleEndShift - Feuille de route terminée:', updatedFeuilleRoute);
 
       setCurrentFeuilleRoute(updatedFeuilleRoute);
       setShiftData({
@@ -865,19 +926,18 @@ export default function TxApp() {
         interruptions: updatedFeuilleRoute.interruptions,
         index_km_fin_tdb: updatedFeuilleRoute.index_km_fin_tdb,
         km_tableau_bord_fin: updatedFeuilleRoute.km_tableau_bord_fin,
-        // Données taximètre temporairement désactivées
-        taximetre_prise_charge_fin: null,
-        taximetre_index_km_fin: null,
-        taximetre_km_charge_fin: null,
-        taximetre_chutes_fin: null,
+        taximetre_prise_charge_fin: updatedFeuilleRoute.taximetre_prise_charge_fin,
+        taximetre_index_km_fin: updatedFeuilleRoute.taximetre_index_km_fin,
+        taximetre_km_charge_fin: updatedFeuilleRoute.taximetre_km_charge_fin,
+        taximetre_chutes_fin: updatedFeuilleRoute.taximetre_chutes_fin,
+        observations: updatedFeuilleRoute.observations,
         signature_chauffeur: updatedFeuilleRoute.signature_chauffeur,
-        statut: updatedFeuilleRoute.est_validee ? 'Validée' : 'Terminée'
+        statut: 'Validée'
       });
 
       toast.success("Feuille de route terminée avec succès !");
       
       // ✅ IMPORTANT : Réinitialiser la feuille active après la fin du shift
-      // Cela permettra au chauffeur de créer une nouvelle feuille lors du prochain shift
       setTimeout(() => {
         console.log('🔄 Réinitialisation de la feuille active après fin du shift');
         setCurrentFeuilleRoute(null);
@@ -885,7 +945,7 @@ export default function TxApp() {
         setExpenses([]);
         setShiftData(null);
         toast.info("Vous pouvez maintenant créer une nouvelle feuille de route pour votre prochain service");
-      }, 2000); // Attendre 2 secondes pour que l'utilisateur voie le message de succès
+      }, 2000);
       setActiveTab('dashboard');
     } catch (error) {
       console.error('Erreur lors de la finalisation de la feuille de route:', error);
@@ -1032,6 +1092,7 @@ export default function TxApp() {
             {activeTab === 'end' && (
               <EndShiftForm 
                 onEndShift={handleEndShift}
+                onValidate={handleValidateEndShift}
                 shiftData={shiftData}
                 driver={currentChauffeur}
                 vehicle={currentFeuilleRoute?.vehicule || null}

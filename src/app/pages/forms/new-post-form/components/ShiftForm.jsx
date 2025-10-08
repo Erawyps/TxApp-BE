@@ -4,7 +4,6 @@ import { yupResolver } from "@hookform/resolvers/yup";
 import { InformationCircleIcon } from "@heroicons/react/24/outline";
 import { toast } from "sonner";
 import PropTypes from "prop-types";
-import { useEffect, useCallback } from "react";
 
 // Local Imports
 import { Card, Button, Input, EncodingModeBadge } from "components/ui";
@@ -14,41 +13,9 @@ import { contractTypes } from "../data";
 
 // ----------------------------------------------------------------------
 
-// Hook personnalisé pour l'auto-sauvegarde
-const useAutoSave = (data, key, delay = 2000) => {
-  const saveData = useCallback((dataToSave) => {
-    try {
-      localStorage.setItem(key, JSON.stringify(dataToSave));
-    } catch (error) {
-      console.warn('Erreur lors de la sauvegarde automatique:', error);
-    }
-  }, [key]);
-
-  useEffect(() => {
-    if (!data || Object.keys(data).length === 0) return;
-
-    const timeoutId = setTimeout(() => {
-      saveData(data);
-    }, delay);
-
-    return () => clearTimeout(timeoutId);
-  }, [data, saveData, delay]);
-};
-
-// Fonction pour charger les données sauvegardées
-const loadSavedData = (key) => {
-  try {
-    const saved = localStorage.getItem(key);
-    return saved ? JSON.parse(saved) : null;
-  } catch (error) {
-    console.warn('Erreur lors du chargement des données sauvegardées:', error);
-    return null;
-  }
-};
-
-export function ShiftForm({ vehicles, currentShift, onStartShift, onShowVehicleInfo, reglesSalaire = [] }) {
-  // Charger les données sauvegardées au montage du composant
-  const savedData = loadSavedData('shiftFormData');
+export function ShiftForm({ vehicles, onStartShift, onShowVehicleInfo, reglesSalaire = [] }) {
+  // ❌ SUPPRIMÉ: Chargement depuis localStorage - cause du pré-remplissage incorrect
+  // const savedData = loadSavedData('shiftFormData');
 
   const {
     register,
@@ -58,20 +25,8 @@ export function ShiftForm({ vehicles, currentShift, onStartShift, onShowVehicleI
     formState: { errors }
   } = useForm({
     resolver: yupResolver(shiftSchema),
-    defaultValues: currentShift ? {
-      date: currentShift.date_service ? new Date(currentShift.date_service).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
-      heure_debut: currentShift.heure_debut || '',
-      heure_fin_estimee: currentShift.heure_fin_estimee || '',
-      interruptions: currentShift.interruptions || '00:00',
-      type_remuneration: currentShift.type_remuneration || '',
-      vehicule_id: currentShift.vehicule_id ? currentShift.vehicule_id.toString() : '',
-      km_tableau_bord_debut: currentShift.index_km_debut_tdb || currentShift.km_tableau_bord_debut || '',
-      // Champs taximètre de début avec données existantes du shift actuel
-      taximetre_prise_charge_debut: currentShift.taximetre?.taximetre_prise_charge_debut || currentShift.taximetre_prise_charge_debut || '0',
-      taximetre_index_km_debut: currentShift.taximetre?.taximetre_index_km_debut || currentShift.taximetre_index_km_debut || '0',
-      taximetre_km_charge_debut: currentShift.taximetre?.taximetre_km_charge_debut || currentShift.taximetre_km_charge_debut || '0',
-      taximetre_chutes_debut: currentShift.taximetre?.taximetre_chutes_debut || currentShift.taximetre_chutes_debut || '0'
-    } : (savedData || {
+    // ✅ CORRECTION: Valeurs par défaut VIDES (pas de pré-remplissage depuis currentShift ou localStorage)
+    defaultValues: {
       date: new Date().toISOString().split('T')[0],
       heure_debut: '',
       heure_fin_estimee: '',
@@ -79,16 +34,16 @@ export function ShiftForm({ vehicles, currentShift, onStartShift, onShowVehicleI
       type_remuneration: '',
       vehicule_id: '',
       km_tableau_bord_debut: '',
-      taximetre_prise_charge_debut: '0',
-      taximetre_index_km_debut: '0',
-      taximetre_km_charge_debut: '0',
-      taximetre_chutes_debut: '0'
-    })
+      // ✅ Champs taximètre VIDES par défaut
+      taximetre_prise_charge_debut: '',
+      taximetre_index_km_debut: '',
+      taximetre_km_charge_debut: '',
+      taximetre_chutes_debut: ''
+    }
   });
 
-  // Auto-sauvegarde des données du formulaire
+  // Récupérer les données du formulaire pour les calculs
   const watchedData = watch();
-  useAutoSave(watchedData, 'shiftFormData');
 
   // Utiliser les règles de salaire de la base de données ou les types par défaut
   const remunerationTypes = reglesSalaire.length > 0

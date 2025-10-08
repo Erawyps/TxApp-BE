@@ -2,63 +2,15 @@
 import { useForm } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import { toast } from "sonner";
-import { PrinterIcon } from "@heroicons/react/24/outline";
+import { PrinterIcon, CheckCircleIcon } from "@heroicons/react/24/outline";
 import PropTypes from "prop-types";
-import { useCallback, useEffect } from "react";
+import { useState } from "react";
 
 // Local Imports
 import { Card, Button, Input, Textarea } from "components/ui";
 import { endShiftSchema } from "../schema";
 
 // ----------------------------------------------------------------------
-
-// Hook personnalisé pour l'auto-sauvegarde
-const useAutoSave = (data, key, delay = 2000) => {
-  const saveData = useCallback((dataToSave) => {
-    try {
-      localStorage.setItem(key, JSON.stringify(dataToSave));
-    } catch (error) {
-      console.warn('Erreur lors de la sauvegarde automatique:', error);
-    }
-  }, [key]);
-
-  useEffect(() => {
-    if (!data || Object.keys(data).length === 0) return;
-
-    const timeoutId = setTimeout(() => {
-      saveData(data);
-    }, delay);
-
-    return () => clearTimeout(timeoutId);
-  }, [data, saveData, delay]);
-};
-
-// Fonction pour charger les données sauvegardées avec validation
-const loadSavedData = (key) => {
-  try {
-    const saved = localStorage.getItem(key);
-    if (saved) {
-      const parsedData = JSON.parse(saved);
-      
-      // Vérifier si les données sont significatives (pas que des valeurs vides)
-      const hasSignificantData = Object.values(parsedData).some(value => 
-        value !== '' && value !== null && value !== undefined && value !== '0'
-      );
-      
-      console.log(`📦 loadSavedData(${key}):`, {
-        found: !!parsedData,
-        hasSignificantData,
-        data: parsedData
-      });
-      
-      return hasSignificantData ? parsedData : null;
-    }
-    return null;
-  } catch (error) {
-    console.warn('Erreur lors du chargement des données sauvegardées:', error);
-    return null;
-  }
-};
 
 const initialEndShiftData = {
   heure_fin: '',
@@ -72,155 +24,52 @@ const initialEndShiftData = {
   signature_chauffeur: ''
 };
 
-export function EndShiftForm({ onEndShift, shiftData, driver, onPrintReport }) {
-  // Charger les données sauvegardées du formulaire de fin
-  const savedEndData = loadSavedData('endShiftFormData');
-  
-  // Charger les données sauvegardées du formulaire de début pour récupérer heure_fin_estimee
-  const savedStartData = loadSavedData('shiftFormData');
+export function EndShiftForm({ onEndShift, onValidate, shiftData, driver, onPrintReport }) {
+  // État de validation
+  const [isValidated, setIsValidated] = useState(false);
 
   // Debug: Afficher les données reçues
   console.log('🔍 EndShiftForm DEBUG:');
   console.log('  shiftData:', shiftData);
-  console.log('  shiftData?.taximetre:', shiftData?.taximetre);
-  console.log('  shiftData?.taximetre_prise_charge_fin:', shiftData?.taximetre_prise_charge_fin);
-  console.log('  shiftData?.index_km_fin_tdb:', shiftData?.index_km_fin_tdb);
-  console.log('  savedEndData:', savedEndData);
+  console.log('  driver:', driver);
 
-  // Créer les valeurs par défaut avec priorité correcte
+  // ✅ CORRECTION: Valeurs par défaut VIDES pour éviter le pré-remplissage
   const getDefaultValues = () => {
-    console.log('  🔄 getDefaultValues() appelée:');
-    console.log('    shiftData au moment de getDefaultValues:', shiftData);
-    console.log('    savedEndData au moment de getDefaultValues:', savedEndData);
+    console.log('  🔄 getDefaultValues() appelée pour EndShiftForm');
     
-    // Si on a des données sauvegardées ET qu'elles ne sont pas vides, les utiliser
-    if (savedEndData && Object.keys(savedEndData).length > 0) {
-      console.log('  ✅ Utilisation des données sauvegardées localStorage');
-      return savedEndData;
-    }
-
-    // Sinon, utiliser les données du shift existant
-    const defaultValues = {
+    // Signature pré-remplie avec le nom du chauffeur
+    const signature = `${driver?.utilisateur?.prenom || ''} ${driver?.utilisateur?.nom || ''}`.trim();
+    
+    return {
       ...initialEndShiftData,
-      // Pré-remplir avec les données existantes si disponibles
-      heure_fin: shiftData?.heure_fin || '',
-      interruptions: shiftData?.interruptions || '',
-      km_tableau_bord_fin: shiftData?.index_km_fin_tdb || shiftData?.km_tableau_bord_fin || '',
-      // Champs taximètre de fin avec données existantes du shift actuel
-      taximetre_prise_charge_fin: shiftData?.taximetre?.taximetre_prise_charge_fin || shiftData?.taximetre_prise_charge_fin || '',
-      taximetre_index_km_fin: shiftData?.taximetre?.taximetre_index_km_fin || shiftData?.taximetre_index_km_fin || '',
-      taximetre_km_charge_fin: shiftData?.taximetre?.taximetre_km_charge_fin || shiftData?.taximetre_km_charge_fin || '',
-      taximetre_chutes_fin: shiftData?.taximetre?.taximetre_chutes_fin || shiftData?.taximetre_chutes_fin || '',
-      observations: shiftData?.observations || '',
-      signature_chauffeur: shiftData?.signature_chauffeur || `${driver?.utilisateur?.prenom || 'Non défini'} ${driver?.utilisateur?.nom || 'Non défini'}`
+      signature_chauffeur: signature || 'Non défini',
+      // ✅ Pré-remplir interruptions si déjà présentes dans shiftData
+      interruptions: shiftData?.interruptions || ''
     };
-
-    console.log('  ✅ Utilisation des données du shift existant:', defaultValues);
-    console.log('    defaultValues.taximetre_prise_charge_fin:', defaultValues.taximetre_prise_charge_fin);
-    console.log('    defaultValues.km_tableau_bord_fin:', defaultValues.km_tableau_bord_fin);
-    return defaultValues;
   };
 
   const {
     register,
     handleSubmit,
     watch,
-    reset,
-    setValue,
+    trigger,
+    getValues,
     formState: { errors }
   } = useForm({
     resolver: yupResolver(endShiftSchema),
     defaultValues: getDefaultValues()
   });
 
-  // Effet pour mettre à jour les valeurs quand shiftData change
-  useEffect(() => {
-    console.log('  🔄 useEffect EndShiftForm déclenché !');
-    console.log('    shiftData:', shiftData);
-    console.log('    driver:', driver);
-    
-    if (shiftData) {
-      console.log('  🔄 shiftData a changé, mise à jour du formulaire...');
-      console.log('  📊 DEBUG shiftData complet:', shiftData);
-      console.log('  🎯 DEBUG données taximètre dans shiftData:');
-      console.log('    shiftData.taximetre_prise_charge_fin:', shiftData.taximetre_prise_charge_fin);
-      console.log('    shiftData.taximetre_index_km_fin:', shiftData.taximetre_index_km_fin);
-      console.log('    shiftData.taximetre_km_charge_fin:', shiftData.taximetre_km_charge_fin);
-      console.log('    shiftData.taximetre_chutes_fin:', shiftData.taximetre_chutes_fin);
-      console.log('    shiftData.taximetre:', shiftData.taximetre);
-      
-      // Ne pas écraser les données déjà saisies par l'utilisateur
-      const currentValues = watch();
-      
-      // Une saisie utilisateur "significative" n'est pas juste des chaînes vides ou des zéros
-      const hasSignificantUserInput = Object.entries(currentValues).some(([key, value]) => {
-        // Ignorer les champs de signature et observations pour cette vérification
-        if (key === 'signature_chauffeur' || key === 'observations') return false;
-        
-        // Une valeur significative n'est pas vide, null, undefined, ou "0"
-        return value !== '' && value !== null && value !== undefined && value !== '0' && String(value).trim() !== '';
-      });
-
-      console.log('    currentValues:', currentValues);
-      console.log('    hasSignificantUserInput:', hasSignificantUserInput);
-
-      if (!hasSignificantUserInput) {
-        console.log('  ✅ Aucune saisie utilisateur significative détectée, mise à jour des valeurs par défaut');
-        const newValues = {
-          heure_fin: shiftData.heure_fin || '',
-          interruptions: shiftData.interruptions || '',
-          km_tableau_bord_fin: shiftData.index_km_fin_tdb || shiftData.km_tableau_bord_fin || '',
-          taximetre_prise_charge_fin: shiftData.taximetre?.taximetre_prise_charge_fin || shiftData.taximetre_prise_charge_fin || '',
-          taximetre_index_km_fin: shiftData.taximetre?.taximetre_index_km_fin || shiftData.taximetre_index_km_fin || '',
-          taximetre_km_charge_fin: shiftData.taximetre?.taximetre_km_charge_fin || shiftData.taximetre_km_charge_fin || '',
-          taximetre_chutes_fin: shiftData.taximetre?.taximetre_chutes_fin || shiftData.taximetre_chutes_fin || '',
-          observations: shiftData.observations || '',
-          signature_chauffeur: shiftData.signature_chauffeur || `${driver?.utilisateur?.prenom || 'Non défini'} ${driver?.utilisateur?.nom || 'Non défini'}`
-        };
-        
-        console.log('  📝 DEBUG newValues calculées:', newValues);
-        console.log('  🔧 Application des valeurs avec reset()...');
-        reset(newValues);
-      } else {
-        console.log('  ⚠️ Saisie utilisateur significative détectée, conservation des valeurs actuelles');
-      }
-    } else {
-      console.log('  ❌ Pas de shiftData disponible pour le pré-remplissage');
-    }
-  }, [shiftData, reset, watch, driver]);
-
-  // useEffect supplémentaire pour forcer le pré-remplissage des données taximètre
-  useEffect(() => {
-    if (shiftData?.taximetre || shiftData?.taximetre_prise_charge_fin) {
-      console.log('  🎯 FORCE UPDATE: Données taximètre détectées, forçage de la mise à jour');
-      
-      const forceValues = {
-        km_tableau_bord_fin: shiftData.index_km_fin_tdb || shiftData.km_tableau_bord_fin || '',
-        taximetre_prise_charge_fin: shiftData.taximetre?.taximetre_prise_charge_fin || shiftData.taximetre_prise_charge_fin || '',
-        taximetre_index_km_fin: shiftData.taximetre?.taximetre_index_km_fin || shiftData.taximetre_index_km_fin || '',
-        taximetre_km_charge_fin: shiftData.taximetre?.taximetre_km_charge_fin || shiftData.taximetre_km_charge_fin || '',
-        taximetre_chutes_fin: shiftData.taximetre?.taximetre_chutes_fin || shiftData.taximetre_chutes_fin || ''
-      };
-      
-      console.log('  🔧 FORCE UPDATE values:', forceValues);
-      
-      // Mettre à jour seulement les champs taximètre et km tableau de bord
-      Object.entries(forceValues).forEach(([fieldName, value]) => {
-        if (value) {
-          console.log(`    Updating ${fieldName} = ${value}`);
-          setValue(fieldName, value);
-        }
-      });
-    }
-  }, [shiftData?.taximetre, shiftData?.taximetre_prise_charge_fin, shiftData?.taximetre_index_km_fin, shiftData?.taximetre_km_charge_fin, shiftData?.taximetre_chutes_fin, shiftData?.index_km_fin_tdb, shiftData?.km_tableau_bord_fin, setValue]);
-
+  // ❌ SUPPRIMÉ: useEffect qui forçait le pré-remplissage avec des données de shift précédent
+  // Cela causait le problème de pré-remplissage automatique incorrect
+  
   const watchedData = watch();
 
-  // Auto-sauvegarde des données du formulaire
-  useAutoSave(watchedData, 'endShiftFormData');
+  // ✅ Auto-sauvegarde désactivée pour éviter le pré-remplissage incorrect
+  // useAutoSave(watchedData, 'endShiftFormData');
 
-  // Récupérer heure_fin_estimee depuis les données sauvegardées du formulaire de début
-  const heureFinEstimee = savedStartData?.heure_fin_estimee || shiftData?.heure_fin_estimee;
+  // ✅ Récupérer heure_fin_estimee depuis shiftData uniquement
+  const heureFinEstimee = shiftData?.heure_fin_estimee;
 
   // Fonction utilitaire pour normaliser le format d'heure
   const normalizeTimeFormat = (timeValue) => {
@@ -320,6 +169,42 @@ export function EndShiftForm({ onEndShift, shiftData, driver, onPrintReport }) {
     console.log('🔍 EndShiftForm - Données envoyées avec durée calculée:', endShiftData);
     toast.success("Shift terminé avec succès!");
     onEndShift(endShiftData);
+  };
+
+  // Fonction de validation sans terminer le shift
+  // Fonction de validation sans terminer le shift
+  const handleValidate = async () => {
+    console.log('🔍 EndShiftForm - Validation déclenchée');
+    const isValid = await trigger(); // Valide tous les champs
+    
+    if (isValid) {
+      const formData = getValues();
+      const endShiftData = {
+        ...formData,
+        duree_reelle: calculateActualShiftDuration()
+      };
+      
+      console.log('🔍 EndShiftForm - Validation réussie, données:', endShiftData);
+      
+      // ✅ Appeler onValidate pour sauvegarder SANS terminer le shift
+      const success = await onValidate(endShiftData);
+      
+      if (success) {
+        setIsValidated(true);
+        toast.success("Données validées et enregistrées avec succès!");
+      }
+    } else {
+      toast.error("Veuillez corriger les erreurs dans le formulaire");
+    }
+  };
+
+  // Handler pour le bouton d'impression
+  const handlePrint = () => {
+    if (!isValidated) {
+      toast.warning("Veuillez d'abord valider les données avant d'imprimer");
+      return;
+    }
+    onPrintReport();
   };
 
   const { actual, estimated } = calculateDurationDifference();
@@ -470,15 +355,29 @@ export function EndShiftForm({ onEndShift, shiftData, driver, onPrintReport }) {
           </div>
 
           <div className="flex justify-between gap-3 pt-4">
-            <Button 
-              variant="outlined" 
-              type="button"
-              onClick={onPrintReport}
-              className="flex items-center gap-2"
-            >
-              <PrinterIcon className="h-4 w-4" />
-              Imprimer feuille de route
-            </Button>
+            <div className="flex gap-3">
+              <Button 
+                variant="outlined" 
+                type="button"
+                onClick={handlePrint}
+                className="flex items-center gap-2"
+                disabled={!isValidated}
+              >
+                <PrinterIcon className="h-4 w-4" />
+                Imprimer feuille de route
+              </Button>
+              
+              <Button 
+                variant="outlined"
+                type="button" 
+                onClick={handleValidate}
+                className="flex items-center gap-2"
+              >
+                <CheckCircleIcon className="h-4 w-4" />
+                Valider
+              </Button>
+            </div>
+            
             <div className="flex gap-3">
               <Button variant="outlined" type="button">
                 Sauvegarder en brouillon
@@ -496,6 +395,7 @@ export function EndShiftForm({ onEndShift, shiftData, driver, onPrintReport }) {
 
 EndShiftForm.propTypes = {
   onEndShift: PropTypes.func.isRequired,
+  onValidate: PropTypes.func.isRequired,
   shiftData: PropTypes.object,
   driver: PropTypes.object,
   onPrintReport: PropTypes.func.isRequired
