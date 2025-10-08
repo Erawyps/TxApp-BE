@@ -4,6 +4,32 @@ import { cors } from 'hono/cors';
 import { sign, verify } from 'hono/jwt';
 import { PrismaClient } from '@prisma/client';
 
+// Fonction utilitaire pour mapper les données frontend vers le format DB
+function mapToDb(course) {
+  console.log('🔍 mapToDb - Données reçues:', course);
+  const mapped = {
+    feuille_id: course.feuille_id || course.feuille_route_id,
+    client_id: course.client_id,
+    // Accepter à la fois mode_paiement_id et mode_paiement
+    mode_paiement_id: course.mode_paiement_id || course.mode_paiement,
+    num_ordre: course.num_ordre,
+    index_depart: course.index_depart,
+    // Mapper les champs frontend vers les champs API corrects
+    index_embarquement: course.index_embarquement || course.index_depart,
+    lieu_embarquement: course.lieu_embarquement || null,
+    heure_embarquement: course.heure_embarquement || null,
+    index_debarquement: course.index_debarquement || course.index_arrivee,
+    lieu_debarquement: course.lieu_debarquement || null,
+    heure_debarquement: course.heure_debarquement || null,
+    prix_taximetre: course.prix_taximetre,
+    sommes_percues: course.sommes_percues || course.somme_percue,
+    est_hors_heures: course.hors_creneau || false,
+    notes: course.notes || null
+  };
+  console.log('🔍 mapToDb - Données mappées pour API:', mapped);
+  return mapped;
+}
+
 const app = new Hono();
 
 // Configuration CORS pour développement local (sans X-API-Key)
@@ -1663,15 +1689,19 @@ app.put('/api/dashboard/feuilles-route/:id', dbMiddleware, async (c) => {
 app.post('/api/courses', dbMiddleware, async (c) => {
   try {
     const prisma = c.get('prisma');
-    const data = await c.req.json();
-    
-    console.log('📝 Creating new course:', data);
-    
+    const rawData = await c.req.json();
+
+    console.log('📝 Creating new course:', rawData);
+
+    // Mapper les données frontend vers le format DB
+    const data = mapToDb(rawData);
+
     // Validation des données requises
     if (!data.feuille_id || !data.num_ordre || !data.sommes_percues || !data.mode_paiement_id) {
-      return c.json({ 
+      return c.json({
         error: 'Données manquantes: feuille_id, num_ordre, sommes_percues et mode_paiement_id sont requis',
-        received: data
+        received: rawData,
+        mapped: data
       }, 400);
     }
     

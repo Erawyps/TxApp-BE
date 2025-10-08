@@ -6,6 +6,32 @@ import { PrismaClient } from '@prisma/client';
 import { PrismaD1 } from '@prisma/adapter-d1';
 import { PrismaPg } from '@prisma/adapter-pg';
 
+// Fonction utilitaire pour mapper les données frontend vers le format DB
+function mapToDb(course) {
+  console.log('🔍 mapToDb - Données reçues:', course);
+  const mapped = {
+    feuille_id: course.feuille_id || course.feuille_route_id,
+    client_id: course.client_id,
+    // Accepter à la fois mode_paiement_id et mode_paiement
+    mode_paiement_id: course.mode_paiement_id || course.mode_paiement,
+    num_ordre: course.num_ordre,
+    index_depart: course.index_depart,
+    // Mapper les champs frontend vers les champs API corrects
+    index_embarquement: course.index_embarquement || course.index_depart,
+    lieu_embarquement: course.lieu_embarquement || null,
+    heure_embarquement: course.heure_embarquement || null,
+    index_debarquement: course.index_debarquement || course.index_arrivee,
+    lieu_debarquement: course.lieu_debarquement || null,
+    heure_debarquement: course.heure_debarquement || null,
+    prix_taximetre: course.prix_taximetre,
+    sommes_percues: course.sommes_percues || course.somme_percue,
+    est_hors_heures: course.hors_creneau || false,
+    notes: course.notes || null
+  };
+  console.log('🔍 mapToDb - Données mappées pour API:', mapped);
+  return mapped;
+}
+
 const app = new Hono();
 
 // Middleware pour gérer les challenges Cloudflare
@@ -234,12 +260,13 @@ const preparePartialUpdateForDB = (formData) => {
     if (timeString.includes('T')) {
       parsedTime = new Date(timeString);
     } else {
-      const timeParts = timeString.split(':');
-      parsedTime = new Date(`1970-01-01T${timeParts[0]}:${timeParts[1]}:00`);
+      // Format HH:MM:SS ou HH:MM - créer une date avec 1970-01-01
+      const timeStr = timeString.length === 5 ? timeString + ':00' : timeString;
+      parsedTime = new Date(`1970-01-01T${timeStr}`);
     }
     
     if (isNaN(parsedTime.getTime())) {
-      console.error('Invalid time format:', timeString);
+      console.error('❌ Invalid time format:', timeString);
       return null;
     }
     
@@ -251,12 +278,14 @@ const preparePartialUpdateForDB = (formData) => {
     if (interruptions === null || interruptions === undefined) return null;
     
     if (typeof interruptions === 'number') {
+      // Convertir les minutes en format "HH:MM"
       const hours = Math.floor(interruptions / 60);
       const minutes = interruptions % 60;
       return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
     }
     
     if (typeof interruptions === 'string') {
+      // Déjà au bon format
       return interruptions;
     }
     
@@ -277,7 +306,38 @@ const preparePartialUpdateForDB = (formData) => {
     }
   }
   
-  // Mise à jour taximètre seulement si les champs DB sont fournis
+  // Mapping des champs frontend vers DB pour mise à jour
+  // Utilise le contexte pour déterminer si les données vont vers début ou fin
+  if (formData["Taximètre: Prise en charge"] !== undefined) {
+    if (formData.context === 'debut') {
+      taximetreData.taximetre_prise_charge_debut = parseFloat(formData["Taximètre: Prise en charge"]);
+    } else {
+      taximetreData.taximetre_prise_charge_fin = parseFloat(formData["Taximètre: Prise en charge"]);
+    }
+  }
+  if (formData["Taximètre: Index km (km totaux)"] !== undefined) {
+    if (formData.context === 'debut') {
+      taximetreData.taximetre_index_km_debut = parseInt(formData["Taximètre: Index km (km totaux)"]);
+    } else {
+      taximetreData.taximetre_index_km_fin = parseInt(formData["Taximètre: Index km (km totaux)"]);
+    }
+  }
+  if (formData["Taximètre: Km en charge"] !== undefined) {
+    if (formData.context === 'debut') {
+      taximetreData.taximetre_km_charge_debut = parseFloat(formData["Taximètre: Km en charge"]);
+    } else {
+      taximetreData.taximetre_km_charge_fin = parseFloat(formData["Taximètre: Km en charge"]);
+    }
+  }
+  if (formData["Taximètre: Chutes (€)"] !== undefined) {
+    if (formData.context === 'debut') {
+      taximetreData.taximetre_chutes_debut = parseFloat(formData["Taximètre: Chutes (€)"]);
+    } else {
+      taximetreData.taximetre_chutes_fin = parseFloat(formData["Taximètre: Chutes (€)"]);
+    }
+  }
+  
+  // Mise à jour taximètre seulement si les champs DB sont fournis (compatibilité)
   if (formData.taximetre_prise_charge_debut !== undefined) {
     taximetreData.taximetre_prise_charge_debut = parseFloat(formData.taximetre_prise_charge_debut);
   }
@@ -301,6 +361,43 @@ const preparePartialUpdateForDB = (formData) => {
   }
   if (formData.taximetre_chutes_fin !== undefined) {
     taximetreData.taximetre_chutes_fin = parseFloat(formData.taximetre_chutes_fin);
+  }
+  
+  // Support pour les données taximètre imbriquées (formData.taximetre)
+  if (formData.taximetre && typeof formData.taximetre === 'object') {
+    const taximetre = formData.taximetre;
+    
+    // Mapping des champs taximètre imbriqués vers les champs DB
+    if (taximetre.index_embarquement !== undefined) {
+      if (formData.context === 'debut') {
+        taximetreData.taximetre_prise_charge_debut = parseFloat(taximetre.index_embarquement);
+      } else {
+        taximetreData.taximetre_prise_charge_fin = parseFloat(taximetre.index_embarquement);
+      }
+    }
+    if (taximetre.index_debarquement !== undefined) {
+      if (formData.context === 'debut') {
+        taximetreData.taximetre_index_km_debut = parseInt(taximetre.index_debarquement);
+      } else {
+        taximetreData.taximetre_index_km_fin = parseInt(taximetre.index_debarquement);
+      }
+    }
+    if (taximetre.sommes_percue !== undefined) {
+      if (formData.context === 'debut') {
+        taximetreData.taximetre_chutes_debut = parseFloat(taximetre.sommes_percue);
+      } else {
+        taximetreData.taximetre_chutes_fin = parseFloat(taximetre.sommes_percue);
+      }
+    }
+    
+    // Support pour les autres champs taximètre potentiels
+    if (taximetre.km_charge !== undefined) {
+      if (formData.context === 'debut') {
+        taximetreData.taximetre_km_charge_debut = parseFloat(taximetre.km_charge);
+      } else {
+        taximetreData.taximetre_km_charge_fin = parseFloat(taximetre.km_charge);
+      }
+    }
   }
   
   return { feuilleData, taximetreData };
@@ -1842,51 +1939,64 @@ app.get('/api/courses', dbMiddleware, authMiddleware, async (c) => {
 
 // POST /api/courses - Créer une course
 app.post('/api/courses', dbMiddleware, authMiddleware, async (c) => {
+  let rawData, data; // Initialize variables for error logging
   try {
     const prisma = c.get('prisma');
-    const data = await c.req.json();
+    rawData = await c.req.json();
 
-    console.log('📝 POST /api/courses - Données reçues:', JSON.stringify(data, null, 2));
+    console.log('📝 POST /api/courses - Données reçues:', JSON.stringify(rawData, null, 2));
 
-    // Validation des données requises
-    if (!data.feuille_id || !data.num_ordre || !data.index_embarquement || !data.index_debarquement || !data.sommes_percues || !data.mode_paiement_id) {
+    // Mapper les données frontend vers le format DB
+    data = mapToDb(rawData);
+
+    // Validation des données requises - comme en développement
+    if (!data.feuille_id || !data.num_ordre || !data.sommes_percues || !data.mode_paiement_id) {
       console.error('❌ Validation échouée - Données manquantes:', {
         feuille_id: data.feuille_id,
         num_ordre: data.num_ordre,
-        index_embarquement: data.index_embarquement,
-        index_debarquement: data.index_debarquement,
         sommes_percues: data.sommes_percues,
         mode_paiement_id: data.mode_paiement_id
       });
-      return c.json({ error: 'Feuille ID, numéro d\'ordre, index embarquement, index débarquement, sommes perçues et mode de paiement sont requis' }, 400);
+      return c.json({
+        error: 'Données manquantes: feuille_id, num_ordre, sommes_percues et mode_paiement_id sont requis',
+        received: rawData,
+        mapped: data
+      }, 400);
     }
 
-    // Vérifier si ce numéro d'ordre existe déjà pour cette feuille
+    // Gestion intelligente du numéro d'ordre - comme en développement
+    let numOrdre = parseInt(data.num_ordre);
+    const feuilleId = parseInt(data.feuille_id);
+
+    // Vérifier si ce numéro d'ordre existe déjà
     const existingCourse = await prisma.course.findFirst({
       where: {
-        feuille_id: data.feuille_id,
-        num_ordre: data.num_ordre
+        feuille_id: feuilleId,
+        num_ordre: numOrdre
       }
     });
 
     if (existingCourse) {
-      console.error('❌ Conflit numéro d\'ordre:', {
-        feuille_id: data.feuille_id,
-        num_ordre: data.num_ordre,
-        existing_course_id: existingCourse.course_id
+      console.log(`⚠️ Course ${numOrdre} existe déjà pour feuille ${feuilleId}, recherche du prochain numéro disponible...`);
+
+      // Trouver le prochain numéro d'ordre disponible
+      const maxCourse = await prisma.course.findFirst({
+        where: {
+          feuille_id: feuilleId
+        },
+        orderBy: {
+          num_ordre: 'desc'
+        }
       });
-      return c.json({
-        error: 'Conflit: Ce numéro d\'ordre existe déjà pour cette feuille de route',
-        details: `La course #${data.num_ordre} existe déjà (ID: ${existingCourse.course_id})`,
-        code: 'DUPLICATE_NUM_ORDRE'
-      }, 409);
+
+      numOrdre = maxCourse ? maxCourse.num_ordre + 1 : 1;
+      console.log(`✅ Nouveau numéro d'ordre assigné: ${numOrdre}`);
     }
 
     // Créer la course
     const course = await prisma.course.create({
       data: {
-        feuille_id: data.feuille_id,
-        num_ordre: data.num_ordre,
+        num_ordre: numOrdre, // Utiliser le numéro d'ordre calculé (original ou nouveau)
         index_depart: data.index_depart || null,
         index_embarquement: data.index_embarquement,
         lieu_embarquement: data.lieu_embarquement || null,
@@ -1896,9 +2006,28 @@ app.post('/api/courses', dbMiddleware, authMiddleware, async (c) => {
         heure_debarquement: data.heure_debarquement ? new Date(data.heure_debarquement) : null,
         prix_taximetre: data.prix_taximetre || null,
         sommes_percues: data.sommes_percues,
-        mode_paiement_id: data.mode_paiement_id,
-        client_id: data.client_id || null,
-        est_hors_heures: data.est_hors_heures || false
+        est_hors_heures: data.est_hors_heures || false,
+        notes: data.notes || null,
+        // Connecter à la feuille de route existante
+        feuille_route: {
+          connect: {
+            feuille_id: feuilleId
+          }
+        },
+        // Connecter au mode de paiement existant
+        mode_paiement: {
+          connect: {
+            mode_id: parseInt(data.mode_paiement_id)
+          }
+        },
+        // Connecter au client s'il existe
+        ...(data.client_id ? {
+          client: {
+            connect: {
+              client_id: parseInt(data.client_id)
+            }
+          }
+        } : {})
       },
       include: {
         client: {
@@ -1921,19 +2050,64 @@ app.post('/api/courses', dbMiddleware, authMiddleware, async (c) => {
     return c.json({
       id: course.course_id,
       ...data,
-      created_at: course.created_at
+      num_ordre: numOrdre, // Retourner le numéro d'ordre effectivement utilisé
+      created_at: course.created_at,
+      ...(numOrdre !== parseInt(data.num_ordre) && { 
+        note: `Numéro d'ordre ajusté de ${data.num_ordre} à ${numOrdre} (conflit détecté)` 
+      })
     }, 201);
+
   } catch (error) {
-    console.error('❌ Error creating course:', error.message);
-    console.error('❌ Error code:', error.code);
-    console.error('❌ Error meta:', error.meta);
-    console.error('❌ Error stack:', error.stack);
-    
+    console.error('❌ Erreur lors de la création de la course:', error);
+    console.error('❌ Message d\'erreur:', error.message);
+    console.error('❌ Code d\'erreur:', error.code);
+    console.error('❌ Détails de l\'erreur:', error.meta);
+    console.error('❌ Stack trace:', error.stack);
+    console.error('❌ Type d\'erreur:', error.constructor.name);
+    console.error('❌ Propriétés de l\'erreur:', Object.keys(error));
+
+    // Log des données qui ont été utilisées pour la création (si disponibles)
+    console.error('❌ Données utilisées pour la création:', {
+      rawData: JSON.stringify(rawData, null, 2),
+      mappedData: JSON.stringify(data, null, 2)
+    });
+
+    // Gérer les erreurs spécifiques de Prisma
+    if (error.code) {
+      switch (error.code) {
+        case 'P2002':
+          return c.json({
+            error: 'Conflit de données',
+            details: 'Une contrainte d\'unicité a été violée',
+            code: error.code
+          }, 409);
+        case 'P2003':
+          return c.json({
+            error: 'Erreur de clé étrangère',
+            details: 'Une référence à une entité inexistante a été détectée',
+            code: error.code,
+            meta: error.meta
+          }, 400);
+        case 'P2025':
+          return c.json({
+            error: 'Enregistrement non trouvé',
+            details: 'L\'enregistrement référencé n\'existe pas',
+            code: error.code
+          }, 404);
+        default:
+          return c.json({
+            error: 'Erreur de base de données',
+            details: error.message,
+            code: error.code,
+            meta: error.meta
+          }, 500);
+      }
+    }
+
     return c.json({
-      error: 'Erreur lors de la création de la course',
+      error: 'Erreur interne du serveur',
       details: error.message,
-      code: error.code,
-      meta: error.meta
+      stack: error.stack
     }, 500);
   }
 });
@@ -3227,6 +3401,28 @@ app.put('/api/dashboard/feuilles-route/:id', dbMiddleware, authMiddleware, async
       }
     }
 
+    // Vérifier le contexte du shift pour déterminer si on est en début ou fin
+    const existingFeuille = await prisma.feuille_route.findUnique({
+      where: { feuille_id: parseInt(id) },
+      include: { taximetre: true }
+    });
+
+    if (!existingFeuille) {
+      return c.json({ error: 'Feuille de route non trouvée' }, 404);
+    }
+
+    // Déterminer si c'est un début ou une fin de shift
+    const isBeginningOfShift = !existingFeuille?.taximetre?.taximetre_prise_charge_debut;
+    
+    // Ajouter le contexte aux données
+    if (isBeginningOfShift) {
+      requestData.context = 'debut';
+      console.log('🟢 Mode DÉBUT de shift détecté pour feuille:', id);
+    } else {
+      requestData.context = 'fin';
+      console.log('🔴 Mode FIN de shift détecté pour feuille:', id);
+    }
+
     // ✅ Utiliser la fonction de mapping unifiée
     const { feuilleData, taximetreData } = preparePartialUpdateForDB(requestData);
 
@@ -3244,10 +3440,10 @@ app.put('/api/dashboard/feuilles-route/:id', dbMiddleware, authMiddleware, async
     // ✅ Mettre à jour ou créer le taximètre
     if (Object.keys(taximetreData).length > 0) {
       await prisma.taximetre.upsert({
-        where: { feuille_route_id: parseInt(id) },
+        where: { feuille_id: parseInt(id) },
         update: taximetreData,
         create: {
-          feuille_route_id: parseInt(id),
+          feuille_id: parseInt(id),
           ...taximetreData
         }
       });

@@ -227,20 +227,21 @@ function mapToDb(course) {
   };
   
   const mapped = {
-    feuille_id: safeParseInt(course.feuille_id),
+    feuille_id: safeParseInt(course.feuille_id || course.feuille_route_id),
     client_id: safeParseInt(course.client_id),
     // Accepter à la fois mode_paiement_id et mode_paiement
     mode_paiement_id: safeParseInt(course.mode_paiement_id || course.mode_paiement),
     num_ordre: safeParseInt(course.num_ordre),
     index_depart: safeParseInt(course.index_depart),
-    index_embarquement: safeParseInt(course.index_embarquement),
+    // Mapper les champs frontend vers les champs API corrects
+    index_embarquement: safeParseInt(course.index_embarquement || course.index_depart),
     lieu_embarquement: course.lieu_embarquement || null,
     heure_embarquement: course.heure_embarquement || null,
-    index_debarquement: safeParseInt(course.index_debarquement),
+    index_debarquement: safeParseInt(course.index_debarquement || course.index_arrivee),
     lieu_debarquement: course.lieu_debarquement || null,
     heure_debarquement: course.heure_debarquement || null,
     prix_taximetre: safeParseFloat(course.prix_taximetre),
-    sommes_percues: safeParseFloat(course.sommes_percues),
+    sommes_percues: safeParseFloat(course.sommes_percues || course.somme_percue),
     est_hors_heures: course.hors_creneau || false,
     notes: course.notes || null
   };
