@@ -7,6 +7,7 @@ import { jwtDecode } from "jwt-decode";
 // Local Imports
 import { loginUser, getUserProfile, createUser, updateUserProfile } from "services/auth";
 import { isTokenValid, setSession, getCurrentUser } from "utils/jwt";
+import { TOKEN_STORAGE_KEY } from "configs/auth.config";
 import { AuthContext } from "./context";
 
 // ----------------------------------------------------------------------
@@ -104,7 +105,8 @@ export function AuthProvider({ children }) {
   useEffect(() => {
     const init = async () => {
       try {
-        const authToken = window.localStorage.getItem("authToken");
+        // Utiliser la même clé que setSession pour cohérence
+        const authToken = window.localStorage.getItem(TOKEN_STORAGE_KEY);
         console.log('🔍 Token from localStorage:', authToken ? 'present' : 'null');
 
         // Nettoyer immédiatement les tokens manifestement invalides
@@ -252,6 +254,8 @@ export function AuthProvider({ children }) {
   }, []);
 
   const login = async ({ username, password }) => {
+    console.log('🚀 AuthProvider.login appelé avec:', { username, hasPassword: !!password });
+    
     dispatch({
       type: "LOGIN_REQUEST",
     });
@@ -261,12 +265,27 @@ export function AuthProvider({ children }) {
       // Note: username is actually the email in this context
       const { user, token } = await loginUser(username, password);
 
+      console.log('🎯 Résultat loginUser:', {
+        hasUser: !!user,
+        hasToken: !!token,
+        tokenLength: token?.length,
+        userEmail: user?.email,
+        userId: user?.utilisateur_id
+      });
+
       if (!isObject(user)) {
         throw new Error("Réponse d'authentification invalide");
       }
 
+      console.log('💾 Appel setSession avec token:', token?.substring(0, 50) + '...');
+      
       // Utiliser le token JWT du backend au lieu de générer un token local
       setSession(token);
+
+      console.log('🔍 Vérification token après setSession:', {
+        tokenStored: localStorage.getItem(TOKEN_STORAGE_KEY) ? 'présent' : 'absent',
+        tokenMatches: localStorage.getItem(TOKEN_STORAGE_KEY) === token
+      });
 
       dispatch({
         type: "LOGIN_SUCCESS",
@@ -275,8 +294,10 @@ export function AuthProvider({ children }) {
         },
       });
 
+      console.log('✅ Login success complet - user connecté');
       return { success: true };
     } catch (err) {
+      console.error('❌ Erreur dans AuthProvider.login:', err);
       const errorMessage = err.message || "Erreur de connexion";
       dispatch({
         type: "LOGIN_ERROR",

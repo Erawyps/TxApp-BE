@@ -76,6 +76,10 @@ export async function createCourse(courseData) {
         case 404:
           throw new Error('Service de création de courses non trouvé');
         case 409:
+          // Vérifier si c'est un conflit de numéro d'ordre
+          if (error.response.data?.code === 'DUPLICATE_NUM_ORDRE') {
+            throw new Error(error.response.data.error || 'Ce numéro d\'ordre existe déjà pour cette feuille de route');
+          }
           throw new Error('Conflit: chauffeur déjà occupé à cette heure');
         case 500:
           throw new Error('Erreur lors de la création de la course');
@@ -112,6 +116,10 @@ export async function updateCourse(courseId, courseData) {
         case 404:
           throw new Error('Course non trouvée ou service non disponible');
         case 409:
+          // Vérifier si c'est un conflit de numéro d'ordre
+          if (error.response.data?.code === 'DUPLICATE_NUM_ORDRE') {
+            throw new Error(error.response.data.error || 'Ce numéro d\'ordre existe déjà pour cette feuille de route');
+          }
           throw new Error('Conflit: chauffeur déjà occupé à cette heure');
         case 500:
           throw new Error('Erreur lors de la mise à jour de la course');
@@ -221,7 +229,8 @@ function mapToDb(course) {
   const mapped = {
     feuille_id: safeParseInt(course.feuille_id),
     client_id: safeParseInt(course.client_id),
-    mode_paiement_id: safeParseInt(course.mode_paiement), // Le formulaire envoie 'mode_paiement'
+    // Accepter à la fois mode_paiement_id et mode_paiement
+    mode_paiement_id: safeParseInt(course.mode_paiement_id || course.mode_paiement),
     num_ordre: safeParseInt(course.num_ordre),
     index_depart: safeParseInt(course.index_depart),
     index_embarquement: safeParseInt(course.index_embarquement),

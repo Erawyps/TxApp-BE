@@ -689,11 +689,16 @@ export default function TxApp() {
         return;
       }
 
+      // Calculer le prochain numéro d'ordre disponible
+      const existingOrdres = courses.map(c => c.numero_ordre || c.num_ordre).filter(n => n);
+      const maxOrdre = existingOrdres.length > 0 ? Math.max(...existingOrdres) : 0;
+      const nextOrdre = editingCourse ? (editingCourse.numero_ordre || editingCourse.num_ordre) : maxOrdre + 1;
+
       // Ajouter l'ID de la feuille de route et le numéro d'ordre
       const courseWithMeta = {
         ...courseData,
         feuille_id: currentFeuilleRoute.feuille_id, // ✅ Corrigé : utiliser feuille_id (nom attendu par l'API)
-        num_ordre: editingCourse ? editingCourse.numero_ordre : courses.length + 1, // ✅ Corrigé : utiliser num_ordre
+        num_ordre: nextOrdre, // ✅ Corrigé : calculer le prochain numéro disponible
         id: editingCourse?.id
       };
 
@@ -1150,6 +1155,7 @@ export default function TxApp() {
                         reglesSalaire={reglesSalaire}
                         clients={clients}
                         modesPaiement={modesPaiement}
+                        courses={courses}
                       />
                     </div>
                   </DialogPanel>

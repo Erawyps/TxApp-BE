@@ -52,13 +52,19 @@ export function CourseForm({
   onCancel,
   reglesSalaire = [],
   clients = [], // eslint-disable-line no-unused-vars
-  modesPaiement = []
+  modesPaiement = [],
+  courses = [] // Ajouter les courses pour calculer le prochain numéro d'ordre
 }) {
   // Charger les données sauvegardées (uniquement si pas en mode édition)
   const savedData = editingCourse ? null : loadSavedData('courseFormData');
 
+  // Calculer le prochain numéro d'ordre disponible
+  const existingOrdres = courses.map(c => c.numero_ordre || c.num_ordre).filter(n => n);
+  const maxOrdre = existingOrdres.length > 0 ? Math.max(...existingOrdres) : 0;
+  const nextOrdre = editingCourse ? (editingCourse.numero_ordre || editingCourse.num_ordre || coursesCount + 1) : maxOrdre + 1;
+
   const initialData = editingCourse || savedData || {
-    numero_ordre: coursesCount + 1,
+    numero_ordre: nextOrdre,
     index_depart: '',
     index_embarquement: '',
     lieu_embarquement: '',
@@ -302,5 +308,6 @@ CourseForm.propTypes = {
   onCancel: PropTypes.func.isRequired,
   reglesSalaire: PropTypes.array,
   clients: PropTypes.array,
-  modesPaiement: PropTypes.array
+  modesPaiement: PropTypes.array,
+  courses: PropTypes.array
 };

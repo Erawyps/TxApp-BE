@@ -1,14 +1,35 @@
 /**
-// Configuration de production - plus d'API externe de test
-export const JWT_HOST_API = import.meta.env.PROD
-  ? "https://api.txapp.be/api"  // Production : utiliser le sous-domaine API Cloudflare
-  : "/api";  // Développement : utiliser le proxy Viteonfiguration d'authentification pour TxApp - Production Ready
+ * Configuration d'authentification pour TxApp - Production Ready
  */
 
-// Configuration de production - plus d'API externe de test
-export const JWT_HOST_API = import.meta.env.PROD
-  ? "https://api.txapp.be/api"  // Production : utiliser le sous-domaine API Cloudflare
-  : "http://localhost:3001/api";  // Développement : serveur local
+// Détecter environnement production de manière robuste
+const isProduction = () => {
+  // 1. Variable d'environnement Vite explicite
+  if (import.meta.env.VITE_API_URL) return true;
+  
+  // 2. Hostname production
+  if (typeof window !== 'undefined' && window.location.hostname === 'txapp.be') return true;
+  
+  // 3. Mode Vite (fallback)
+  if (import.meta.env.PROD) return true;
+  
+  // 4. NODE_ENV (dernière chance)
+  if (import.meta.env.MODE === 'production') return true;
+  
+  return false;
+};
+
+// Configuration de l'API - logique robuste pour la production
+export const JWT_HOST_API = import.meta.env.VITE_API_URL || 
+  (isProduction() 
+    ? "https://api.txapp.be/api"  // Fallback production
+    : "http://localhost:3001/api"); // Fallback développement
+
+console.log('🔧 API URL configurée:', JWT_HOST_API);
+console.log('🔧 Mode:', import.meta.env.MODE);
+console.log('🔧 PROD detecté:', isProduction());
+console.log('🔧 VITE_API_URL:', import.meta.env.VITE_API_URL);
+console.log('🔧 Hostname:', typeof window !== 'undefined' ? window.location.hostname : 'N/A');
 
 // Token storage key pour localStorage
 export const TOKEN_STORAGE_KEY = "txapp-auth-token";

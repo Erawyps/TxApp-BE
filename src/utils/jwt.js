@@ -60,11 +60,11 @@ const getCurrentUser = () => {
     console.log('🔍 getCurrentUser - Decoded token:', decoded);
     console.log('🔍 getCurrentUser - Token string (first 50 chars):', token.substring(0, 50));
 
-    // Vérifier que userId ou sub existe
-    const userId = decoded.sub || decoded.userId;
+    // Vérifier que userId, sub ou id existe (support backend qui envoie "id" au lieu de "userId")
+    const userId = decoded.sub || decoded.userId || decoded.id;
     console.log('🔍 getCurrentUser - Extracted userId:', userId, 'type:', typeof userId);
     if (!userId) {
-      console.error('❌ getCurrentUser - Token does not contain userId or sub');
+      console.error('❌ getCurrentUser - Token does not contain userId, sub or id');
       return null;
     }
 
@@ -79,6 +79,7 @@ const getCurrentUser = () => {
       email: decoded.email,
       type: decoded.type,
       role: decoded.role,
+      chauffeur_id: decoded.chauffeur_id,
       exp: decoded.exp,
     };
     console.log('✅ getCurrentUser - Returning user data:', userData);

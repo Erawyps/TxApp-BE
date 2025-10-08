@@ -13,6 +13,8 @@ import axios from '../utils/axios.js';
  */
 export const loginUser = async (username, password) => {
   try {
+    console.log('🔐 loginUser appelé avec:', { username, hasPassword: !!password });
+    
     // Utiliser l'API backend au lieu de Supabase
     const response = await axios.post('/auth/login', {
       username: username, // L'API attend 'username' pas 'email'
@@ -23,28 +25,46 @@ export const loginUser = async (username, password) => {
       }
     });
 
+    console.log('🔐 Réponse API complète:', response.data);
+
     if (!response.data.success) {
       throw new Error(response.data.error || 'Erreur de connexion');
     }
 
-    return {
+    const result = {
       user: response.data.user,
       token: response.data.token,
       success: true
     };
+
+    console.log('✅ loginUser success:', {
+      hasUser: !!result.user,
+      hasToken: !!result.token,
+      tokenLength: result.token?.length,
+      userEmail: result.user?.email
+    });
+
+    return result;
   } catch (error) {
-    console.error('Erreur loginUser:', error);
+    console.error('❌ Erreur loginUser:', error);
 
     // Gérer les erreurs de l'API
     if (error.response) {
       // Erreur de l'API (400, 401, 500, etc.)
+      console.error('❌ Erreur API response:', {
+        status: error.response.status,
+        data: error.response.data,
+        headers: error.response.headers
+      });
       const errorMessage = error.response.data?.error || 'Erreur de connexion';
       throw new Error(errorMessage);
     } else if (error.request) {
       // Erreur réseau
+      console.error('❌ Erreur réseau request:', error.request);
       throw new Error('Erreur de connexion réseau');
     } else {
       // Autre erreur
+      console.error('❌ Autre erreur:', error.message);
       throw new Error(error.message || 'Erreur inconnue');
     }
   }
