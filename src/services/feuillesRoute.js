@@ -35,13 +35,13 @@ export async function updateFeuilleRoute(id, data) {
 export async function endFeuilleRoute(id, data) {
   try {
     console.log('🔧 endFeuilleRoute - Service appelé avec:', { id, data });
-    
-    // Marquer comme terminée et validée
+
+    // ✅ CORRECTION: Respecter la valeur de est_validee passée en paramètre
+    // au lieu de la forcer à true
     const endData = {
-      ...data,
-      est_validee: true
+      ...data
     };
-    
+
     return await updateFeuilleRoute(id, endData);
   } catch (error) {
     console.error('Erreur lors de la finalisation de la feuille de route:', error);

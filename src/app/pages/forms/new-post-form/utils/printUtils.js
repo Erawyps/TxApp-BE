@@ -779,8 +779,24 @@ export const generateAndDownloadReport = (rawShiftData, rawCourses, driver, vehi
 // Fonction pour récupérer les données depuis la base de données
 export const fetchDataForPDF = async (feuilleId) => {
   try {
-    // Récupérer les données depuis l'API backend
-    const response = await fetch(`/api/feuilles-route/${feuilleId}`);
+    // ✅ GESTION SPÉCIFIQUE SAFARI : Ajouter un délai et éviter le cache
+    const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+    if (isSafari) {
+      console.log('🧭 Safari détecté - Ajout d\'un délai pour éviter les problèmes de cache');
+      // Délai pour laisser le temps à Safari de synchroniser
+      await new Promise(resolve => setTimeout(resolve, 1000));
+    }
+
+    // Récupérer les données depuis l'API backend avec gestion du cache
+    const cacheBuster = isSafari ? `?t=${Date.now()}` : '';
+    const response = await fetch(`/api/feuilles-route/${feuilleId}${cacheBuster}`, {
+      method: 'GET',
+      headers: {
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0'
+      }
+    });
     
     if (!response.ok) {
       throw new Error(`Erreur HTTP ${response.status}: ${response.statusText}`);

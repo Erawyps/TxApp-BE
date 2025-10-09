@@ -27,6 +27,8 @@ const initialEndShiftData = {
 export function EndShiftForm({ onEndShift, onValidate, shiftData, driver, onPrintReport }) {
   // État de validation
   const [isValidated, setIsValidated] = useState(false);
+  // ✅ État de chargement pour éviter les clics multiples
+  const [isValidating, setIsValidating] = useState(false);
 
   // Debug: Afficher les données reçues
   console.log('🔍 EndShiftForm DEBUG:');
@@ -53,7 +55,6 @@ export function EndShiftForm({ onEndShift, onValidate, shiftData, driver, onPrin
     handleSubmit,
     watch,
     trigger,
-    getValues,
     formState: { errors }
   } = useForm({
     resolver: yupResolver(endShiftSchema),
@@ -174,27 +175,63 @@ export function EndShiftForm({ onEndShift, onValidate, shiftData, driver, onPrin
   // Fonction de validation sans terminer le shift
   // Fonction de validation sans terminer le shift
   const handleValidate = async () => {
+    // ✅ Éviter les clics multiples pendant la validation
+    if (isValidating) {
+      console.log('🔍 EndShiftForm - Validation déjà en cours, ignorée');
+      return;
+    }
+
+    setIsValidating(true);
     console.log('🔍 EndShiftForm - Validation déclenchée');
-    const isValid = await trigger(); // Valide tous les champs
-    
-    if (isValid) {
-      const formData = getValues();
-      const endShiftData = {
-        ...formData,
-        duree_reelle: calculateActualShiftDuration()
-      };
-      
-      console.log('🔍 EndShiftForm - Validation réussie, données:', endShiftData);
-      
-      // ✅ Appeler onValidate pour sauvegarder SANS terminer le shift
-      const success = await onValidate(endShiftData);
-      
-      if (success) {
-        setIsValidated(true);
-        toast.success("Données validées et enregistrées avec succès!");
+
+    try {
+      // Utiliser watch() pour obtenir les valeurs actuelles
+      const currentValues = watch();
+      console.log('🔍 EndShiftForm - Valeurs actuelles du formulaire (watch):', currentValues);
+
+      // ✅ APPROCHE COMPATIBLE NAVIGATEUR: Validation synchrone d'abord
+      const isValid = trigger(); // Validation synchrone pour compatibilité navigateur
+      console.log('🔍 EndShiftForm - Résultat de validation synchrone:', isValid);
+
+      // ✅ FALLBACK: Si la validation synchrone échoue, attendre un court instant et réessayer
+      let finalIsValid = isValid;
+      if (!isValid) {
+        console.log('🔍 EndShiftForm - Tentative de validation asynchrone...');
+        // Petit délai pour laisser le temps au navigateur de synchroniser
+        await new Promise(resolve => setTimeout(resolve, 50));
+        finalIsValid = await trigger();
+        console.log('🔍 EndShiftForm - Résultat de validation asynchrone:', finalIsValid);
       }
-    } else {
-      toast.error("Veuillez corriger les erreurs dans le formulaire");
+
+      if (finalIsValid) {
+        // Rafraîchir les valeurs après validation
+        const updatedValues = watch();
+        const formData = { ...updatedValues };
+        console.log('🔍 EndShiftForm - Données validées:', formData);
+
+        const endShiftData = {
+          ...formData,
+          duree_reelle: calculateActualShiftDuration()
+        };
+
+        console.log('🔍 EndShiftForm - Données finales envoyées:', endShiftData);
+
+        // ✅ Appeler onValidate pour sauvegarder SANS terminer le shift
+        const success = await onValidate(endShiftData);
+
+        if (success) {
+          setIsValidated(true);
+          toast.success("Données validées et enregistrées avec succès!");
+        }
+      } else {
+        console.log('❌ EndShiftForm - Validation échouée, erreurs:', errors);
+        toast.error("Veuillez corriger les erreurs dans le formulaire");
+      }
+    } catch (error) {
+      console.error('❌ Erreur lors de la validation:', error);
+      toast.error("Erreur lors de la validation des données");
+    } finally {
+      setIsValidating(false);
     }
   };
 
@@ -370,11 +407,21 @@ export function EndShiftForm({ onEndShift, onValidate, shiftData, driver, onPrin
               <Button 
                 variant="outlined"
                 type="button" 
-                onClick={handleValidate}
+                onClick={(e) => {
+                  // ✅ Prévention des clics multiples pour compatibilité navigateur
+                  e.preventDefault();
+                  e.stopPropagation();
+                  handleValidate();
+                }}
+                disabled={isValidated || isValidating}
                 className="flex items-center gap-2"
               >
-                <CheckCircleIcon className="h-4 w-4" />
-                Valider
+                {isValidating ? (
+                  <div className="animate-spin h-4 w-4 border-2 border-gray-300 border-t-blue-600 rounded-full"></div>
+                ) : (
+                  <CheckCircleIcon className="h-4 w-4" />
+                )}
+                {isValidating ? 'Validation...' : 'Valider'}
               </Button>
             </div>
             

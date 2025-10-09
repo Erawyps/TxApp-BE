@@ -1993,21 +1993,38 @@ app.post('/api/courses', dbMiddleware, authMiddleware, async (c) => {
       console.log(`✅ Nouveau numéro d'ordre assigné: ${numOrdre}`);
     }
 
+    // Fonction pour traiter les heures (comme en développement)
+    const parseTime = (timeString) => {
+      if (!timeString) return null;
+      
+      // Si c'est déjà un format DateTime, extraire la partie time
+      if (timeString.includes('T')) {
+        return new Date(timeString);
+      }
+      
+      // Si c'est juste une heure (HH:MM:SS ou HH:MM), créer une date avec 1970-01-01
+      if (timeString.match(/^\d{2}:\d{2}(:\d{2})?$/)) {
+        return new Date(`1970-01-01T${timeString}`);
+      }
+      
+      // Sinon essayer de parser directement
+      return new Date(timeString);
+    };
+
     // Créer la course
     const course = await prisma.course.create({
       data: {
         num_ordre: numOrdre, // Utiliser le numéro d'ordre calculé (original ou nouveau)
-        index_depart: data.index_depart || null,
-        index_embarquement: data.index_embarquement,
-        lieu_embarquement: data.lieu_embarquement || null,
-        heure_embarquement: data.heure_embarquement ? new Date(data.heure_embarquement) : null,
-        index_debarquement: data.index_debarquement,
-        lieu_debarquement: data.lieu_debarquement || null,
-        heure_debarquement: data.heure_debarquement ? new Date(data.heure_debarquement) : null,
-        prix_taximetre: data.prix_taximetre || null,
-        sommes_percues: data.sommes_percues,
+        index_depart: data.index_depart ? parseInt(data.index_depart) : null,
+        index_embarquement: data.index_embarquement ? parseInt(data.index_embarquement) : null,
+        lieu_embarquement: data.lieu_embarquement || '',
+        heure_embarquement: parseTime(data.heure_embarquement),
+        index_debarquement: data.index_debarquement ? parseInt(data.index_debarquement) : null,
+        lieu_debarquement: data.lieu_debarquement || '',
+        heure_debarquement: parseTime(data.heure_debarquement),
+        prix_taximetre: data.prix_taximetre ? parseFloat(data.prix_taximetre) : null,
+        sommes_percues: parseFloat(data.sommes_percues),
         est_hors_heures: data.est_hors_heures || false,
-        notes: data.notes || null,
         // Connecter à la feuille de route existante
         feuille_route: {
           connect: {
@@ -2030,18 +2047,8 @@ app.post('/api/courses', dbMiddleware, authMiddleware, async (c) => {
         } : {})
       },
       include: {
-        client: {
-          select: {
-            client_id: true,
-            nom_societe: true
-          }
-        },
-        mode_paiement: {
-          select: {
-            mode_id: true,
-            libelle: true
-          }
-        }
+        mode_paiement: true,
+        client: true
       }
     });
 
@@ -3411,17 +3418,42 @@ app.put('/api/dashboard/feuilles-route/:id', dbMiddleware, authMiddleware, async
       return c.json({ error: 'Feuille de route non trouvée' }, 404);
     }
 
-    // Déterminer si c'est un début ou une fin de shift
-    const isBeginningOfShift = !existingFeuille?.taximetre?.taximetre_prise_charge_debut;
+    // Déterminer le contexte basé sur les données envoyées plutôt que l'état DB
+    // Si les données contiennent des champs de fin, c'est une fin de shift
+    const hasFinFields = requestData.taximetre_prise_charge_fin !== undefined ||
+                        requestData.taximetre_index_km_fin !== undefined ||
+                        requestData.taximetre_km_charge_fin !== undefined ||
+                        requestData.taximetre_chutes_fin !== undefined ||
+                        requestData["Taximètre: Prise en charge"] !== undefined ||
+                        requestData["Taximètre: Index km (km totaux)"] !== undefined ||
+                        requestData["Taximètre: Km en charge"] !== undefined ||
+                        requestData["Taximètre: Chutes (€)"] !== undefined;
+    
+    // Si les données contiennent des champs de début, c'est un début de shift
+    const hasDebutFields = requestData.taximetre_prise_charge_debut !== undefined ||
+                          requestData.taximetre_index_km_debut !== undefined ||
+                          requestData.taximetre_km_charge_debut !== undefined ||
+                          requestData.taximetre_chutes_debut !== undefined;
+    
+    // Priorité : si on a des champs de fin explicites, c'est une fin
+    // Sinon si on a des champs de début, c'est un début
+    // Sinon, détecter basé sur l'état actuel de la DB (fallback)
+    let context;
+    if (hasFinFields) {
+      context = 'fin';
+      console.log('🔴 Mode FIN de shift détecté (champs *_fin présents)');
+    } else if (hasDebutFields) {
+      context = 'debut';
+      console.log('🟢 Mode DÉBUT de shift détecté (champs *_debut présents)');
+    } else {
+      // Fallback : logique basée sur l'état DB (comme avant)
+      const isBeginningOfShift = !existingFeuille?.taximetre?.taximetre_prise_charge_debut;
+      context = isBeginningOfShift ? 'debut' : 'fin';
+      console.log(`⚠️  Mode ${context.toUpperCase()} de shift détecté (fallback DB state)`);
+    }
     
     // Ajouter le contexte aux données
-    if (isBeginningOfShift) {
-      requestData.context = 'debut';
-      console.log('🟢 Mode DÉBUT de shift détecté pour feuille:', id);
-    } else {
-      requestData.context = 'fin';
-      console.log('🔴 Mode FIN de shift détecté pour feuille:', id);
-    }
+    requestData.context = context;
 
     // ✅ Utiliser la fonction de mapping unifiée
     const { feuilleData, taximetreData } = preparePartialUpdateForDB(requestData);

@@ -602,6 +602,14 @@ export default function TxApp() {
       console.log('🚀 Génération PDF pour feuille_id:', currentFeuilleRoute.feuille_id);
       console.log('   Chauffeur:', currentChauffeur.utilisateur.prenom, currentChauffeur.utilisateur.nom);
 
+      // ✅ GESTION SPÉCIFIQUE SAFARI : Délai supplémentaire après validation
+      const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+      if (isSafari) {
+        console.log('🧭 Safari détecté - Délai supplémentaire pour synchronisation des données');
+        toast.info('Préparation du PDF en cours...');
+        await new Promise(resolve => setTimeout(resolve, 1500));
+      }
+
       // ✅ UTILISER generateFeuilleDeRoutePDF qui récupère les données depuis l'API
       // et applique automatiquement le Field Mapper
       const fileName = await generateFeuilleDeRoutePDF(
@@ -609,7 +617,7 @@ export default function TxApp() {
         [], // expenses - à récupérer depuis l'API si nécessaire
         []  // externalCourses
       );
-      
+
       toast.success(`Feuille de route téléchargée : ${fileName}`);
     } catch (error) {
       console.error('Erreur lors du téléchargement:', error);
@@ -833,13 +841,16 @@ export default function TxApp() {
   // ✅ NOUVELLE FONCTION: Validation uniquement (sans terminer le shift)
   const handleValidateEndShift = async (endData) => {
     try {
+      console.log('🔍 handleValidateEndShift - DÉBUT de validation');
+      console.log('🔍 handleValidateEndShift - Données reçues du formulaire:', endData);
+
       if (!currentFeuilleRoute) {
+        console.error('❌ handleValidateEndShift - Aucune feuille de route active');
         toast.error("Aucune feuille de route active");
         return false;
       }
 
-      console.log('🔍 handleValidateEndShift - Validation sans terminer le shift');
-      console.log('🔍 handleValidateEndShift - Données reçues:', endData);
+      console.log('🔍 handleValidateEndShift - Feuille de route active:', currentFeuilleRoute.feuille_id);
 
       // Mapper les données du formulaire vers les champs de la base
       const feuilleUpdateData = {
@@ -860,9 +871,10 @@ export default function TxApp() {
       console.log('🔧 handleValidateEndShift - Données mappées pour l\'API:', feuilleUpdateData);
 
       // Sauvegarder les données via l'endpoint de mise à jour
+      console.log('🔧 handleValidateEndShift - Appel de endFeuilleRoute...');
       const updatedFeuilleRoute = await endFeuilleRoute(currentFeuilleRoute.feuille_id, feuilleUpdateData);
 
-      console.log('✅ handleValidateEndShift - Données sauvegardées:', updatedFeuilleRoute);
+      console.log('✅ handleValidateEndShift - Données sauvegardées avec succès:', updatedFeuilleRoute);
 
       // Mettre à jour l'état local
       setCurrentFeuilleRoute(updatedFeuilleRoute);
@@ -880,6 +892,24 @@ export default function TxApp() {
         signature_chauffeur: updatedFeuilleRoute.signature_chauffeur,
         statut: 'En cours' // Le shift n'est pas encore terminé
       });
+
+      // ✅ GESTION SPÉCIFIQUE SAFARI : Invalider le cache local après validation
+      const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+      if (isSafari) {
+        console.log('🧭 Safari détecté - Invalidation du cache local');
+        // Forcer un rafraîchissement des données en vidant le cache local
+        if ('caches' in window) {
+          try {
+            const cacheNames = await caches.keys();
+            await Promise.all(
+              cacheNames.map(cacheName => caches.delete(cacheName))
+            );
+            console.log('🧭 Cache Safari invalidé');
+          } catch (error) {
+            console.warn('Erreur lors de l\'invalidation du cache Safari:', error);
+          }
+        }
+      }
 
       toast.success("Données validées et enregistrées avec succès !");
       return true; // Retourner true pour indiquer le succès
