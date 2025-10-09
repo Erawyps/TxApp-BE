@@ -8,7 +8,45 @@ import AuthGuard from "../../components/guards/AuthGuard";
 
 // ----------------------------------------------------------------------
 
-const protectedRoutes = {
+// Routes pour le mode chauffeur (simplifiées)
+const driverRoutes = {
+  id: "protected",
+  Component: AuthGuard,
+  children: [
+    {
+      Component: DynamicLayout,
+      children: [
+        {
+          index: true,
+          element: <Navigate to="/forms/new-post-form" replace />,
+        },
+        {
+          path: "/forms",
+          children: [
+            {
+              index: true,
+              element: <Navigate to="/forms/new-post-form" replace />,
+            },
+            {
+              path: "new-post-form",
+              lazy: async () => ({
+                Component: (await import("app/pages/forms/new-post-form")).default,
+              }),
+            },
+          ],
+        },
+        // Redirection de toutes les autres routes vers le formulaire
+        {
+          path: "*",
+          element: <Navigate to="/forms/new-post-form" replace />,
+        },
+      ],
+    },
+  ],
+};
+
+// Routes complètes pour le mode normal
+const fullRoutes = {
   id: "protected",
   Component: AuthGuard,
   children: [
@@ -145,4 +183,8 @@ const protectedRoutes = {
   ],
 };
 
+// Sélection des routes selon le mode
+const protectedRoutes = import.meta.env.VITE_DRIVER_MODE === 'true' ? driverRoutes : fullRoutes;
+
 export { protectedRoutes };
+console.log('VITE_DRIVER_MODE:', import.meta.env.VITE_DRIVER_MODE);

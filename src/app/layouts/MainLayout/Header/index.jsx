@@ -36,6 +36,7 @@ function SlashIcon(props) {
 
 export function Header() {
   const { cardSkin } = useThemeContext();
+  const isDriverMode = import.meta.env.VITE_DRIVER_MODE === 'true';
 
   return (
     <header
@@ -44,7 +45,7 @@ export function Header() {
         cardSkin === "shadow-sm" ? "dark:bg-dark-750/80" : "dark:bg-dark-900/80",
       )}
     >
-      <SidebarToggleBtn />
+      {!isDriverMode && <SidebarToggleBtn />}
 
       <div className="flex items-center gap-2 ltr:-mr-1.5 rtl:-ml-1.5">
         <Search

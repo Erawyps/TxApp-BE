@@ -9,6 +9,9 @@ import { Sidebar } from "./Sidebar";
 // ----------------------------------------------------------------------
 
 export default function MainLayout() {
+  // En mode chauffeur, on n'affiche pas la sidebar pour une interface plus propre
+  const isDriverMode = import.meta.env.VITE_DRIVER_MODE === 'true';
+
   return (
     <>
       <Header />
@@ -17,7 +20,7 @@ export default function MainLayout() {
       >
         <Outlet />
       </main>
-      <Sidebar />
+      {!isDriverMode && <Sidebar />}
     </>
   );
 }

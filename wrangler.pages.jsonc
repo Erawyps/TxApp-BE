@@ -1,0 +1,10 @@
+{
+  "name": "txapp-driver",
+  "pages_build_output_dir": "./dist-driver",
+  "compatibility_date": "2025-05-07",
+  "pages_build_config": {
+    "build_command": "npm run build",
+    "destination_dir": "./dist-driver",
+    "root_dir": "./"
+  }
+}

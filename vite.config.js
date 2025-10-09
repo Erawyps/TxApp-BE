@@ -6,7 +6,7 @@ import svgr from 'vite-plugin-svgr'
 import tailwindcss from "@tailwindcss/vite";
 
 // https://vitejs.dev/config/
-export default defineConfig({
+export default defineConfig(({ mode }) => ({
   plugins: [
     react(),
     jsconfigPaths(),
@@ -35,5 +35,9 @@ export default defineConfig({
   // Optimiser les dépendances en excluant Prisma
   optimizeDeps: {
     exclude: ['@prisma/client', 'bcryptjs']
-  }
-})
+  },
+  // Configuration pour le mode driver
+  define: mode === 'driver' ? {
+    'import.meta.env.VITE_DRIVER_MODE': '"true"'
+  } : {}
+}))
