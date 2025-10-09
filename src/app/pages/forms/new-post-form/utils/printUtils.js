@@ -16,7 +16,14 @@ export const generateAndDownloadReport = (rawShiftData, rawCourses, driver, vehi
     console.log('  mapCourseFromDB existe?', typeof mapCourseFromDB === 'function');
     
     // ✅ UTILISER LE FIELD MAPPER pour transformer les données DB en format frontend
-    const shiftData = rawShiftData ? mapFeuilleRouteFromDB(rawShiftData) : {};
+    // Vérifier si les données sont déjà mappées (viennent de l'API) ou brutes (de la DB)
+    const isAlreadyMapped = rawShiftData && typeof rawShiftData.taximetre_prise_charge_fin !== 'undefined';
+    const shiftData = isAlreadyMapped ? rawShiftData : (rawShiftData ? mapFeuilleRouteFromDB(rawShiftData) : {});
+    
+    console.log('  🔍 DEBUG Mapping:');
+    console.log('  isAlreadyMapped:', isAlreadyMapped);
+    console.log('  rawShiftData.taximetre_prise_charge_fin:', rawShiftData?.taximetre_prise_charge_fin);
+    console.log('  rawShiftData.taximetre:', rawShiftData?.taximetre);
     const courses = Array.isArray(rawCourses) ? rawCourses.map(c => {
       const mapped = mapCourseFromDB(c);
       console.log('  Course mappée:', { original: c.num_ordre, mapped: mapped?.num_ordre });
@@ -28,12 +35,17 @@ export const generateAndDownloadReport = (rawShiftData, rawCourses, driver, vehi
     console.log('  shiftData.courses:', shiftData.courses);
     console.log('  courses (variable):', courses);
     console.log('  courses.length:', courses.length);
-    console.log('  📊 TAXIMETRE DATA:');
+    console.log('  📊 TAXIMETRE DATA APRÈS MAPPING:');
     console.log('  shiftData.taximetre:', shiftData.taximetre);
+    console.log('  shiftData.has_taximetre:', shiftData.has_taximetre);
     console.log('  shiftData.taximetre_prise_charge_debut:', shiftData.taximetre_prise_charge_debut);
     console.log('  shiftData.taximetre_prise_charge_fin:', shiftData.taximetre_prise_charge_fin);
     console.log('  shiftData.taximetre_index_km_debut:', shiftData.taximetre_index_km_debut);
     console.log('  shiftData.taximetre_index_km_fin:', shiftData.taximetre_index_km_fin);
+    console.log('  shiftData.taximetre_km_charge_debut:', shiftData.taximetre_km_charge_debut);
+    console.log('  shiftData.taximetre_km_charge_fin:', shiftData.taximetre_km_charge_fin);
+    console.log('  shiftData.taximetre_chutes_debut:', shiftData.taximetre_chutes_debut);
+    console.log('  shiftData.taximetre_chutes_fin:', shiftData.taximetre_chutes_fin);
     
     if (courses.length === 0) {
       console.warn('  ⚠️ ATTENTION: Aucune course après mapping!');
@@ -57,7 +69,7 @@ export const generateAndDownloadReport = (rawShiftData, rawCourses, driver, vehi
 
     // Utilitaires de formatage
     const formatTime = (time) => {
-      if (!time) return '';
+      if (!time) return '00:00';
       const timeStr = time.toString();
       
       // Si c'est une date ISO (contient 'T'), extraire la partie heure
@@ -71,12 +83,12 @@ export const generateAndDownloadReport = (rawShiftData, rawCourses, driver, vehi
     };
     
     const formatNumber = (num) => {
-      if (num === null || num === undefined || num === '') return '';
+      if (num === null || num === undefined || num === '') return '0';
       return num.toString();
     };
     
     const formatCurrency = (amount) => {
-      if (amount === null || amount === undefined || amount === '') return '';
+      if (amount === null || amount === undefined || amount === '') return '0.00';
       return Number(amount).toFixed(2);
     };
 
@@ -273,33 +285,38 @@ export const generateAndDownloadReport = (rawShiftData, rawCourses, driver, vehi
       doc.rect(currentX, serviceTableY + rowHeight * (i + 1), col1_heures_data, rowHeight);
 
       // Données CORRIGÉES avec calculs automatiques
-      if (i === 0 && safeShiftData.heure_debut) {
-        // Début
-        drawText(formatTime(safeShiftData.heure_debut), currentX + col1_heures_data/2, serviceTableY + rowHeight * (i + 1) + 6, 'center');
+      if (i === 0) {
+        // Début - toujours afficher
+        drawText(formatTime(safeShiftData.heure_debut) || '', currentX + col1_heures_data/2, serviceTableY + rowHeight * (i + 1) + 6, 'center');
       }
-      if (i === 1 && safeShiftData.heure_fin) {
-        // Fin
-        drawText(formatTime(safeShiftData.heure_fin), currentX + col1_heures_data/2, serviceTableY + rowHeight * (i + 1) + 6, 'center');
+      if (i === 1) {
+        // Fin - toujours afficher même si null
+        drawText(formatTime(safeShiftData.heure_fin) || '', currentX + col1_heures_data/2, serviceTableY + rowHeight * (i + 1) + 6, 'center');
       }
       if (i === 2) {
         // Interruptions - afficher la valeur ou "00:00" par défaut
         const interruptions = safeShiftData.interruptions || '00:00';
         drawText(interruptions, currentX + col1_heures_data/2, serviceTableY + rowHeight * (i + 1) + 6, 'center');
       }
-      if (i === 3 && safeShiftData.heure_debut && safeShiftData.heure_fin) {
-        // Total - Calculer automatiquement (Fin - Début - Interruptions)
-        const debut = new Date(`1970-01-01T${formatTime(safeShiftData.heure_debut)}:00`);
-        const fin = new Date(`1970-01-01T${formatTime(safeShiftData.heure_fin)}:00`);
-        const interruptions = safeShiftData.interruptions || '00:00';
-        const [intH, intM] = interruptions.split(':').map(Number);
-        
-        const diffMs = fin - debut;
-        const totalMinutes = Math.floor(diffMs / 60000) - (intH * 60 + intM);
-        const heures = Math.floor(totalMinutes / 60);
-        const minutes = totalMinutes % 60;
-        const totalFormatted = `${String(heures).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
-        
-        drawText(totalFormatted, currentX + col1_heures_data/2, serviceTableY + rowHeight * (i + 1) + 6, 'center');
+      if (i === 3) {
+        // Total - Calculer automatiquement si possible, sinon afficher vide
+        if (safeShiftData.heure_debut && safeShiftData.heure_fin) {
+          const debut = new Date(`1970-01-01T${formatTime(safeShiftData.heure_debut)}:00`);
+          const fin = new Date(`1970-01-01T${formatTime(safeShiftData.heure_fin)}:00`);
+          const interruptions = safeShiftData.interruptions || '00:00';
+          const [intH, intM] = interruptions.split(':').map(Number);
+          
+          const diffMs = fin - debut;
+          const totalMinutes = Math.floor(diffMs / 60000) - (intH * 60 + intM);
+          const heures = Math.floor(totalMinutes / 60);
+          const minutes = totalMinutes % 60;
+          const totalFormatted = `${String(heures).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
+          
+          drawText(totalFormatted, currentX + col1_heures_data/2, serviceTableY + rowHeight * (i + 1) + 6, 'center');
+        } else {
+          // Si heure_fin n'est pas disponible, afficher vide
+          drawText('', currentX + col1_heures_data/2, serviceTableY + rowHeight * (i + 1) + 6, 'center');
+        }
       }
     }
     currentX += col1_heures_data;
@@ -358,17 +375,15 @@ export const generateAndDownloadReport = (rawShiftData, rawCourses, driver, vehi
       doc.rect(currentX, serviceTableY + rowHeight * (i + 1), col4_taximetre, rowHeight);
     }
     
-    // Données taximètre - AJOUT DES VALEURS
-    if (safeShiftData.taximetre_index_km_fin) {
-      drawText(formatNumber(safeShiftData.taximetre_index_km_fin), currentX + col4_taximetre/2, serviceTableY + rowHeight + 6, 'center');
-    }
-    if (safeShiftData.taximetre_index_km_debut) {
-      drawText(formatNumber(safeShiftData.taximetre_index_km_debut), currentX + col4_taximetre/2, serviceTableY + 2 * rowHeight + 6, 'center');
-    }
+    // Données taximètre - Toujours afficher même si vide pour debug
+    drawText(formatNumber(safeShiftData.taximetre_index_km_fin || ''), currentX + col4_taximetre/2, serviceTableY + rowHeight + 6, 'center');
+    drawText(formatNumber(safeShiftData.taximetre_index_km_debut || ''), currentX + col4_taximetre/2, serviceTableY + 2 * rowHeight + 6, 'center');
     // Total calculé automatiquement
     if (safeShiftData.taximetre_index_km_fin && safeShiftData.taximetre_index_km_debut) {
       const totalKmTaximetre = safeShiftData.taximetre_index_km_fin - safeShiftData.taximetre_index_km_debut;
       drawText(formatNumber(totalKmTaximetre), currentX + col4_taximetre/2, serviceTableY + 3 * rowHeight + 6, 'center');
+    } else {
+      drawText('', currentX + col4_taximetre/2, serviceTableY + 3 * rowHeight + 6, 'center');
     }
     
     currentX += col4_taximetre;
@@ -452,33 +467,23 @@ export const generateAndDownloadReport = (rawShiftData, rawCourses, driver, vehi
     const totalRecettes = courses.reduce((sum, course) => sum + (Number(course.sommes_percues) || 0), 0);
     const dataStartX = margin + bas_vide;
 
-    // Ligne "Fin"
-    if (safeShiftData.taximetre_prise_charge_fin) {
-      drawText(formatCurrency(safeShiftData.taximetre_prise_charge_fin), dataStartX + bas_prise/2, yPos + rowHeight + 6, 'center');
-    }
-    if (safeShiftData.taximetre_index_km_fin) {
-      drawText(formatNumber(safeShiftData.taximetre_index_km_fin), dataStartX + bas_prise + bas_index/2, yPos + rowHeight + 6, 'center');
-    }
-    if (safeShiftData.taximetre_km_charge_fin) {
-      drawText(formatNumber(safeShiftData.taximetre_km_charge_fin), dataStartX + bas_prise + bas_index + bas_kmcharge/2, yPos + rowHeight + 6, 'center');
-    }
-    if (safeShiftData.taximetre_chutes_fin) {
-      drawText(formatCurrency(safeShiftData.taximetre_chutes_fin), dataStartX + bas_prise + bas_index + bas_kmcharge + bas_chutes/2, yPos + rowHeight + 6, 'center');
-    }
+    // Ligne "Fin" - Toujours afficher même si vide pour debug
+    console.log('🔍 DEBUG AFFICHAGE FIN:');
+    console.log('  taximetre_prise_charge_fin value:', safeShiftData.taximetre_prise_charge_fin);
+    console.log('  formatCurrency result:', formatCurrency(safeShiftData.taximetre_prise_charge_fin || ''));
+    drawText(formatCurrency(safeShiftData.taximetre_prise_charge_fin || ''), dataStartX + bas_prise/2, yPos + rowHeight + 6, 'center');
+    drawText(formatNumber(safeShiftData.taximetre_index_km_fin || ''), dataStartX + bas_prise + bas_index/2, yPos + rowHeight + 6, 'center');
+    drawText(formatNumber(safeShiftData.taximetre_km_charge_fin || ''), dataStartX + bas_prise + bas_index + bas_kmcharge/2, yPos + rowHeight + 6, 'center');
+    drawText(formatCurrency(safeShiftData.taximetre_chutes_fin || ''), dataStartX + bas_prise + bas_index + bas_kmcharge + bas_chutes/2, yPos + rowHeight + 6, 'center');
 
-    // Ligne "Début"
-    if (safeShiftData.taximetre_prise_charge_debut) {
-      drawText(formatCurrency(safeShiftData.taximetre_prise_charge_debut), dataStartX + bas_prise/2, yPos + 2 * rowHeight + 6, 'center');
-    }
-    if (safeShiftData.taximetre_index_km_debut) {
-      drawText(formatNumber(safeShiftData.taximetre_index_km_debut), dataStartX + bas_prise + bas_index/2, yPos + 2 * rowHeight + 6, 'center');
-    }
-    if (safeShiftData.taximetre_km_charge_debut) {
-      drawText(formatNumber(safeShiftData.taximetre_km_charge_debut), dataStartX + bas_prise + bas_index + bas_kmcharge/2, yPos + 2 * rowHeight + 6, 'center');
-    }
-    if (safeShiftData.taximetre_chutes_debut) {
-      drawText(formatCurrency(safeShiftData.taximetre_chutes_debut), dataStartX + bas_prise + bas_index + bas_kmcharge + bas_chutes/2, yPos + 2 * rowHeight + 6, 'center');
-    }
+    // Ligne "Début" - Toujours afficher même si vide pour debug
+    console.log('🔍 DEBUG AFFICHAGE DEBUT:');
+    console.log('  taximetre_prise_charge_debut value:', safeShiftData.taximetre_prise_charge_debut);
+    console.log('  formatCurrency result:', formatCurrency(safeShiftData.taximetre_prise_charge_debut || ''));
+    drawText(formatCurrency(safeShiftData.taximetre_prise_charge_debut || ''), dataStartX + bas_prise/2, yPos + 2 * rowHeight + 6, 'center');
+    drawText(formatNumber(safeShiftData.taximetre_index_km_debut || ''), dataStartX + bas_prise + bas_index/2, yPos + 2 * rowHeight + 6, 'center');
+    drawText(formatNumber(safeShiftData.taximetre_km_charge_debut || ''), dataStartX + bas_prise + bas_index + bas_kmcharge/2, yPos + 2 * rowHeight + 6, 'center');
+    drawText(formatCurrency(safeShiftData.taximetre_chutes_debut || ''), dataStartX + bas_prise + bas_index + bas_kmcharge + bas_chutes/2, yPos + 2 * rowHeight + 6, 'center');
 
     // Ligne "Total" - Calculs automatiques
     if (safeShiftData.taximetre_prise_charge_fin && safeShiftData.taximetre_prise_charge_debut) {
@@ -779,30 +784,27 @@ export const generateAndDownloadReport = (rawShiftData, rawCourses, driver, vehi
 // Fonction pour récupérer les données depuis la base de données
 export const fetchDataForPDF = async (feuilleId) => {
   try {
-    // ✅ GESTION SPÉCIFIQUE SAFARI : Ajouter un délai et éviter le cache
-    const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
-    if (isSafari) {
-      console.log('🧭 Safari détecté - Ajout d\'un délai pour éviter les problèmes de cache');
-      // Délai pour laisser le temps à Safari de synchroniser
-      await new Promise(resolve => setTimeout(resolve, 1000));
-    }
-
-    // Récupérer les données depuis l'API backend avec gestion du cache
-    const cacheBuster = isSafari ? `?t=${Date.now()}` : '';
-    const response = await fetch(`/api/feuilles-route/${feuilleId}${cacheBuster}`, {
+    // ✅ CORRECTION: Utiliser l'URL complète de l'API de production
+    // au lieu de l'URL relative qui peut ne pas fonctionner dans tous les contextes
+    const apiUrl = `https://api.txapp.be/api/feuilles-route/${feuilleId}`;
+    console.log('🔍 fetchDataForPDF - URL appelée:', apiUrl);
+    
+    const response = await fetch(apiUrl, {
       method: 'GET',
       headers: {
-        'Cache-Control': 'no-cache, no-store, must-revalidate',
-        'Pragma': 'no-cache',
-        'Expires': '0'
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
       }
     });
+    
+    console.log('🔍 fetchDataForPDF - Status réponse:', response.status);
     
     if (!response.ok) {
       throw new Error(`Erreur HTTP ${response.status}: ${response.statusText}`);
     }
     
     const feuilleDB = await response.json();
+    console.log('🔍 fetchDataForPDF - Données brutes reçues:', feuilleDB);
     
     console.log('📥 fetchDataForPDF - Données de l\'API:', {
       feuille_id: feuilleDB.feuille_id,
@@ -810,6 +812,11 @@ export const fetchDataForPDF = async (feuilleId) => {
       course_count: feuilleDB.course?.length || 0,
       charge_count: feuilleDB.charge?.length || 0,
       has_taximetre: !!feuilleDB.taximetre,
+      taximetre_data: feuilleDB.taximetre,
+      taximetre_prise_charge_fin: feuilleDB.taximetre?.taximetre_prise_charge_fin,
+      taximetre_index_km_fin: feuilleDB.taximetre?.taximetre_index_km_fin,
+      taximetre_km_charge_fin: feuilleDB.taximetre?.taximetre_km_charge_fin,
+      taximetre_chutes_fin: feuilleDB.taximetre?.taximetre_chutes_fin,
       has_chauffeur: !!feuilleDB.chauffeur,
       has_vehicule: !!feuilleDB.vehicule
     });

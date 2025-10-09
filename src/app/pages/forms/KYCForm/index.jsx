@@ -263,6 +263,12 @@ const TxAppAdmin = () => {
   const handleDownloadReport = () => {
     try {
       const shiftForReport = shifts && shifts.length ? shifts[shifts.length - 1] : { date: new Date().toISOString().slice(0,10) };
+
+      console.log('🔍 DEBUG handleDownloadReport:');
+      console.log('  shiftForReport:', shiftForReport);
+      console.log('  shiftForReport.taximetre:', shiftForReport.taximetre);
+      console.log('  shiftForReport.taximetre_prise_charge_fin:', shiftForReport.taximetre_prise_charge_fin);
+
       generateAndDownloadReport(
         shiftForReport,
         courses,

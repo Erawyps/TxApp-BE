@@ -226,24 +226,31 @@ model societe_taxi {
 }
 
 model taximetre {
-  feuille_id                   Int           @id
-  pc_debut_tax                 Decimal?      @db.Decimal(10, 2)
-  pc_fin_tax                   Decimal?      @db.Decimal(10, 2)
-  index_km_debut_tax           Int?
-  index_km_fin_tax             Int?
-  km_charge_debut              Decimal?      @db.Decimal(10, 2)
-  km_charge_fin                Decimal?      @db.Decimal(10, 2)
-  chutes_debut_tax             Decimal?      @db.Decimal(10, 2)
-  chutes_fin_tax               Decimal?      @db.Decimal(10, 2)
-  taximetre_prise_charge_debut Decimal?      @db.Decimal(10, 2)
-  taximetre_prise_charge_fin   Decimal?      @db.Decimal(10, 2)
+  feuille_id Int @id
+  
+  // Anciennes colonnes (à supprimer après migration)
+  pc_debut_tax       Decimal? @db.Decimal(10, 2)
+  pc_fin_tax         Decimal? @db.Decimal(10, 2)
+  index_km_debut_tax Int?
+  index_km_fin_tax   Int?
+  km_charge_debut    Decimal? @db.Decimal(10, 2)
+  km_charge_fin      Decimal? @db.Decimal(10, 2)
+  chutes_debut_tax   Decimal? @db.Decimal(10, 2)
+  chutes_fin_tax     Decimal? @db.Decimal(10, 2)
+  
+  // Nouvelles colonnes (avec préfixe)
+  taximetre_prise_charge_debut Decimal? @db.Decimal(10, 2)
+  taximetre_prise_charge_fin   Decimal? @db.Decimal(10, 2)
   taximetre_index_km_debut     Int?
   taximetre_index_km_fin       Int?
-  taximetre_km_charge_debut    Decimal?      @db.Decimal(10, 2)
-  taximetre_km_charge_fin      Decimal?      @db.Decimal(10, 2)
-  taximetre_chutes_debut       Decimal?      @db.Decimal(10, 2)
-  taximetre_chutes_fin         Decimal?      @db.Decimal(10, 2)
-  created_at                   DateTime?     @default(now()) @db.Timestamp(6)
+  taximetre_km_charge_debut    Decimal? @db.Decimal(10, 2)
+  taximetre_km_charge_fin      Decimal? @db.Decimal(10, 2)
+  taximetre_chutes_debut       Decimal? @db.Decimal(10, 2)
+  taximetre_chutes_fin         Decimal? @db.Decimal(10, 2)
+  
+  created_at                   DateTime? @default(now()) @db.Timestamp(6)
+  
+  // Relations
   feuille_route                feuille_route @relation(fields: [feuille_id], references: [feuille_id], onDelete: Cascade, onUpdate: NoAction)
 }
 

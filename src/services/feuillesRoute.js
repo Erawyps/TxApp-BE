@@ -26,7 +26,14 @@ export async function updateFeuilleRoute(id, data) {
     console.log('✅ updateFeuilleRoute - Réponse API:', response.data);
     return response.data;
   } catch (error) {
-    console.error('Erreur lors de la mise à jour de la feuille de route:', error);
+    console.error('❌ updateFeuilleRoute - ERREUR DÉTAILLÉE:', {
+      message: error.message,
+      status: error.response?.status,
+      statusText: error.response?.statusText,
+      data: error.response?.data,
+      url: error.config?.url,
+      method: error.config?.method
+    });
     throw error;
   }
 }

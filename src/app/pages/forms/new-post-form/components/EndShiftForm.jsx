@@ -215,6 +215,11 @@ export function EndShiftForm({ onEndShift, onValidate, shiftData, driver, onPrin
         };
 
         console.log('🔍 EndShiftForm - Données finales envoyées:', endShiftData);
+        console.log('🔍 EndShiftForm - Champs taximètre:');
+        console.log('  taximetre_prise_charge_fin:', endShiftData.taximetre_prise_charge_fin);
+        console.log('  taximetre_index_km_fin:', endShiftData.taximetre_index_km_fin);
+        console.log('  taximetre_km_charge_fin:', endShiftData.taximetre_km_charge_fin);
+        console.log('  taximetre_chutes_fin:', endShiftData.taximetre_chutes_fin);
 
         // ✅ Appeler onValidate pour sauvegarder SANS terminer le shift
         const success = await onValidate(endShiftData);

@@ -739,19 +739,23 @@ export async function createFeuilleRouteSimple(feuilleData) {
       km_tableau_bord_debut: feuilleData.km_tableau_bord_debut,
       km_tableau_bord_fin: feuilleData.km_tableau_bord_fin,
       montant_salaire_cash_declare: feuilleData.montant_salaire_cash_declare || 0,
-      // ✅ Ajout des champs taximètre de début
-      taximetre_prise_charge_debut: feuilleData.taximetre_prise_charge_debut || null,
-      taximetre_index_km_debut: feuilleData.taximetre_index_km_debut || null,
-      taximetre_km_charge_debut: feuilleData.taximetre_km_charge_debut || null,
-      taximetre_chutes_debut: feuilleData.taximetre_chutes_debut || null,
-      // ✅ Ajout des champs taximètre de fin (pour mise à jour ultérieure)
-      taximetre_prise_charge_fin: feuilleData.taximetre_prise_charge_fin || null,
-      taximetre_index_km_fin: feuilleData.taximetre_index_km_fin || null,
-      taximetre_km_charge_fin: feuilleData.taximetre_km_charge_fin || null,
-      taximetre_chutes_fin: feuilleData.taximetre_chutes_fin || null,
       // ✅ Autres champs optionnels
-      observations: feuilleData.observations || null,
-      signature_chauffeur: feuilleData.signature_chauffeur || null
+      signature_chauffeur: feuilleData.signature_chauffeur || null,
+      // ✅ Créer TOUJOURS la relation taximètre lors de la création d'une feuille
+      // Les valeurs peuvent être nulles et seront mises à jour plus tard
+      taximetre: {
+        create: {
+          taximetre_prise_charge_debut: feuilleData.taximetre_prise_charge_debut || null,
+          taximetre_index_km_debut: feuilleData.taximetre_index_km_debut || null,
+          taximetre_km_charge_debut: feuilleData.taximetre_km_charge_debut || null,
+          taximetre_chutes_debut: feuilleData.taximetre_chutes_debut || null,
+          // Les champs de fin seront mis à jour lors de la validation
+          taximetre_prise_charge_fin: feuilleData.taximetre_prise_charge_fin || null,
+          taximetre_index_km_fin: feuilleData.taximetre_index_km_fin || null,
+          taximetre_km_charge_fin: feuilleData.taximetre_km_charge_fin || null,
+          taximetre_chutes_fin: feuilleData.taximetre_chutes_fin || null
+        }
+      }
     };
 
     console.log('🔧 createFeuilleRouteSimple - Données à créer:', feuilleRouteData);
@@ -813,7 +817,7 @@ export async function validateFeuilleRouteData(feuilleId, feuilleData) {
     }
 
     // Vérifier que le km fin >= dernier index de course
-    const lastCourseIndex = Math.max(...existingFeuille.courses.map(c => c.index_debarquement || 0), 0);
+    const lastCourseIndex = Math.max(...existingFeuille.course.map(c => c.index_debarquement || 0), 0);
     if (lastCourseIndex > 0 && feuilleData.index_km_fin_tdb < lastCourseIndex) {
       throw new Error(`Le kilométrage de fin doit être au moins égal au dernier index de course (${lastCourseIndex})`);
     }
@@ -826,7 +830,7 @@ export async function validateFeuilleRouteData(feuilleId, feuilleData) {
   }
 
   // Validation des courses terminées
-  const coursesNonTerminees = existingFeuille.courses.filter(c =>
+  const coursesNonTerminees = existingFeuille.course.filter(c =>
     c.heure_embarquement && !c.heure_debarquement && parseFloat(c.sommes_percues || 0) > 0
   );
 
@@ -865,24 +869,39 @@ export async function updateFeuilleRoute(feuilleId, feuilleData) {
       date_validation: feuilleData.date_validation ? new Date(feuilleData.date_validation) : null,
       validated_by: feuilleData.validated_by,
       montant_salaire_cash_declare: feuilleData.montant_salaire_cash_declare,
-      // ✅ Ajout des champs taximètre de début
-      taximetre_prise_charge_debut: feuilleData.taximetre_prise_charge_debut !== undefined ? feuilleData.taximetre_prise_charge_debut : undefined,
-      taximetre_index_km_debut: feuilleData.taximetre_index_km_debut !== undefined ? feuilleData.taximetre_index_km_debut : undefined,
-      taximetre_km_charge_debut: feuilleData.taximetre_km_charge_debut !== undefined ? feuilleData.taximetre_km_charge_debut : undefined,
-      taximetre_chutes_debut: feuilleData.taximetre_chutes_debut !== undefined ? feuilleData.taximetre_chutes_debut : undefined,
-      // ✅ Ajout des champs taximètre de fin
-      taximetre_prise_charge_fin: feuilleData.taximetre_prise_charge_fin !== undefined ? feuilleData.taximetre_prise_charge_fin : undefined,
-      taximetre_index_km_fin: feuilleData.taximetre_index_km_fin !== undefined ? feuilleData.taximetre_index_km_fin : undefined,
-      taximetre_km_charge_fin: feuilleData.taximetre_km_charge_fin !== undefined ? feuilleData.taximetre_km_charge_fin : undefined,
-      taximetre_chutes_fin: feuilleData.taximetre_chutes_fin !== undefined ? feuilleData.taximetre_chutes_fin : undefined,
       // ✅ Autres champs optionnels
-      observations: feuilleData.observations !== undefined ? feuilleData.observations : undefined,
-      signature_chauffeur: feuilleData.signature_chauffeur !== undefined ? feuilleData.signature_chauffeur : undefined
+      signature_chauffeur: feuilleData.signature_chauffeur !== undefined ? feuilleData.signature_chauffeur : undefined,
+      // ✅ Mise à jour de la relation taximètre
+      taximetre: {
+        upsert: {
+          create: {
+            taximetre_prise_charge_debut: feuilleData.taximetre_prise_charge_debut || null,
+            taximetre_index_km_debut: feuilleData.taximetre_index_km_debut || null,
+            taximetre_km_charge_debut: feuilleData.taximetre_km_charge_debut || null,
+            taximetre_chutes_debut: feuilleData.taximetre_chutes_debut || null,
+            taximetre_prise_charge_fin: feuilleData.taximetre_prise_charge_fin || null,
+            taximetre_index_km_fin: feuilleData.taximetre_index_km_fin || null,
+            taximetre_km_charge_fin: feuilleData.taximetre_km_charge_fin || null,
+            taximetre_chutes_fin: feuilleData.taximetre_chutes_fin || null
+          },
+          update: {
+            taximetre_prise_charge_debut: feuilleData.taximetre_prise_charge_debut !== undefined ? feuilleData.taximetre_prise_charge_debut : undefined,
+            taximetre_index_km_debut: feuilleData.taximetre_index_km_debut !== undefined ? feuilleData.taximetre_index_km_debut : undefined,
+            taximetre_km_charge_debut: feuilleData.taximetre_km_charge_debut !== undefined ? feuilleData.taximetre_km_charge_debut : undefined,
+            taximetre_chutes_debut: feuilleData.taximetre_chutes_debut !== undefined ? feuilleData.taximetre_chutes_debut : undefined,
+            taximetre_prise_charge_fin: feuilleData.taximetre_prise_charge_fin !== undefined ? feuilleData.taximetre_prise_charge_fin : undefined,
+            taximetre_index_km_fin: feuilleData.taximetre_index_km_fin !== undefined ? feuilleData.taximetre_index_km_fin : undefined,
+            taximetre_km_charge_fin: feuilleData.taximetre_km_charge_fin !== undefined ? feuilleData.taximetre_km_charge_fin : undefined,
+            taximetre_chutes_fin: feuilleData.taximetre_chutes_fin !== undefined ? feuilleData.taximetre_chutes_fin : undefined
+          }
+        }
+      }
     };
 
     // Nettoyer les champs undefined pour éviter les erreurs Prisma
+    // Note: On ne nettoie pas les champs de taximetre car ils sont dans un objet nested
     Object.keys(updateData).forEach(key => {
-      if (updateData[key] === undefined) {
+      if (updateData[key] === undefined && key !== 'taximetre') {
         delete updateData[key];
       }
     });

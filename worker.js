@@ -207,15 +207,27 @@ const verifyPassword = async (password, hashedPassword) => {
 const mapFeuilleRouteForFrontend = (dbData) => {
   if (!dbData) return null;
   
+  // Fonction helper pour convertir les dates en strings
+  const formatDate = (date) => {
+    if (!date) return null;
+    if (typeof date === 'string') return date;
+    if (date instanceof Date) return date.toISOString();
+    // Pour les types Time de PostgreSQL, convertir en string HH:MM:SS
+    if (date.toString && date.toString().match(/^\d{2}:\d{2}:\d{2}/)) {
+      return date.toString();
+    }
+    return date;
+  };
+  
   return {
     // Données de base feuille_route
     feuille_id: dbData.feuille_id,
     chauffeur_id: dbData.chauffeur_id,
     vehicule_id: dbData.vehicule_id,
-    date_service: dbData.date_service,
+    date_service: formatDate(dbData.date_service),
     mode_encodage: dbData.mode_encodage,
-    heure_debut: dbData.heure_debut,
-    heure_fin: dbData.heure_fin,
+    heure_debut: formatDate(dbData.heure_debut),
+    heure_fin: formatDate(dbData.heure_fin),
     interruptions: dbData.interruptions,
     index_km_debut_tdb: dbData.index_km_debut_tdb,
     index_km_fin_tdb: dbData.index_km_fin_tdb,
@@ -223,10 +235,10 @@ const mapFeuilleRouteForFrontend = (dbData) => {
     km_tableau_bord_fin: dbData.km_tableau_bord_fin,
     montant_salaire_cash_declare: dbData.montant_salaire_cash_declare,
     est_validee: dbData.est_validee,
-    date_validation: dbData.date_validation,
+    date_validation: formatDate(dbData.date_validation),
     validated_by: dbData.validated_by,
     signature_chauffeur: dbData.signature_chauffeur,
-    created_at: dbData.created_at,
+    created_at: formatDate(dbData.created_at),
     
     // Données taximètre mappées correctement
     taximetre_prise_charge_debut: dbData.taximetre?.taximetre_prise_charge_debut || null,
@@ -249,6 +261,9 @@ const mapFeuilleRouteForFrontend = (dbData) => {
 
 // Fonction de mapping pour mise à jour partielle
 const preparePartialUpdateForDB = (formData) => {
+  console.log('🔧 preparePartialUpdateForDB - Données reçues:', formData);
+  console.log('🔧 preparePartialUpdateForDB - Contexte:', formData.context);
+  
   const feuilleData = {};
   const taximetreData = {};
   
@@ -293,12 +308,13 @@ const preparePartialUpdateForDB = (formData) => {
   };
   
   // Mise à jour feuille_route seulement si les champs sont fournis
-  if (formData.heure_fin !== undefined) feuilleData.heure_fin = parseTime(formData.heure_fin);
-  if (formData.interruptions !== undefined) feuilleData.interruptions = formatInterruptions(formData.interruptions);
-  if (formData.index_km_fin_tdb !== undefined) feuilleData.index_km_fin_tdb = parseInt(formData.index_km_fin_tdb);
-  if (formData.km_tableau_bord_fin !== undefined) feuilleData.km_tableau_bord_fin = parseInt(formData.km_tableau_bord_fin);
-  if (formData.montant_salaire_cash_declare !== undefined) feuilleData.montant_salaire_cash_declare = parseFloat(formData.montant_salaire_cash_declare);
-  if (formData.signature_chauffeur !== undefined) feuilleData.signature_chauffeur = formData.signature_chauffeur;
+  // ✅ CORRECTION: Ne traiter que les valeurs non vides pour les champs numériques
+  if (formData.heure_fin !== undefined && formData.heure_fin !== '' && formData.heure_fin !== null) feuilleData.heure_fin = parseTime(formData.heure_fin);
+  if (formData.interruptions !== undefined && formData.interruptions !== '' && formData.interruptions !== null) feuilleData.interruptions = formatInterruptions(formData.interruptions);
+  if (formData.index_km_fin_tdb !== undefined && formData.index_km_fin_tdb !== '' && formData.index_km_fin_tdb !== null) feuilleData.index_km_fin_tdb = parseInt(formData.index_km_fin_tdb);
+  if (formData.km_tableau_bord_fin !== undefined && formData.km_tableau_bord_fin !== '' && formData.km_tableau_bord_fin !== null) feuilleData.km_tableau_bord_fin = parseInt(formData.km_tableau_bord_fin);
+  if (formData.montant_salaire_cash_declare !== undefined && formData.montant_salaire_cash_declare !== '' && formData.montant_salaire_cash_declare !== null) feuilleData.montant_salaire_cash_declare = parseFloat(formData.montant_salaire_cash_declare);
+  if (formData.signature_chauffeur !== undefined && formData.signature_chauffeur !== '' && formData.signature_chauffeur !== null) feuilleData.signature_chauffeur = formData.signature_chauffeur;
   if (formData.est_validee !== undefined) {
     feuilleData.est_validee = formData.est_validee;
     if (formData.est_validee) {
@@ -308,28 +324,29 @@ const preparePartialUpdateForDB = (formData) => {
   
   // Mapping des champs frontend vers DB pour mise à jour
   // Utilise le contexte pour déterminer si les données vont vers début ou fin
-  if (formData["Taximètre: Prise en charge"] !== undefined) {
+  // ✅ CORRECTION: Ne traiter que les valeurs non vides
+  if (formData["Taximètre: Prise en charge"] !== undefined && formData["Taximètre: Prise en charge"] !== '' && formData["Taximètre: Prise en charge"] !== null) {
     if (formData.context === 'debut') {
       taximetreData.taximetre_prise_charge_debut = parseFloat(formData["Taximètre: Prise en charge"]);
     } else {
       taximetreData.taximetre_prise_charge_fin = parseFloat(formData["Taximètre: Prise en charge"]);
     }
   }
-  if (formData["Taximètre: Index km (km totaux)"] !== undefined) {
+  if (formData["Taximètre: Index km (km totaux)"] !== undefined && formData["Taximètre: Index km (km totaux)"] !== '' && formData["Taximètre: Index km (km totaux)"] !== null) {
     if (formData.context === 'debut') {
       taximetreData.taximetre_index_km_debut = parseInt(formData["Taximètre: Index km (km totaux)"]);
     } else {
       taximetreData.taximetre_index_km_fin = parseInt(formData["Taximètre: Index km (km totaux)"]);
     }
   }
-  if (formData["Taximètre: Km en charge"] !== undefined) {
+  if (formData["Taximètre: Km en charge"] !== undefined && formData["Taximètre: Km en charge"] !== '' && formData["Taximètre: Km en charge"] !== null) {
     if (formData.context === 'debut') {
       taximetreData.taximetre_km_charge_debut = parseFloat(formData["Taximètre: Km en charge"]);
     } else {
       taximetreData.taximetre_km_charge_fin = parseFloat(formData["Taximètre: Km en charge"]);
     }
   }
-  if (formData["Taximètre: Chutes (€)"] !== undefined) {
+  if (formData["Taximètre: Chutes (€)"] !== undefined && formData["Taximètre: Chutes (€)"] !== '' && formData["Taximètre: Chutes (€)"] !== null) {
     if (formData.context === 'debut') {
       taximetreData.taximetre_chutes_debut = parseFloat(formData["Taximètre: Chutes (€)"]);
     } else {
@@ -338,28 +355,29 @@ const preparePartialUpdateForDB = (formData) => {
   }
   
   // Mise à jour taximètre seulement si les champs DB sont fournis (compatibilité)
-  if (formData.taximetre_prise_charge_debut !== undefined) {
+  // ✅ CORRECTION: Ne traiter que les valeurs non vides pour éviter les NaN
+  if (formData.taximetre_prise_charge_debut !== undefined && formData.taximetre_prise_charge_debut !== '' && formData.taximetre_prise_charge_debut !== null) {
     taximetreData.taximetre_prise_charge_debut = parseFloat(formData.taximetre_prise_charge_debut);
   }
-  if (formData.taximetre_index_km_debut !== undefined) {
+  if (formData.taximetre_index_km_debut !== undefined && formData.taximetre_index_km_debut !== '' && formData.taximetre_index_km_debut !== null) {
     taximetreData.taximetre_index_km_debut = parseInt(formData.taximetre_index_km_debut);
   }
-  if (formData.taximetre_km_charge_debut !== undefined) {
+  if (formData.taximetre_km_charge_debut !== undefined && formData.taximetre_km_charge_debut !== '' && formData.taximetre_km_charge_debut !== null) {
     taximetreData.taximetre_km_charge_debut = parseFloat(formData.taximetre_km_charge_debut);
   }
-  if (formData.taximetre_chutes_debut !== undefined) {
+  if (formData.taximetre_chutes_debut !== undefined && formData.taximetre_chutes_debut !== '' && formData.taximetre_chutes_debut !== null) {
     taximetreData.taximetre_chutes_debut = parseFloat(formData.taximetre_chutes_debut);
   }
-  if (formData.taximetre_prise_charge_fin !== undefined) {
+  if (formData.taximetre_prise_charge_fin !== undefined && formData.taximetre_prise_charge_fin !== '' && formData.taximetre_prise_charge_fin !== null) {
     taximetreData.taximetre_prise_charge_fin = parseFloat(formData.taximetre_prise_charge_fin);
   }
-  if (formData.taximetre_index_km_fin !== undefined) {
+  if (formData.taximetre_index_km_fin !== undefined && formData.taximetre_index_km_fin !== '' && formData.taximetre_index_km_fin !== null) {
     taximetreData.taximetre_index_km_fin = parseInt(formData.taximetre_index_km_fin);
   }
-  if (formData.taximetre_km_charge_fin !== undefined) {
+  if (formData.taximetre_km_charge_fin !== undefined && formData.taximetre_km_charge_fin !== '' && formData.taximetre_km_charge_fin !== null) {
     taximetreData.taximetre_km_charge_fin = parseFloat(formData.taximetre_km_charge_fin);
   }
-  if (formData.taximetre_chutes_fin !== undefined) {
+  if (formData.taximetre_chutes_fin !== undefined && formData.taximetre_chutes_fin !== '' && formData.taximetre_chutes_fin !== null) {
     taximetreData.taximetre_chutes_fin = parseFloat(formData.taximetre_chutes_fin);
   }
   
@@ -399,6 +417,9 @@ const preparePartialUpdateForDB = (formData) => {
       }
     }
   }
+  
+  console.log('🔧 preparePartialUpdateForDB - Données feuille mappées:', feuilleData);
+  console.log('🔧 preparePartialUpdateForDB - Données taximètre mappées:', taximetreData);
   
   return { feuilleData, taximetreData };
 };
@@ -1598,6 +1619,9 @@ app.get('/api/feuilles-route/:id', dbMiddleware, authMiddleware, async (c) => {
   try {
     const prisma = c.get('prisma');
     const { id } = c.req.param();
+    
+    console.log('🔍 GET /api/feuilles-route/:id - Récupération feuille:', id);
+    
     const feuilleRoute = await prisma.feuille_route.findUnique({
       where: { feuille_id: parseInt(id) },
       include: {
@@ -1622,9 +1646,25 @@ app.get('/api/feuilles-route/:id', dbMiddleware, authMiddleware, async (c) => {
         taximetre: true
       }
     });
+    
+    // ✅ CORRECTION: Si l'include ne fonctionne pas, récupérer le taximètre séparément
+    if (feuilleRoute && !feuilleRoute.taximetre) {
+      feuilleRoute.taximetre = await prisma.taximetre.findUnique({
+        where: { feuille_id: parseInt(id) }
+      });
+    }
+    
+    console.log('🔍 GET /api/feuilles-route/:id - Résultat:', {
+      found: !!feuilleRoute,
+      feuille_id: feuilleRoute?.feuille_id,
+      has_taximetre: !!feuilleRoute?.taximetre,
+      taximetre_data: feuilleRoute?.taximetre
+    });
+    
     if (!feuilleRoute) {
       return c.json({ error: 'Feuille de route non trouvée' }, 404);
     }
+    
     return c.json(feuilleRoute);
   } catch (error) {
     console.error('Erreur lors de la récupération de la feuille de route:', error);
@@ -3395,6 +3435,11 @@ app.put('/api/dashboard/feuilles-route/:id', dbMiddleware, authMiddleware, async
     const user = c.get('user');
 
     console.log('🔧 PUT /api/dashboard/feuilles-route/:id - Données reçues:', requestData);
+    console.log('🔧 PUT /api/dashboard/feuilles-route/:id - Champs taximètre:');
+    console.log('  taximetre_prise_charge_fin:', requestData.taximetre_prise_charge_fin);
+    console.log('  taximetre_index_km_fin:', requestData.taximetre_index_km_fin);
+    console.log('  taximetre_km_charge_fin:', requestData.taximetre_km_charge_fin);
+    console.log('  taximetre_chutes_fin:', requestData.taximetre_chutes_fin);
 
     // Vérifier que l'utilisateur est autorisé à modifier cette feuille
     if (user.type === 'Driver' || user.type === 'Chauffeur') {
@@ -3460,6 +3505,11 @@ app.put('/api/dashboard/feuilles-route/:id', dbMiddleware, authMiddleware, async
 
     console.log('🔧 Données feuille mappées:', feuilleData);
     console.log('🔧 Données taximètre mappées:', taximetreData);
+    console.log('🔧 Champs taximètre mappés:');
+    console.log('  taximetre_prise_charge_fin:', taximetreData.taximetre_prise_charge_fin);
+    console.log('  taximetre_index_km_fin:', taximetreData.taximetre_index_km_fin);
+    console.log('  taximetre_km_charge_fin:', taximetreData.taximetre_km_charge_fin);
+    console.log('  taximetre_chutes_fin:', taximetreData.taximetre_chutes_fin);
 
     // Mettre à jour la feuille de route
     if (Object.keys(feuilleData).length > 0) {
@@ -3471,6 +3521,7 @@ app.put('/api/dashboard/feuilles-route/:id', dbMiddleware, authMiddleware, async
 
     // ✅ Mettre à jour ou créer le taximètre
     if (Object.keys(taximetreData).length > 0) {
+      console.log('🔧 PUT /api/dashboard/feuilles-route/:id - Sauvegarde taximètre:', taximetreData);
       await prisma.taximetre.upsert({
         where: { feuille_id: parseInt(id) },
         update: taximetreData,
@@ -3479,7 +3530,24 @@ app.put('/api/dashboard/feuilles-route/:id', dbMiddleware, authMiddleware, async
           ...taximetreData
         }
       });
+      console.log('✅ PUT /api/dashboard/feuilles-route/:id - Taximètre sauvegardé');
+    } else {
+      console.log('⚠️ PUT /api/dashboard/feuilles-route/:id - Aucune donnée taximètre à sauvegarder');
     }
+
+    // ✅ VÉRIFICATION: Récupérer les données sauvegardées pour vérifier
+    const feuilleVerifiee = await prisma.feuille_route.findUnique({
+      where: { feuille_id: parseInt(id) },
+      include: { taximetre: true }
+    });
+
+    console.log('🔍 VÉRIFICATION - Données sauvegardées en base:', {
+      feuille_id: feuilleVerifiee?.feuille_id,
+      taximetre_prise_charge_fin: feuilleVerifiee?.taximetre?.taximetre_prise_charge_fin,
+      taximetre_index_km_fin: feuilleVerifiee?.taximetre?.taximetre_index_km_fin,
+      taximetre_km_charge_fin: feuilleVerifiee?.taximetre?.taximetre_km_charge_fin,
+      taximetre_chutes_fin: feuilleVerifiee?.taximetre?.taximetre_chutes_fin
+    });
 
     // Récupérer les données complètes avec taximètre
     const feuilleComplete = await prisma.feuille_route.findUnique({
@@ -3493,6 +3561,12 @@ app.put('/api/dashboard/feuilles-route/:id', dbMiddleware, authMiddleware, async
         },
         taximetre: true
       }
+    });
+
+    console.log('🔍 Données récupérées après mise à jour:', {
+      feuille_id: feuilleComplete?.feuille_id,
+      has_taximetre: !!feuilleComplete?.taximetre,
+      taximetre_data: feuilleComplete?.taximetre
     });
 
     // ✅ Mapper pour le frontend

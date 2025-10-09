@@ -11,7 +11,31 @@
 export const mapFeuilleRouteFromDB = (dbData) => {
   if (!dbData) return null;
 
-  return {
+  console.log('🔍 mapFeuilleRouteFromDB - Données reçues:', {
+    feuille_id: dbData.feuille_id,
+    has_taximetre: !!dbData.taximetre,
+    taximetre_keys: dbData.taximetre ? Object.keys(dbData.taximetre) : [],
+    // Anciens champs (sans préfixe)
+    pc_debut_tax: dbData.taximetre?.pc_debut_tax,
+    pc_fin_tax: dbData.taximetre?.pc_fin_tax,
+    index_km_debut_tax: dbData.taximetre?.index_km_debut_tax,
+    index_km_fin_tax: dbData.taximetre?.index_km_fin_tax,
+    km_charge_debut: dbData.taximetre?.km_charge_debut,
+    km_charge_fin: dbData.taximetre?.km_charge_fin,
+    chutes_debut_tax: dbData.taximetre?.chutes_debut_tax,
+    chutes_fin_tax: dbData.taximetre?.chutes_fin_tax,
+    // Nouveaux champs (avec préfixe)
+    taximetre_prise_charge_debut: dbData.taximetre?.taximetre_prise_charge_debut,
+    taximetre_prise_charge_fin: dbData.taximetre?.taximetre_prise_charge_fin,
+    taximetre_index_km_debut: dbData.taximetre?.taximetre_index_km_debut,
+    taximetre_index_km_fin: dbData.taximetre?.taximetre_index_km_fin,
+    taximetre_km_charge_debut: dbData.taximetre?.taximetre_km_charge_debut,
+    taximetre_km_charge_fin: dbData.taximetre?.taximetre_km_charge_fin,
+    taximetre_chutes_debut: dbData.taximetre?.taximetre_chutes_debut,
+    taximetre_chutes_fin: dbData.taximetre?.taximetre_chutes_fin
+  });
+
+  const result = {
     id: dbData.feuille_id,
     feuille_id: dbData.feuille_id,
     date: dbData.date_service,
@@ -72,6 +96,55 @@ export const mapFeuilleRouteFromDB = (dbData) => {
     created_at: dbData.created_at,
     updated_at: dbData.updated_at
   };
+
+  console.log('🔍 mapFeuilleRouteFromDB - Résultat mappé:', {
+    feuille_id: result.feuille_id,
+    // Champs mappés (avec priorité nouveaux -> anciens)
+    taximetre_prise_charge_debut: {
+      final: result.taximetre_prise_charge_debut,
+      nouveau: dbData.taximetre?.taximetre_prise_charge_debut,
+      ancien: dbData.taximetre?.pc_debut_tax
+    },
+    taximetre_prise_charge_fin: {
+      final: result.taximetre_prise_charge_fin,
+      nouveau: dbData.taximetre?.taximetre_prise_charge_fin,
+      ancien: dbData.taximetre?.pc_fin_tax
+    },
+    taximetre_index_km_debut: {
+      final: result.taximetre_index_km_debut,
+      nouveau: dbData.taximetre?.taximetre_index_km_debut,
+      ancien: dbData.taximetre?.index_km_debut_tax,
+      tdb_fallback: dbData.index_km_debut_tdb
+    },
+    taximetre_index_km_fin: {
+      final: result.taximetre_index_km_fin,
+      nouveau: dbData.taximetre?.taximetre_index_km_fin,
+      ancien: dbData.taximetre?.index_km_fin_tax,
+      tdb_fallback: dbData.index_km_fin_tdb
+    },
+    taximetre_km_charge_debut: {
+      final: result.taximetre_km_charge_debut,
+      nouveau: dbData.taximetre?.taximetre_km_charge_debut,
+      ancien: dbData.taximetre?.km_charge_debut
+    },
+    taximetre_km_charge_fin: {
+      final: result.taximetre_km_charge_fin,
+      nouveau: dbData.taximetre?.taximetre_km_charge_fin,
+      ancien: dbData.taximetre?.km_charge_fin
+    },
+    taximetre_chutes_debut: {
+      final: result.taximetre_chutes_debut,
+      nouveau: dbData.taximetre?.taximetre_chutes_debut,
+      ancien: dbData.taximetre?.chutes_debut_tax
+    },
+    taximetre_chutes_fin: {
+      final: result.taximetre_chutes_fin,
+      nouveau: dbData.taximetre?.taximetre_chutes_fin,
+      ancien: dbData.taximetre?.chutes_fin_tax
+    }
+  });
+
+  return result;
 };
 
 /**
