@@ -8,7 +8,7 @@ import { useCallback, useEffect } from "react";
 // Local Imports
 import { Button, Input, Textarea } from "components/ui";
 import { Listbox } from "components/shared/form/Listbox";
-import { courseSchema } from "../schema";
+import { getCourseSchema } from "../schema";
 import { paymentMethods, contractTypes } from "../data";
 
 // ----------------------------------------------------------------------
@@ -47,7 +47,7 @@ const loadSavedData = (key) => {
 
 export function CourseForm({ 
   editingCourse, 
-  coursesCount, 
+  courseCreationType = 'complete',
   onSubmit, 
   onCancel,
   reglesSalaire = [],
@@ -61,7 +61,7 @@ export function CourseForm({
   // Calculer le prochain numéro d'ordre disponible
   const existingOrdres = courses.map(c => c.numero_ordre || c.num_ordre).filter(n => n);
   const maxOrdre = existingOrdres.length > 0 ? Math.max(...existingOrdres) : 0;
-  const nextOrdre = editingCourse ? (editingCourse.numero_ordre || editingCourse.num_ordre || coursesCount + 1) : maxOrdre + 1;
+  const nextOrdre = editingCourse ? (editingCourse.numero_ordre || editingCourse.num_ordre) : maxOrdre + 1;
 
   const initialData = editingCourse || savedData || {
     numero_ordre: nextOrdre,
@@ -85,11 +85,37 @@ export function CourseForm({
     handleSubmit,
     control,
     watch,
+    reset,
     formState: { errors }
   } = useForm({
-    resolver: yupResolver(courseSchema),
+    resolver: yupResolver(getCourseSchema(courseCreationType)),
     defaultValues: initialData
   });
+
+  // ✅ CORRECTION: Remettre à zéro le formulaire quand editingCourse change
+  useEffect(() => {
+    if (editingCourse) {
+      reset(editingCourse);
+    } else {
+      // Pour une nouvelle course, utiliser les valeurs par défaut avec le prochain numéro d'ordre
+      reset({
+        numero_ordre: nextOrdre,
+        index_depart: '',
+        index_embarquement: '',
+        lieu_embarquement: '',
+        heure_embarquement: '',
+        index_debarquement: '',
+        lieu_debarquement: '',
+        heure_debarquement: '',
+        prix_taximetre: '',
+        sommes_percues: '',
+        mode_paiement: 1, // ID du mode de paiement CASH par défaut
+        client: '',
+        remuneration_chauffeur: '',
+        notes: ''
+      });
+    }
+  }, [editingCourse, reset, nextOrdre]);
 
   const watchedData = watch();
 
@@ -180,10 +206,10 @@ export function CourseForm({
         </div>
       </div>
 
-      {/* Débarquement Section */}
+      {/* Débarquement Section - Optionnel pour les courses démarrées */}
       <div className="bg-green-50 dark:bg-green-900/20 p-4 rounded-lg">
         <h4 className="font-medium mb-3 text-green-800 dark:text-green-200">
-          Débarquement
+          Débarquement {courseCreationType === 'start' && <span className="text-sm font-normal">(optionnel)</span>}
         </h4>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <Input
@@ -193,12 +219,14 @@ export function CourseForm({
             step="1"
             {...register("index_debarquement")}
             error={errors?.index_debarquement?.message}
+            required={courseCreationType === 'complete'}
           />
           <Input
             label="Lieu débarquement"
             {...register("lieu_debarquement")}
             error={errors?.lieu_debarquement?.message}
             placeholder="ex: Gare Centrale"
+            required={courseCreationType === 'complete'}
           />
           <Input
             label="Heure débarquement"
@@ -206,14 +234,15 @@ export function CourseForm({
             {...register("heure_debarquement")}
             error={errors?.heure_debarquement?.message}
             className="md:col-span-2"
+            required={courseCreationType === 'complete'}
           />
         </div>
       </div>
 
-      {/* Tarification Section */}
+      {/* Tarification Section - Optionnel pour les courses démarrées */}
       <div className="bg-yellow-50 dark:bg-yellow-900/20 p-4 rounded-lg">
         <h4 className="font-medium mb-3 text-yellow-800 dark:text-yellow-200">
-          Tarification
+          Tarification {courseCreationType === 'start' && <span className="text-sm font-normal">(optionnel)</span>}
         </h4>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <Input
@@ -223,6 +252,7 @@ export function CourseForm({
             min="0"
             {...register("prix_taximetre")}
             error={errors?.prix_taximetre?.message}
+            required={courseCreationType === 'complete'}
           />
           <Input
             label="Sommes perçues (€)"
@@ -231,6 +261,7 @@ export function CourseForm({
             min="0"
             {...register("sommes_percues")}
             error={errors?.sommes_percues?.message}
+            required={courseCreationType === 'complete'}
           />
           <Controller
             name="mode_paiement"
@@ -243,6 +274,7 @@ export function CourseForm({
                 label="Mode de paiement"
                 displayField="label"
                 error={errors?.mode_paiement?.message}
+                required={courseCreationType === 'complete'}
               />
             )}
           />
@@ -252,6 +284,7 @@ export function CourseForm({
               {...register("client")}
               error={errors?.client?.message}
               placeholder="Nom du client à facturer"
+              required={courseCreationType === 'complete'}
             />
           )}
           <Controller
@@ -269,6 +302,7 @@ export function CourseForm({
                 displayField="label"
                 error={errors?.remuneration_chauffeur?.message}
                 className={requiresClient ? "" : "md:col-span-2"}
+                required={courseCreationType === 'complete'}
               />
             )}
           />
@@ -294,7 +328,12 @@ export function CourseForm({
           Annuler
         </Button>
         <Button type="submit">
-          {editingCourse ? 'Modifier' : 'Enregistrer'}
+          {editingCourse 
+            ? 'Modifier' 
+            : courseCreationType === 'start' 
+              ? 'Démarrer la course' 
+              : 'Enregistrer'
+          }
         </Button>
       </div>
     </form>
@@ -303,7 +342,6 @@ export function CourseForm({
 
 CourseForm.propTypes = {
   editingCourse: PropTypes.object,
-  coursesCount: PropTypes.number.isRequired,
   onSubmit: PropTypes.func.isRequired,
   onCancel: PropTypes.func.isRequired,
   reglesSalaire: PropTypes.array,

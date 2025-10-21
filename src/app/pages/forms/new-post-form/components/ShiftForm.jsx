@@ -6,7 +6,7 @@ import { toast } from "sonner";
 import PropTypes from "prop-types";
 
 // Local Imports
-import { Card, Button, Input, EncodingModeBadge } from "components/ui";
+import { Card, Button, Input, EncodingModeSelector } from "components/ui";
 import { Listbox } from "components/shared/form/Listbox";
 import { shiftSchema } from "../schema";
 import { contractTypes } from "../data";
@@ -34,6 +34,7 @@ export function ShiftForm({ vehicles, onStartShift, onShowVehicleInfo, reglesSal
       type_remuneration: '',
       vehicule_id: '',
       km_tableau_bord_debut: '',
+      mode_encodage: 'LIVE', // Ajouter le mode d'encodage par défaut
       // ✅ Champs taximètre VIDES par défaut
       taximetre_prise_charge_debut: '',
       taximetre_index_km_debut: '',
@@ -84,7 +85,8 @@ export function ShiftForm({ vehicles, onStartShift, onShowVehicleInfo, reglesSal
       taximetre_prise_charge_debut: Number(data.taximetre_prise_charge_debut) || 0,
       taximetre_index_km_debut: Number(data.taximetre_index_km_debut) || 0,
       taximetre_km_charge_debut: Number(data.taximetre_km_charge_debut) || 0,
-      taximetre_chutes_debut: Number(data.taximetre_chutes_debut) || 0
+      taximetre_chutes_debut: Number(data.taximetre_chutes_debut) || 0,
+      mode_encodage: data.mode_encodage || 'LIVE' // S'assurer que le mode d'encodage est inclus
     };
     
     console.log('Processed shift data:', processedData);
@@ -99,7 +101,20 @@ export function ShiftForm({ vehicles, onStartShift, onShowVehicleInfo, reglesSal
           <h3 className="text-lg font-semibold text-gray-800 dark:text-dark-100">
             Début du Shift
           </h3>
-          <EncodingModeBadge />
+          <Controller
+            name="mode_encodage"
+            control={control}
+            render={({ field }) => (
+              <EncodingModeSelector 
+                value={field.value || 'LIVE'}
+                onChange={(mode) => field.onChange(mode)}
+                allowedModes={['LIVE', 'ULTERIEUR']}
+                showBadgeOnly={false}
+                disabled={false}
+                className="w-48"
+              />
+            )}
+          />
         </div>
         
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">

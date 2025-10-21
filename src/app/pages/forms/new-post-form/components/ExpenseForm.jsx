@@ -18,7 +18,11 @@ const expenseSchema = Yup.object().shape({
     .min(0.01, 'Le montant doit être supérieur à 0')
     .required('Montant requis'),
   description: Yup.string()
-    .required('Description requise'),
+    .when('categorie', {
+      is: 'Carburant',
+      then: (schema) => schema, // Optionnel pour les dépenses d'essence
+      otherwise: (schema) => schema.required('Description requise')
+    }),
   heure: Yup.string()
     .required('Heure requise')
 });

@@ -16,7 +16,7 @@ const courseSchema = yup.object().shape({
   index_debarquement: yup.number()
     .typeError('L\'index de débarquement doit être un nombre')
     .positive('L\'index doit être positif')
-    .required('L\'index de débarquement est obligatoire'),
+    .optional(), // Rendre facultatif comme indiqué dans les spécifications
   lieu_debarquement: yup.string().required('Le lieu de débarquement est obligatoire'),
   heure_debarquement: yup.string().required('L\'heure de débarquement est obligatoire'),
   prix_taximetre: yup.number()
@@ -54,14 +54,38 @@ export default function LiveCourseForm({
   } = useForm({
     resolver: yupResolver(courseSchema),
     defaultValues: {
-      index_embarquement: lastIndex,
-      heure_embarquement: new Date().toTimeString().slice(0, 5),
+      index_embarquement: '',
+      lieu_embarquement: '',
+      heure_embarquement: '',
+      index_debarquement: '',
+      lieu_debarquement: '',
       heure_debarquement: '',
       prix_taximetre: '',
       sommes_percues: '',
+      mode_paiement_id: '',
+      client_id: '',
       est_hors_heures: false
     }
   });
+
+  // Réinitialiser complètement le formulaire quand on l'ouvre pour une nouvelle course
+  useEffect(() => {
+    if (isOpen && !editingCourse) {
+      reset({
+        index_embarquement: '',
+        lieu_embarquement: '',
+        heure_embarquement: '',
+        index_debarquement: '',
+        lieu_debarquement: '',
+        heure_debarquement: '',
+        prix_taximetre: '',
+        sommes_percues: '',
+        mode_paiement_id: '',
+        client_id: '',
+        est_hors_heures: false
+      });
+    }
+  }, [isOpen, editingCourse, reset]);
 
   const indexEmbarquement = watch('index_embarquement');
   const prixTaximetre = watch('prix_taximetre');

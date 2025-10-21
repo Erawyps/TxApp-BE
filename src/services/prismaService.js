@@ -2412,11 +2412,17 @@ export async function calculateFeuilleTotals(feuilleId) {
     const depensesTotales = feuille.charges
       .reduce((sum, charge) => sum + (parseFloat(charge.montant) || 0), 0);
 
-    // Calculer la durée totale
+    // Calculer la durée totale (gestion des shifts qui se terminent le lendemain)
     let dureeTotale = null;
     if (feuille.heure_debut && feuille.heure_fin) {
       const debut = new Date(`1970-01-01T${feuille.heure_debut}`);
-      const fin = new Date(`1970-01-01T${feuille.heure_fin}`);
+      let fin = new Date(`1970-01-01T${feuille.heure_fin}`);
+
+      // Si l'heure de fin est avant l'heure de début, cela signifie que le shift se termine le lendemain
+      if (fin < debut) {
+        fin.setDate(fin.getDate() + 1); // Ajouter un jour
+      }
+
       dureeTotale = (fin - debut) / (1000 * 60); // Durée en minutes
     }
 

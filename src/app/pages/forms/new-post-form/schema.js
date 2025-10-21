@@ -48,53 +48,68 @@ export const shiftSchema = Yup.object().shape({
     .nullable()
 });
 
-export const courseSchema = Yup.object().shape({
-  numero_ordre: Yup.number()
-    .min(1, 'Le numéro d\'ordre doit être supérieur à 0')
-    .required('Numéro d\'ordre requis'),
-  index_depart: Yup.number()
-    .min(0, 'L\'index doit être positif'),
-  index_embarquement: Yup.number()
-    .min(0, 'L\'index embarquement doit être positif')
-    .required('Index embarquement requis'),
-  lieu_embarquement: Yup.string()
-    .trim()
-    .min(2, 'Le lieu d\'embarquement est trop court')
-    .max(100, 'Le lieu d\'embarquement est trop long')
-    .required('Lieu d\'embarquement requis'),
-  heure_embarquement: Yup.string()
-    .required('Heure d\'embarquement requise'),
-  index_debarquement: Yup.number()
-    .min(0, 'L\'index débarquement doit être positif')
-    .required('Index débarquement requis')
-    .test('greater-than-embarquement', 'L\'index débarquement doit être supérieur à l\'embarquement', function(value) {
-      return value > this.parent.index_embarquement;
-    }),
-  lieu_debarquement: Yup.string()
-    .trim()
-    .min(2, 'Le lieu de débarquement est trop court')
-    .max(100, 'Le lieu de débarquement est trop long')
-    .required('Lieu de débarquement requis'),
-  heure_debarquement: Yup.string(),
-  prix_taximetre: Yup.number()
-    .min(0, 'Le prix doit être positif')
-    .required('Prix taximètre requis'),
-  sommes_percues: Yup.number()
-    .min(0, 'La somme perçue doit être positive')
-    .required('Sommes perçues requises'),
-  mode_paiement: Yup.string()
-    .required('Mode de paiement requis'),
-  client: Yup.string()
-    .when('mode_paiement', {
-      is: (val) => val && val.startsWith('F-'),
-      then: (schema) => schema.required('Client requis pour les factures'),
-      otherwise: (schema) => schema
-    }),
-  remuneration_chauffeur: Yup.string()
-    .required('Rémunération chauffeur requise'),
-  notes: Yup.string()
-    .max(500, 'Les notes sont trop longues')
-});
+export const getCourseSchema = (creationType = 'complete') => {
+  const baseSchema = {
+    numero_ordre: Yup.number()
+      .min(1, 'Le numéro d\'ordre doit être supérieur à 0')
+      .required('Numéro d\'ordre requis'),
+    index_depart: Yup.number()
+      .min(0, 'L\'index doit être positif'),
+    index_embarquement: Yup.number()
+      .min(0, 'L\'index embarquement doit être positif')
+      .required('Index embarquement requis'),
+    lieu_embarquement: Yup.string()
+      .trim()
+      .min(2, 'Le lieu d\'embarquement est trop court')
+      .max(100, 'Le lieu d\'embarquement est trop long')
+      .required('Lieu d\'embarquement requis'),
+    heure_embarquement: Yup.string()
+      .required('Heure d\'embarquement requise'),
+    notes: Yup.string()
+      .max(500, 'Les notes sont trop longues')
+  };
+
+  if (creationType === 'start') {
+    // Pour les courses démarrées, seulement les champs minimaux sont requis
+    return Yup.object().shape(baseSchema);
+  } else {
+    // Pour les courses complètes, tous les champs sont requis
+    return Yup.object().shape({
+      ...baseSchema,
+      index_debarquement: Yup.number()
+        .min(0, 'L\'index débarquement doit être positif')
+        .required('Index débarquement requis')
+        .test('greater-than-embarquement', 'L\'index débarquement doit être supérieur à l\'embarquement', function(value) {
+          return value > this.parent.index_embarquement;
+        }),
+      lieu_debarquement: Yup.string()
+        .trim()
+        .min(2, 'Le lieu de débarquement est trop court')
+        .max(100, 'Le lieu de débarquement est trop long')
+        .required('Lieu de débarquement requis'),
+      heure_debarquement: Yup.string()
+        .required('Heure de débarquement requise'),
+      prix_taximetre: Yup.number()
+        .min(0, 'Le prix doit être positif')
+        .required('Prix taximètre requis'),
+      sommes_percues: Yup.number()
+        .min(0, 'La somme perçue doit être positive')
+        .required('Sommes perçues requises'),
+      mode_paiement: Yup.string()
+        .required('Mode de paiement requis'),
+      client: Yup.string()
+        .when('mode_paiement', {
+          is: (val) => val && val.startsWith('F-'),
+          then: (schema) => schema.required('Client requis pour les factures'),
+          otherwise: (schema) => schema
+        }),
+      remuneration_chauffeur: Yup.string()
+        .required('Rémunération chauffeur requise')
+    });
+  }
+};
+
+export const courseSchema = getCourseSchema('complete');
 
 export const endShiftSchema = Yup.object().shape({
   heure_fin: Yup.string()

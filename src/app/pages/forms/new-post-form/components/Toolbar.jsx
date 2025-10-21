@@ -102,15 +102,27 @@ export function Toolbar({
         })}
       </div>
 
-      {/* Add new course button */}
-      <Button
-        onClick={onNewCourse}
-        className="w-full h-12 space-x-2"
-        size="lg"
-      >
-        <PlusIcon className="h-5 w-5" />
-        <span>Ajouter une course</span>
-      </Button>
+      {/* Add new course buttons - Deux options */}
+      <div className="grid grid-cols-2 gap-3">
+        <Button
+          onClick={() => onNewCourse('complete')}
+          className="h-12 space-x-2"
+          size="lg"
+          variant="primary"
+        >
+          <PlusIcon className="h-5 w-5" />
+          <span>Course complète</span>
+        </Button>
+        <Button
+          onClick={() => onNewCourse('start')}
+          className="h-12 space-x-2"
+          size="lg"
+          variant="outlined"
+        >
+          <ClockIcon className="h-5 w-5" />
+          <span>Démarrer course</span>
+        </Button>
+      </div>
 
       {/* Search and filters */}
       <div className="flex flex-col sm:flex-row gap-4">

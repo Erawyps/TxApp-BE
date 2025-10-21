@@ -19,6 +19,7 @@ export function CoursesList({
   onNewCourse,
   onEditCourse, 
   onDeleteCourse,
+  onCompleteCourse,
   onViewCourse,
   onShowFinancialSummary,
   onShowHistory,
@@ -61,6 +62,7 @@ export function CoursesList({
               course={course} 
               onEdit={onEditCourse}
               onDelete={onDeleteCourse}
+              onComplete={onCompleteCourse}
               onView={onViewCourse}
             />
           ))
@@ -80,6 +82,7 @@ CoursesList.propTypes = {
   onNewCourse: PropTypes.func.isRequired,
   onEditCourse: PropTypes.func.isRequired,
   onDeleteCourse: PropTypes.func.isRequired,
+  onCompleteCourse: PropTypes.func,
   onViewCourse: PropTypes.func,
   onShowFinancialSummary: PropTypes.func.isRequired,
   onShowHistory: PropTypes.func.isRequired,

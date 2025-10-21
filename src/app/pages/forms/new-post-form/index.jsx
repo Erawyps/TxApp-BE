@@ -29,7 +29,7 @@ import { HistoryModal } from "./components/HistoryModal";
 import { ControlModal } from "./components/ControlModal";
 
 // Services
-import { upsertCourse, deleteCourse as removeCourse } from "services/courses";
+import { upsertCourse, cancelCourse } from "services/courses";
 import { createFeuilleRoute, endFeuilleRoute, getActiveFeuilleRoute } from "services/feuillesRoute";
 import { mapFeuilleRouteFromDB } from "utils/fieldMapper";
 import { getChauffeurs } from "services/chauffeurs";
@@ -80,6 +80,7 @@ export default function TxApp() {
   const [showControlModal, setShowControlModal] = useState(false);
 
   const [editingCourse, setEditingCourse] = useState(null);
+  const [courseCreationType, setCourseCreationType] = useState('complete');
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [loading, setLoading] = useState(true);
@@ -643,7 +644,11 @@ export default function TxApp() {
       const matchesSearch = course.lieu_embarquement.toLowerCase().includes(searchTerm.toLowerCase()) ||
                            course.lieu_debarquement.toLowerCase().includes(searchTerm.toLowerCase()) ||
                            course.numero_ordre.toString().includes(searchTerm);
-      const matchesStatus = statusFilter === 'all' || course.status === statusFilter;
+      
+      // Normaliser le statut pour le filtrage
+      const normalizedStatus = course.status === 'Annulé' || course.status === 'Annulée' ? 'cancelled' : course.status;
+      const matchesStatus = statusFilter === 'all' || normalizedStatus === statusFilter;
+      
       return matchesSearch && matchesStatus;
     });
   }, [courses, searchTerm, statusFilter]);
@@ -653,13 +658,14 @@ export default function TxApp() {
   }, [filteredCourses]);
 
   // Handlers
-  const handleNewCourse = () => {
+  const handleNewCourse = (type = 'complete') => {
     if (!hasActiveShift) {
       // Si pas de shift actif, rediriger vers la création de feuille
       setActiveTab('shift');
       toast.info("Veuillez d'abord créer une nouvelle feuille de route");
       return;
     }
+    setCourseCreationType(type);
     setEditingCourse(null);
     setShowCourseModal(true);
   };
@@ -671,18 +677,19 @@ export default function TxApp() {
 
   const handleDeleteCourse = async (courseId) => {
     try {
-      await removeCourse(courseId);
-      setCourses(courses.filter(c => c.id !== courseId));
-      toast.success("Course supprimée");
+      const cancelledCourse = await cancelCourse(courseId, 'Annulé par le chauffeur');
+      setCourses(courses.map(c => c.id === courseId ? cancelledCourse : c));
+      toast.success("Course annulée");
     } catch (e) {
       console.error(e);
-      toast.error("Erreur lors de la suppression");
+      toast.error("Erreur lors de l'annulation");
     }
   };
 
   const handleSubmitCourse = async (courseData) => {
     try {
       console.log('🔍 handleSubmitCourse - Données reçues du formulaire:', courseData);
+      console.log('🔍 handleSubmitCourse - Type de création:', courseCreationType);
       
       if (!currentFeuilleRoute) {
         toast.error("Aucune feuille de route active");
@@ -694,15 +701,33 @@ export default function TxApp() {
       const maxOrdre = existingOrdres.length > 0 ? Math.max(...existingOrdres) : 0;
       const nextOrdre = editingCourse ? (editingCourse.numero_ordre || editingCourse.num_ordre) : maxOrdre + 1;
 
-      // Ajouter l'ID de la feuille de route et le numéro d'ordre
-      const courseWithMeta = {
-        ...courseData,
-        feuille_id: currentFeuilleRoute.feuille_id, // ✅ Corrigé : utiliser feuille_id (nom attendu par l'API)
-        num_ordre: nextOrdre, // ✅ Corrigé : calculer le prochain numéro disponible
-        id: editingCourse?.id
-      };
-
-      console.log('💾 Sauvegarde course avec métadonnées:', courseWithMeta);
+      // Préparer les données selon le type de création
+      let courseWithMeta;
+      if (courseCreationType === 'start') {
+        // Course démarrée : seulement les champs minimaux
+        courseWithMeta = {
+          // Champs minimaux pour démarrer une course
+          index_depart: courseData.index_depart || courseData.index_embarquement,
+          lieu_embarquement: courseData.lieu_embarquement,
+          heure_embarquement: courseData.heure_embarquement,
+          // Statut en cours
+          status: 'in-progress',
+          feuille_id: currentFeuilleRoute.feuille_id,
+          num_ordre: nextOrdre,
+          id: editingCourse?.id
+        };
+        console.log('🚀 Démarrage course avec données minimales:', courseWithMeta);
+      } else {
+        // Course complète : tous les champs
+        courseWithMeta = {
+          ...courseData,
+          status: 'completed',
+          feuille_id: currentFeuilleRoute.feuille_id,
+          num_ordre: nextOrdre,
+          id: editingCourse?.id
+        };
+        console.log('💾 Sauvegarde course complète avec métadonnées:', courseWithMeta);
+      }
 
       const saved = await upsertCourse(courseWithMeta);
 
@@ -711,11 +736,15 @@ export default function TxApp() {
         toast.success("Course modifiée avec succès");
       } else {
         setCourses([...courses, saved]);
-        toast.success("Course ajoutée avec succès");
+        if (courseCreationType === 'start') {
+          toast.success("Course démarrée ! Vous pourrez la compléter plus tard.");
+        }
+        // ✅ Supprimé : notification dupliquée (déjà affichée par CourseForm pour les courses complètes)
       }
 
       setShowCourseModal(false);
       setEditingCourse(null);
+      setCourseCreationType('complete'); // Reset pour la prochaine fois
     } catch (e) {
       console.error(e);
       toast.error("Erreur lors de l'enregistrement de la course");
@@ -751,7 +780,7 @@ export default function TxApp() {
         chauffeur_id: currentChauffeur.chauffeur_id,
         vehicule_id: parseInt(shiftFormData.vehicule_id), // S'assurer que c'est un entier
         date_service: shiftFormData.date,
-        mode_encodage: 'LIVE', // Utiliser LIVE au lieu de MANUEL
+        mode_encodage: shiftFormData.mode_encodage || 'LIVE', // Utiliser le mode sélectionné ou LIVE par défaut
         heure_debut: shiftFormData.heure_debut,
         interruptions: shiftFormData.interruptions || '00:00',
         index_km_debut_tdb: shiftFormData.km_tableau_bord_debut || 0,
@@ -1000,9 +1029,16 @@ export default function TxApp() {
     }
   };
 
+  const handleCompleteCourse = (course) => {
+    setEditingCourse(course);
+    setCourseCreationType('complete');
+    setShowCourseModal(true);
+  };
+
   const handleCancelCourse = () => {
     setShowCourseModal(false);
     setEditingCourse(null);
+    setCourseCreationType('complete'); // Reset
   };
 
   const handleShowControl = () => {
@@ -1102,6 +1138,7 @@ export default function TxApp() {
                 onNewCourse={handleNewCourse}
                 onEditCourse={handleEditCourse}
                 onDeleteCourse={handleDeleteCourse}
+                onCompleteCourse={handleCompleteCourse}
                 onShowFinancialSummary={() => setShowFinancialModal(true)}
                 onShowHistory={() => setShowHistoryModal(true)}
                 onShowExpenseForm={() => setShowExpenseModal(true)}
@@ -1151,7 +1188,12 @@ export default function TxApp() {
                   <DialogPanel className="w-full max-w-2xl transform overflow-hidden rounded-lg bg-white dark:bg-dark-700 shadow-xl transition-all">
                     <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-dark-500">
                       <DialogTitle className="text-lg font-semibold text-gray-800 dark:text-dark-100">
-                        {editingCourse ? "Modifier la course" : "Nouvelle course"}
+                        {editingCourse 
+                          ? "Modifier la course" 
+                          : courseCreationType === 'start' 
+                            ? "Démarrer une course" 
+                            : "Nouvelle course complète"
+                        }
                       </DialogTitle>
                       <Button
                         variant="ghost"
@@ -1164,7 +1206,7 @@ export default function TxApp() {
                     <div className="p-6">
                       <CourseForm
                         editingCourse={editingCourse}
-                        coursesCount={courses.length}
+                        courseCreationType={courseCreationType}
                         onSubmit={handleSubmitCourse}
                         onCancel={handleCancelCourse}
                         reglesSalaire={reglesSalaire}
